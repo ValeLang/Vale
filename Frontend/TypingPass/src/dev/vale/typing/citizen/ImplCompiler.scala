@@ -89,8 +89,14 @@ class ImplCompiler(
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
+
+    inferCompiler.continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(e) => return e
+    }
+
     val result =
-      inferCompiler.solve(
+      inferCompiler.interpretResults(
         envs,
         coutputs,
         range :: parentRanges,

@@ -154,7 +154,12 @@ class InferCompiler(
     val solver =
       makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
 
-    solve(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
+    continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(e) => return Err(e)
+    }
+
+    interpretResults(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
       case f @ FailedCompilerSolve(_, _, _) => Err(f)
       case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
       case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
@@ -177,7 +182,14 @@ class InferCompiler(
     val solver =
       makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
 
-    solve(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
+    continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(f @ FailedCompilerSolve(_, _, err)) => {
+        throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, f))
+      }
+    }
+
+    interpretResults(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
       case f @ FailedCompilerSolve(_, _, err) => {
         throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, f))
       }
@@ -229,8 +241,18 @@ class InferCompiler(
     })
   }
 
+  def continue(
+    envs: InferEnv, // See CSSNCE
+    state: CompilerOutputs,
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
+  Result[Unit, FailedCompilerSolve] = {
+    compilerSolver.continue(envs, state, solver) match {
+      case Ok(()) => Ok(())
+      case Err(FailedSolve(steps, unsolvedRules, error)) => Err(FailedCompilerSolve(steps, unsolvedRules, error))
+    }
+  }
 
-  def solve(
+  def interpretResults(
     envs: InferEnv, // See CSSNCE
     state: CompilerOutputs,
     invocationRange: List[RangeS],
@@ -241,12 +263,7 @@ class InferCompiler(
     includeReachableBoundsForRunes: Vector[IRuneS],
     solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
   ICompilerSolverOutcome = {
-    compilerSolver.solve(envs, state, solver) match {
-      case Ok(()) =>
-      case Err(FailedSolve(steps, unsolvedRules, error)) => return FailedCompilerSolve(steps, unsolvedRules, error)
-    }
-
-    compilerSolver.finishSolving(runeToType, solver) match {
+    compilerSolver.interpretResults(runeToType, solver) match {
       case CompleteSolve(steps, conclusions) => {
         val reachableBounds =
           includeReachableBoundsForRunes
@@ -265,7 +282,7 @@ class InferCompiler(
       }
       case IncompleteSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
         if (verifyConclusions) {
-          checkTemplateInstantiations(envs, state, invocationRange, solver.getAllRules(), incompleteConclusions, Vector(), isRootSolve) match {
+          checkTemplateInstantiations(envs, state, invocationRange, initialRules, incompleteConclusions, Vector(), isRootSolve) match {
             case Ok(c) =>
             case Err(e) => return FailedCompilerSolve(steps, unsolvedRules, e)
           }

@@ -65,8 +65,12 @@ class StructCompilerGenericArgsLayer(
           callRange,
           initialKnowns,
           Vector())
+      inferCompiler.continue(envs, coutputs, solver) match {
+        case Ok(()) =>
+        case Err(x) => return ResolveFailure(callRange, x)
+      }
       val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
+        inferCompiler.interpretResults(
           envs,
           coutputs,
           callRange,
@@ -256,8 +260,12 @@ class StructCompilerGenericArgsLayer(
           callRange,
           initialKnowns,
           Vector())
+      inferCompiler.continue(envs, coutputs, solver) match {
+        case Ok(()) =>
+        case Err(x) => return ResolveFailure(callRange, x)
+      }
       val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
+        inferCompiler.interpretResults(
           envs,
           coutputs,
           callRange,
@@ -306,7 +314,7 @@ class StructCompilerGenericArgsLayer(
 
       // This is temporary, to support specialization like:
       //   extern("vale_runtime_sized_array_mut_new")
-      //   func Vector<M, E>(size int) []<M>E
+      //   func Array<M, E>(size int) []<M>E
       //   where M Mutability = mut, E Ref;
       // In the future we might need to outlaw specialization, unsure.
       val preliminarySolveEnvs = InferEnv(outerEnv, List(structA.range), outerEnv)
@@ -319,8 +327,14 @@ class StructCompilerGenericArgsLayer(
           structA.range :: parentRanges,
           Vector(),
           Vector())
+      inferCompiler.continue(preliminarySolveEnvs, coutputs, preliminarySolver) match {
+        case Ok(()) =>
+        case Err(f) => {
+          throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
+        }
+      }
       val preliminaryInferences =
-        inferCompiler.solve(
+        inferCompiler.interpretResults(
           preliminarySolveEnvs,
           coutputs, structA.range :: parentRanges, allRuneToType, definitionRules, true, true, Vector(), preliminarySolver) match {
           case f @ FailedCompilerSolve(_, _, err) => {
@@ -413,7 +427,7 @@ class StructCompilerGenericArgsLayer(
 
       // This is temporary, to support specialization like:
       //   extern("vale_runtime_sized_array_mut_new")
-      //   func Vector<M, E>(size int) []<M>E
+      //   func Array<M, E>(size int) []<M>E
       //   where M Mutability = mut, E Ref;
       // In the future we might need to outlaw specialization, unsure.
       val preliminarySolveEnvs = InferEnv(outerEnv, List(interfaceA.range), outerEnv)
@@ -426,8 +440,14 @@ class StructCompilerGenericArgsLayer(
           interfaceA.range :: parentRanges,
           Vector(),
           Vector())
+      inferCompiler.continue(preliminarySolveEnvs, coutputs, preliminarySolver) match {
+        case Ok(()) =>
+        case Err(f) => {
+          throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
+        }
+      }
       val preliminaryInferences =
-        inferCompiler.solve(
+        inferCompiler.interpretResults(
           preliminarySolveEnvs,
           coutputs, interfaceA.range :: parentRanges, interfaceA.runeToType, definitionRules, true, true, Vector(), preliminarySolver) match {
           case f @ FailedCompilerSolve(_, _, err) => {

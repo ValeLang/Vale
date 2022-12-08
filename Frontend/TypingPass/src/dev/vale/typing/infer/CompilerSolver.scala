@@ -249,11 +249,11 @@ class CompilerSolver(
     env: InferEnv,
     state: CompilerOutputs,
     rules: IndexedSeq[IRulexSR],
-    runeToType: Map[IRuneS, ITemplataType],
+    initialRuneToType: Map[IRuneS, ITemplataType],
     initiallyKnownRuneToTemplata: Map[IRuneS, ITemplata[ITemplataType]]):
   Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError] = {
 
-    rules.foreach(rule => rule.runeUsages.foreach(rune => vassert(runeToType.contains(rune.rune))))
+    rules.foreach(rule => rule.runeUsages.foreach(rune => vassert(initialRuneToType.contains(rune.rune))))
 
     // These two shouldn't both be in the rules, see SROACSD.
     vassert(
@@ -268,7 +268,7 @@ class CompilerSolver(
       if (globalOptions.sanityCheck) {
         delegate.sanityCheckConclusion(env, state, rune, templata)
       }
-      vassert(templata.tyype == vassertSome(runeToType.get(rune)))
+      vassert(templata.tyype == vassertSome(initialRuneToType.get(rune)))
     })
 
     val solver =
@@ -278,17 +278,18 @@ class CompilerSolver(
         interner,
         (rule: IRulexSR) => getPuzzles(rule),
         getRunes,
-        new CompilerRuleSolver(globalOptions.sanityCheck, interner, delegate, runeToType),
+        new CompilerRuleSolver(globalOptions.sanityCheck, interner, delegate, initialRuneToType),
         range,
         rules,
-        initiallyKnownRuneToTemplata)
+        initiallyKnownRuneToTemplata,
+        initialRuneToType.keys.toVector.distinct)
 
     solver
   }
 
   // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
   // Caller should remember to do that!
-  def solve(
+  def continue(
     env: InferEnv,
     state: CompilerOutputs,
     solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
@@ -303,7 +304,7 @@ class CompilerSolver(
     Ok(Unit)
   }
 
-  def finishSolving(
+  def interpretResults(
     runeToType: Map[IRuneS, ITemplataType],
     solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
   ISolverOutcome[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError] = {

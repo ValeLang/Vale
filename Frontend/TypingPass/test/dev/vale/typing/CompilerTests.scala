@@ -1760,6 +1760,80 @@ class CompilerTests extends FunSuite with Matchers {
     })
   }
 
+  test("Downcast function") {
+    start here
+    // this is mysteriously failing
+    // but actually, before we do anything here, make sure that the struct compiler uses the new
+    // incremental solving
+
+    val compile = CompilerTestCompilation.test(
+      """
+        |
+        |#!DeriveInterfaceDrop
+        |sealed interface Result<OkType Ref, ErrType Ref> { }
+        |
+        |#!DeriveStructDrop
+        |struct Ok<OkType Ref, ErrType Ref> { value OkType; }
+        |
+        |impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
+        |
+        |#!DeriveStructDrop
+        |struct Err<OkType Ref, ErrType Ref> { value ErrType; }
+        |
+        |impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
+        |
+        |
+        |extern("vale_as_subtype")
+        |func as<SubType Ref, SuperType Ref>(left &SuperType) Result<&SubType, &SuperType>
+        |where implements(SubType, SuperType);
+        |""".stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+
+    val asFunc =
+      vassertOne(
+        coutputs.functions.filter({
+          case FunctionDefinitionT(FunctionHeaderT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, Vector(CoordT(BorrowT, _)))), _, _, _, _), _, _, _) => true
+          case _ => false
+        }))
+    val as = Collector.only(asFunc, { case as@AsSubtypeTE(_, _, _, _, _, _, _, _) => as })
+    val AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor, _, _, _) = as
+    sourceExpr.result.coord match {
+      case CoordT(BorrowT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _))))) =>
+      //case CoordT(BorrowT, InterfaceTT(FullNameT(_, Vector(), InterfaceNameT(InterfaceTemplateNameT(StrI("IShip")), Vector())))) =>
+    }
+    targetSubtype.kind match {
+      case PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))) =>
+      case StructTT(IdT(_, Vector(), StructNameT(StructTemplateNameT(StrI("Raza")), Vector()))) =>
+    }
+    val (firstGenericArg, secondGenericArg) =
+      resultOptType match {
+        case CoordT(
+        OwnT,
+        InterfaceTT(
+        IdT(
+        _, Vector(),
+        InterfaceNameT(
+        InterfaceTemplateNameT(StrI("Result")),
+        Vector(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
+      }
+    // They should both be pointers, since we dont really do borrows in structs yet
+    firstGenericArg match {
+      case CoordTemplata(
+      CoordT(
+      BorrowT,
+      PlaceholderT(
+      IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))) =>
+    }
+    secondGenericArg match {
+      case CoordTemplata(
+      CoordT(
+      BorrowT,
+      PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _)))))) =>
+    }
+    vassert(okConstructor.paramTypes.head == targetSubtype)
+    vassert(errConstructor.paramTypes.head == sourceExpr.result.coord)
+  }
+
   test("Downcast with as") {
     val compile = CompilerTestCompilation.test(
       """

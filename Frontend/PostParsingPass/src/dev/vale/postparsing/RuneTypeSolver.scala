@@ -328,7 +328,8 @@ class RuneTypeSolver(interner: Interner) {
         },
         range,
         rules,
-        initiallyKnownRunes)
+        initiallyKnownRunes,
+        (rules.flatMap(getRunes) ++ initiallyKnownRunes.keys).distinct.toVector)
     while ({
       solver.advance(env, Unit) match {
         case Ok(continue) => continue

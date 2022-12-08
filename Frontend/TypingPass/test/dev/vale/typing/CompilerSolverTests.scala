@@ -612,4 +612,21 @@ class CompilerSolverTests extends FunSuite with Matchers {
       case CoordTemplata(CoordT(ShareT, IntT(32))) =>
     }
   }
+
+  test("Test equivalent identifying runes") {
+    // Previously, the compiler would populate placeholders for all identifying runes at once.
+    // This meant that it added a placeholder $T and a placeholder $Y at the same time.
+    // Of course, that led to a conflict, because $T != $Y.
+    // Now, we populate the placeholders one at a time. Both T and Y should be $T now.
+    // This should also help when we switch to regions, where we want to say that two generic coords
+    // share the same region.
+    // See IRAGP.
+
+    val compile = CompilerTestCompilation.test(
+      """
+        |func bork<T, Y>(a T) Y where T = Y { return a; }
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+
+  }
 }

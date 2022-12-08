@@ -242,7 +242,8 @@ class SolverTests extends FunSuite with Matchers with Collector {
         new TestRuleSolver(interner),
         List(RangeS.testZero(interner)),
         rules,
-        Map())
+        Map(),
+        rules.flatMap(_.allRunes).distinct)
 
     while ( {
       solver.advance(Unit, Unit) match {
@@ -310,7 +311,8 @@ class SolverTests extends FunSuite with Matchers with Collector {
           new TestRuleSolver(interner),
           List(RangeS.testZero(interner)),
           rules,
-          Map())
+          Map(),
+          rules.flatMap(_.allRunes).distinct)
 
 
       while ( {
@@ -365,7 +367,8 @@ class SolverTests extends FunSuite with Matchers with Collector {
         new TestRuleSolver(interner),
         List(RangeS.testZero(interner)),
         rules,
-        Map())
+        Map(),
+        rules.flatMap(_.allRunes).distinct.toVector)
     while ( {
       solver.advance(Unit, Unit) match {
         case Ok(continue) => continue
@@ -392,7 +395,8 @@ class SolverTests extends FunSuite with Matchers with Collector {
         new TestRuleSolver(interner),
         List(RangeS.testZero(interner)),
         rules,
-        initiallyKnownRunes)
+        initiallyKnownRunes,
+        (rules.flatMap(_.allRunes) ++ initiallyKnownRunes.keys).distinct.toVector)
 
     while ( {
       solver.advance(Unit, Unit) match {

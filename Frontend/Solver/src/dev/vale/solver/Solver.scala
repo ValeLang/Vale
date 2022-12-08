@@ -99,7 +99,8 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
     solveRule: ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType],
     setupRange: List[RangeS],
     initialRules: IndexedSeq[Rule],
-    initiallyKnownRunes: Map[Rune, Conclusion]) {
+    initiallyKnownRunes: Map[Rune, Conclusion],
+    allRunes: Vector[Rune]) {
 
   private val solverState =
     if (useOptimizedSolver) {
@@ -109,23 +110,19 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
     }
 
   Profiler.frame(() => {
-    (initialRules.flatMap(ruleToRunes) ++ initiallyKnownRunes.keys)
-      .distinct.foreach(solverState.addRune)
+    if (sanityCheck) {
+      initialRules.flatMap(ruleToRunes).foreach(rune => vassert(allRunes.contains(rune)))
+      initiallyKnownRunes.keys.foreach(rune => vassert(allRunes.contains(rune)))
+      vassert(allRunes == allRunes.distinct)
+    }
+
+    allRunes.foreach(solverState.addRune)
 
     if (sanityCheck) {
       solverState.sanityCheck()
     }
 
-    val step =
-      solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
-        initiallyKnownRunes.foreach({ case (rune, conclusion) =>
-          stepState.concludeRune(RangeS.internal(interner, -6434324) :: setupRange, rune, conclusion)
-        })
-        Ok(())
-      }).getOrDie()
-    step.conclusions.foreach({ case (rune, conclusion) =>
-      solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
-    })
+    manualStep(initiallyKnownRunes).getOrDie()
 
     if (sanityCheck) {
       solverState.sanityCheck()
@@ -152,6 +149,24 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
 
   def getAllRules(): Vector[Rule] = {
     solverState.getAllRules()
+  }
+
+  def manualStep(newConclusions: Map[Rune, Conclusion]):
+  Result[Unit, ISolverError[Rune, Conclusion, Nothing]] = {
+    solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
+      newConclusions.foreach({ case (rune, conclusion) =>
+        stepState.concludeRune(RangeS.internal(interner, -6434324) :: setupRange, rune, conclusion)
+      })
+      Ok(())
+    }) match {
+      case Ok(step) => {
+        step.conclusions.foreach({ case (rune, conclusion) =>
+          solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
+        })
+        Ok(Unit)
+      }
+      case Err(e) => Err(e)
+    }
   }
 
   def userifyConclusions(): Stream[(Rune, Conclusion)] = {

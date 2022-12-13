@@ -1760,12 +1760,14 @@ class CompilerTests extends FunSuite with Matchers {
     })
   }
 
-  test("Downcast function") {
-    start here
-    // this is mysteriously failing
-    // but actually, before we do anything here, make sure that the struct compiler uses the new
-    // incremental solving
-
+  test("Downcast function, RRBFS") {
+    // Here we had something interesting happen: the complex solve had a race with the thing that
+    // populates identifying runes.
+    // Populating identifying runes only happens after the solver has done as much as it possibly
+    // can... but the solver sometimes takes a leap (as part of CSALR, SMCMST) to figure out the best type
+    // to meet some requirements.
+    // The solution was to make it only do that leap when solving call sites.
+    // See RRBFS.
     val compile = CompilerTestCompilation.test(
       """
         |

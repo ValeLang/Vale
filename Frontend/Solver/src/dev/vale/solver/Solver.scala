@@ -173,6 +173,15 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
     solverState.userifyConclusions()
   }
 
+  def getConclusion(rune: Rune): Option[Conclusion] = {
+    solverState.getConclusion(rune)
+  }
+
+  def isComplete(): Boolean = {
+    // TODO(optimize): There has to be a faster way to do this...
+    solverState.userifyConclusions().size == allRunes.size
+  }
+
   def markRulesSolved[ErrType](ruleIndices: Vector[Int], newConclusions: Map[Int, Conclusion]):
   Result[Int, ISolverError[Rune, Conclusion, ErrType]] = {
     solverState.markRulesSolved(ruleIndices, newConclusions)

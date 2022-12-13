@@ -738,6 +738,20 @@ object TemplataCompiler {
       case _ => Vector()
     }
   }
+
+  def getFirstUnsolvedIdentifyingRune(
+    genericParameters: Vector[GenericParameterS],
+    isSolved: IRuneS => Boolean):
+  Option[(GenericParameterS, Int)] = {
+    genericParameters
+      .zipWithIndex
+      .map({ case (genericParam, index) =>
+        (genericParam, index, isSolved(genericParam.rune.rune))
+      })
+      .filter(!_._3)
+      .map({ case (genericParam, index, false) => (genericParam, index) })
+      .headOption
+  }
 }
 
 class TemplataCompiler(

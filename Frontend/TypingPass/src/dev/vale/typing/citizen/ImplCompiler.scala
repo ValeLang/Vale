@@ -187,6 +187,8 @@ class ImplCompiler(
         implTemplateFullName,
         TemplatasStore(implTemplateFullName, Map(), Map()))
 
+    // We might one day need to incrementally solve and add placeholders here like we do for
+    // functions and structs, see IRAGP.
     val implPlaceholders =
       implA.genericParams.zipWithIndex.map({ case (rune, index) =>
         val placeholder =

@@ -575,6 +575,8 @@ Hopefully, we can find a way to optimize these and maybe even fold them
 back into the main simple solver. Currently, they do some looping, which
 causes a O(n\^2).
 
+
+
 # Should We Solve Kinds First
 
 This snippet:

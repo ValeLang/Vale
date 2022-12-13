@@ -189,17 +189,49 @@ class InferCompiler(
       }
     }
 
-    interpretResults(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
-      case f @ FailedCompilerSolve(_, _, err) => {
-        throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, f))
-      }
-      case i @ IncompleteCompilerSolve(_, _, _, _) => {
-        throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, i))
-      }
-      case c @ CompleteCompilerSolve(_, _, _, _) => c
-    }
+    expectCompleteSolve(
+      envs,
+      coutputs,
+      rules,
+      runeToType,
+      invocationRange,
+      verifyConclusions,
+      isRootSolve,
+      includeReachableBoundsForRunes,
+      solver)
   }
 
+
+  def expectCompleteSolve(
+    envs: InferEnv,
+    coutputs: CompilerOutputs,
+    rules: Vector[IRulexSR],
+    runeToType: Map[IRuneS, ITemplataType],
+    invocationRange: List[RangeS],
+    verifyConclusions: Boolean,
+    isRootSolve: Boolean,
+    includeReachableBoundsForRunes: Vector[IRuneS],
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]
+  ): CompleteCompilerSolve = {
+    interpretResults(
+      envs,
+      coutputs,
+      invocationRange,
+      runeToType,
+      rules,
+      verifyConclusions,
+      isRootSolve,
+      includeReachableBoundsForRunes,
+      solver) match {
+      case f@FailedCompilerSolve(_, _, err) => {
+        throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, f))
+      }
+      case i@IncompleteCompilerSolve(_, _, _, _) => {
+        throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, i))
+      }
+      case c@CompleteCompilerSolve(_, _, _, _) => c
+    }
+  }
 
   def makeSolver(
     envs: InferEnv, // See CSSNCE
@@ -209,7 +241,8 @@ class InferCompiler(
     invocationRange: List[RangeS],
     initialKnowns: Vector[InitialKnown],
     initialSends: Vector[InitialSend]):
-  Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError] = {
+  Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType],
+    ITypingPassSolverError] = {
     Profiler.frame(() => {
       val runeToType =
         initialRuneToType ++
@@ -544,6 +577,35 @@ class InferCompiler(
       }
       case other => vimpl(other)
     }
+  }
+
+  def incrementallySolve(
+    envs: InferEnv,
+    coutputs: CompilerOutputs,
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError],
+    onIncompleteSolve: (Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]) => Boolean):
+  Result[Boolean, FailedCompilerSolve] = {
+    // See IRAGP for why we have this incremental solving/placeholdering.
+    while ( {
+      continue(envs, coutputs, solver) match {
+        case Ok(()) =>
+        case Err(f) => return Err(f)
+      }
+
+      // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
+      // Caller should remember to do that!
+      if (!solver.isComplete()) {
+        val continue = onIncompleteSolve(solver)
+        if (!continue) {
+          return Ok(false)
+        }
+        true
+      } else {
+        return Ok(true)
+      }
+    }) {}
+
+    vfail() // Shouldnt get here
   }
 }
 

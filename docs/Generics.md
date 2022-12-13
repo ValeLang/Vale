@@ -1553,3 +1553,16 @@ It needs:
  * Rune types
 
 Pretty much everything.
+
+
+# Resolving Races Between Fallback Strategies (RRBFS)
+
+When a solver can't figure out some things, then it uses SMCMST/CSALR to throw a hail mary and guess the best type to use for a call's generic parameter. It only happens after the regular solve has hit a dead end.
+
+The other thing we do when a regular solve has hit a dead end is to add the next identifying rune's placeholder, when solving the definition.
+
+We had a bug (search for test case with RRBFS) where the hail mary was thrown even when solving a definition.
+
+Moral of the story: these two last-resort strategies can sometimes race.
+
+For now, we resolve it by only doing the hail mary for call sites.

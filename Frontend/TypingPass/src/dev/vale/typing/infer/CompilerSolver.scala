@@ -351,7 +351,8 @@ class CompilerRuleSolver(
     val (unsolvedReceiverRunes, ranges) =
       unsolvedRules.collect({
         case CoordSendSR(range, _, receiverRune) => (receiverRune.rune, range)
-        case DefinitionCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
+        // We don't do this for DefinitionCoordIsaSR, see RRBFS.
+        // case DefinitionCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
         case CallSiteCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
       }).unzip
     val receiverRunes =
@@ -363,7 +364,8 @@ class CompilerRuleSolver(
           equivalencies.getKindEquivalentRunes(
             unsolvedRules.collect({
               case CoordSendSR(range, s, r) if r.rune == receiver => s.rune
-              case DefinitionCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
+              // We don't do this for DefinitionCoordIsaSR, see RRBFS.
+              // case DefinitionCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
               case CallSiteCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
             }))
         val callRules =

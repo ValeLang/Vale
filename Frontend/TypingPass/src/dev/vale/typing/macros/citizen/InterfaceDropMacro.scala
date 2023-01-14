@@ -105,8 +105,4 @@ class InterfaceDropMacro(
       interfaceName.copy(localName = nameTranslator.translateGenericFunctionName(dropFunctionA.name)) ->
         FunctionEnvEntry(dropFunctionA))
   }
-
-//  override def getInterfaceChildEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA, mutability: MutabilityT): Vector[(FullNameT[INameT], IEnvEntry)] = {
-//    Vector()
-//  }
 }

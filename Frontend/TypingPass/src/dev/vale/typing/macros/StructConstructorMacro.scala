@@ -39,15 +39,6 @@ class StructConstructorMacro(
 
   val macroName: StrI = keywords.DeriveStructConstructor
 
-  override def getStructChildEntries(
-    macroName: StrI,
-    structName: IdT[INameT],
-    structA: StructA,
-    mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(IdT[INameT], FunctionEnvEntry)] = {
-    Vector()
-  }
-
   override def getStructSiblingEntries(structName: IdT[INameT], structA: StructA):
   Vector[(IdT[INameT], FunctionEnvEntry)] = {
     if (structA.members.collect({ case VariadicStructMemberS(_, _, _) => }).nonEmpty) {

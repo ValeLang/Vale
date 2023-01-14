@@ -152,7 +152,6 @@ class Keywords(interner: Interner) {
   val v = interner.intern(StrI("v"))
   val builtins = interner.intern(StrI("builtins"))
   val arrays = interner.intern(StrI("arrays"))
-  val __free_replaced = interner.intern(StrI("__free_replaced"))
   val IS_INTERFACE = interner.intern(StrI("isInterface"))
   val IMPLEMENTS = interner.intern(StrI("implements"))
   val isCallable = interner.intern(StrI("isCallable"))

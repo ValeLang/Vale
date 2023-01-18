@@ -31,6 +31,7 @@ set(LLVM_LINK_COMPONENTS
 		Support
 		IRReader
 		x86asmparser x86codegen x86desc x86disassembler x86info
+		webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo
 )
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})

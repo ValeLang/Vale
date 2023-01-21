@@ -2,8 +2,9 @@ package dev.vale.parsing.templex
 
 import dev.vale.{Err, Interner, Keywords, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.{Parser, StopBeforeCloseSquare, StopBeforeComma, ast}
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, FuncPT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, FuncPT, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
 import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
+import dev.vale.parsing.Parser.parseRegion
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 
@@ -241,43 +242,55 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   //  }
   //
 
-  def parseRegioned(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkipSymbol('\'')) {
-      return Ok(None)
-    }
-
-    val name =
-      iter.nextWord() match {
-        case None => return Err(BadRegionName(iter.getPos()))
-        case Some(x) => x
-      }
-
-    if (iter.hasNext) {
-      val inner =
-        parseTemplexAtomAndCallAndPrefixes(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(t) => t
-        }
-      Ok(Some(inner))
-    } else {
-      val rune =
-        RegionRunePT(
-          RangeL(begin, iter.getPrevEndPos()),
-          NameP(name.range, name.str))
-      Ok(Some(rune))
-    }
-  }
+//  def parseRegioned(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
+//    val begin = iter.getPos()
+//    if (!iter.trySkipSymbol('\'')) {
+//      return Ok(None)
+//    }
+//
+//    val name =
+//      iter.nextWord() match {
+//        case None => return Err(BadRegionName(iter.getPos()))
+//        case Some(x) => x
+//      }
+//
+//    if (iter.hasNext) {
+//      val inner =
+//        parseTemplexAtomAndCallAndPrefixes(iter) match {
+//          case Err(e) => return Err(e)
+//          case Ok(t) => t
+//        }
+//      Ok(Some(inner))
+//    } else {
+//      val rune =
+//        RegionRunePT(
+//          RangeL(begin, iter.getPrevEndPos()),
+//          NameP(name.range, name.str))
+//      Ok(Some(rune))
+//    }
+//  }
 
   def parseInterpreted(iter: ScrambleIterator): Result[Option[InterpretedPT], IParseError] = {
     val begin = iter.getPos()
 
-    val ownership =
-      if (iter.trySkipSymbol('^')) { OwnP }
-      else if (iter.trySkipSymbol('@')) { ShareP }
-      else if (iter.trySkipSymbols(Vector('&', '&'))) { WeakP }
-      else if (iter.trySkipSymbol('&')) { BorrowP }
-      else { return Ok(None) }
+    val maybeOwnership =
+      if (iter.trySkipSymbol('^')) { Some(OwnershipPT(RangeL(begin, iter.getPos()), OwnP)) }
+      else if (iter.trySkipSymbol('@')) { Some(OwnershipPT(RangeL(begin, iter.getPos()), ShareP)) }
+      else if (iter.trySkipSymbols(Vector('&', '&'))) { Some(OwnershipPT(RangeL(begin, iter.getPos()), WeakP)) }
+      else if (iter.trySkipSymbol('&')) { Some(OwnershipPT(RangeL(begin, iter.getPos()), BorrowP)) }
+      else { None }
+
+    val maybeRegion =
+      parseRegion(iter) match {
+        case Ok(None) => None
+        case Ok(Some(regionRune)) => Some(regionRune)
+        case Err(e) => return Err(e)
+      }
+
+    (maybeOwnership, maybeRegion) match {
+      case (None, None) => return Ok(None)
+      case (_, _) =>
+    }
 
     val inner =
       parseTemplexAtomAndCallAndPrefixes(iter) match {
@@ -285,7 +298,27 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
         case Ok(t) => t
       }
 
-    Ok(Some(ast.InterpretedPT(RangeL(begin, iter.getPrevEndPos()), ownership, inner)))
+    Ok(Some(ast.InterpretedPT(RangeL(begin, iter.getPrevEndPos()), maybeOwnership, maybeRegion, inner)))
+  }
+
+  // This is a region that has nothing after it, like in Moo<a'>, not like Moo<a'T>.
+  def parseEndingRegion(originalIter: ScrambleIterator): Result[Option[RegionRunePT], IParseError] = {
+    val tentativeIter = originalIter.clone()
+
+    val region =
+      parseRegion(tentativeIter) match {
+        case Err(e) => return Err(e)
+        case Ok(None) => return Ok(None)
+        case Ok(Some(regionRune)) => regionRune
+      }
+
+    if (tentativeIter.hasNext) {
+      return Ok(None)
+    }
+
+    originalIter.skipTo(tentativeIter)
+
+    Ok(Some(region))
   }
 
 
@@ -492,7 +525,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       //      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
       //    }
 
-      parseRegioned(iter) match {
+      parseEndingRegion(iter) match {
         case Err(e) => return Err(e)
         case Ok(Some(x)) => return Ok(x)
         case Ok(None) =>
@@ -506,21 +539,6 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
       parseTemplexAtomAndCall(iter)
     })
-  }
-
-  def parseRegion(node: INodeLE): Result[Option[RegionRunePT], IParseError] = {
-    vimpl()
-//    val begin = iter.getPos()
-//    if (!iter.trySkip(() => "^'".r)) {
-//      return Ok(None)
-//    }
-//
-//    val regionName =
-//      Parser.parseTypeName(iter) match {
-//        case None => return Err(BadRegionName(iter.getPos()))
-//        case Some(x) => x
-//      }
-//    Ok(Some(RegionRunePT(RangeL(begin, iter.getPos()), regionName)))
   }
 
   def parseTemplex(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
@@ -690,6 +708,9 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       }
       case Some(WordLE(_, w)) if w == keywords.Kind => {
         iter.advance(); Ok(Some(KindTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Region => {
+        iter.advance(); Ok(Some(RegionTypePR))
       }
       case Some(WordLE(_, w)) if w == keywords.Prot => {
         iter.advance(); Ok(Some(PrototypeTypePR))

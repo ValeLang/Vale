@@ -993,6 +993,31 @@ class Lexer(interner: Interner, keywords: Keywords) {
     }
   }
 
+  def lexRegion(originalIter: LexingIterator): Option[ScrambleLE] = {
+    val begin = originalIter.getPos()
+
+    val tentativeIter = originalIter.clone()
+
+    val name =
+      lexIdentifier(tentativeIter) match {
+        case None => return None
+        case Some(x) => x
+      }
+
+    val symbolBegin = tentativeIter.getPos()
+    if (!tentativeIter.trySkip('\'')) {
+      return None
+    }
+    val symbolEnd = tentativeIter.getPos()
+
+    originalIter.skipTo(tentativeIter.getPos())
+    val end = originalIter.getPos()
+
+    val symbolL = SymbolLE(RangeL(symbolBegin, symbolEnd), '\'')
+    val scramble = ScrambleLE(RangeL(begin, end), Vector(name, symbolL))
+    return Some(scramble)
+  }
+
 //
 //  def lexStringPart(iter: LexingIterator, stringBeginPos: Int): Result[Char, IParseError] = {
 //    if (iter.trySkip(() => "^\\\\".r)) {

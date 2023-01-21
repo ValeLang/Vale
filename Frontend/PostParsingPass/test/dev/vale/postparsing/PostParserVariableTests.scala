@@ -574,7 +574,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       exprs.collect({
-        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
       case LocalS(name, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
@@ -599,7 +599,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       exprs.collect({
-        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     val locals = lamBlock.locals
     locals.find(_.varName match { case ClosureParamNameS() => true case _ => false }).get match {

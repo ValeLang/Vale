@@ -30,7 +30,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
           |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin).getOrDie().denizens) shouldHave {
       case TopLevelImplP(ImplP(_,
-        Some(GenericParametersP(_, Vector(GenericParameterP(_, NameP(_, StrI("T")), _, Vector(), None)))),
+        Some(GenericParametersP(_, Vector(GenericParameterP(_, NameP(_, StrI("T")), _, _, Vector(), None)))),
         None,
         Some(CallPT(_,NameOrRunePT(NameP(_, StrI("SomeStruct"))), Vector(NameOrRunePT(NameP(_, StrI("T")))))),
         CallPT(_,NameOrRunePT(NameP(_, StrI("MyInterface"))), Vector(NameOrRunePT(NameP(_, StrI("T"))))),

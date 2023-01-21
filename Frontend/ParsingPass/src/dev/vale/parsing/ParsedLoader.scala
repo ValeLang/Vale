@@ -173,6 +173,7 @@ class ParsedLoader(interner: Interner) {
       loadOptionalObject(getObjectField(jobj, "mutability"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
+      loadOptionalObject(getObjectField(jobj, "maybeDefaultRegion"), loadRegionRune),
       loadRange(getObjectField(jobj, "bodyRange")),
       loadStructMembers(getObjectField(jobj, "members")))
   }
@@ -186,6 +187,7 @@ class ParsedLoader(interner: Interner) {
       loadOptionalObject(getObjectField(denizen, "mutability"), loadTemplex),
       loadOptionalObject(getObjectField(denizen, "maybeIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(denizen, "templateRules"), loadTemplateRules),
+      loadOptionalObject(getObjectField(denizen, "maybeDefaultRegion"), loadRegionRune),
       loadRange(getObjectField(denizen, "bodyRange")),
       getArrayField(denizen, "members").map(expectObject).map(loadFunction))
   }
@@ -199,6 +201,7 @@ class ParsedLoader(interner: Interner) {
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadOptionalObject(getObjectField(jobj, "params"), loadParams),
       loadFunctionReturn(getObjectField(jobj, "return")))
+//      loadOptionalObject(getObjectField(jobj, "maybeDefaultRegion"), loadName))
   }
 
   def loadFileCoord(jobj: JObject): FileCoordinate = {
@@ -271,6 +274,7 @@ class ParsedLoader(interner: Interner) {
   def loadBlock(jobj: JObject): BlockPE = {
     BlockPE(
       loadRange(getObjectField(jobj, "range")),
+      loadOptionalObject(getObjectField(jobj, "maybeDefaultRegion"), loadRegionRune),
       loadExpression(getObjectField(jobj, "inner")))
   }
 
@@ -761,19 +765,16 @@ class ParsedLoader(interner: Interner) {
           loadRange(getObjectField(jobj, "range")))
       }
       case "RegionRuneT" => {
-        RegionRunePT(
-          loadRange(getObjectField(jobj, "range")),
-          loadName(getObjectField(jobj, "name")))
+        loadRegionRune(jobj)
       }
       case "OwnershipT" => {
-        OwnershipPT(
-          loadRange(getObjectField(jobj, "range")),
-          loadOwnership(getObjectField(jobj, "ownership")))
+        loadOwnershipPT(jobj)
       }
       case "InterpretedT" => {
         InterpretedPT(
           loadRange(getObjectField(jobj, "range")),
-          loadOwnership(getObjectField(jobj, "ownership")),
+          loadOptionalObject(getObjectField(jobj, "maybeOwnership"), loadOwnershipPT),
+          loadOptionalObject(getObjectField(jobj, "maybeRegion"), loadRegionRune),
           loadTemplex(getObjectField(jobj, "inner")))
       }
       case "CallT" => {
@@ -806,11 +807,6 @@ class ParsedLoader(interner: Interner) {
           loadTemplex(getObjectField(jobj, "mutability")),
           loadTemplex(getObjectField(jobj, "element")))
       }
-      case "BorrowT" => {
-        BorrowPT(
-          loadRange(getObjectField(jobj, "range")),
-          loadTemplex(getObjectField(jobj, "inner")))
-      }
       case "InlineT" => {
         InlinePT(
           loadRange(getObjectField(jobj, "range")),
@@ -828,6 +824,18 @@ class ParsedLoader(interner: Interner) {
     }
   }
 
+  private def loadOwnershipPT(jobj: JObject) = {
+    OwnershipPT(
+      loadRange(getObjectField(jobj, "range")),
+      loadOwnership(getObjectField(jobj, "ownership")))
+  }
+
+  private def loadRegionRune(jobj: JObject) = {
+    RegionRunePT(
+      loadRange(getObjectField(jobj, "range")),
+      loadName(getObjectField(jobj, "name")))
+  }
+
   def loadIdentifyingRunes(jobj: JObject): GenericParametersP = {
     GenericParametersP(
       loadRange(getObjectField(jobj, "range")),
@@ -838,6 +846,7 @@ class ParsedLoader(interner: Interner) {
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "name")),
       loadOptionalObject(getObjectField(jobj, "maybeType"), loadGenericParameterType),
+      loadOptionalObject(getObjectField(jobj, "maybeCoordRegion"), loadRegionRune),
       getArrayField(jobj, "attributes").map(expectObject).map(loadRuneAttribute),
       loadOptionalObject(getObjectField(jobj, "maybeDefault"), loadTemplex))
   }

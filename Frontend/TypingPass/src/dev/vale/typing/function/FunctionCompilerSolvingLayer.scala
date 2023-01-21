@@ -1,6 +1,6 @@
 package dev.vale.typing.function
 
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, vassert, vassertSome, vcurious, vimpl, vpass}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, vassert, vassertSome, vcurious, vfail, vimpl, vpass}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.citizen.StructCompiler
@@ -14,11 +14,12 @@ import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve}
+import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve, Solver}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosureds, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.infer.ITypingPassSolverError
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, InitialKnown, InitialSend, TemplataCompiler, TypingPassOptions}
-import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types.CoordT
 //import dev.vale.typingpass.infer.{InferSolveFailure, InferSolveSuccess}
@@ -333,18 +334,33 @@ class FunctionCompilerSolvingLayer(
     //   func map<T, F>(self Opt<T>, f F, t T) { ... }
     // into a:
     //   func map<F>(self Opt<$0>, f F, t $0) { ... }
+    val preliminaryEnvs = InferEnv(callingEnv, callRange, nearEnv)
+    val preliminarySolver =
+      inferCompiler.makeSolver(
+        preliminaryEnvs,
+        coutputs,
+        functionDefinitionRules,
+        function.runeToType,
+        function.range :: callRange,
+        Vector(),
+        initialSends)
+    inferCompiler.continue(preliminaryEnvs, coutputs, preliminarySolver) match {
+      case Ok(()) =>
+      case Err(f) => {
+        throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: callRange, f))
+      }
+    }
     val preliminaryInferences =
-      inferCompiler.solve(
-          InferEnv(callingEnv, callRange, nearEnv),
+      inferCompiler.interpretResults(
+          preliminaryEnvs,
           coutputs,
-          functionDefinitionRules,
-          function.runeToType,
           function.range :: callRange,
-          Vector(),
-          initialSends,
-        false,
+          function.runeToType,
+          functionDefinitionRules,
+          false,
           true,
-        Vector()) match {
+          Vector(),
+        preliminarySolver) match {
         case f @ FailedCompilerSolve(_, _, err) => {
           throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: callRange, f))
         }
@@ -363,6 +379,7 @@ class FunctionCompilerSolvingLayer(
           case None => {
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
 //            val runeType = vassertSome(function.runeToType.get(genericParam.rune.rune))
+            vimpl()
             val templata =
               templataCompiler.createPlaceholder(
                 coutputs, callingEnv, callingEnv.fullName, genericParam, index, function.runeToType, false)
@@ -406,6 +423,7 @@ class FunctionCompilerSolvingLayer(
     verifyConclusions: Boolean):
   (FunctionHeaderT) = {
     val function = nearEnv.function
+    val range = function.range :: parentRanges
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
 
@@ -413,68 +431,47 @@ class FunctionCompilerSolvingLayer(
       nearEnv.parentEnv.fullName.addStep(
         nameTranslator.translateGenericFunctionName(nearEnv.function.name))
 
-    val definitionRules =
-      function.rules.filter(
-        InferCompiler.includeRuleInDefinitionSolve)
+    val definitionRules = function.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
 
     // This is so we can automatically grab the bounds from parameters and returns, see NBIFP.
     val paramRunes =
       function.params.flatMap(_.pattern.coordRune.map(_.rune)).distinct.toVector
 
-    // This is temporary, to support specialization like:
-    //   extern("vale_runtime_sized_array_mut_new")
-    //   func Vector<M, E>(size int) []<M>E
-    //   where M Mutability = mut, E Ref;
-    // In the future we might need to outlaw specialization, unsure.
-    val (preliminaryInferences, preliminaryReachableBoundsFromParamsAndReturn) =
-      inferCompiler.solve(
-        InferEnv(nearEnv, parentRanges, nearEnv),
-        coutputs,
-        definitionRules,
-        function.runeToType,
-        function.range :: parentRanges,
-        Vector(),
-        Vector(),
-        true,
-        true,
-        // This is so we can automatically grab the bounds from parameters, see NBIFP.
-        paramRunes) match {
-        case f @ FailedCompilerSolve(_, _, err) => {
-          throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: parentRanges, f))
-        }
-        case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => (incompleteConclusions, Vector[ITemplata[ITemplataType]]())
-        case CompleteCompilerSolve(_, conclusions, _, reachableBoundsFromParamsAndReturn) => (conclusions, reachableBoundsFromParamsAndReturn)
-      }
-    // Now we can use preliminaryInferences to know whether or not we need a placeholder for an identifying rune.
-
-    val initialKnowns =
-      function.genericParameters.zipWithIndex.flatMap({ case (genericParam, index) =>
-        preliminaryInferences.get(genericParam.rune.rune) match {
-          case Some(x) => Some(InitialKnown(genericParam.rune, x))
-          case None => {
+    val envs = InferEnv(nearEnv, parentRanges, nearEnv)
+    val solver =
+      inferCompiler.makeSolver(
+        envs, coutputs, definitionRules, function.runeToType, range, Vector(), Vector())
+    // Incrementally solve and add placeholders, see IRAGP.
+    inferCompiler.incrementallySolve(
+      envs, coutputs, solver,
+      // Each step happens after the solver has done all it possibly can. Sometimes this can lead
+      // to races, see RRBFS.
+      (solver) => {
+        TemplataCompiler.getFirstUnsolvedIdentifyingRune(function.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+          case None => false
+          case Some((genericParam, index)) => {
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
             val templata =
               templataCompiler.createPlaceholder(
                 coutputs, nearEnv, functionTemplateFullName, genericParam, index, function.runeToType, true)
-            Some(InitialKnown(genericParam.rune, templata))
+            solver.manualStep(Map(genericParam.rune.rune -> templata))
+            true
           }
         }
-      })
+      }) match {
+        case Err(f @ FailedCompilerSolve(_, _, err)) => {
+          throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: parentRanges, f))
+        }
+        case Ok(true) =>
+        case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
+      }
+    val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+      inferCompiler.expectCompleteSolve(
+        envs, coutputs, definitionRules, function.runeToType, range, true, true, paramRunes, solver)
 
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBoundsFromParamsAndReturn) =
-      inferCompiler.solveExpectComplete(
-        InferEnv(nearEnv, parentRanges, nearEnv),
-        coutputs,
-        definitionRules,
-        function.runeToType,
-        function.range :: parentRanges,
-        initialKnowns,
-        Vector(),
-        true,
-        true,
-        // This is so we can automatically grab the bounds from parameters, see NBIFP.
-        paramRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBoundsFromParamsAndReturn)
+    val runedEnv =
+      addRunedDataToNearEnv(
+        nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBoundsFromParamsAndReturn)
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
@@ -483,13 +480,6 @@ class FunctionCompilerSolvingLayer(
     // We don't add these here because we aren't instantiating anything here, we're compiling a function
     // not calling it.
     // coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
-
-    header.fullName match {
-      case IdT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("keys"),_),Vector(_),Vector(CoordT(BorrowT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("HashMap")),Vector(_)))))))) => {
-        vpass()
-      }
-      case _ =>
-    }
 
     header
   }
@@ -504,5 +494,4 @@ class FunctionCompilerSolvingLayer(
         }
       })
   }
-
 }

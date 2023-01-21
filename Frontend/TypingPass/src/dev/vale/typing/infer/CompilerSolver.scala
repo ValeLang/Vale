@@ -244,23 +244,21 @@ class CompilerSolver(
     }
   }
 
-  // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
-  // Caller should remember to do that!
-  def solve(
+  def makeSolver(
     range: List[RangeS],
     env: InferEnv,
     state: CompilerOutputs,
     rules: IndexedSeq[IRulexSR],
-    runeToType: Map[IRuneS, ITemplataType],
+    initialRuneToType: Map[IRuneS, ITemplataType],
     initiallyKnownRuneToTemplata: Map[IRuneS, ITemplata[ITemplataType]]):
-  ISolverOutcome[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError] = {
+  Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError] = {
 
-    rules.foreach(rule => rule.runeUsages.foreach(rune => vassert(runeToType.contains(rune.rune))))
+    rules.foreach(rule => rule.runeUsages.foreach(rune => vassert(initialRuneToType.contains(rune.rune))))
 
     // These two shouldn't both be in the rules, see SROACSD.
     vassert(
       rules.collect({ case CallSiteFuncSR(range, _, _, _, _) => }).isEmpty ||
-      rules.collect({ case DefinitionFuncSR(range, _, _, _, _) => }).isEmpty)
+        rules.collect({ case DefinitionFuncSR(range, _, _, _, _) => }).isEmpty)
     // These two shouldn't both be in the rules, see SROACSD.
     vassert(
       rules.collect({ case CallSiteCoordIsaSR(range, _, _, _) => }).isEmpty ||
@@ -270,41 +268,58 @@ class CompilerSolver(
       if (globalOptions.sanityCheck) {
         delegate.sanityCheckConclusion(env, state, rune, templata)
       }
-      vassert(templata.tyype == vassertSome(runeToType.get(rune)))
+      vassert(templata.tyype == vassertSome(initialRuneToType.get(rune)))
     })
 
     val solver =
       new Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError](
-        globalOptions.sanityCheck, globalOptions.useOptimizedSolver, interner)
-    val solverState =
-      solver.makeInitialSolverState(
-        env.parentRanges,
-        rules,
-        getRunes,
+        globalOptions.sanityCheck,
+        globalOptions.useOptimizedSolver,
+        interner,
         (rule: IRulexSR) => getPuzzles(rule),
-        initiallyKnownRuneToTemplata)
+        getRunes,
+        new CompilerRuleSolver(globalOptions.sanityCheck, interner, delegate, initialRuneToType),
+        range,
+        rules,
+        initiallyKnownRuneToTemplata,
+        initialRuneToType.keys.toVector.distinct)
 
-    val ruleSolver = new CompilerRuleSolver(globalOptions.sanityCheck, interner, delegate, runeToType)
-    val (stepsStream, conclusionsStream) =
-      solver.solve(
-          (rule: IRulexSR) => getPuzzles(rule),
-          state,
-          env,
-          solverState,
-          ruleSolver) match {
-        case Err(f@FailedSolve(_, _, _)) => return f
-        case Ok(x) => x
+    solver
+  }
+
+  // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
+  // Caller should remember to do that!
+  def continue(
+    env: InferEnv,
+    state: CompilerOutputs,
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
+  Result[Unit, FailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]] = {
+    while ( {
+      solver.advance(env, state) match {
+        case Ok(continue) => continue
+        case Err(f@FailedSolve(_, _, _)) => return Err(f)
       }
+    }) {}
+    // If we get here, then there's nothing more the solver can do.
+    Ok(Unit)
+  }
+
+  def interpretResults(
+    runeToType: Map[IRuneS, ITemplataType],
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
+  ISolverOutcome[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError] = {
+    val stepsStream = solver.getSteps().toStream
+    val conclusionsStream = solver.userifyConclusions().toMap
 
     val conclusions = conclusionsStream.toMap
-    val allRunes = runeToType.keySet ++ solverState.getAllRunes().map(solverState.getUserRune)
+    val allRunes = runeToType.keySet ++ solver.getAllRunes().map(solver.getUserRune)
 
     // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
     // Caller should remember to do that!
     if (conclusions.keySet != allRunes) {
       IncompleteSolve(
         stepsStream,
-        solverState.getUnsolvedRules(),
+        solver.getUnsolvedRules(),
         allRunes -- conclusions.keySet,
         conclusions)
     } else {
@@ -336,7 +351,8 @@ class CompilerRuleSolver(
     val (unsolvedReceiverRunes, ranges) =
       unsolvedRules.collect({
         case CoordSendSR(range, _, receiverRune) => (receiverRune.rune, range)
-        case DefinitionCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
+        // We don't do this for DefinitionCoordIsaSR, see RRBFS.
+        // case DefinitionCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
         case CallSiteCoordIsaSR(range, _, _, receiverRune) => (receiverRune.rune, range)
       }).unzip
     val receiverRunes =
@@ -348,7 +364,8 @@ class CompilerRuleSolver(
           equivalencies.getKindEquivalentRunes(
             unsolvedRules.collect({
               case CoordSendSR(range, s, r) if r.rune == receiver => s.rune
-              case DefinitionCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
+              // We don't do this for DefinitionCoordIsaSR, see RRBFS.
+              // case DefinitionCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
               case CallSiteCoordIsaSR(range, _, s, r) if r.rune == receiver => s.rune
             }))
         val callRules =

@@ -55,18 +55,31 @@ class StructCompilerGenericArgsLayer(
           structA.headerRules.toVector, structA.genericParameters, templateArgs.size)
 
       // Check if its a valid use of this template
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
-          InferEnv(originalCallingEnv, callRange, declaringEnv),
+      val envs = InferEnv(originalCallingEnv, callRange, declaringEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs,
           coutputs,
           callSiteRules,
           structA.headerRuneToType,
           callRange,
           initialKnowns,
-          Vector(),
+          Vector())
+      inferCompiler.continue(envs, coutputs, solver) match {
+        case Ok(()) =>
+        case Err(x) => return ResolveFailure(callRange, x)
+      }
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+        inferCompiler.interpretResults(
+          envs,
+          coutputs,
+          callRange,
+          structA.headerRuneToType,
+          callSiteRules,
           true,
           false,
-          Vector()) match {
+          Vector(),
+          solver) match {
           case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
@@ -237,18 +250,31 @@ class StructCompilerGenericArgsLayer(
           interfaceA.rules.toVector, interfaceA.genericParameters, templateArgs.size)
 
       // This checks to make sure it's a valid use of this template.
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
-          InferEnv(originalCallingEnv, callRange, declaringEnv),
+      val envs = InferEnv(originalCallingEnv, callRange, declaringEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs,
           coutputs,
           callSiteRules,
           interfaceA.runeToType,
           callRange,
           initialKnowns,
-          Vector(),
+          Vector())
+      inferCompiler.continue(envs, coutputs, solver) match {
+        case Ok(()) =>
+        case Err(x) => return ResolveFailure(callRange, x)
+      }
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+        inferCompiler.interpretResults(
+          envs,
+          coutputs,
+          callRange,
+          interfaceA.runeToType,
+          callSiteRules,
           true,
           false,
-          Vector()) match {
+          Vector(),
+          solver) match {
           case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
@@ -286,53 +312,38 @@ class StructCompilerGenericArgsLayer(
       val allRuneToType = structA.headerRuneToType ++ structA.membersRuneToType
       val definitionRules = allRulesS.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      // This is temporary, to support specialization like:
-      //   extern("vale_runtime_sized_array_mut_new")
-      //   func Vector<M, E>(size int) []<M>E
-      //   where M Mutability = mut, E Ref;
-      // In the future we might need to outlaw specialization, unsure.
-      val preliminaryInferences =
-        inferCompiler.solve(
-          InferEnv(outerEnv, List(structA.range), outerEnv),
-          coutputs, definitionRules.toVector, allRuneToType, structA.range :: parentRanges, Vector(), Vector(), true, true, Vector()) match {
-          case f @ FailedCompilerSolve(_, _, err) => {
-            throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
-          }
-          case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => incompleteConclusions
-          case CompleteCompilerSolve(_, conclusions, _, Vector()) => conclusions
-        }
-      // Now we can use preliminaryInferences to know whether or not we need a placeholder for an identifying rune.
-
-      val initialKnowns =
-        structA.genericParameters.zipWithIndex.flatMap({ case (genericParam, index) =>
-          preliminaryInferences.get(genericParam.rune.rune) match {
-            case Some(x) => Some(InitialKnown(genericParam.rune, x))
-            case None => {
+      val envs = InferEnv(outerEnv, List(structA.range), outerEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs, coutputs, definitionRules, allRuneToType, structA.range :: parentRanges, Vector(), Vector())
+      // Incrementally solve and add placeholders, see IRAGP.
+      inferCompiler.incrementallySolve(
+        envs, coutputs, solver,
+        // Each step happens after the solver has done all it possibly can. Sometimes this can lead
+        // to races, see RRBFS.
+        (solver) => {
+          TemplataCompiler.getFirstUnsolvedIdentifyingRune(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+            case None => false
+            case Some((genericParam, index)) => {
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
               val templata =
                 templataCompiler.createPlaceholder(
                   coutputs, outerEnv, structTemplateFullName, genericParam, index, allRuneToType, true)
-              Some(InitialKnown(genericParam.rune, templata))
+              solver.manualStep(Map(genericParam.rune.rune -> templata))
+              true
             }
           }
-        })
+        }) match {
+        case Err(f @ FailedCompilerSolve(_, _, err)) => {
+          throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
+        }
+        case Ok(true) =>
+        case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
+      }
+      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+        inferCompiler.expectCompleteSolve(
+          envs, coutputs, definitionRules, allRuneToType, structA.range :: parentRanges, true, true, Vector(), solver)
 
-
-      val CompleteCompilerSolve(_, inferences, _, Vector()) =
-        inferCompiler.solveExpectComplete(
-          InferEnv(outerEnv, List(structA.range), outerEnv),
-          coutputs,
-          definitionRules.toVector,
-          allRuneToType,
-          structA.range :: parentRanges,
-          initialKnowns,
-//            structA.genericParameters.zip(templateArgs).map({ case (GenericParameterS(rune, default), genericArg) =>
-//              InitialKnown(RuneUsage(rune.range, rune.rune), genericArg)
-//            }),
-          Vector(),
-          true,
-          true,
-          Vector())
 
       structA.maybePredictedMutability match {
         case None => {
@@ -383,49 +394,37 @@ class StructCompilerGenericArgsLayer(
 
       val definitionRules = interfaceA.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      // This is temporary, to support specialization like:
-      //   extern("vale_runtime_sized_array_mut_new")
-      //   func Vector<M, E>(size int) []<M>E
-      //   where M Mutability = mut, E Ref;
-      // In the future we might need to outlaw specialization, unsure.
-      val preliminaryInferences =
-        inferCompiler.solve(
-          InferEnv(outerEnv, List(interfaceA.range), outerEnv),
-          coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, Vector(), Vector(), true, true, Vector()) match {
-          case f @ FailedCompilerSolve(_, _, err) => {
-            throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
-          }
-          case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => incompleteConclusions
-          case CompleteCompilerSolve(_, conclusions, _, Vector()) => conclusions
-        }
-      // Now we can use preliminaryInferences to know whether or not we need a placeholder for an identifying rune.
-
-      val initialKnowns =
-        interfaceA.genericParameters.zipWithIndex.flatMap({ case (genericParam, index) =>
-          preliminaryInferences.get(genericParam.rune.rune) match {
-            case Some(x) => Some(InitialKnown(genericParam.rune, x))
-            case None => {
+      val envs = InferEnv(outerEnv, List(interfaceA.range), outerEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, Vector(), Vector())
+      // Incrementally solve and add placeholders, see IRAGP.
+      inferCompiler.incrementallySolve(
+        envs, coutputs, solver,
+        // Each step happens after the solver has done all it possibly can. Sometimes this can lead
+        // to races, see RRBFS.
+        (solver) => {
+          TemplataCompiler.getFirstUnsolvedIdentifyingRune(interfaceA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+            case None => false
+            case Some((genericParam, index)) => {
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
               val templata =
                 templataCompiler.createPlaceholder(
                   coutputs, outerEnv, interfaceTemplateFullName, genericParam, index, interfaceA.runeToType, true)
-              Some(InitialKnown(genericParam.rune, templata))
+              solver.manualStep(Map(genericParam.rune.rune -> templata))
+              true
             }
           }
-        })
-
-      val CompleteCompilerSolve(_, inferences, _, Vector()) =
-        inferCompiler.solveExpectComplete(
-          InferEnv(outerEnv, interfaceA.range :: parentRanges, outerEnv),
-          coutputs,
-          definitionRules,
-          interfaceA.runeToType,
-          interfaceA.range :: parentRanges,
-          initialKnowns,
-          Vector(),
-          true,
-          true,
-          Vector())
+        }) match {
+        case Err(f @ FailedCompilerSolve(_, _, err)) => {
+          throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
+        }
+        case Ok(true) =>
+        case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
+      }
+      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+        inferCompiler.expectCompleteSolve(
+          envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, true, true, Vector(), solver)
 
       interfaceA.maybePredictedMutability match {
         case None => {

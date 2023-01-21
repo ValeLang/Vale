@@ -254,17 +254,11 @@ object IdentifiabilitySolver {
     val initiallyKnownRunes = identifyingRunes.map(r => (r, true)).toMap
     val solver =
       new Solver[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError](
-        sanityCheck, useOptimizedSolver, interner)
-    val solverState =
-      solver
-        .makeInitialSolverState(
-          callRange, rules, getRunes, (rule: IRulexSR) => getPuzzles(rule), initiallyKnownRunes)
-    val (steps, conclusions) =
-      solver.solve(
+        sanityCheck,
+        useOptimizedSolver,
+        interner,
         (rule: IRulexSR) => getPuzzles(rule),
-        Unit,
-        Unit,
-        solverState,
+        getRunes,
         new ISolveRule[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError] {
           override def sanityCheckConclusion(env: Unit, state: Unit, rune: IRuneS, conclusion: Boolean): Unit = {}
 
@@ -275,11 +269,23 @@ object IdentifiabilitySolver {
           override def solve(state: Unit, env: Unit, solverState: ISolverState[IRulexSR, IRuneS, Boolean], ruleIndex: Int, rule: IRulexSR, stepState: IStepState[IRulexSR, IRuneS, Boolean]): Result[Unit, ISolverError[IRuneS, Boolean, IIdentifiabilityRuleError]] = {
             solveRule(state, env, ruleIndex, callRange, rule, stepState)
           }
-        }) match {
-        case Ok((steps, conclusionsStream)) => (steps, conclusionsStream.toMap)
+        },
+        callRange,
+        rules,
+        initiallyKnownRunes,
+        (rules.flatMap(getRunes) ++ initiallyKnownRunes.keys).distinct.toVector)
+    while ( {
+      solver.advance(Unit, Unit) match {
+        case Ok(continue) => continue
         case Err(e) => return Err(IdentifiabilitySolveError(callRange, e))
       }
-    val allRunes = solverState.getAllRunes().map(solverState.getUserRune)
+    }) {}
+    // If we get here, then there's nothing more the solver can do.
+
+    val steps = solver.getSteps().toStream
+    val conclusions = solver.userifyConclusions().toMap
+
+    val allRunes = solver.getAllRunes().map(solver.getUserRune)
     val unsolvedRunes = allRunes -- conclusions.keySet
     if (unsolvedRunes.nonEmpty) {
       Err(
@@ -287,7 +293,7 @@ object IdentifiabilitySolver {
           callRange,
           IncompleteSolve(
             steps,
-            solverState.getUnsolvedRules(),
+            solver.getUnsolvedRules(),
             unsolvedRunes,
             conclusions)))
     } else {

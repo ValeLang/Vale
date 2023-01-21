@@ -299,6 +299,40 @@ At some point, we'll make our locals, members, etc. all contain ITemplatas so we
 Perhaps there's even a way to have everything be just a rune, and all their templatas would actually just be in the env. This would fit well with a world where the entire function is one giant rule solve. It might even help partially evaluate a call *enough* that we can narrow down to one overload, to help figure out the types in the caller too.
 
 
+## Incrementally Reluctantly Add Generic Placeholders (IRAGP)
+
+We have two functions for making arrays, one for mutable and one for immutable.
+
+```
+extern("vale_runtime_sized_array_mut_new")
+func Array<M, E>(size int) []<M>E
+where M Mutability = mut, E Ref;
+```
+
+They're distinguished by the `= mut` and `= imm`.
+
+However, when we're compiling the functions, we hand in some placeholders which immediately conflict with these rules.
+
+For that reason, we do some solving before filling in any placeholders.
+
+(Long term, we might want to consider outlawing specialization like this)
+
+In fact, we do solving *between* adding placeholders as well. If we just populate them all at the same time, this would fail:
+
+```
+func bork<T, Y>(a T) Y where T = Y { return a; }
+```
+
+Because the placeholder for T is of course not equial to the placeholder for Y.
+
+So, we populate placeholders one at a time, doing a solve inbetween each new one.
+
+This should also help when we switch to regions, where we want to say that two generic coords
+share the same region.
+
+
+
+
 # Solve First With Predictions, Resolve Later (SFWPRL)
 
 Sometimes, the `func drop(T)void` rule doesn't run soon enough for us. For example:
@@ -1519,3 +1553,16 @@ It needs:
  * Rune types
 
 Pretty much everything.
+
+
+# Resolving Races Between Fallback Strategies (RRBFS)
+
+When a solver can't figure out some things, then it uses SMCMST/CSALR to throw a hail mary and guess the best type to use for a call's generic parameter. It only happens after the regular solve has hit a dead end.
+
+The other thing we do when a regular solve has hit a dead end is to add the next identifying rune's placeholder, when solving the definition.
+
+We had a bug (search for test case with RRBFS) where the hail mary was thrown even when solving a definition.
+
+Moral of the story: these two last-resort strategies can sometimes race.
+
+For now, we resolve it by only doing the hail mary for call sites.

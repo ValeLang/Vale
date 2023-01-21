@@ -7,7 +7,8 @@ func invoke_clang(
   asan bool,
   debug_symbols bool,
   output_dir &Path,
-  pic bool)
+  pic bool,
+  pie bool)
 Subprocess {
   program =
     if (windows) {
@@ -55,6 +56,10 @@ Subprocess {
 
   if (pic) {
     args.add("-fPIC");
+  }
+
+  if (pie) {
+    args.add("-fPIE");
   }
 
   if (asan) {

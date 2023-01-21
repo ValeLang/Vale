@@ -79,25 +79,35 @@ class ImplCompiler(
     // so we do need to filter them out when compiling.
     val definitionRules = rules.filter(InferCompiler.includeRuleInCallSiteSolve)
 
-    val result =
-      inferCompiler.solve(
-        InferEnv(
-          // This is callingEnv because we might be coming from an abstraction function that's trying
-          // to evaluate an override.
-          callingEnv,
-          range :: parentRanges,
-          outerEnv),
-        coutputs,
-        definitionRules,
-        runeToType,
+    val envs =
+      InferEnv(
+        // This is callingEnv because we might be coming from an abstract function that's trying
+        // to evaluate an override.
+        callingEnv,
         range :: parentRanges,
-        initialKnowns,
-        Vector(),
+        outerEnv)
+    val solver =
+      inferCompiler.makeSolver(
+        envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
+
+    inferCompiler.continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(e) => return e
+    }
+
+    val result =
+      inferCompiler.interpretResults(
+        envs,
+        coutputs,
+        range :: parentRanges,
+        runeToType,
+        definitionRules,
         verifyConclusions,
         isRootSolve,
         // We include the reachable bounds for the struct rune. Those are bounds that this impl will
         // have to satisfy when it calls the interface.
-        Vector(structKindRune.rune))
+        Vector(structKindRune.rune),
+        solver)
     result
   }
 
@@ -177,6 +187,8 @@ class ImplCompiler(
         implTemplateFullName,
         TemplatasStore(implTemplateFullName, Map(), Map()))
 
+    // We might one day need to incrementally solve and add placeholders here like we do for
+    // functions and structs, see IRAGP.
     val implPlaceholders =
       implA.genericParams.zipWithIndex.map({ case (rune, index) =>
         val placeholder =

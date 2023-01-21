@@ -64,8 +64,7 @@ object RulePUtils {
 
   def getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex: ITemplexPT): Vector[NameP] = {
     templex match {
-      case BorrowPT(_, inner) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(inner)
-      case InterpretedPT(_, _, inner) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(inner)
+      case InterpretedPT(_, _, _, inner) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(inner)
       case StringPT(_, value) => Vector.empty
       case IntPT(_, value) => Vector.empty
       case MutabilityPT(_, mutability) => Vector.empty

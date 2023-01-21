@@ -10,6 +10,11 @@ case class LexingIterator(code: String, var position: Int = 0) {
 
   val comments = new Accumulator[RangeL]()
 
+  // For debugging
+  def rest(): String = {
+    code.slice(position, code.length)
+  }
+
   def consumeCommentsAndWhitespace(): Unit = {
     // consumeComments will consume any whitespace that come before the comment
     consumeComments()

@@ -93,14 +93,123 @@ trait ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType] {
 class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
     sanityCheck: Boolean,
     useOptimizedSolver: Boolean,
-    interner: Interner) {
-  def solve(
+    interner: Interner,
     ruleToPuzzles: Rule => Vector[Vector[Rune]],
-    state: State,
-    env: Env,
-    solverState: ISolverState[Rule, Rune, Conclusion],
-    solveRule: ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType]
-  ): Result[(Stream[Step[Rule, Rune, Conclusion]], Stream[(Rune, Conclusion)]), FailedSolve[Rule, Rune, Conclusion, ErrType]] = {
+    ruleToRunes: Rule => Iterable[Rune],
+    solveRule: ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType],
+    setupRange: List[RangeS],
+    initialRules: IndexedSeq[Rule],
+    initiallyKnownRunes: Map[Rune, Conclusion],
+    allRunes: Vector[Rune]) {
+
+  private val solverState =
+    if (useOptimizedSolver) {
+      OptimizedSolverState[Rule, Rune, Conclusion]()
+    } else {
+      SimpleSolverState[Rule, Rune, Conclusion]()
+    }
+
+  Profiler.frame(() => {
+    if (sanityCheck) {
+      initialRules.flatMap(ruleToRunes).foreach(rune => vassert(allRunes.contains(rune)))
+      initiallyKnownRunes.keys.foreach(rune => vassert(allRunes.contains(rune)))
+      vassert(allRunes == allRunes.distinct)
+    }
+
+    allRunes.foreach(solverState.addRune)
+
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
+
+    manualStep(initiallyKnownRunes).getOrDie()
+
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
+
+    initialRules.foreach(rule => {
+      val ruleIndex = solverState.addRule(rule)
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
+      ruleToPuzzles(rule).foreach(puzzleRunes => {
+        solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
+      })
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
+    })
+
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
+    solverState
+  })
+
+  def getAllRules(): Vector[Rule] = {
+    solverState.getAllRules()
+  }
+
+  def manualStep(newConclusions: Map[Rune, Conclusion]):
+  Result[Unit, ISolverError[Rune, Conclusion, Nothing]] = {
+    solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
+      newConclusions.foreach({ case (rune, conclusion) =>
+        stepState.concludeRune(RangeS.internal(interner, -6434324) :: setupRange, rune, conclusion)
+      })
+      Ok(())
+    }) match {
+      case Ok(step) => {
+        step.conclusions.foreach({ case (rune, conclusion) =>
+          solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
+        })
+        Ok(Unit)
+      }
+      case Err(e) => Err(e)
+    }
+  }
+
+  def userifyConclusions(): Stream[(Rune, Conclusion)] = {
+    solverState.userifyConclusions()
+  }
+
+  def getConclusion(rune: Rune): Option[Conclusion] = {
+    solverState.getConclusion(rune)
+  }
+
+  def isComplete(): Boolean = {
+    // TODO(optimize): There has to be a faster way to do this...
+    solverState.userifyConclusions().size == allRunes.size
+  }
+
+  def markRulesSolved[ErrType](ruleIndices: Vector[Int], newConclusions: Map[Int, Conclusion]):
+  Result[Int, ISolverError[Rune, Conclusion, ErrType]] = {
+    solverState.markRulesSolved(ruleIndices, newConclusions)
+  }
+
+  def getCanonicalRune(rune: Rune): Int = {
+    solverState.getCanonicalRune(rune)
+  }
+
+  def getSteps(): Stream[Step[Rule, Rune, Conclusion]] = {
+    solverState.getSteps()
+  }
+
+  def getAllRunes(): Set[Int] = {
+    solverState.getAllRunes()
+  }
+
+  def getUserRune(rune: Int): Rune = {
+    solverState.getUserRune(rune)
+  }
+
+  def getUnsolvedRules(): Vector[Rule] = {
+    solverState.getUnsolvedRules()
+  }
+
+  // Returns true if there's more to be done, false if we've gotten as far as we can.
+  def advance(env: Env, state: State):
+  Result[Boolean, FailedSolve[Rule, Rune, Conclusion, ErrType]] = {
     Profiler.frame(() => {
 
       if (sanityCheck) {
@@ -111,119 +220,71 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
         })
       }
 
-      while ( {
-        while ( {
-          solverState.getNextSolvable() match {
-            case None => false
-            case Some(solvingRuleIndex) => {
-              val rule = solverState.getRule(solvingRuleIndex)
-              val step =
-                solverState.simpleStep[ErrType](ruleToPuzzles, solvingRuleIndex, rule, solveRule.solve(state, env, solverState, solvingRuleIndex, rule, _)) match {
-                  case Ok(step) => step
-                  case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
-                }
+      // Stage 1: Do simple solves
 
-              val canonicalConclusions =
-                step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
-
-              //            println(s"Got conclusions for ${solvingRuleIndex}: " + canonicalConclusions.keySet)
-              solverState.markRulesSolved[ErrType](Vector(solvingRuleIndex), canonicalConclusions) match {
-                case Ok(_) =>
-                case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
-              }
-
-              if (sanityCheck) {
-                step.conclusions.foreach({ case (rune, conclusion) =>
-                  solveRule.sanityCheckConclusion(env, state, rune, conclusion)
-                })
-                solverState.sanityCheck()
-              }
-              true
-            }
-          }
-        }) {}
-
-        if (solverState.getUnsolvedRules().nonEmpty) {
+      solverState.getNextSolvable() match {
+        case None => // continue onto the next stage
+        case Some(solvingRuleIndex) => {
+          val rule = solverState.getRule(solvingRuleIndex)
           val step =
-            solverState.complexStep(ruleToPuzzles, solveRule.complexSolve(state, env, solverState, _)) match {
+            solverState.simpleStep[ErrType](ruleToPuzzles, solvingRuleIndex, rule, solveRule.solve(state, env, solverState, solvingRuleIndex, rule, _)) match {
               case Ok(step) => step
               case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
             }
+
           val canonicalConclusions =
             step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
-          val continue =
-            solverState.markRulesSolved[ErrType](step.solvedRules.map(_._1).toVector, canonicalConclusions) match {
-              case Ok(0) => false // Do nothing, we're done
-              case Ok(_) => true // continue
-              case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
-            }
+
+          solverState.markRulesSolved[ErrType](Vector(solvingRuleIndex), canonicalConclusions) match {
+            case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
+            case Ok(_) =>
+          }
 
           if (sanityCheck) {
+            step.conclusions.foreach({ case (rune, conclusion) =>
+              solveRule.sanityCheckConclusion(env, state, rune, conclusion)
+            })
             solverState.sanityCheck()
           }
-          continue
-        } else {
-          false // no more rules to solve, halt
+          // Go back to the beginning. Next step, if there's no simple rule ready to solve, then
+          // it'll start doing a complex solve if available, or just finish.
+          return Ok(true)
         }
-      }) {}
-
-      Ok((solverState.getSteps().toStream, solverState.userifyConclusions()))
-    })
-  }
-
-  def makeInitialSolverState(
-    callRange: List[RangeS],
-    initialRules: IndexedSeq[Rule],
-    ruleToRunes: Rule => Iterable[Rune],
-    ruleToPuzzles: Rule => Vector[Vector[Rune]],
-    initiallyKnownRunes: Map[Rune, Conclusion]):
-  ISolverState[Rule, Rune, Conclusion] = {
-    Profiler.frame(() => {
-      val solverState: ISolverState[Rule, Rune, Conclusion] =
-        if (useOptimizedSolver) {
-          OptimizedSolverState[Rule, Rune, Conclusion]()
-        } else {
-          SimpleSolverState[Rule, Rune, Conclusion]()
-        }
-
-      (initialRules.flatMap(ruleToRunes) ++ initiallyKnownRunes.keys).distinct.foreach(solverState.addRune)
-
-      if (sanityCheck) {
-        solverState.sanityCheck()
       }
 
-      val step =
-        solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
-          initiallyKnownRunes.foreach({ case (rune, conclusion) =>
-            stepState.concludeRune(RangeS.internal(interner, -6434324) :: callRange, rune, conclusion)
-          })
-          Ok(())
-        }).getOrDie()
-      step.conclusions.foreach({ case (rune, conclusion) =>
-        solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
-      })
+      // Stage 2: Do a complex solve if available.
 
-      if (sanityCheck) {
-        solverState.sanityCheck()
+      if (solverState.getUnsolvedRules().nonEmpty) {
+        val step =
+          solverState.complexStep(ruleToPuzzles, solveRule.complexSolve(state, env, solverState, _)) match {
+            case Ok(step) => step
+            case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
+          }
+        val canonicalConclusions =
+          step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
+        solverState.markRulesSolved[ErrType](step.solvedRules.map(_._1).toVector, canonicalConclusions) match {
+          case Ok(0) => {
+            if (sanityCheck) {
+              solverState.sanityCheck()
+            }
+            // There's nothing more to be done. Let's continue on to stage 3.
+          }
+          case Ok(_) => {
+            if (sanityCheck) {
+              solverState.sanityCheck()
+            }
+            return Ok(true) // Go back to stage 1
+          }
+          case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
+        }
+      } else {
+        // No more rules to solve, so continue to the wrapping up stages of the solve.
       }
 
-      initialRules.foreach(rule => {
-        val ruleIndex = solverState.addRule(rule)
-        if (sanityCheck) {
-          solverState.sanityCheck()
-        }
-        ruleToPuzzles(rule).foreach(puzzleRunes => {
-          solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
-        })
-        if (sanityCheck) {
-          solverState.sanityCheck()
-        }
-      })
+      // Stage 3: We're done! The user should look at the conclusions to see if they're all solved,
+      // and they can even add more rules if they want.
 
-      if (sanityCheck) {
-        solverState.sanityCheck()
-      }
-      solverState
+      return Ok(false)
     })
   }
 }

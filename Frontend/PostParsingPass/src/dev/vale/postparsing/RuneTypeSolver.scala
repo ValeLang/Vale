@@ -310,16 +310,11 @@ class RuneTypeSolver(interner: Interner) {
         })
     val solver =
       new Solver[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError](
-        sanityCheck, useOptimizedSolver, interner)
-    val solverState =
-      solver.makeInitialSolverState(
-        range, rules, getRunes, (rule: IRulexSR) => getPuzzles(predicting, rule), initiallyKnownRunes)
-    val (steps, conclusions) =
-      solver.solve(
+        sanityCheck,
+        useOptimizedSolver,
+        interner,
         (rule: IRulexSR) => getPuzzles(predicting, rule),
-        Unit,
-        env,
-        solverState,
+        getRunes,
         new ISolveRule[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError] {
           override def sanityCheckConclusion(env: IImpreciseNameS => ITemplataType, state: Unit, rune: IRuneS, conclusion: ITemplataType): Unit = {}
 
@@ -330,11 +325,21 @@ class RuneTypeSolver(interner: Interner) {
           override def solve(state: Unit, env: IImpreciseNameS => ITemplataType, solverState: ISolverState[IRulexSR, IRuneS, ITemplataType], ruleIndex: Int, rule: IRulexSR, stepState: IStepState[IRulexSR, IRuneS, ITemplataType]): Result[Unit, ISolverError[IRuneS, ITemplataType, IRuneTypeRuleError]] = {
             solveRule(state, env, ruleIndex, rule, stepState)
           }
-        }) match {
-        case Ok((steps, conclusionsStream)) => (steps, conclusionsStream.toMap)
+        },
+        range,
+        rules,
+        initiallyKnownRunes,
+        (rules.flatMap(getRunes) ++ initiallyKnownRunes.keys).distinct.toVector)
+    while ({
+      solver.advance(env, Unit) match {
+        case Ok(continue) => continue
         case Err(e) => return Err(RuneTypeSolveError(range, e))
       }
-    val allRunes = solverState.getAllRunes().map(solverState.getUserRune) ++ additionalRunes
+    }) {}
+    val steps = solver.getSteps().toStream
+    val conclusions = solver.userifyConclusions().toMap
+
+    val allRunes = solver.getAllRunes().map(solver.getUserRune) ++ additionalRunes
     val unsolvedRunes = allRunes -- conclusions.keySet
     if (expectCompleteSolve && unsolvedRunes.nonEmpty) {
       Err(
@@ -342,7 +347,7 @@ class RuneTypeSolver(interner: Interner) {
           range,
           IncompleteSolve(
             steps,
-            solverState.getUnsolvedRules(),
+            solver.getUnsolvedRules(),
             unsolvedRunes,
             conclusions)))
     } else {

@@ -34,13 +34,6 @@ trait IOnStructDefinedMacro {
   def getStructSiblingEntries(
     structName: IdT[INameT], structA: StructA):
   Vector[(IdT[INameT], IEnvEntry)]
-
-  def getStructChildEntries(
-    macroName: StrI,
-    structName: IdT[INameT],
-    structA: StructA,
-    mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(IdT[INameT], IEnvEntry)]
 }
 
 trait IOnInterfaceDefinedMacro {

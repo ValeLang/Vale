@@ -85,34 +85,13 @@ class StructCompilerCore(
         case (macrosToCall, _) => macrosToCall
       })
 
-    val envEntriesFromMacros =
-      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
-        val maacro =
-          structRunesEnv.globalEnv.nameToStructDefinedMacro.get(macroName) match {
-            case None => {
-              throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Macro not found: " + macroName))
-            }
-            case Some(m) => m
-          }
-        val newEntriesList =
-          maacro.getStructChildEntries(macroName, placeholderedFullNameT, structA, mutability)
-        val newEntries =
-          newEntriesList.map({ case (entryName, value) =>
-            vcurious(placeholderedFullNameT.steps.size + 1 == entryName.steps.size)
-            val last = entryName.localName
-            last -> value
-          })
-        newEntries
-      })
-
     val structInnerEnv =
       CitizenEnvironment(
         structRunesEnv.globalEnv,
         structRunesEnv,
         templateFullNameT,
         placeholderedFullNameT,
-        TemplatasStore(placeholderedFullNameT, Map(), Map())
-          .addEntries(interner, envEntriesFromMacros))
+        TemplatasStore(placeholderedFullNameT, Map(), Map()))
 
     val members = makeStructMembers(structInnerEnv, coutputs, structA.members)
 

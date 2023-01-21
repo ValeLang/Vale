@@ -110,12 +110,6 @@ class StructDropMacro(
     Vector((dropNameT, FunctionEnvEntry(dropFunctionA)))
   }
 
-  override def getStructChildEntries(
-    macroName: StrI, structName: IdT[INameT], structA: StructA, mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(IdT[INameT], FunctionEnvEntry)] = {
-    Vector()
-  }
-
   // Implicit drop is one made for closures, arrays, or anything else that's not explicitly
   // defined by the user.
   def makeImplicitDropFunction(

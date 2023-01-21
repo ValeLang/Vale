@@ -20,8 +20,8 @@ import dev.vale.typing.ast.{ConsecutorTE, EdgeT, FunctionHeaderT, LocationInFunc
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment, GlobalEnvironment, IEnvEntry, IEnvironment, ImplEnvEntry, InterfaceEnvEntry, NodeEnvironment, NodeEnvironmentBox, PackageEnvironment, StructEnvEntry, TemplataEnvEntry, TemplatasStore}
 import dev.vale.typing.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, IOnImplDefinedMacro, IOnInterfaceDefinedMacro, IOnStructDefinedMacro, LockWeakMacro, SameInstanceMacro, StructConstructorMacro}
 import dev.vale.typing.macros.citizen._
-import dev.vale.typing.macros.rsa.{RSADropIntoMacro, RSAFreeMacro, RSAImmutableNewMacro, RSALenMacro, RSAMutableCapacityMacro, RSAMutableNewMacro, RSAMutablePopMacro, RSAMutablePushMacro}
-import dev.vale.typing.macros.ssa.{SSADropIntoMacro, SSAFreeMacro, SSALenMacro}
+import dev.vale.typing.macros.rsa.{RSADropIntoMacro, RSAImmutableNewMacro, RSALenMacro, RSAMutableCapacityMacro, RSAMutableNewMacro, RSAMutablePopMacro, RSAMutablePushMacro}
+import dev.vale.typing.macros.ssa.{SSADropIntoMacro, SSALenMacro}
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
@@ -507,17 +507,6 @@ class Compiler(
       templataCompiler,
       inferCompiler,
       new IStructCompilerDelegate {
-//
-//        override def evaluateOrdinaryFunctionFromNonCallForHeader(
-//          coutputs: CompilerOutputs,
-//          parentRanges: List[RangeS],
-//          functionTemplata: FunctionTemplata,
-//          verifyConclusions: Boolean):
-//        FunctionHeaderT = {
-//          functionCompiler.evaluateOrdinaryFunctionFromNonCallForHeader(
-//            coutputs, parentRanges, functionTemplata, verifyConclusions)
-//        }
-
         override def evaluateGenericFunctionFromNonCallForHeader(
           coutputs: CompilerOutputs,
           parentRanges: List[RangeS],
@@ -527,18 +516,6 @@ class Compiler(
           functionCompiler.evaluateGenericFunctionFromNonCall(
             coutputs, parentRanges, functionTemplata, verifyConclusions)
         }
-
-//        override def evaluateGenericLightFunctionFromCallForPrototype(
-//          coutputs: CompilerOutputs,
-//          callRange: List[RangeS],
-//          callingEnv: IEnvironment, // See CSSNCE
-//          functionTemplata: FunctionTemplata,
-//          explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
-//          args: Vector[Option[CoordT]]):
-//        IEvaluateFunctionResult = {
-//          functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-//            coutputs, callRange, callingEnv, functionTemplata, explicitTemplateArgs, args)
-//        }
 
         override def scoutExpectedFunctionForPrototype(
           env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], functionName: IImpreciseNameS,
@@ -689,8 +666,6 @@ class Compiler(
   val ssaLenMacro = new SSALenMacro(keywords)
   val rsaDropMacro = new RSADropIntoMacro(keywords, arrayCompiler)
   val ssaDropMacro = new SSADropIntoMacro(keywords, arrayCompiler)
-  val rsaFreeMacro = new RSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
-  val ssaFreeMacro = new SSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
 //  val ssaLenMacro = new SSALenMacro(keywords)
 //  val implDropMacro = new ImplDropMacro(interner, nameTranslator)
 //  val implFreeMacro = new ImplFreeMacro(interner, keywords, nameTranslator)
@@ -733,8 +708,6 @@ class Compiler(
             ssaLenMacro.generatorId -> ssaLenMacro,
             rsaDropMacro.generatorId -> rsaDropMacro,
             ssaDropMacro.generatorId -> ssaDropMacro,
-            rsaFreeMacro.generatorId -> rsaFreeMacro,
-            ssaFreeMacro.generatorId -> ssaFreeMacro,
             lockWeakMacro.generatorId -> lockWeakMacro,
             sameInstanceMacro.generatorId -> sameInstanceMacro,
             asSubtypeMacro.generatorId -> asSubtypeMacro)

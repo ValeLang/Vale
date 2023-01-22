@@ -88,7 +88,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Regioned pure function") {
-    val bork = compile("pure func main<'r>(ship 'r &Spaceship) 't { }")
+    val bork = compile("pure func main<r'>(ship &r'Spaceship) t' { }")
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.

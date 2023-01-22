@@ -13,11 +13,11 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
 
       case IfPE(_,
         ConstantBoolPE(_, true),
-        BlockPE(_,
+        BlockPE(_,None,
           FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("doBlarks"))),None),
             Vector(
               AugmentPE(_,BorrowP,LookupPE(LookupNameP(NameP(_, StrI("x"))),None))))),
-        BlockPE(_,VoidPE(_))) =>
+        BlockPE(_,None,VoidPE(_))) =>
     }
   }
 
@@ -32,8 +32,8 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
                   PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("u")))),None,None,None)))),
             None),
           LookupPE(LookupNameP(NameP(_, StrI("a"))),None)),
-        BlockPE(_,VoidPE(_)),
-        BlockPE(_,VoidPE(_))) =>
+        BlockPE(_,None,VoidPE(_)),
+        BlockPE(_,None,VoidPE(_))) =>
     }
   }
 
@@ -44,8 +44,8 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
           Vector(
             LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,None)),
             NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_, StrI("isEmpty"))),None),Vector())))),
-        BlockPE(_,VoidPE(_)),
-        BlockPE(_,VoidPE(_))) =>
+        BlockPE(_,None,VoidPE(_)),
+        BlockPE(_,None,VoidPE(_))) =>
     }
   }
 
@@ -58,8 +58,8 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
             PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("newLen")))),None,None,None),
             IfPE(_,
               BinaryCallPE(_,NameP(_,StrI("==")),LookupPE(LookupNameP(NameP(_, StrI("num"))),None),ConstantIntPE(_,0,_)),
-              BlockPE(_,ConstantIntPE(_,1,_)),
-              BlockPE(_,ConstantIntPE(_,2,None)))),
+              BlockPE(_,None,ConstantIntPE(_,1,_)),
+              BlockPE(_,None,ConstantIntPE(_,2,None)))),
           VoidPE(_))) =>
     }
   }

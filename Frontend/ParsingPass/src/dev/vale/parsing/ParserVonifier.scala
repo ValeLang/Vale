@@ -65,7 +65,7 @@ object ParserVonifier {
   }
 
   def vonifyStruct(thing: StructP): VonObject = {
-    val StructP(range, name, attributes, mutability, identifyingRunes, templateRules, bodyRange, members) = thing
+    val StructP(range, name, attributes, mutability, identifyingRunes, templateRules, maybeDefaultRegionRuneP, bodyRange, members) = thing
     VonObject(
       "Struct",
       None,
@@ -76,6 +76,7 @@ object ParserVonifier {
         VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("maybeDefaultRegion", vonifyOptional(maybeDefaultRegionRuneP, vonifyRegionRune)),
         VonMember("bodyRange", vonifyRange(range)),
         VonMember("members", vonifyStructMembers(members))))
   }
@@ -131,7 +132,7 @@ object ParserVonifier {
   }
 
   def vonifyInterface(thing: InterfaceP): VonObject = {
-    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, templateRules, bodyRange, members) = thing
+    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, templateRules, maybeDefaultRegionRuneP, bodyRange, members) = thing
     VonObject(
       "Interface",
       None,
@@ -142,6 +143,7 @@ object ParserVonifier {
         VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("maybeIdentifyingRunes", vonifyOptional(maybeIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("maybeDefaultRegion", vonifyOptional(maybeDefaultRegionRuneP, vonifyRegionRune)),
         VonMember("bodyRange", vonifyRange(range)),
         VonMember("members", VonArray(None, members.map(vonifyFunction).toVector))))
   }
@@ -247,6 +249,7 @@ object ParserVonifier {
             Vector(
               VonMember("range", vonifyRange(retRange)),
               VonMember("retType", vonifyOptional(retType, vonifyTemplex)))))))
+//        VonMember("maybeDefaultRegion", vonifyOptional(maybeDefaultRegion, vonifyName))))
   }
 
   def vonifyParams(thing: ParamsP): VonObject = {
@@ -513,7 +516,7 @@ object ParserVonifier {
   }
 
   def vonifyGenericParameter(thing: GenericParameterP): VonObject = {
-    val GenericParameterP(range, name, maybeType, attributes, maybeDefault) = thing
+    val GenericParameterP(range, name, maybeType, maybeCoordRegion, attributes, maybeDefault) = thing
     VonObject(
       "IdentifyingRune",
       None,
@@ -521,6 +524,7 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
         VonMember("maybeType", vonifyOptional(maybeType, vonifyGenericParameterType)),
+        VonMember("maybeCoordRegion", vonifyOptional(maybeCoordRegion, vonifyRegionRune)),
         VonMember("attributes", VonArray(None, attributes.map(vonifyRuneAttribute).toVector)),
         VonMember("maybeDefault", vonifyOptional(maybeDefault, vonifyTemplex))))
   }
@@ -537,13 +541,8 @@ object ParserVonifier {
 
   def vonifyTemplex(thing: ITemplexPT): VonObject = {
     thing match {
-      case RegionRunePT(range, name) => {
-        VonObject(
-          "RegionRuneT",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("name", vonifyName(name))))
+      case r @ RegionRunePT(_, _) => {
+        vonifyRegionRune(r)
       }
       case AnonymousRunePT(range) => {
         VonObject(
@@ -616,13 +615,14 @@ object ParserVonifier {
           Vector(
             VonMember("rune", vonifyName(rune))))
       }
-      case InterpretedPT(range, ownership, inner) => {
+      case InterpretedPT(range, maybeOwnership, maybeRegion, inner) => {
         VonObject(
           "InterpretedT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("ownership", vonifyOwnership(ownership)),
+            VonMember("maybeOwnership", vonifyOptional(maybeOwnership, vonifyTemplex)),
+            VonMember("maybeRegion", vonifyOptional(maybeRegion, vonifyRegionRune)),
             VonMember("inner", vonifyTemplex(inner))))
       }
       case OwnershipPT(range, ownership) => {
@@ -652,14 +652,6 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("mutability", vonifyTemplex(mutability)),
             VonMember("element", vonifyTemplex(element))))
-      }
-      case BorrowPT(range, inner) => {
-        VonObject(
-          "BorrowT",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("inner", vonifyTemplex(inner))))
       }
       case FunctionPT(range, mutability, parameters, returnType) => {
         VonObject(
@@ -726,6 +718,16 @@ object ParserVonifier {
     }
   }
 
+  private def vonifyRegionRune(regionRune: RegionRunePT): VonObject = {
+    val RegionRunePT(range, name) = regionRune
+    VonObject(
+      "RegionRuneT",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("name", vonifyName(name))))
+  }
+
   def vonifyMutability(thing: MutabilityP): IVonData = {
     thing match {
       case MutableP => VonObject("Mutable", None, Vector())
@@ -759,12 +761,13 @@ object ParserVonifier {
   }
 
   def vonifyBlock(thing: BlockPE): VonObject = {
-    val BlockPE(range, inner) = thing
+    val BlockPE(range, maybeDefaultRegion, inner) = thing
     VonObject(
       "Block",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
+        VonMember("maybeDefaultRegion", vonifyOptional(maybeDefaultRegion, vonifyRegionRune)),
         VonMember("inner", vonifyExpression(inner))))
   }
 
@@ -1027,7 +1030,7 @@ object ParserVonifier {
             VonMember("left", vonifyExpression(left)),
             VonMember("right", vonifyExpression(right))))
       }
-      case b @ BlockPE(_, _) => {
+      case b @ BlockPE(_, _, _) => {
         vonifyBlock(b)
       }
       case c @ ConsecutorPE(_) => {

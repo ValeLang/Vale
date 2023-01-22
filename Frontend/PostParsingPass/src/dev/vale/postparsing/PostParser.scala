@@ -177,7 +177,7 @@ object PostParser {
       //      case NullablePT(_, inner) => getHumanName(inner)
       case InlinePT(_, inner) => getHumanName(interner, inner)
       //      case PermissionedPT(_, permission, inner) => getHumanName(inner)
-      case InterpretedPT(_, ownership, inner) => getHumanName(interner, inner)
+      case InterpretedPT(_, ownership, _, inner) => getHumanName(interner, inner)
       case AnonymousRunePT(_) => vwat()
       case NameOrRunePT(NameP(_, name)) => interner.intern(CodeNameS(name))
       case CallPT(_, template, args) => getHumanName(interner, template)
@@ -239,7 +239,7 @@ object PostParser {
       genericParamP: GenericParameterP,
       paramRuneS: RuneUsage):
   GenericParameterS = {
-    val GenericParameterP(genericParamRangeP, _, maybeType, attributesP, maybeDefault) = genericParamP
+    val GenericParameterP(genericParamRangeP, _, maybeType, _, attributesP, maybeDefault) = genericParamP
     val genericParamRangeS = PostParser.evalRange(env.file, genericParamRangeP)
     val runeS = paramRuneS
 
@@ -319,14 +319,14 @@ class PostParser(
     val ImplP(range, maybeGenericParametersP, maybeTemplateRulesP, maybeStruct, interface, attributes) = impl0
 
     interface match {
-      case InterpretedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipInterfaceInImpl(PostParser.evalRange(file, range)))
       }
       case _ =>
     }
 
     maybeStruct match {
-      case Some(InterpretedPT(range, _, _)) => {
+      case Some(InterpretedPT(range, _, _, _)) => {
         throw CompileErrorExceptionS(CantOwnershipStructInImpl(PostParser.evalRange(file, range)))
       }
       case _ =>
@@ -360,7 +360,7 @@ class PostParser(
         .flatMap(_.params)
         // Filter out any regions, we dont do those yet
         .filter({
-          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _, _) => false
           case _ => true
         })
 
@@ -462,7 +462,7 @@ class PostParser(
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeGenericParametersP, maybeTemplateRulesP, bodyRange, StructMembersP(_, members)) = head
+    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeGenericParametersP, maybeTemplateRulesP, _, bodyRange, StructMembersP(_, members)) = head
 
     val structRangeS = PostParser.evalRange(file, rangeP)
     val structName = interner.intern(postparsing.TopLevelStructDeclarationNameS(structHumanName, PostParser.evalRange(file, structNameRange)))
@@ -475,13 +475,13 @@ class PostParser(
         .flatMap(_.params)
         // Filter out any regions, we dont do those yet
         .filter({
-          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _, _) => false
           case _ => true
         })
 
     val userSpecifiedIdentifyingRunes =
       genericParametersP
-        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _, _) =>
           rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
         })
 
@@ -631,7 +631,7 @@ class PostParser(
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
   InterfaceS = {
-    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeGenericParametersP, maybeRulesP, bodyRange, internalMethodsP) = containingInterfaceP
+    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeGenericParametersP, maybeRulesP, _, bodyRange, internalMethodsP) = containingInterfaceP
     val interfaceRangeS = PostParser.evalRange(file, interfaceRange)
     val interfaceFullName = interner.intern(postparsing.TopLevelInterfaceDeclarationNameS(interfaceHumanName, PostParser.evalRange(file, interfaceNameRangeS)))
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
@@ -648,13 +648,13 @@ class PostParser(
         .flatMap(_.params)
         // Filter out any regions, we dont do those yet
         .filter({
-          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _, _) => false
           case _ => true
         })
 
     val userSpecifiedIdentifyingRunes =
       genericParametersP
-        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _, _) =>
           rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
         })
 

@@ -44,6 +44,7 @@ class Keywords(interner: Interner) {
   val IntCapitalized: StrI = interner.intern(StrI("Int"))
   val Ref: StrI = interner.intern(StrI("Ref"))
   val Kind: StrI = interner.intern(StrI("Kind"))
+  val Region: StrI = interner.intern(StrI("Region"))
   val Prot: StrI = interner.intern(StrI("Prot"))
   val RefList: StrI = interner.intern(StrI("RefList"))
   val Ownership: StrI = interner.intern(StrI("Ownership"))

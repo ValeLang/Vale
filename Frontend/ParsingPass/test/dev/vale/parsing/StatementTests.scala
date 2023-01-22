@@ -105,8 +105,8 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       "if true { 3 } else { 4 }") shouldHave {
       case IfPE(_,
         ConstantBoolPE(_,true),
-        BlockPE(_,ConstantIntPE(_,3,_)),
-        BlockPE(_,ConstantIntPE(_,4,_))) =>
+        BlockPE(_,None,ConstantIntPE(_,3,_)),
+        BlockPE(_,None,ConstantIntPE(_,4,_))) =>
     }
   }
 
@@ -177,7 +177,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
       LookupPE(LookupNameP(NameP(_, StrI("myList"))),None),
-      BlockPE(_,_)) =>
+      BlockPE(_,None,_)) =>
     }
   }
 
@@ -187,7 +187,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
       AugmentPE(_, BorrowP, LookupPE(LookupNameP(NameP(_, StrI("myList"))),None)),
-      BlockPE(_,_)) =>
+      BlockPE(_,None,_)) =>
     }
   }
 
@@ -204,7 +204,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
           None),
         _,
         LookupPE(LookupNameP(NameP(_, StrI("myList"))),None),
-        BlockPE(_,_)) =>
+        BlockPE(_,None,_)) =>
     }
   }
 
@@ -217,7 +217,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
           Vector(
             LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("myList")))),None,None,None),ConstantIntPE(_,3,_)),
             LookupPE(LookupNameP(NameP(_, StrI("myList"))),None))),
-        BlockPE(_,VoidPE(_))) =>
+        BlockPE(_,None,VoidPE(_))) =>
     }
   }
 
@@ -297,7 +297,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         |  a
         |}
       """.stripMargin) shouldHave {
-      case BlockPE(_,LookupPE(LookupNameP(NameP(_, StrI("a"))),None)) =>
+      case BlockPE(_,None,LookupPE(LookupNameP(NameP(_, StrI("a"))),None)) =>
     }
   }
 
@@ -348,7 +348,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
         _,
         LookupPE(LookupNameP(NameP(_, StrI("a"))),None),
-        BlockPE(_,
+        BlockPE(_,None,
           LookupPE(LookupNameP(NameP(_, StrI("i"))),None))) =>
     }
   }

@@ -103,6 +103,8 @@ case class FunctionHeaderL(
   // Basically, everything up until the body's { or a ;
   trailingDetails: ScrambleLE
 ) {
+  vpass()
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 

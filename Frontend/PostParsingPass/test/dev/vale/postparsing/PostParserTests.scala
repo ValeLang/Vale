@@ -157,7 +157,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Pure regioned function") {
-    val program1 = compile("pure func main<'r>(ship 'r &Spaceship) 't { }")
+    val program1 = compile("pure func main<r'>(ship &r'Spaceship) t' { }")
     val main = program1.lookupFunction("main")
     vassert(main.genericParams.isEmpty)
 

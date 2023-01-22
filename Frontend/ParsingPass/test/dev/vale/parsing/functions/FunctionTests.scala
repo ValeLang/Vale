@@ -12,12 +12,12 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
   test("Simple function") {
     vassertOne(compileFileExpect("""func main() { }""").denizens) match {
       case TopLevelFunctionP(
-      FunctionP(_,
-      FunctionHeaderP(_,
-      Some(NameP(_,StrI("main"))),
-      Vector(),None,None,Some(ParamsP(_,Vector())),
-      FunctionReturnP(_,None)),
-      Some(BlockPE(_,VoidPE(_))))) =>
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),
+            Vector(),None,None,Some(ParamsP(_,Vector())),
+            FunctionReturnP(_,None)),
+          Some(BlockPE(_,None,VoidPE(_))))) =>
     }
   }
 
@@ -47,7 +47,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, StrI("sum"))), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, Some(_))),
-        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
+        Some(BlockPE(_, None, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -56,7 +56,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, StrI("sum"))), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None)),
-        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
+        Some(BlockPE(_, None, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -106,27 +106,44 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Pure and default region") {
-    compileDenizen("""pure func findNearbyUnits() 'i int 'i { }""").getOrDie() match {
-      case TopLevelFunctionP(FunctionP(_,
+    compileDenizen("""pure func findNearbyUnits() i'int i'{ }""").getOrDie() match {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("findNearbyUnits"))),
+            Vector(PureAttributeP(_)),
+            None,None,Some(ParamsP(_,Vector())),
+            FunctionReturnP(_,Some(InterpretedPT(_,None,Some(RegionRunePT(_,NameP(_,StrI("i")))),NameOrRunePT(NameP(_,StrI("int"))))))),
+          Some(BlockPE(_,Some(RegionRunePT(_,NameP(_,StrI("i")))),VoidPE(_))))) =>
+    }
+  }
+
+  test("Coord generic with associated region") {
+    compileDenizen("""func findNearbyUnits<t', t'T>(x T) { }""").getOrDie() match {
+      case TopLevelFunctionP(
+        FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("findNearbyUnits"))),
-          Vector(PureAttributeP(_)),
-          None,
-          None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("int")))))),
-        Some(BlockPE(_,VoidPE(_))))) =>
+        Some(NameP(_,StrI("findNearbyUnits"))),
+        Vector(),
+        Some(
+          GenericParametersP(_,
+          Vector(
+          GenericParameterP(_,NameP(_,StrI("t")),Some(GenericParameterTypeP(_,RegionTypePR)),None,Vector(),None),
+          GenericParameterP(_,NameP(_,StrI("T")),None,Some(RegionRunePT(_,NameP(_,StrI("t")))),Vector(),None)))),
+        None,
+        _,_),_)) =>
     }
   }
 
   test("Attribute after return") {
-    compileDenizen("abstract func sum() Int;").getOrDie() match {
+    compileDenizen("abstract func sum() int;").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, StrI("sum"))),
           Vector(AbstractAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
+          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("int")))))),
         None)) =>
     }
   }
@@ -148,7 +165,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     val TopLevelFunctionP(func) =
       compileDenizen("func sum<A>(a A){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
-      case GenericParameterP(_, NameP(_, StrI("A")), None, Vector(), None) =>
+      case GenericParameterP(_, NameP(_, StrI("A")), None, None, Vector(), None) =>
     }
   }
 
@@ -156,41 +173,42 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     val TopLevelFunctionP(func) =
       compileDenizen("func sum<A Ref>(a A){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
-      case GenericParameterP(_, NameP(_, StrI("A")), Some(GenericParameterTypeP(_, CoordTypePR)), Vector(), None) =>
+      case GenericParameterP(_, NameP(_, StrI("A")), Some(GenericParameterTypeP(_, CoordTypePR)), None, Vector(), None) =>
     }
   }
 
   test("Simple function with region-typed identifying rune") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'a>(){}").getOrDie()
+      compileDenizen("func sum<a'>(){}").getOrDie()
     func.header.genericParameters.get.params.head match {
-      case GenericParameterP(_, NameP(_, StrI("a")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(), None) =>
+      case GenericParameterP(_, NameP(_, StrI("a")), Some(GenericParameterTypeP(_, RegionTypePR)), None, Vector(), None) =>
     }
   }
 
   test("Readonly region rune") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'r ro>(){}").getOrDie()
+      compileDenizen("func sum<r' ro>(){}").getOrDie()
     func.header.genericParameters.get.params.head match {
-      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(ReadOnlyRegionRuneAttributeP(_)), None) =>
+      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), None, Vector(ReadOnlyRegionRuneAttributeP(_)), None) =>
     }
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'r>(a 'r &Marine){a}").getOrDie()
+      compileDenizen("func sum<r'>(a &r'Marine){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
-      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(), None) =>
+      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), None, Vector(), None) =>
     }
   }
 
   test("Pool region") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'r = pool>(a 'r &Marine){a}").getOrDie()
+      compileDenizen("func sum<r' = pool>(a &r'Marine){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
       case GenericParameterP(_,
         NameP(_, StrI("r")),
         Some(GenericParameterTypeP(_, RegionTypePR)),
+        None,
         Vector(),
         Some(NameOrRunePT(NameP(_,StrI("pool"))))) =>
     }
@@ -198,11 +216,12 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Pool readonly region") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'r ro = pool>(a 'r &Marine){a}").getOrDie()
+      compileDenizen("func sum<r' ro = pool>(a &r'Marine){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
       case GenericParameterP(_,
         NameP(_, StrI("r")),
         Some(GenericParameterTypeP(_, RegionTypePR)),
+        None,
         Vector(ReadOnlyRegionRuneAttributeP(_)),
         Some(NameOrRunePT(NameP(_,StrI("pool"))))) =>
     }
@@ -210,11 +229,12 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Arena region") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'x = arena>(a 'x &Marine){a}").getOrDie()
+      compileDenizen("func sum<x' = arena>(a &x'Marine){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
       case GenericParameterP(_,
         NameP(_, StrI("x")),
         Some(GenericParameterTypeP(_, RegionTypePR)),
+        None,
         Vector(),
         Some(NameOrRunePT(NameP(_,StrI("arena"))))) =>
     }
@@ -223,11 +243,12 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Readonly region") {
     val TopLevelFunctionP(func) =
-      compileDenizen("func sum<'x>(a 'x &Marine){a}").getOrDie()
+      compileDenizen("func sum<x'>(a &x'Marine){a}").getOrDie()
     func.header.genericParameters.get.params.head match {
       case GenericParameterP(_,
         NameP(_, StrI("x")),
         Some(GenericParameterTypeP(_, RegionTypePR)),
+        None,
         Vector(),
         None) =>
     }
@@ -262,7 +283,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
             Some(NameP(_,StrI("main"))),Vector(),None,None,
             Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("moo")))),Some(NameOrRunePT(NameP(_,StrI("T")))),None,None)))),
             FunctionReturnP(_,Some(NameOrRunePT(NameP(_,StrI("T")))))),
-          Some(BlockPE(_,VoidPE(_))))) =>
+          Some(BlockPE(_,None, VoidPE(_))))) =>
     }
   }
 
@@ -273,7 +294,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           FunctionHeaderP(_,
             Some(NameP(_,StrI("main"))),
             Vector(),
-            Some(GenericParametersP(_,Vector(GenericParameterP(_,NameP(_,StrI("T")),None,Vector(), None)))),
+            Some(GenericParametersP(_,Vector(GenericParameterP(_,NameP(_,StrI("T")),None,None, Vector(), None)))),
             None,
             _,
             _),
@@ -296,8 +317,8 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
                   Some(NameOrRunePT(NameP(_, StrI("Marine")))),
                   None,
                   Some(AbstractP(_)))))),
-          FunctionReturnP(_,None)),
-        Some(BlockPE(_, _))) =>
+          FunctionReturnP(_, None)),
+        Some(BlockPE(_, None, _))) =>
     }
   }
 
@@ -314,7 +335,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None)),
-        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
+        Some(BlockPE(_, None, ConstantIntPE(_, 3, _)))) =>
     }
   }
 
@@ -331,7 +352,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
                     FuncPT(_,
                       NameP(_,StrI("moo")),
                       _,
-                      Vector(InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_,StrI("T"))))),
+                      Vector(InterpretedPT(_,Some(OwnershipPT(_, BorrowP)),_,NameOrRunePT(NameP(_,StrI("T"))))),
                       NameOrRunePT(NameP(_,StrI("void")))))))),
           _,_),_)) =>
     }
@@ -348,12 +369,12 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           Some(
             GenericParametersP(_,
               Vector(
-              GenericParameterP(_, NameP(_, StrI("A")), None, Vector(), None),
-              GenericParameterP(_, NameP(_, StrI("F")), None, Vector(), None)))),
+              GenericParameterP(_, NameP(_, StrI("A")), None, None, Vector(), None),
+              GenericParameterP(_, NameP(_, StrI("F")), None, None, Vector(), None)))),
           None,
           Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None)),
-        Some(BlockPE(_, VoidPE(_)))) =>
+        Some(BlockPE(_, None, VoidPE(_)))) =>
     }
   }
 
@@ -386,7 +407,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
         |""".stripMargin) shouldHave {
       case TopLevelInterfaceP(
         InterfaceP(_,
-          NameP(_,StrI("IMoo")),Vector(),None,None,None,_,
+          NameP(_,StrI("IMoo")),Vector(),None,None,None,_,_,
           Vector(
             FunctionP(_,
               FunctionHeaderP(_,

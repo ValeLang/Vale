@@ -5,6 +5,7 @@ import dev.vale.parsing.ast._
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale._
 import dev.vale.lexing._
+import dev.vale.parsing.Parser.{parsePrefixingRegion, parseRegion}
 import dev.vale.parsing.ast._
 import dev.vale.von.{JsonSyntax, VonPrinter}
 
@@ -23,58 +24,62 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   Result[GenericParameterP, IParseError] = {
     val range = iter.range
 
-    val (name, maybeType, attributes) =
-      if (iter.trySkipSymbol('\'')) {
-        val name =
-          iter.nextWord() match {
-            case Some(WordLE(range, str)) => NameP(range, str)
-            case None => return Err(BadRuneNameError(iter.getPos()))
-          }
+    val maybeCoordRegion =
+      parsePrefixingRegion(iter) match {
+        case Err(x) => return Err(x)
+        case Ok(maybeRegion) => maybeRegion
+      }
 
-        val attributes =
-            (iter.trySkipWord(keywords.ro) match {
-              case Some(range) => Vector(ReadOnlyRegionRuneAttributeP(range))
-              case None => {
-                iter.trySkipWord(keywords.rw) match {
-                  case Some(range) => Vector(ReadWriteRegionRuneAttributeP(range))
-                  case None => {
-                    iter.trySkipWord(keywords.imm) match {
-                      case Some(range) => Vector(ImmutableRegionRuneAttributeP(range))
-                      case None => Vector()
+    val (name, maybeType, attributes) =
+      parseRegion(iter) match {
+        case Err(x) => return Err(x)
+        case Ok(None) => {
+          val name =
+            iter.peek() match {
+              case Some(WordLE(range, str)) => {
+                iter.advance()
+                NameP(range, str)
+              }
+              case _ => return Err(BadRuneNameError(iter.getPos()))
+            }
+
+          val typeBegin = iter.getPos()
+          val maybeRuneType =
+            templexParser.parseRuneType(iter) match {
+              case Err(e) => return Err(e)
+              case Ok(Some(x)) => Some(GenericParameterTypeP(RangeL(typeBegin, iter.getPrevEndPos()), x))
+              case Ok(None) => None
+            }
+
+          val maybeAttrs =
+            iter.trySkipWord(keywords.imm) match {
+              case Some(range) => Vector(ImmutableRuneAttributeP(range))
+              case None => Vector()
+            }
+
+          (name, maybeRuneType, maybeAttrs)
+        }
+        case Ok(Some(region)) => {
+          val attributes =
+              (iter.trySkipWord(keywords.ro) match {
+                case Some(range) => Vector(ReadOnlyRegionRuneAttributeP(range))
+                case None => {
+                  iter.trySkipWord(keywords.rw) match {
+                    case Some(range) => Vector(ReadWriteRegionRuneAttributeP(range))
+                    case None => {
+                      iter.trySkipWord(keywords.imm) match {
+                        case Some(range) => Vector(ImmutableRegionRuneAttributeP(range))
+                        case None => Vector()
+                      }
                     }
                   }
                 }
-              }
-            })
+              })
 
-        val tyype =
-          GenericParameterTypeP(RangeL(range.begin, iter.getPrevEndPos()), RegionTypePR)
-        (name, Some(tyype), attributes)
-      } else {
-        val name =
-          iter.peek() match {
-            case Some(WordLE(range, str)) => {
-              iter.advance()
-              NameP(range, str)
-            }
-            case _ => return Err(BadRuneNameError(iter.getPos()))
-          }
-
-        val typeBegin = iter.getPos()
-        val maybeRuneType =
-          templexParser.parseRuneType(iter) match {
-            case Err(e) => return Err(e)
-            case Ok(Some(x)) => Some(GenericParameterTypeP(RangeL(typeBegin, iter.getPrevEndPos()), x))
-            case Ok(None) => None
-          }
-
-        val maybeAttrs =
-          iter.trySkipWord(keywords.imm) match {
-            case Some(range) => Vector(ImmutableRuneAttributeP(range))
-            case None => Vector()
-          }
-
-        (name, maybeRuneType, maybeAttrs)
+          val tyype =
+            GenericParameterTypeP(RangeL(range.begin, iter.getPrevEndPos()), RegionTypePR)
+          (region.name, Some(tyype), attributes)
+        }
       }
 
     val maybeDefaultPT =
@@ -87,7 +92,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
         None
       }
 
-    Ok(GenericParameterP(range, NameP(name.range, name.str), maybeType, attributes, maybeDefaultPT))
+    Ok(GenericParameterP(range, NameP(name.range, name.str), maybeType, maybeCoordRegion, attributes, maybeDefaultPT))
   }
 
   private[parsing] def parseIdentifyingRunes(node: AngledLE):
@@ -225,6 +230,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           maybeMutabilityP,
           maybeIdentifyingRunes,
           maybeTemplateRulesP,
+          None,
           contentsL.range,
           membersP)
       Ok(struct)
@@ -300,6 +306,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           maybeMutabilityP,
           maybeIdentifyingRunes,
           maybeTemplateRulesP,
+          None,
           bodyRange,
           membersP.toVector)
       Ok(interface)
@@ -600,6 +607,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
             }
           })
 
+
       val header =
         FunctionHeaderP(
           headerL.range,
@@ -618,7 +626,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
               case Err(err) => return Err(err)
               case Ok(result) => result
             }
-          BlockPE(blockL.range, statementsP)
+          BlockPE(blockL.range, maybeDefaultRegion, statementsP)
         })
 
       Ok(FunctionP(funcRangeL, header, bodyP))
@@ -769,47 +777,45 @@ class ParserCompilation(
 }
 
 object Parser {
-//  def atEnd(iter: ScrambleIterator, stopBefore: IStopBefore): Boolean = {
-//    if (iter.peek(() => "^\\s*$")) {
-//      return true
-//    }
-//    stopBefore match {
-//      case StopBeforeComma => iter.peek(() => "^\\s*,")
-//      case StopBeforeEquals => iter.peek(() => "^\\s*=")
-//      case StopBeforeCloseBrace => iter.peek(() => "^\\s*\\}")
-//      case StopBeforeCloseParen => iter.peek(() => "^\\s*\\)")
-//      case StopBeforeCloseSquare => iter.peek(() => "^\\s*\\]")
-//      case StopBeforeCloseChevron => iter.peek(() => "^(>|\\s+>\\S)")
-//      case StopBeforeOpenBrace => iter.peek(() => "^\\s*\\{")
-//      case StopBeforeFileEnd => false
-//    }
-//  }
-//
-//  def atEnd(iter: ScrambleIterator, stopBefore: Vector[IStopBefore]): Boolean = {
-//    stopBefore.exists(atEnd(iter, _))
-//  }
-//
-//  def parseFunctionOrLocalOrMemberName(iter: ScrambleIterator): Option[NameP] = {
-//    val begin = iter.getPos()
-//    iter.tryy("""^(<=>|<=|<|>=|>|===|==|!=|[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\@\^\"\<\>\=\`]+)""") match {
-//      case Some(str) => Some(NameP(RangeL(begin, iter.getPos()), str))
-//      case None => None
-//    }
-//  }
-//
-//  def parseLocalOrMemberName(iter: ScrambleIterator): Option[NameP] = {
-//    val begin = iter.getPos()
-//    iter.tryy("[A-Za-z_][A-Za-z0-9_]*") match {
-//      case Some(str) => Some(NameP(RangeL(begin, iter.getPos()), str))
-//      case None => None
-//    }
-//  }
+  // A prefixing region is one that appears before something else to modify it, like t'T.
+  def parsePrefixingRegion(originalIter: ScrambleIterator): Result[Option[RegionRunePT], IParseError] = {
+    val tentativeIter = originalIter.clone()
 
-//  def parseTypeName(iter: ScrambleIterator): Option[NameP] = {
-//    val begin = iter.getPos()
-//    iter.tryy("[A-Za-z_][A-Za-z0-9_]*") match {
-//      case Some(str) => Some(NameP(RangeL(begin, iter.getPos()), str))
-//      case None => None
-//    }
-//  }
+    val region =
+      parseRegion(tentativeIter) match {
+        case Err(x) => return Err(x)
+        case Ok(Some(region)) => {
+          tentativeIter.peek() match {
+            case Some(next) if next.range.begin == region.range.end => {
+              region
+            }
+            case _ => return Ok(None)
+          }
+        }
+        case _ => return Ok(None)
+      }
+
+    originalIter.skipTo(tentativeIter)
+
+    Ok(Some(region))
+  }
+
+  def parseRegion(originalIter: ScrambleIterator): Result[Option[RegionRunePT], IParseError] = {
+    val tentativeIter = originalIter.clone()
+
+    val regionRune =
+      tentativeIter.nextWord() match {
+        case None => return Ok(None)
+        case Some(r) => r
+      }
+
+    if (!tentativeIter.trySkipSymbol('\'')) {
+      return Ok(None)
+    }
+
+    originalIter.skipTo(tentativeIter)
+
+    val range = RangeL(regionRune.range.begin, tentativeIter.getPrevEndPos())
+    return Ok(Some(RegionRunePT(range, NameP(regionRune.range, regionRune.str))))
+  }
 }

@@ -77,7 +77,8 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
         Some(IgnoredLocalNameDeclarationP(_)),
         Some(
           InterpretedPT(_,
-            BorrowP,
+            Some(OwnershipPT(_, BorrowP)),
+            None,
             StaticSizedArrayPT(_,
               MutabilityPT(_,MutableP),
               VariabilityPT(_,FinalP),
@@ -93,7 +94,8 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
         Some(IgnoredLocalNameDeclarationP(_)),
         Some(
           InterpretedPT(_,
-            WeakP,
+            Some(OwnershipPT(_, WeakP)),
+            None,
             StaticSizedArrayPT(_,
               AnonymousRunePT(_),
               AnonymousRunePT(_),

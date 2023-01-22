@@ -2,7 +2,7 @@
 
 package dev.vale.parsing.ast
 
-import dev.vale.lexing.RangeL
+import dev.vale.lexing.{RangeL, WordLE}
 import dev.vale.{FileCoordinate, StrI, vassert, vcurious, vpass}
 
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
@@ -71,6 +71,7 @@ case class StructP(
   mutability: Option[ITemplexPT],
   identifyingRunes: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
+  maybeDefaultRegionRuneP: Option[RegionRunePT],
   bodyRange: RangeL,
   members: StructMembersP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -98,6 +99,7 @@ case class InterfaceP(
   mutability: Option[ITemplexPT],
   maybeIdentifyingRunes: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
+  maybeDefaultRegionRuneP: Option[RegionRunePT],
   bodyRange: RangeL,
   members: Vector[FunctionP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -123,6 +125,7 @@ case class GenericParameterP(
   range: RangeL,
   name: NameP,
   maybeType: Option[GenericParameterTypeP],
+  coordRegion: Option[RegionRunePT],
   attributes: Vector[IRuneAttributeP],
   maybeDefault: Option[ITemplexPT]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

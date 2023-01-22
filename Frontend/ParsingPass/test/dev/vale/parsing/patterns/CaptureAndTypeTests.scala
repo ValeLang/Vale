@@ -46,7 +46,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
     compile("arr &R") shouldHave {
       case PatternPP(_,_,
       Some(LocalNameDeclarationP(NameP(_, StrI("arr")))),
-      Some(InterpretedPT(_,BorrowP, NameOrRunePT(NameP(_, StrI("R"))))),
+      Some(InterpretedPT(_,Some(OwnershipPT(_, BorrowP)), None, NameOrRunePT(NameP(_, StrI("R"))))),
       None,
       None) =>
     }
@@ -55,7 +55,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
     compile("self.arr &&R") shouldHave {
       case PatternPP(_,_,
       Some(ConstructingMemberNameDeclarationP(NameP(_, StrI("arr")))),
-      Some(InterpretedPT(_,WeakP, NameOrRunePT(NameP(_, StrI("R"))))),
+      Some(InterpretedPT(_,Some(OwnershipPT(_, WeakP)), None, NameOrRunePT(NameP(_, StrI("R"))))),
       None,
       None) =>
     }

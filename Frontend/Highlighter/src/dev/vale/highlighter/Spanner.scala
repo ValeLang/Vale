@@ -92,7 +92,7 @@ object Spanner {
   }
 
   def forInterface(i: InterfaceP): Span = {
-    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, _, members) = i
+    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, _, _, members) = i
 
     makeSpan(
       Interface,
@@ -128,7 +128,7 @@ object Spanner {
   }
 
   def forStruct(struct: StructP): Span = {
-    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, _, StructMembersP(membersRange, members)) = struct
+    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, _, _, StructMembersP(membersRange, members)) = struct
 
     makeSpan(
       Struct,
@@ -203,7 +203,7 @@ object Spanner {
   }
 
   def forBlock(b: BlockPE): Span = {
-    val BlockPE(range, inner) = b
+    val BlockPE(range, _, inner) = b
     makeSpan(Block, range, Vector(forExpression(inner)))
   }
 
@@ -343,7 +343,7 @@ object Spanner {
       case ReturnPE(range, expr) => {
         makeSpan(Ret, range, Vector(forExpression(expr)))
       }
-      case BlockPE(range, inner) => {
+      case BlockPE(range, _, inner) => {
         makeSpan(
           Block,
           range,
@@ -451,7 +451,7 @@ object Spanner {
       case InlinePT(range, inner) => {
         makeSpan(Inl, range, Vector(forTemplex(inner)))
       }
-      case InterpretedPT(range, ownership, inner) => {
+      case InterpretedPT(range, ownership, _, inner) => {
         makeSpan(Ownership, range, Vector(forTemplex(inner)))
       }
       case RuntimeSizedArrayPT(range, mutability, element) => {

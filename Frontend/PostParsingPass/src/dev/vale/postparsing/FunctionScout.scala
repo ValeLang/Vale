@@ -95,13 +95,13 @@ class FunctionScout(
         .flatMap(_.params)
         // Filter out any regions, we dont do those yet
         .filter({
-          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _, _) => false
           case _ => true
         })
 
     val userSpecifiedIdentifyingRunes =
       genericParametersP
-        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _, _) =>
           rules.RuneUsage(rangeS, CodeRuneS(identifyingRuneName))
         })
 

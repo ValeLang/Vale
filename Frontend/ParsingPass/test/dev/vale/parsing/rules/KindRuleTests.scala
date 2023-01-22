@@ -68,7 +68,7 @@ class KindRuleTests extends FunSuite with Matchers with Collector with TestParse
       case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, StrI("Moo"))),Vector(NameOrRunePT(NameP(_, StrI("int")))))) =>
     }
     compile("Moo<@int>") shouldHave {
-      case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, StrI("Moo"))),Vector(InterpretedPT(_,ShareP,NameOrRunePT(NameP(_, StrI("int"))))))) =>
+      case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, StrI("Moo"))),Vector(InterpretedPT(_,Some(OwnershipPT(_, ShareP)), None,NameOrRunePT(NameP(_, StrI("int"))))))) =>
     }
   }
 

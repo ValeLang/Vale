@@ -1222,6 +1222,12 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMInitializeX86AsmPrinter();
   LLVMInitializeX86AsmParser();
 
+  LLVMInitializeWebAssemblyTargetInfo();
+  LLVMInitializeWebAssemblyTargetMC();
+  LLVMInitializeWebAssemblyTarget();
+  LLVMInitializeWebAssemblyAsmPrinter();
+  LLVMInitializeWebAssemblyAsmParser();
+
   // Find target for the specified triple
   if (opt->triple.empty())
     opt->triple = LLVMGetDefaultTargetTriple();

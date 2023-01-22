@@ -213,7 +213,7 @@ LLVMValueRef makeEntryFunction(
 
   LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
-  LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
+  LLVMSetFunctionCallConv(entryFunctionL, LLVMCCallConv );
   LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");

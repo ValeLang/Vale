@@ -22,8 +22,8 @@ object OptimizedSolverState {
       mutable.ArrayBuffer[Int](),
       mutable.ArrayBuffer[Array[Int]](),
       mutable.ArrayBuffer[Int](),
-      0.to(5).map(_ => 0).toArray,
-      0.to(5).map(_ => mutable.ArrayBuffer[Int]()).toArray,
+      0.to(20).map(_ => 0).toArray, // DO NOT SUBMIT happens with long generics calls
+      0.to(20).map(_ => mutable.ArrayBuffer[Int]()).toArray, // DO NOT SUBMIT happens with long generics calls
       mutable.ArrayBuffer[Option[Conclusion]]())
   }
 }

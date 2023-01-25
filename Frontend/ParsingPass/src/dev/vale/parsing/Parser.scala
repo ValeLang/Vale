@@ -78,7 +78,14 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
 
           val tyype =
             GenericParameterTypeP(RangeL(range.begin, iter.getPrevEndPos()), RegionTypePR)
-          (region.name, Some(tyype), attributes)
+
+          val regionName =
+            region.name match {
+              case None => return Err(BadRuneNameError(iter.getPos()))
+              case Some(z) => z
+            }
+
+          (regionName, Some(tyype), attributes)
         }
       }
 
@@ -648,9 +655,12 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
 
     val defaultRegion =
       lastTwo match {
+        case Vector(SymbolLE(symbolRange, '\'')) => {
+          RegionRunePT(symbolRange, None)
+        }
         case Vector(WordLE(wordRange, regionName), SymbolLE(symbolRange, '\'')) => {
           val range = RangeL(wordRange.begin, symbolRange.end)
-          RegionRunePT(range, NameP(wordRange, regionName))
+          RegionRunePT(range, Some(NameP(wordRange, regionName)))
         }
         case _ => return (inputScramble, None)
       }
@@ -803,19 +813,29 @@ object Parser {
   def parseRegion(originalIter: ScrambleIterator): Result[Option[RegionRunePT], IParseError] = {
     val tentativeIter = originalIter.clone()
 
-    val regionRune =
-      tentativeIter.nextWord() match {
-        case None => return Ok(None)
-        case Some(r) => r
-      }
+    val runeBegin = tentativeIter.getPos()
+    val maybeRune =
+      if (tentativeIter.trySkipSymbol('\'')) {
+        // Anonymous region, in other words an isolate
+        None
+      } else {
+        val regionRune =
+          tentativeIter.nextWord() match {
+            case None => return Ok(None)
+            case Some(r) => r
+          }
 
-    if (!tentativeIter.trySkipSymbol('\'')) {
-      return Ok(None)
-    }
+        if (!tentativeIter.trySkipSymbol('\'')) {
+          return Ok(None)
+        }
+
+        Some(regionRune)
+      }
+    val runeEnd = tentativeIter.getPrevEndPos()
 
     originalIter.skipTo(tentativeIter)
 
-    val range = RangeL(regionRune.range.begin, tentativeIter.getPrevEndPos())
-    return Ok(Some(RegionRunePT(range, NameP(regionRune.range, regionRune.str))))
+    val range = RangeL(runeBegin, runeEnd)
+    return Ok(Some(RegionRunePT(range, maybeRune.map(z => NameP(RangeL(runeBegin, runeEnd), z.str)))))
   }
 }

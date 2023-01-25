@@ -833,7 +833,7 @@ class ParsedLoader(interner: Interner) {
   private def loadRegionRune(jobj: JObject) = {
     RegionRunePT(
       loadRange(getObjectField(jobj, "range")),
-      loadName(getObjectField(jobj, "name")))
+      loadOptionalObject(jobj, z => loadName(getObjectField(z, "name"))))
   }
 
   def loadIdentifyingRunes(jobj: JObject): GenericParametersP = {

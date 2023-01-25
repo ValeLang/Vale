@@ -85,6 +85,9 @@ object PassManager {
       case "--include_builtins" :: value :: tail => {
         parseOpts(interner, opts.copy(includeBuiltins = value.toBoolean), tail)
       }
+      case "--simple_solver" :: value :: tail => {
+        parseOpts(interner, opts.copy(useOptimizedSolver = !value.toBoolean), tail)
+      }
       case "--benchmark" :: tail => {
         parseOpts(interner, opts.copy(benchmark = true), tail)
       }

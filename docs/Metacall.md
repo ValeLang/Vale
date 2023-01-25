@@ -42,7 +42,7 @@ Instead, we'll structure this as a third-party compiler plugin, but make it _rid
 Extra benefit: this keeps the Vale installer small, since Metacall is later installed via the network.
 
 
-The third-party compiler plugin would be maintained by us and live at https://github.com/Verdagon/ValeMetacall, and would have a similar disclaimer about its own dependencies. It would basically just be an installer script that puts the Metacall binaries and libraries in the right place that valec would know to look for them.
+The third-party compiler plugin would be maintained by us and live at https://github.com/Verdagon/ValeMetacall, and would have a similar disclaimer about its own dependencies (yes, it's indeed ironic that the "third party" is the same person as behind the Vale compiler itself). It would basically just be an installer script that puts the Metacall binaries and libraries in the right place that valec would know to look for them.
 
 
 Discarded alternative: Running metacall inside a docker container _for security reasons_. It would make little sense to not trust the Metacall binary and then trust the code layers that it generates. Running inside docker might make sense, just not as a security measure.

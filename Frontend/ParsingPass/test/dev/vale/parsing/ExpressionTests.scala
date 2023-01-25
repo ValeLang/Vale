@@ -1,12 +1,9 @@
 package dev.vale.parsing
 
 import dev.vale.{Collector, StrI}
-import dev.vale.parsing.ast.{AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, CallPT, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DotPE, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, ImmutableP, IntPT, LambdaPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, NameOrRunePT, NameP, NotPE, OrPE, OwnP, ParamsP, PatternPP, RangePE, RuntimeSizedP, StaticSizedP, SubExpressionPE, TemplateArgsP, TuplePE, UnletPE}
-import dev.vale.Collector
-import dev.vale.lexing.{BadExpressionEnd, CantUseBreakInExpression, CantUseReturnInExpression}
-import dev.vale.parsing.ast._
-import org.scalatest.Matchers.convertToAnyShouldWrapper
-import org.scalatest.{FunSuite, Matchers}
+import dev.vale.lexing.{CantUseBreakInExpression, CantUseReturnInExpression}
+import dev.vale.parsing.ast.{AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, CallPT, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DotPE, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, ImmutableP, IntPT, LambdaPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, NameOrRunePT, NameP, NotPE, OrPE, OwnP, ParamsP, PatternPP, RangePE, RuntimeSizedP, StaticSizedP, SubExpressionPE, TemplateArgsP, TuplePE, UnletPE, _}
+import org.scalatest.FunSuite
 
 class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Simple int") {
@@ -99,6 +96,13 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Method call") {
     compileExpressionExpect("x . shout ()") shouldHave
+      { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_,StrI("shout"))),None),Vector()) => }
+  }
+
+  test("Mapping method call") {
+    // These arent implemented yet, we currently just parse these as method calls to support
+    // snippets on the site.
+    compileExpressionExpect("x *. shout ()") shouldHave
       { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_,StrI("shout"))),None),Vector()) => }
   }
 

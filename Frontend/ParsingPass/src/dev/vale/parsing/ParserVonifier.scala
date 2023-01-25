@@ -725,7 +725,7 @@ object ParserVonifier {
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("name", vonifyName(name))))
+        VonMember("name", vonifyOptional(name, x => vonifyName(x)))))
   }
 
   def vonifyMutability(thing: MutabilityP): IVonData = {

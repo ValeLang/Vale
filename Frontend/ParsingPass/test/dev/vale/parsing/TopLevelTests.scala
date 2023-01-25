@@ -186,7 +186,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     vassertSome(func.header.ret.retType) match {
       case CallPT(_,
         NameOrRunePT(NameP(_,StrI("IDesire"))),
-        Vector(RegionRunePT(_,NameP(_,StrI("r"))), RegionRunePT(_,NameP(_,StrI("i"))))) =>
+        Vector(RegionRunePT(_,Some(NameP(_,StrI("r")))), RegionRunePT(_,Some(NameP(_,StrI("i")))))) =>
     }
   }
 

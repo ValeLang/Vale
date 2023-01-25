@@ -113,7 +113,7 @@ Long term hopes:
 
  * Less run-time cost: Later on, we'd hopefully find a way to shortcut past some of the run-time costs here. Metacall currently seems very much like an interpreter, which is definitely fine for the vast majority of use cases. Perhaps someday there would a way to make it more into a _compiler_ itself, where it could generate a static library with a standard C interface which we could call. One can dream!
 
-## Step 4: Other Languages Depending on Valec
+## Step 4: Other Languages Depending on Vale
 
 ### Usage
 

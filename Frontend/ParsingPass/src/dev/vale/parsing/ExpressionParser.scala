@@ -1084,7 +1084,12 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       }
     }
 
-    if (iter.trySkipSymbol('.')) {
+    val isMapCall = iter.trySkipSymbols(Vector('*', '.'))
+    val isMethodCall =
+      if (isMapCall) { false }
+      else iter.trySkipSymbol('.')
+
+    if (isMethodCall || isMapCall) {
       val nameBegin = iter.getPos()
       val name =
         iter.peek() match {

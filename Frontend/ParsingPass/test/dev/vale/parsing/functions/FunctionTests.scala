@@ -113,8 +113,21 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
             Some(NameP(_,StrI("findNearbyUnits"))),
             Vector(PureAttributeP(_)),
             None,None,Some(ParamsP(_,Vector())),
-            FunctionReturnP(_,Some(InterpretedPT(_,None,Some(RegionRunePT(_,NameP(_,StrI("i")))),NameOrRunePT(NameP(_,StrI("int"))))))),
-          Some(BlockPE(_,Some(RegionRunePT(_,NameP(_,StrI("i")))),VoidPE(_))))) =>
+            FunctionReturnP(_,Some(InterpretedPT(_,None,Some(RegionRunePT(_,Some(NameP(_,StrI("i"))))),NameOrRunePT(NameP(_,StrI("int"))))))),
+          Some(BlockPE(_,Some(RegionRunePT(_,Some(NameP(_,StrI("i"))))),VoidPE(_))))) =>
+    }
+  }
+
+  test("Return isolate") {
+    compileDenizen("""func findNearbyUnits() 'int { }""").getOrDie() match {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("findNearbyUnits"))),
+            Vector(),
+            None,None,Some(ParamsP(_,Vector())),
+            FunctionReturnP(_,Some(InterpretedPT(_,None,Some(RegionRunePT(_,None)),NameOrRunePT(NameP(_,StrI("int"))))))),
+          _)) =>
     }
   }
 
@@ -129,7 +142,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           GenericParametersP(_,
           Vector(
           GenericParameterP(_,NameP(_,StrI("t")),Some(GenericParameterTypeP(_,RegionTypePR)),None,Vector(),None),
-          GenericParameterP(_,NameP(_,StrI("T")),None,Some(RegionRunePT(_,NameP(_,StrI("t")))),Vector(),None)))),
+          GenericParameterP(_,NameP(_,StrI("T")),None,Some(RegionRunePT(_,Some(NameP(_,StrI("t"))))),Vector(),None)))),
         None,
         _,_),_)) =>
     }

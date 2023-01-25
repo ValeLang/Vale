@@ -316,7 +316,7 @@ class CompilerSolver(
 
     // During the solve, we postponed resolving structs and interfaces, see SFWPRL.
     // Caller should remember to do that!
-    if (conclusions.keySet != allRunes) {
+    if ((allRunes -- conclusions.keySet).nonEmpty) {
       IncompleteSolve(
         stepsStream,
         solver.getUnsolvedRules(),

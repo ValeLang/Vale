@@ -145,7 +145,8 @@ case class BadExportEnd(pos: Int) extends IParseError { override def errorId: St
 case class BadForeachIterableError(pos: Int) extends IParseError { override def errorId: String = "P1037"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadArraySpecifier(pos: Int) extends IParseError { override def errorId: String = "P1039"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadLocalName(pos: Int) extends IParseError { override def errorId: String = "P1041"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class BadThingAfterTypeInPattern(pos: Int) extends IParseError { override def errorId: String = "P1041"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadThingAfterTypeInPattern(pos: Int) extends IParseError {
+  override def errorId: String = "P1041"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadLetSourceError(pos: Int, cause: IParseError) extends IParseError {
   override def errorId: String = "P1042"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()

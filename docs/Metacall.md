@@ -6,79 +6,7 @@ If we could build this into the Vale compiler, and easily call into any other la
 
 # Basic Set Up (outside Vale)
 
-Install deps:
-
-`sudo apt install git cmake build-essential`
-
-Clone metacall:
-
-```
-git clone https://github.com/metacall/core.git
-cd core
-```
-
-Install metacall deps:
-
-```
-tools/metacall-environment.sh rust c
-source ~/.bashrc
-```
-
-Make a build folder:
-
-```
-mkdir build
-cd build
-```
-
-Build metacall:
-
-```
-cmake -DOPTION_BUILD_LOADERS_C=ON -DOPTION_BUILD_LOADERS_RS=ON ..
-make -j12
-```
-
-Install metacall:
-
-`sudo HOME="$HOME" make install`
-
-
-Clone RocketValeMetacall:
-
-```
-cd
-https://github.com/Verdagon/RocketValeMetacall.git
-cd RocketValeMetacall
-```
-
-Build its Rust side:
-
-```
-cd ~/RocketValeMetacall/src/native/rust
-cargo build
-```
-
-Build its C side:
-
-```
-cd ~/RocketValeMetacall/src/native
-gcc -I/usr/local/include metacaller.c -L/usr/local/lib -lmetacall
-```
-
-Run it:
-
-```
-LD_LIBRARY_PATH=/usr/local/lib ./a.out ./rust/target/debug/librocketvale.rlib
-```
-
-Should get output:
-
-```
-result: 6
-```
-
-Done!
-
+(Moved further below)
 
 # Next steps
 
@@ -200,6 +128,82 @@ We'd then presumably hand our static library over to Metacall.
 We'd write a custom loader for Metacall which can read `.vast`, or just have Metacall's C loader read the `.h` files that the backend already generates.
 
 Metacall would then package up our static library into something callable by another language, such as a `.jar`.
+
+
+# Basic Set Up (outside Vale)
+
+Install deps:
+
+`sudo apt install git cmake build-essential`
+
+Clone metacall:
+
+```
+git clone https://github.com/metacall/core.git
+cd core
+```
+
+Install metacall deps:
+
+```
+tools/metacall-environment.sh rust c
+source ~/.bashrc
+```
+
+Make a build folder:
+
+```
+mkdir build
+cd build
+```
+
+Build metacall:
+
+```
+cmake -DOPTION_BUILD_LOADERS_C=ON -DOPTION_BUILD_LOADERS_RS=ON ..
+make -j12
+```
+
+Install metacall:
+
+`sudo HOME="$HOME" make install`
+
+
+Clone RocketValeMetacall:
+
+```
+cd
+https://github.com/Verdagon/RocketValeMetacall.git
+cd RocketValeMetacall
+```
+
+Build its Rust side:
+
+```
+cd ~/RocketValeMetacall/src/native/rust
+cargo build
+```
+
+Build its C side:
+
+```
+cd ~/RocketValeMetacall/src/native
+gcc -I/usr/local/include metacaller.c -L/usr/local/lib -lmetacall
+```
+
+Run it:
+
+```
+LD_LIBRARY_PATH=/usr/local/lib ./a.out ./rust/target/debug/librocketvale.rlib
+```
+
+Should get output:
+
+```
+result: 6
+```
+
+Done!
 
 
 # Notes

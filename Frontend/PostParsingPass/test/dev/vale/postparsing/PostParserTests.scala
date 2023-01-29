@@ -26,7 +26,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   private def compileForError(code: String): ICompileErrorS = {
     PostParserTestCompilation.test(code).getScoutput() match {
       case Err(e) => e
-      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
+      case Ok(t) => vfail("Accidentally compiled!\n")
     }
   }
 
@@ -240,17 +240,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
   }
 
-  test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
-    val error = compileForError(
-      """func MyStruct() {
-        |  ship = [][4, 5, 6];
-        |}
-        |""".stripMargin)
-    error match {
-      case CantInitializeIndividualElementsOfRuntimeSizedArray(_) =>
-    }
-  }
-
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
       """func MyStruct() {
@@ -292,17 +281,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
     error match {
       case InitializingStaticSizedArrayRequiresSizeAndCallable(_) =>
-    }
-  }
-
-  test("InitializingStaticSizedArrayFromCallableNeedsSizeTemplex") {
-    val error = compileForError(
-      """func MyStruct() {
-        |  ship = [#]({_});
-        |}
-        |""".stripMargin)
-    error match {
-      case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(_) =>
     }
   }
 

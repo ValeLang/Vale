@@ -137,7 +137,7 @@ case class ConstructArrayPE(
   mutabilityPT: Option[ITemplexPT],
   variabilityPT: Option[ITemplexPT],
   size: IArraySizeP,
-  // True if theyre making it like [3][10, 20, 30]
+  // True if theyre making it like [3](10, 20, 30)
   // False if theyre making it like [3]({ _ * 10 })
   initializingIndividualElements: Boolean,
   args: Vector[IExpressionPE]

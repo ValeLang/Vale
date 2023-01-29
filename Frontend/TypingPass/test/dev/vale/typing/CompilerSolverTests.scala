@@ -588,11 +588,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |func swap<T>(x [#2]T) [#2]T {
         |  [a, b] = x;
-        |  return [#][b, a];
+        |  return [#](b, a);
         |}
         |
         |exported func main() int {
-        |  return swap([#][5, 7]).0;
+        |  return swap([#](5, 7)).0;
         |}
         |""".stripMargin
     )

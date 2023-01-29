@@ -44,9 +44,5 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
     vassert(PostParserErrorHumanizer.humanize(codeMap,
       ExternHasBody(tz))
       .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
-      CantInitializeIndividualElementsOfRuntimeSizedArray(tz))
-      .nonEmpty)
-
   }
 }

@@ -830,10 +830,10 @@ class ParsedLoader(interner: Interner) {
       loadOwnership(getObjectField(jobj, "ownership")))
   }
 
-  private def loadRegionRune(jobj: JObject) = {
+  private def loadRegionRune(jobj: JObject): RegionRunePT = {
     RegionRunePT(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(jobj, z => loadName(getObjectField(z, "name"))))
+      loadOptionalObject(getObjectField(jobj, "name"), loadName))
   }
 
   def loadIdentifyingRunes(jobj: JObject): GenericParametersP = {

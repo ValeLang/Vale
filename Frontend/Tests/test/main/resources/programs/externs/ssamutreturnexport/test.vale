@@ -2,7 +2,7 @@
 export [#3]int as MutIntArray;
 
 exported func valeMakeSSA() [#3]int {
-  return [#][13, 14, 15];
+  return [#](13, 14, 15);
 }
 
 extern func cMakeSSA() [#3]int;

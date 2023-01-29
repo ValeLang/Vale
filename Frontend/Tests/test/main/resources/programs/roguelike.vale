@@ -127,16 +127,16 @@ exported func main() int {
   playerCol = 3;
 
   goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(13, Goblin(Vec(#[#][6, 3])));
-  goblins.add(14, Goblin(Vec(#[#][2, 6])));
-  goblins.add(15, Goblin(Vec(#[#][5, 7])));
-  goblins.add(17, Goblin(Vec(#[#][2, 5])));
-  goblins.add(19, Goblin(Vec(#[#][7, 1])));
-  goblins.add(23, Goblin(Vec(#[#][3, 3])));
-  goblins.add(24, Goblin(Vec(#[#][1, 7])));
-  goblins.add(25, Goblin(Vec(#[#][7, 6])));
-  goblins.add(27, Goblin(Vec(#[#][4, 6])));
-  goblins.add(29, Goblin(Vec(#[#][7, 4])));
+  goblins.add(13, Goblin(Vec(#[#](6, 3))));
+  goblins.add(14, Goblin(Vec(#[#](2, 6))));
+  goblins.add(15, Goblin(Vec(#[#](5, 7))));
+  goblins.add(17, Goblin(Vec(#[#](2, 5))));
+  goblins.add(19, Goblin(Vec(#[#](7, 1))));
+  goblins.add(23, Goblin(Vec(#[#](3, 3))));
+  goblins.add(24, Goblin(Vec(#[#](1, 7))));
+  goblins.add(25, Goblin(Vec(#[#](7, 6))));
+  goblins.add(27, Goblin(Vec(#[#](4, 6))));
+  goblins.add(29, Goblin(Vec(#[#](7, 4))));
 
   running = true;
   while (running) {

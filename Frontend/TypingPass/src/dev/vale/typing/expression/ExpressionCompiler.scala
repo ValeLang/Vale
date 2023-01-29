@@ -1447,7 +1447,11 @@ class ExpressionCompiler(
         // at least for now.
         // If this proves irksome, consider rearranging FunctionCompiler and StructCompiler's steps in
         // evaluating lambdas.
-        case LambdaStructImpreciseNameS(_) => KindTemplataType()
+        case LambdaStructImpreciseNameS(_) => {
+          // Lambdas look up their struct as a KindTemplata in their environment, they dont look up
+          // the origin template by name. Not sure why.
+          KindTemplataType()
+        }
         case n => {
           vassertSome(nenv.lookupNearestWithImpreciseName(n, Set(TemplataLookupContext))).tyype
         }

@@ -71,7 +71,7 @@ case class StructA(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    tyype: ITemplataType,
+    tyype: TemplateTemplataType,
     genericParameters: Vector[GenericParameterS],
 
     // These are separated so that these alone can be run during resolving, see SMRASDR.
@@ -95,14 +95,6 @@ case class StructA(
 
 //  vassert((knowableRunes -- runeToType.keySet).isEmpty)
 //  vassert((localRunes -- runeToType.keySet).isEmpty)
-
-  vassert(isTemplate)
-
-  def isTemplate: Boolean = tyype match {
-    case KindTemplataType() => false
-    case TemplateTemplataType(_, _) => true
-    case _ => vwat()
-  }
 }
 
 case class ImplA(
@@ -123,8 +115,6 @@ case class ImplA(
     val that = obj.asInstanceOf[ImplA]
     return range == that.range && name == that.name;
   }
-
-  def isTemplate: Boolean = genericParams.nonEmpty
 }
 
 case class ExportAsA(
@@ -155,7 +145,7 @@ case class InterfaceA(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    tyype: ITemplataType,
+    tyype: TemplateTemplataType,
 //    knowableRunes: Set[IRuneS],
     genericParameters: Vector[GenericParameterS],
 //    localRunes: Set[IRuneS],
@@ -177,14 +167,7 @@ case class InterfaceA(
 
   internalMethods.foreach(internalMethod => {
     vassert(genericParameters == internalMethod.genericParameters)
-    vassert(isTemplate == internalMethod.isTemplate);
   })
-
-  def isTemplate: Boolean = tyype match {
-    case KindTemplataType() => false
-    case TemplateTemplataType(_, _) => true
-    case _ => vwat()
-  }
 }
 
 object interfaceName {
@@ -224,7 +207,7 @@ case class FunctionA(
 
     attributes: Vector[IFunctionAttributeS],
 
-    tyype: ITemplataType,
+    tyype: TemplateTemplataType,
     // This is not necessarily only what the user specified, the compiler can add
     // things to the end here, see CCAUIR.
     genericParameters: Vector[GenericParameterS],
@@ -274,11 +257,5 @@ case class FunctionA(
       case LambdaDeclarationNameS(_) => true
       case _ => false
     }
-  }
-
-  def isTemplate: Boolean = tyype match {
-    case FunctionTemplataType() => false
-    case TemplateTemplataType(_, _) => true
-    case _ => vwat()
   }
 }

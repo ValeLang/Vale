@@ -224,9 +224,10 @@ class OverloadResolver(
     candidate match {
       case FunctionCalleeCandidate(ft@FunctionTemplata(declaringEnv, function)) => {
         // See OFCBT.
-        if (ft.function.isTemplate) {
-          function.tyype match {
-            case TemplateTemplataType(identifyingRuneTemplataTypes, FunctionTemplataType()) => {
+//        if (ft.function.isTemplate) {
+//          function.tyype match {
+//            case TemplateTemplataType(identifyingRuneTemplataTypes, FunctionTemplataType()) => {
+        val identifyingRuneTemplataTypes = function.tyype.paramTypes
               if (explicitTemplateArgRunesS.size > identifyingRuneTemplataTypes.size) {
                 Err(WrongNumberOfTemplateArguments(explicitTemplateArgRunesS.size, identifyingRuneTemplataTypes.size))
               } else {
@@ -357,62 +358,62 @@ class OverloadResolver(
                   }
                 }
               }
-            }
-            case FunctionTemplataType() => {
-              // So it's not a template, but it's a template in context. We'll still need to
-              // feed it into the inferer.
-              functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-                coutputs, callingEnv, callRange, ft, Vector.empty, paramFilters) match {
-                case (EvaluateFunctionFailure(reason)) => {
-                  Err(reason)
-                }
-                case (EvaluateFunctionSuccess(banner, conclusions)) => {
-                  paramsMatch(coutputs, callingEnv, callRange, paramFilters, banner.prototype.paramTypes, exact) match {
-                    case Err(reason) => Err(reason)
-                    case Ok(_) => {
-                      vassert(coutputs.getInstantiationBounds(banner.prototype.fullName).nonEmpty)
-                      Ok(ValidPrototypeTemplataCalleeCandidate(banner))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else {
-          if (ft.function.isLambda()) {
-            functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-                coutputs, callRange, callingEnv, ft, Vector(), paramFilters, verifyConclusions) match {
-              case (EvaluateFunctionFailure(reason)) => {
-                Err(reason)
-              }
-              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
-                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
-                  case Ok(_) => {
-                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
-                    Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
-                  }
-                  case Err(reason) => Err(reason)
-                }
-              }
-            }
-          } else {
-            functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-              coutputs, callRange, callingEnv, ft, Vector(), paramFilters) match {
-              case (EvaluateFunctionFailure(reason)) => {
-                Err(reason)
-              }
-              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
-                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
-                  case Ok(_) => {
-                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
-                    Ok(ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
-                  }
-                  case Err(reason) => Err(reason)
-                }
-              }
-            }
-          }
-        }
+//            }
+//            case FunctionTemplataType() => {
+//              // So it's not a template, but it's a template in context. We'll still need to
+//              // feed it into the inferer.
+//              functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
+//                coutputs, callingEnv, callRange, ft, Vector.empty, paramFilters) match {
+//                case (EvaluateFunctionFailure(reason)) => {
+//                  Err(reason)
+//                }
+//                case (EvaluateFunctionSuccess(banner, conclusions)) => {
+//                  paramsMatch(coutputs, callingEnv, callRange, paramFilters, banner.prototype.paramTypes, exact) match {
+//                    case Err(reason) => Err(reason)
+//                    case Ok(_) => {
+//                      vassert(coutputs.getInstantiationBounds(banner.prototype.fullName).nonEmpty)
+//                      Ok(ValidPrototypeTemplataCalleeCandidate(banner))
+//                    }
+//                  }
+//                }
+//              }
+//            }
+//          }
+//        } else {
+//          if (ft.function.isLambda()) {
+//            functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
+//                coutputs, callRange, callingEnv, ft, Vector(), paramFilters, verifyConclusions) match {
+//              case (EvaluateFunctionFailure(reason)) => {
+//                Err(reason)
+//              }
+//              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
+//                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
+//                  case Ok(_) => {
+//                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
+//                    Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
+//                  }
+//                  case Err(reason) => Err(reason)
+//                }
+//              }
+//            }
+//          } else {
+//            functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
+//              coutputs, callRange, callingEnv, ft, Vector(), paramFilters) match {
+//              case (EvaluateFunctionFailure(reason)) => {
+//                Err(reason)
+//              }
+//              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
+//                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
+//                  case Ok(_) => {
+//                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
+//                    Ok(ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
+//                  }
+//                  case Err(reason) => Err(reason)
+//                }
+//              }
+//            }
+//          }
+//        }
       }
       case HeaderCalleeCandidate(header) => {
         paramsMatch(coutputs, callingEnv, callRange, paramFilters, header.paramTypes, exact) match {
@@ -579,7 +580,7 @@ class OverloadResolver(
       dedupedBanners.groupBy(_.paramTypes).values.flatMap({ potentialBannersWithSameParamTypes =>
         val ordinaryBanners =
           potentialBannersWithSameParamTypes.filter({
-            case ValidCalleeCandidate(_, _, function) => !function.function.isTemplate
+            case ValidCalleeCandidate(_, _, function) => false
             case ValidPrototypeTemplataCalleeCandidate(prototype) => true
             case ValidHeaderCalleeCandidate(_) => true
           })

@@ -1690,7 +1690,6 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val tyype =
       iter.peek() match {
-        case Some(SquaredLE(range, contents)) => None
         case Some(ParendLE(range, contents)) => None
         case _ => {
           templexParser.parseTemplex(iter) match {
@@ -1701,28 +1700,20 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         case _ => return Err(BadArraySpecifier(iter.getPos()))
       }
 
-    val (initializingByValues, args) =
-      iter.peek() match {
-        case Some(SquaredLE(_, _)) => {
-          val values =
-            parseSquarePack(iter) match {
-              case Ok(None) => vwat()
-              case Ok(Some(e)) => e
-              case Err(e) => return Err(e)
-            }
-          (true, values)
-        }
-        case Some(ParendLE(range, contents)) => {
-          val args =
-            parsePack(iter) match {
-              case Ok(None) => vwat()
-              case Ok(Some((range, e))) => e
-              case Err(e) => return Err(e)
-            }
-          (false, args)
-        }
-        case _ => return Err(BadArraySpecifier(iter.getPos()))
+    val args =
+      parsePack(iter) match {
+        case Ok(None) => return Err(BadArraySpecifier(iter.getPos()))
+        case Ok(Some((range, e))) => e
+        case Err(e) => return Err(e)
       }
+
+    val initializingByValues =
+      (size, args.size) match {
+        case (StaticSizedP(None), _) => true // e.g. [#](3, 4, 5)
+        case (StaticSizedP(Some(_)), _) => false // Anything else should take a function.
+        case (RuntimeSizedP, _) => false // Any runtime sized array should take a function.
+      }
+
     val arrayPE =
       ConstructArrayPE(
         RangeL(begin, iter.getPrevEndPos()),

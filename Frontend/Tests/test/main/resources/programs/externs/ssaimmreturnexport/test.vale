@@ -2,7 +2,7 @@
 export [#3]<imm>int as ImmIntArray;
 
 exported func valeMakeSSA() [#3]<imm>int {
-  return #[#][13, 14, 15];
+  return #[#](13, 14, 15);
 }
 
 extern func cMakeSSA() [#3]<imm>int;

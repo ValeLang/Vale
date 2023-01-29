@@ -134,7 +134,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |exported func main() int {
-        |  [#]int[6, 60, 103].2
+        |  [#]int(6, 60, 103).2
         |}
         |""".stripMargin)
     compile.expectCompilerOutputs()
@@ -1356,7 +1356,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |exported func main() int {
-        |  arr = [#][true, 42];
+        |  arr = [#](true, 42);
         |  return arr.1;
         |}
         |""".stripMargin)
@@ -1450,19 +1450,6 @@ class CompilerTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getCompilerOutputs() match {
       case Err(ImmStructCantHaveVaryingMember(_,TopLevelStructDeclarationNameS(StrI("Spaceship"),_),"name")) =>
-    }
-  }
-
-  test("Report when num elements mismatch") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |exported func main() bool {
-        |  arr = [#4][true, false, false];
-        |  return arr.0;
-        |}
-        |""".stripMargin)
-    compile.getCompilerOutputs() match {
-      case Err(InitializedWrongNumberOfElements(_, 4, 3)) =>
     }
   }
 

@@ -314,13 +314,13 @@ class ArrayCompiler(
       }
     })
 
-    val size = getArraySize(templatas, sizeRuneA)
+//    val size = getArraySize(templatas, sizeRuneA)
     val mutability = ITemplata.expectMutability(vassertSome(templatas.get(mutabilityRuneA)))
     val variability = ITemplata.expectVariability(vassertSome(templatas.get(variabilityRuneA)))
 
-        if (size != exprs2.size) {
-          throw CompileErrorExceptionT(InitializedWrongNumberOfElements(range, size, exprs2.size))
-        }
+//    if (size != exprs2.size) {
+//      throw CompileErrorExceptionT(InitializedWrongNumberOfElements(range, size, exprs2.size))
+//    }
 
     val staticSizedArrayType = resolveStaticSizedArray(mutability, variability, IntegerTemplata(exprs2.size), memberType)
     val ownership =

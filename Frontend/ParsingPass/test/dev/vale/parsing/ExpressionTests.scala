@@ -393,16 +393,16 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("static array from values") {
-    compileExpressionExpect("[#][3, 5, 6]") shouldHave
+    compileExpressionExpect("[#](3, 5, 6)") shouldHave
       {
 //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
 //      case null =>
       case ConstructArrayPE(_,None,Some(MutabilityPT(_,MutableP)),None,StaticSizedP(None),true,Vector(_, _, _)) =>
-    }
+      }
   }
 
   test("static array from values with newlines") {
-    compileExpressionExpect("[#][\n3\n]") shouldHave
+    compileExpressionExpect("[#](\n3\n)") shouldHave
       {
         //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
         //      case null =>
@@ -459,7 +459,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("immutable static array from callable, no size") {
-    compileExpressionExpect("#[#][3, 4, 5]") shouldHave
+    compileExpressionExpect("#[#](3, 4, 5)") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -489,14 +489,28 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("runtime array from callable") {
     compileExpressionExpect("[](6, triple)") shouldHave
       {
-      case ConstructArrayPE(_,
+        case ConstructArrayPE(_,
         None,
         Some(MutabilityPT(_,MutableP)),
         None,
         RuntimeSizedP,
         false,
         Vector(_, _)) =>
-    }
+      }
+  }
+
+  test("Double RSA with type") {
+    compileExpressionExpect("[][]bool(42)") shouldHave
+      {
+        case ConstructArrayPE(_,
+        Some(RuntimeSizedArrayPT(_,MutabilityPT(_,MutableP),NameOrRunePT(NameP(_,StrI("bool"))))),
+        Some(MutabilityPT(_,MutableP)),
+        None,
+        RuntimeSizedP,
+        false,
+        Vector(ConstantIntPE(_,42,None)))
+        =>
+      }
   }
 
   test("immutable runtime array from callable") {

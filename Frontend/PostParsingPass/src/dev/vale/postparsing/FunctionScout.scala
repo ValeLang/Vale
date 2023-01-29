@@ -377,6 +377,19 @@ class FunctionScout(
               ruleBuilder +=
                 LookupSR(closureParamRange, closureStructKindRune, closureStructName.getImpreciseName(interner))
 
+//              val closureStructKindTemplateRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+//              runeToExplicitType += ((closureStructKindTemplateRune.rune, TemplateTemplataType(Vector(), KindTemplataType())))
+//              val closureStructTemplateName =
+//                interner.intern(LambdaStructDeclarationNameS(
+//                  funcName match { case x @ LambdaDeclarationNameS(_) => x }))
+//              ruleBuilder +=
+//                LookupSR(closureParamRange, closureStructKindTemplateRune, closureStructTemplateName.getImpreciseName(interner))
+//
+//              val closureStructKindRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+//              runeToExplicitType += ((closureStructKindRune.rune, KindTemplataType()))
+//              ruleBuilder +=
+//                CallSR(closureParamRange, closureStructKindRune, closureStructKindTemplateRune, Vector())
+
               val closureStructCoordRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
               runeToExplicitType += ((closureStructCoordRune.rune, CoordTemplataType()))
               ruleBuilder +=

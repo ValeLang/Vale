@@ -77,7 +77,7 @@ case class StructS(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    tyype: ITemplataType,
+    tyype: TemplateTemplataType,
 
     // These are separated so that these alone can be run during resolving, see SMRASDR.
     headerRuneToExplicitType: Map[IRuneS, ITemplataType],
@@ -128,7 +128,7 @@ case class InterfaceS(
   //   }
   maybePredictedMutability: Option[MutabilityP],
   predictedRuneToType: Map[IRuneS, ITemplataType],
-  tyype: ITemplataType,
+  tyype: TemplateTemplataType,
 
   rules: Vector[IRulexSR],
   // See IMRFDI
@@ -250,7 +250,7 @@ case class FunctionS(
 
     genericParams: Vector[GenericParameterS],
     runeToPredictedType: Map[IRuneS, ITemplataType],
-    tyype: ITemplataType,
+    tyype: TemplateTemplataType,
 
     params: Vector[ParameterS],
 

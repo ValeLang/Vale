@@ -1,9 +1,12 @@
 package dev.vale
 
 import dev.vale.parsing.ast.FinalP
+import dev.vale.postparsing.CodeRuneS
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.types._
 import dev.vale.typing._
+import dev.vale.typing.ast.{NormalStructMemberT, ReferenceMemberTypeT}
+import dev.vale.typing.names.{IdT, PlaceholderNameT, PlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.types.IntT
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
@@ -65,6 +68,20 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+
+    val monouts = compile.getMonouts()
+    val tupDef = monouts.lookupStruct("Tup")
+    val tupDefMemberTypes =
+      tupDef.members.collect({ case NormalStructMemberT(_, _, tyype) => tyype.reference })
+    tupDefMemberTypes match {
+      case Vector(
+        CoordT(ShareT,IntT(32)),
+        CoordT(BorrowT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("Marine")),Vector()))))) =>
+      case null =>
+//      case Vector(
+//        ReferenceMemberTypeT(CoordT(own,PlaceholderT(IdT(_,Vector(StructTemplateNameT(StrI("Tup"))),PlaceholderNameT(PlaceholderTemplateNameT(0,CodeRuneS(StrI("T1")))))))),
+//        ReferenceMemberTypeT(CoordT(OwnT,PlaceholderT(IdT(_,Vector(StructTemplateNameT(StrI("Tup"))),PlaceholderNameT(PlaceholderTemplateNameT(1,CodeRuneS(StrI("T2"))))))))) =>
+    }
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -74,7 +91,7 @@ class PatternTests extends FunSuite with Matchers {
       """
         |import array.iter.*;
         |exported func main() int {
-        |  sm = #[#][ #[#][42, 73, 73] ];
+        |  sm = #[#](#[#](42, 73, 73));
         |  foreach [i, m1] in sm {
         |    return i;
         |  }

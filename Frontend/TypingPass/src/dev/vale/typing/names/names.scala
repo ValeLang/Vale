@@ -78,6 +78,14 @@ case class IdT[+T <: INameT](
     }
   }
 
+  def initNonPackageFullName(): Option[IdT[INameT]] = {
+    if (initSteps.isEmpty) {
+      None
+    } else {
+      Some(IdT(packageCoord, initSteps.init, initSteps.last))
+    }
+  }
+
   def steps: Vector[INameT] = {
     localName match {
       case PackageTopLevelNameT() => initSteps

@@ -53,6 +53,18 @@ case class Hinputs(
     vassertSome(structs.find(_.instantiatedCitizen.fullName == structFullName))
   }
 
+  def lookupStructByTemplate(structTemplateName: IStructTemplateNameT): StructDefinitionT = {
+    vassertSome(structs.find(_.instantiatedCitizen.fullName.localName.template == structTemplateName))
+  }
+
+  def lookupInterfaceByTemplate(interfaceTemplateName: IInterfaceTemplateNameT): InterfaceDefinitionT = {
+    vassertSome(interfaces.find(_.instantiatedCitizen.fullName.localName.template == interfaceTemplateName))
+  }
+
+  def lookupImplByTemplate(implTemplateName: IImplTemplateNameT): EdgeT = {
+    vassertSome(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeFullName.localName.template == implTemplateName))
+  }
+
   def lookupInterface(interfaceFullName: IdT[IInterfaceNameT]): InterfaceDefinitionT = {
     vassertSome(interfaces.find(_.instantiatedCitizen.fullName == interfaceFullName))
   }

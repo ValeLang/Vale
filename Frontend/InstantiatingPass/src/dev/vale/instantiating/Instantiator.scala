@@ -267,7 +267,7 @@ object Instantiator {
         monouts,
         interfaceTemplate,
         interfaceFullName,
-        Map(interfaceTemplate -> interfaceFullName.localName.templateArgs),
+        Map(interfaceTemplate -> assemblePlaceholderMap(hinputs, interfaceFullName)),
         DenizenBoundToDenizenCallerBoundArg(
           assembleCalleeDenizenFunctionBounds(
             interfaceDefT.runeToFunctionBound,
@@ -322,12 +322,6 @@ object Instantiator {
     val topLevelDenizenTemplateFullName =
       TemplataCompiler.getTemplate(topLevelDenizenFullName)
 
-    // One would imagine we'd get structFullName.last.templateArgs here, because that's the struct
-    // we're about to monomorphize. However, only the top level denizen has placeholders, see LHPCTLD.
-    // This struct might not be the top level denizen, such as if it's a lambda.
-    val topLevelDenizenPlaceholderIndexToTemplata =
-    topLevelDenizenFullName.localName.templateArgs
-
     val denizenBoundToDenizenCallerSuppliedThing =
       DenizenBoundToDenizenCallerBoundArg(
         assembleCalleeDenizenFunctionBounds(
@@ -343,7 +337,14 @@ object Instantiator {
         monouts,
         structTemplate,
         structFullName,
-        Map(topLevelDenizenTemplateFullName -> topLevelDenizenPlaceholderIndexToTemplata),
+        Map(
+          topLevelDenizenTemplateFullName ->
+            assemblePlaceholderMap(
+              hinputs,
+              // One would imagine we'd get structFullName.last.templateArgs here, because that's the struct
+              // we're about to monomorphize. However, only the top level denizen has placeholders, see LHPCTLD.
+              // This struct might not be the top level denizen, such as if it's a lambda.
+              topLevelDenizenFullName)),
         denizenBoundToDenizenCallerSuppliedThing)
 
     instantiator.translateStructDefinition(structFullName, structDefT)
@@ -395,7 +396,9 @@ object Instantiator {
         monouts,
         funcTemplateNameT,
         abstractFunc.fullName,
-        Map(funcTemplateNameT -> abstractFunc.fullName.localName.templateArgs),
+        Map(
+          funcTemplateNameT ->
+            assemblePlaceholderMap(hinputs, abstractFunc.fullName)),
         DenizenBoundToDenizenCallerBoundArg(
           assembleCalleeDenizenFunctionBounds(
             funcT.runeToFuncBound, instantiationBoundArgs.runeToFunctionBoundArg),
@@ -505,7 +508,7 @@ object Instantiator {
         monouts,
         TemplataCompiler.getFunctionTemplate(dispatcherFullNameT),
         dispatcherFullNameT,
-        Map(dispatcherTemplateId -> dispatcherPlaceholderFullNameToSuppliedTemplata.map(_._2)),
+        Map(dispatcherTemplateId -> dispatcherPlaceholderFullNameToSuppliedTemplata.toMap),
         DenizenBoundToDenizenCallerBoundArg(
           dispatcherFunctionBoundToIncomingPrototype,
           dispatcherImplBoundToIncomingImpl))
@@ -588,6 +591,13 @@ object Instantiator {
     dispatcherPlaceholderFullNameToSuppliedTemplata.map(_._1).foreach(x => vassert(x.initFullName(interner) == dispatcherTemplateId))
     dispatcherCasePlaceholderFullNameToSuppliedTemplata.map(_._1).foreach(x => vassert(x.initFullName(interner) == dispatcherFullNameT))
 
+    val dispatcherPlaceholderFullNameToSuppliedTemplataMap = dispatcherPlaceholderFullNameToSuppliedTemplata.toMap
+    val dispatcherCasePlaceholderFullNameToSuppliedTemplataMap = dispatcherCasePlaceholderFullNameToSuppliedTemplata.toMap
+    // Sanity check there's no overlap
+    vassert(
+      (dispatcherPlaceholderFullNameToSuppliedTemplataMap ++ dispatcherCasePlaceholderFullNameToSuppliedTemplataMap).size ==
+        dispatcherPlaceholderFullNameToSuppliedTemplataMap.size + dispatcherCasePlaceholderFullNameToSuppliedTemplataMap.size)
+
     val caseInstantiator =
       new Instantiator(
         opts,
@@ -598,8 +608,8 @@ object Instantiator {
         dispatcherCaseFullNameT,
         dispatcherCaseFullNameT,
         Map(
-          dispatcherTemplateId -> dispatcherPlaceholderFullNameToSuppliedTemplata.map(_._2),
-          dispatcherFullNameT -> dispatcherCasePlaceholderFullNameToSuppliedTemplata.map(_._2)),
+          dispatcherTemplateId -> dispatcherPlaceholderFullNameToSuppliedTemplataMap,
+          dispatcherFullNameT -> dispatcherCasePlaceholderFullNameToSuppliedTemplataMap),
         caseDenizenBoundToDenizenCallerSuppliedThing)
 
 
@@ -674,7 +684,7 @@ object Instantiator {
         monouts,
         implTemplateFullName,
         implFullName,
-        Map(implTemplateFullName -> implFullName.localName.templateArgs),
+        Map(implTemplateFullName -> assemblePlaceholderMap(hinputs, implFullName)),
         denizenBoundToDenizenCallerSuppliedThing)
     instantiator.translateImplDefinition(implFullName, implDefinition)
 
@@ -778,7 +788,9 @@ object Instantiator {
         monouts,
         funcTemplateNameT,
         desiredPrototype.fullName,
-        Map(topLevelDenizenTemplateFullName -> topLevelDenizenPlaceholderIndexToTemplata),
+        Map(
+          topLevelDenizenTemplateFullName ->
+          assemblePlaceholderMap(hinputs, topLevelDenizenFullName)),
         denizenBoundToDenizenCallerSuppliedThing)
 
     desiredPrototype.fullName match {
@@ -891,6 +903,59 @@ object Instantiator {
         callerSuppliedBoundToInstantiatedImpl)
     denizenBoundToDenizenCallerSuppliedThing
   }
+
+  def assemblePlaceholderMap(hinputs: Hinputs, id: IdT[IInstantiationNameT]):
+  Map[IdT[PlaceholderNameT], ITemplata[ITemplataType]] = {
+    val containersPlaceholderMap =
+      // This might be a lambda's name. If it is, its name has an init step that's the parent
+      // function's name, and we want its mappings too.
+      (id.initNonPackageFullName() match {
+        case Some(IdT(packageCoord, initSteps, parentLocalName : IInstantiationNameT)) => {
+          assemblePlaceholderMap(hinputs, IdT(packageCoord, initSteps, parentLocalName))
+        }
+        case _ => Map[IdT[PlaceholderNameT], ITemplata[ITemplataType]]()
+      })
+
+    val placeholderedName =
+      id match {
+        case IdT(_, _, localName : IStructNameT) => {
+          hinputs.lookupStructByTemplate(localName.template).instantiatedCitizen.fullName
+        }
+        case IdT(_, _, localName : IInterfaceNameT) => {
+          hinputs.lookupInterfaceByTemplate(localName.template).instantiatedInterface.fullName
+        }
+        case IdT(_, _, localName : IFunctionNameT) => {
+          vassertSome(hinputs.lookupFunction(localName.template)).header.fullName
+        }
+        case IdT(_, _, localName : IImplNameT) => {
+          hinputs.lookupImplByTemplate(localName.template).edgeFullName
+        }
+      }
+
+    containersPlaceholderMap ++
+    placeholderedName.localName.templateArgs
+      .zip(id.localName.templateArgs)
+      .flatMap({
+        case (CoordTemplata(CoordT(placeholderOwnership, PlaceholderT(placeholderId))), c @ CoordTemplata(_)) => {
+          vassert(placeholderOwnership == OwnT || placeholderOwnership == ShareT)
+          List((placeholderId -> c))
+        }
+        case (KindTemplata(PlaceholderT(placeholderId)), kindTemplata) => {
+          List((placeholderId -> kindTemplata))
+        }
+        case (PlaceholderTemplata(placeholderId, tyype), templata) => {
+          List((placeholderId -> templata))
+        }
+        case (a, b) => {
+          // We once got a `mut` for the placeholdered name's templata.
+          // That's because we do some specialization for arrays still.
+          // They don't come with a placeholder, so ignore them.
+          vassert(a == b)
+          List()
+        }
+      })
+      .toMap
+  }
 }
 
 class Instantiator(
@@ -903,7 +968,7 @@ class Instantiator(
   denizenName: IdT[IInstantiationNameT],
 
   // This IdT might be the top level denizen and not necessarily *this* denizen, see LHPCTLD.
-  substitutions: Map[IdT[INameT], Vector[ITemplata[ITemplataType]]],
+  substitutions: Map[IdT[INameT], Map[IdT[PlaceholderNameT], ITemplata[ITemplataType]]],
 
   val denizenBoundToDenizenCallerSuppliedThing: DenizenBoundToDenizenCallerBoundArg) {
   //  selfFunctionBoundToRuneUnsubstituted: Map[PrototypeT, IRuneS],
@@ -1697,13 +1762,13 @@ class Instantiator(
   CoordT = {
     val CoordT(ownership, kind) = coord
     kind match {
-      case PlaceholderT(placeholderFullName @ IdT(packageCoord, steps, PlaceholderNameT(PlaceholderTemplateNameT(index, _)))) => {
+      case PlaceholderT(placeholderFullName) => {
         // Let's get the index'th placeholder from the top level denizen.
         // If we're compiling a function or a struct, it might actually be a lambda function or lambda struct.
         // In these cases, the topLevelDenizenPlaceholderIndexToTemplata actually came from the containing function,
         // see LHPCTLD.
 
-        vassertSome(substitutions.get(placeholderFullName.initFullName(interner)))(index) match {
+        vassertSome(vassertSome(substitutions.get(placeholderFullName.initFullName(interner))).get(placeholderFullName)) match {
           case CoordTemplata(CoordT(innerOwnership, kind)) => {
             val combinedOwnership =
               (ownership, innerOwnership) match {
@@ -1723,7 +1788,14 @@ class Instantiator(
               }
             CoordT(combinedOwnership, kind)
           }
-          case KindTemplata(kind) => CoordT(ownership, kind)
+          case KindTemplata(kind) => {
+            val newOwnership =
+              getMutability(kind) match {
+                case ImmutableT => ShareT
+                case MutableT => ownership
+              }
+            CoordT(newOwnership, kind)
+          }
         }
       }
       case other => {
@@ -1803,7 +1875,9 @@ class Instantiator(
 
   def translatePlaceholder(t: PlaceholderT): KindT = {
     val newSubstitutingTemplata =
-      vassertSome(substitutions.get(t.fullName.initFullName(interner)))(t.fullName.localName.template.index)
+      vassertSome(
+        vassertSome(substitutions.get(t.fullName.initFullName(interner)))
+        .get(t.fullName))
     ITemplata.expectKindTemplata(newSubstitutingTemplata).kind
   }
 
@@ -1883,8 +1957,8 @@ class Instantiator(
   ITemplata[ITemplataType] = {
     val result =
       templata match {
-        case PlaceholderTemplata(n @ IdT(_, _, _), _) =>  {
-          vassertSome(substitutions.get(n.initFullName(interner)))(n.localName.template.index)
+        case PlaceholderTemplata(n, _) =>  {
+          vassertSome(vassertSome(substitutions.get(n.initFullName(interner))).get(n))
         }
         case IntegerTemplata(value) => IntegerTemplata(value)
         case BooleanTemplata(value) => BooleanTemplata(value)

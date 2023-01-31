@@ -473,7 +473,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |exported func main() int {
-        |  v = Vec<3, int>(#[#][3, 4, 5]);
+        |  v = Vec<3, int>(#[#](3, 4, 5));
         |  return v.values.2;
         |}
       """.stripMargin)

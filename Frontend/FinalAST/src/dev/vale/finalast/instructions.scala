@@ -969,7 +969,9 @@ case class Local(
 
   // Usually filled by catalyst, for Midas' benefit. Used in HGM.
   keepAlive: Boolean) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+}
 
 case class VariableIdH(
   // Just to uniquify VariableIdH instances. No two variables in a FunctionH will have

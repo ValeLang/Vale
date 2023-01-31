@@ -19,7 +19,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Returning static array from function and dotting it") {
     val compile = RunCompilation.test(
       """
-        |func makeArray() [#5]int { return [#][2, 3, 4, 5, 6]; }
+        |func makeArray() [#5]int { return [#](2, 3, 4, 5, 6); }
         |exported func main() int {
         |  return makeArray().3;
         |}
@@ -33,7 +33,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  i = 2;
-        |  a = [#][2, 3, 4, 5, 6];
+        |  a = [#](2, 3, 4, 5, 6);
         |  return a[i];
         |}
       """.stripMargin)
@@ -51,7 +51,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  a = [#][13, 14, 15];
+        |  a = [#](13, 14, 15);
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e; });
         |  return sum;
@@ -80,7 +80,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |struct Spaceship { fuel int; }
         |exported func main() int {
-        |  a = [#][Spaceship(13), Spaceship(14), Spaceship(15)];
+        |  a = [#](Spaceship(13), Spaceship(14), Spaceship(15));
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e.fuel; });
         |  return sum;
@@ -267,7 +267,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  return arr.3;
         |}
         |exported func main() int {
-        |  a = #[#][2, 3, 4, 5, 6];
+        |  a = #[#](2, 3, 4, 5, 6);
         |  return doThings(a);
         |}
       """.stripMargin)
@@ -286,7 +286,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  return arr.2.x;
         |}
         |exported func main() int {
-        |  a = [#][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
+        |  a = [#](MutableStruct(2), MutableStruct(3), MutableStruct(4));
         |  return doThings(&a);
         |}
       """.stripMargin)
@@ -443,7 +443,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return [#][[#][2]].0.0;
+        |  return [#]([#](2)).0.0;
         |}
       """.stripMargin)
 
@@ -590,7 +590,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  return MakeArray<E>(N, &{ clone(seq[_]) });
           |}
           |exported func main() int {
-          |  return #[#]int[6, 4, 3, 5, 2, 8].toArray()[3];
+          |  return #[#]int(6, 4, 3, 5, 2, 8).toArray()[3];
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(5) => }
@@ -601,11 +601,11 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |import array.make.*;
         |exported func main() int {
-        |  return #[#]#[]int[
-        |    #[#]int[6, 60].toImmArray(),
-        |    #[#]int[4, 40].toImmArray(),
-        |    #[#]int[3, 30].toImmArray()
-        |  ].toImmArray()[2][1];
+        |  return #[#]#[]int(
+        |    #[#]int(6, 60).toImmArray(),
+        |    #[#]int(4, 40).toImmArray(),
+        |    #[#]int(3, 30).toImmArray()
+        |  ).toImmArray()[2][1];
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(30) => }
@@ -618,7 +618,7 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.each.*;
         |exported func main() int {
         |  sum = 0;
-        |  [#]int[6, 60, 103]&.each(&{ set sum = sum + _; });
+        |  [#]int(6, 60, 103)&.each(&{ set sum = sum + _; });
         |  return sum;
         |}
         |""".stripMargin)
@@ -630,7 +630,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.has.*;
           |exported func main() bool {
-          |  return [#]int[6, 60, 103]&.has(103);
+          |  return [#]int(6, 60, 103)&.has(103);
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonBool(true) => }
@@ -643,7 +643,7 @@ class ArrayTests extends FunSuite with Matchers {
           |import array.make.*;
           |import array.iter.*;
           |exported func main() {
-          |  planets = [#]["Venus", "Earth", "Mars"];
+          |  planets = [#]("Venus", "Earth", "Mars");
           |  foreach planet in planets {
           |    print(planet);
           |  }

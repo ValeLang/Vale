@@ -2,7 +2,7 @@ package dev.vale.typing.ast
 
 import dev.vale.postparsing.{CoordTemplataType, IRuneS, ITemplataType, MutabilityTemplataType, PackTemplataType}
 import dev.vale.typing.TemplataCompiler
-import dev.vale.typing.names.{CitizenNameT, CodeVarNameT, IdT, FunctionBoundNameT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, IVarNameT, ImplBoundNameT, StructNameT}
+import dev.vale.typing.names.{CitizenNameT, CodeVarNameT, FunctionBoundNameT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, IVarNameT, IdT, ImplBoundNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata.{ITemplata, PlaceholderTemplata}
 import dev.vale.typing.types._
 import dev.vale.{StrI, vcurious, vfail, vpass}
@@ -100,7 +100,14 @@ sealed trait IMemberTypeT  {
 }
 
 case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT
-case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT
+case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
+  reference match {
+    case CoordT(OwnT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("Marine")),Vector())))) => {
+      vpass()
+    }
+    case _ =>
+  }
+}
 
 case class InterfaceDefinitionT(
   templateName: IdT[IInterfaceTemplateNameT],

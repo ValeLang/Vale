@@ -99,7 +99,7 @@ class LetHammer(
     locals: LocalsBox,
     sourceExprHE: ExpressionH[KindHT],
     sourceResultPointerTypeH: CoordH[KindHT],
-    varId: IdT[IVarNameT],
+    varId: IVarNameT,
     variability: VariabilityT,
     reference: CoordT):
   ExpressionH[KindHT] = {
@@ -107,7 +107,7 @@ class LetHammer(
       structHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
     val expectedLocalBoxType = CoordH(OwnH, YonderH, boxStructRefH)
 
-    val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, varId)
+    val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))
     val local =
       locals.addTypingPassLocal(
         varId, varIdNameH, Conversions.evaluateVariability(variability), expectedLocalBoxType)
@@ -118,7 +118,7 @@ class LetHammer(
         hamuts.structDefs.find(_.getRef == boxStructRefH).get.members.map(_.name),
         expectedLocalBoxType),
       local,
-      Some(nameHammer.translateFullName(hinputs, hamuts, varId)))
+      Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
   }
 
   private def translateAddressibleLetAndPoint(
@@ -130,7 +130,7 @@ class LetHammer(
     sourceExprHE: ExpressionH[KindHT],
     sourceResultPointerTypeH: CoordH[KindHT],
     letTE: LetAndLendTE,
-    varId: IdT[IVarNameT],
+    varId: IVarNameT,
     variability: VariabilityT,
     reference: CoordT):
   (ExpressionH[KindHT]) = {
@@ -157,21 +157,21 @@ class LetHammer(
     locals: LocalsBox,
     sourceExprHE: ExpressionH[KindHT],
     sourceResultPointerTypeH: CoordH[KindHT],
-    varId: IdT[IVarNameT],
+    varId: IVarNameT,
     variability: VariabilityT):
   StackifyH = {
     sourceExprHE.resultType.kind match {
       case NeverHT(_) => vwat()
       case _ =>
     }
-    val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, varId)
+    val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))
     val localIndex =
       locals.addTypingPassLocal(varId, varIdNameH, Conversions.evaluateVariability(variability), sourceResultPointerTypeH)
     val stackNode =
       StackifyH(
         sourceExprHE,
         localIndex,
-        Some(nameHammer.translateFullName(hinputs, hamuts, varId)))
+        Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
     stackNode
   }
 
@@ -184,7 +184,7 @@ class LetHammer(
       sourceExprHE: ExpressionH[KindHT],
       sourceResultPointerTypeH: CoordH[KindHT],
       letTE: LetAndLendTE,
-      varId: IdT[IVarNameT],
+      varId: IVarNameT,
       variability: VariabilityT):
     ExpressionH[KindHT] = {
     val stackifyH =
@@ -219,9 +219,9 @@ class LetHammer(
       unlet2: UnletTE):
   (ExpressionH[KindHT]) = {
     val local =
-      locals.get(unlet2.variable.id) match {
+      locals.get(unlet2.variable.name) match {
         case None => {
-          vfail("Unletting an unknown variable: " + unlet2.variable.id)
+          vfail("Unletting an unknown variable: " + unlet2.variable.name)
         }
         case Some(local) => local
       }
@@ -285,10 +285,12 @@ class LetHammer(
         .map(destinationReferenceLocalVariable => {
           val (memberRefTypeH) =
             typeHammer.translateCoord(hinputs, hamuts, arrSeqT.elementType)
-          val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, destinationReferenceLocalVariable.id)
+          val varIdNameH =
+            nameHammer.translateFullName(
+              hinputs, hamuts, currentFunctionHeader.fullName.addStep(destinationReferenceLocalVariable.name))
           val localIndex =
             locals.addTypingPassLocal(
-              destinationReferenceLocalVariable.id,
+              destinationReferenceLocalVariable.name,
               varIdNameH,
               Conversions.evaluateVariability(destinationReferenceLocalVariable.variability),
               memberRefTypeH)
@@ -341,10 +343,10 @@ class LetHammer(
 
               val (memberRefTypeH) =
                 typeHammer.translateCoord(hinputs, hamuts, memberRefType2)
-              val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, destinationReferenceLocalVariable.id)
+              val varIdNameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(destinationReferenceLocalVariable.name))
               val localIndex =
                 locals.addTypingPassLocal(
-                  destinationReferenceLocalVariable.id,
+                  destinationReferenceLocalVariable.name,
                   varIdNameH,
                   Conversions.evaluateVariability(destinationReferenceLocalVariable.variability),
                   memberRefTypeH)

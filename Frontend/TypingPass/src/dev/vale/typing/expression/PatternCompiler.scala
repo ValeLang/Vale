@@ -79,7 +79,7 @@ class PatternCompiler(
     // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
     afterPatternsSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+    vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     (patternsA, patternInputsTE) match {
       case (Nil, Nil) => afterPatternsSuccessContinuation(coutputs, nenv, liveCaptureLocals)
@@ -87,7 +87,7 @@ class PatternCompiler(
         innerTranslateSubPatternAndMaybeContinue(
           coutputs, nenv, life + 0, parentRanges, headPatternA, liveCaptureLocals, headPatternInputTE,
           (coutputs, nenv, life, liveCaptureLocals) => {
-            vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+            vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
             iterateTranslateListAndMaybeContinue(
               coutputs, nenv, life + 1, parentRanges, liveCaptureLocals, tailPatternsA, tailPatternInputsTE, afterPatternsSuccessContinuation)
@@ -184,7 +184,7 @@ class PatternCompiler(
     // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
     afterSubPatternSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    vassert(previousLiveCaptureLocals.map(_.id) == previousLiveCaptureLocals.map(_.id).distinct)
+    vassert(previousLiveCaptureLocals.map(_.name) == previousLiveCaptureLocals.map(_.name).distinct)
 
     val AtomSP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
@@ -217,7 +217,7 @@ class PatternCompiler(
     }
 
     val liveCaptureLocals = previousLiveCaptureLocals ++ maybeCaptureLocalVarT.toVector
-    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+    vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     Compiler.consecutive(
       currentInstructions :+
@@ -252,7 +252,7 @@ class PatternCompiler(
     listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
     afterDestructureSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
+    vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
     val CoordT(OwnT, expectedContainerKind) = inputExpr.result.coord
     expectedContainerKind match {
@@ -284,7 +284,7 @@ class PatternCompiler(
         val elementLocals = (0 until size.toInt).map(i => localHelper.makeTemporaryLocal(nenv, life + 3 + i, elementType)).toVector
         val destroyTE = DestroyStaticSizedArrayIntoLocalsTE(inputExpr, staticSizedArrayT, elementLocals)
         val liveCaptureLocals = initialLiveCaptureLocals ++ elementLocals
-        vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+        vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
         if (elementLocals.size != listOfMaybeDestructureMemberPatterns.size) {
           throw CompileErrorExceptionT(WrongNumberOfDestructuresError(parentRanges, listOfMaybeDestructureMemberPatterns.size, elementLocals.size))
@@ -314,7 +314,7 @@ class PatternCompiler(
       listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
       afterDestructureSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+    vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     val localT = localHelper.makeTemporaryLocal(nenv, life + 0, containerTE.result.coord)
     val letTE = LetNormalTE(localT, containerTE)
@@ -340,7 +340,7 @@ class PatternCompiler(
     listOfMaybeDestructureMemberPatterns: List[AtomSP],
     afterDestructureSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+    vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     val CoordT(expectedContainerOwnership, expectedContainerKind) = expectedContainerCoord
 
@@ -381,7 +381,7 @@ class PatternCompiler(
         innerTranslateSubPatternAndMaybeContinue(
           coutputs, nenv, life + 1, parentRanges, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
           (coutputs, nenv, life, liveCaptureLocals) => {
-            vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+            vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
             val nextMemberIndex = memberIndex + 1
             iterateDestructureNonOwningAndMaybeContinue(
@@ -410,7 +410,7 @@ class PatternCompiler(
     inputStructExpr: ReferenceExpressionTE,
     afterDestroySuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
+    vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
     val CoordT(_, structTT @ StructTT(_)) = inputStructExpr.result.coord
     val structDefT = coutputs.lookupStruct(structTT.fullName)
@@ -436,7 +436,7 @@ class PatternCompiler(
         .map({ case (memberType, i) => localHelper.makeTemporaryLocal(nenv, life + 1 + i, memberType) }).toVector
     val destroyTE = DestroyTE(inputStructExpr, structTT, memberLocals)
     val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
-    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
+    vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     if (memberLocals.size != innerPatternMaybes.size) {
       throw CompileErrorExceptionT(WrongNumberOfDestructuresError(parentRanges, innerPatternMaybes.size, memberLocals.size))
@@ -464,7 +464,7 @@ class PatternCompiler(
     innerPatternMaybes: List[AtomSP],
     afterLetsSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
+    vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
     vassert(memberLocalVariables.size == innerPatternMaybes.size)
 
@@ -474,13 +474,13 @@ class PatternCompiler(
       }
       case (headMemberLocalVariable :: tailMemberLocalVariables, headInnerPattern :: tailInnerPatternMaybes) => {
         val unletExpr = localHelper.unletLocalWithoutDropping(nenv, headMemberLocalVariable)
-        val liveCaptureLocals = initialLiveCaptureLocals.filter(_.id != headMemberLocalVariable.id)
+        val liveCaptureLocals = initialLiveCaptureLocals.filter(_.name != headMemberLocalVariable.name)
         vassert(liveCaptureLocals.size == initialLiveCaptureLocals.size - 1)
 
         innerTranslateSubPatternAndMaybeContinue(
           coutputs, nenv, life + 1, headInnerPattern.range :: parentRanges, headInnerPattern, liveCaptureLocals, unletExpr,
           (coutputs, nenv, life, liveCaptureLocals) => {
-            vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
+            vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
             makeLetsForOwnAndMaybeContinue(
               coutputs, nenv, life, parentRanges, liveCaptureLocals, tailMemberLocalVariables, tailInnerPatternMaybes, afterLetsSuccessContinuation)
@@ -531,7 +531,7 @@ class PatternCompiler(
     ReferenceMemberLookupTE(
       loadRange,
       containerAlias,
-      structDefT.templateName.addStep(structDefT.members(index).name),
+      structDefT.members(index).name,
       memberType,
       variability)
   }

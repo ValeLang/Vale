@@ -82,7 +82,7 @@ class NameTranslator(interner: Interner) {
       case LambdaStructDeclarationNameS(LambdaDeclarationNameS(codeLocation)) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(translateCodeLocation(codeLocation)))))
       case LetNameS(codeLocation) => interner.intern(LetNameT(translateCodeLocation(codeLocation)))
       case ExportAsNameS(codeLocation) => interner.intern(ExportAsNameT(translateCodeLocation(codeLocation)))
-      case ClosureParamNameS() => interner.intern(ClosureParamNameT())
+      case ClosureParamNameS(codeLocation) => interner.intern(ClosureParamNameT(codeLocation))
       case MagicParamNameS(codeLocation) => interner.intern(MagicParamNameT(translateCodeLocation(codeLocation)))
       case CodeVarNameS(name) => interner.intern(CodeVarNameT(name))
       case s @ TopLevelStructDeclarationNameS(_, _) => translateStructName(s)
@@ -125,7 +125,7 @@ class NameTranslator(interner: Interner) {
   def translateVarNameStep(name: IVarNameS): IVarNameT = {
     name match {
       //      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameT(translateCodeLocation(codeLocation))
-      case ClosureParamNameS() => interner.intern(ClosureParamNameT())
+      case ClosureParamNameS(codeLocation) => interner.intern(ClosureParamNameT(codeLocation))
       case SelfNameS() => interner.intern(SelfNameT())
       case IterableNameS(range) => interner.intern(IterableNameT(range))
       case IteratorNameS(range) => interner.intern(IteratorNameT(range))

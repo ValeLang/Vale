@@ -60,7 +60,7 @@ object CompilerErrorHumanizer {
           "Cannot move out of member (" + name + ")"
         }
         case CantMutateFinalMember(range, struct, memberName) => {
-          "Cannot mutate final member '" + printableVarName(memberName.localName) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
+          "Cannot mutate final member '" + printableVarName(memberName) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
         }
         case CantMutateFinalElement(range, coord) => {
           "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."

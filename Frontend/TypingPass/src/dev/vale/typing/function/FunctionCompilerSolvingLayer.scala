@@ -220,7 +220,7 @@ class FunctionCompilerSolvingLayer(
     function.body match {
       case CodeBodyS(body1) => {
         body1.closuredNames.foreach(name => {
-          vassert(nearEnv.variables.exists(_.id.localName == nameTranslator.translateNameStep(name)))
+          vassert(nearEnv.variables.exists(_.name == nameTranslator.translateNameStep(name)))
         })
       }
       case _ =>

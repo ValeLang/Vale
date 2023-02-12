@@ -36,7 +36,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs();
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(IdT(_,_, CodeVarNameT(StrI("a"))), VaryingT, _)), ConstantIntTE(IntegerTemplata(4), _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(CodeVarNameT(StrI("a")), VaryingT, _)), ConstantIntTE(IntegerTemplata(4), _)) => })
 
     val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
     val resultCoord = lookup.result.coord
@@ -133,7 +133,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         structTT match {
           case StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
-        memberName.localName match {
+        memberName match {
           case CodeVarNameT(StrI("x")) =>
         }
       }
@@ -155,7 +155,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         structTT match {
           case StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
-        memberName.localName match {
+        memberName match {
           case CodeVarNameT(StrI("x")) =>
         }
       }
@@ -313,7 +313,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
       CantMutateFinalMember(
         tz,
         serenityKind,
-        IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CodeVarNameT(StrI("bork"))))))
+        interner.intern(CodeVarNameT(StrI("bork")))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

@@ -22,7 +22,7 @@ import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, IImplNameT, IVarNameT, IdT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
+import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, IImplNameT, IVarNameT, IdT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -158,6 +158,15 @@ class ExpressionCompiler(
         Some(LocalLookupTE(loadRange, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
+        val closuredVarsStructFullName = closuredVarsStructRef.fullName
+        val closuredVarsStructTemplateFullName =
+          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructTemplateName =
+          closuredVarsStructTemplateFullName.localName match {
+            case n @ LambdaCitizenTemplateNameT(_) => n
+            case _ => vwat()
+          }
+
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
@@ -166,7 +175,7 @@ class ExpressionCompiler(
             case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
-        val name2 = nenv.fullName.addStep(interner.intern(ClosureParamNameT()))
+        val name2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
         val borrowExpr =
           localHelper.borrowSoftLoad(
             coutputs,
@@ -175,14 +184,23 @@ class ExpressionCompiler(
               ReferenceLocalVariableT(name2, FinalT, closuredVarsStructRefRef)))
 
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
-        vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
+        vassert(closuredVarsStructDef.members.exists(member => member.name == id))
 
-        val index = closuredVarsStructDef.members.indexWhere(_.name == id.localName)
+        val index = closuredVarsStructDef.members.indexWhere(_.name == id)
 //        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
         val lookup = ast.AddressMemberLookupTE(loadRange, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
+        val closuredVarsStructFullName = closuredVarsStructRef.fullName
+        val closuredVarsStructTemplateFullName =
+          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructTemplateName =
+          closuredVarsStructTemplateFullName.localName match {
+            case n @ LambdaCitizenTemplateNameT(_) => n
+            case _ => vwat()
+          }
+
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
@@ -196,7 +214,7 @@ class ExpressionCompiler(
             coutputs,
             LocalLookupTE(
               loadRange,
-              ReferenceLocalVariableT(nenv.fullName.addStep(interner.intern(ClosureParamNameT())), FinalT, closuredVarsStructRefCoord)))
+              ReferenceLocalVariableT(interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation)), FinalT, closuredVarsStructRefCoord)))
 
         val lookup =
           ast.ReferenceMemberLookupTE(loadRange, borrowExpr, varName, tyype, variability)
@@ -220,11 +238,20 @@ class ExpressionCompiler(
       }
       case Some(rlv @ ReferenceLocalVariableT(varId, variability, reference)) => {
         if (nenv.unstackifieds.contains(varId)) {
-          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(ranges, varId.localName))
+          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(ranges, varId))
         }
         Some(LocalLookupTE(ranges.head, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
+        val closuredVarsStructFullName = closuredVarsStructRef.fullName
+        val closuredVarsStructTemplateFullName =
+          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructTemplateName =
+          closuredVarsStructTemplateFullName.localName match {
+            case n @ LambdaCitizenTemplateNameT(_) => n
+            case _ => vwat()
+          }
+
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
@@ -233,7 +260,7 @@ class ExpressionCompiler(
             case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
-        val closureParamVarName2 = nenv.fullName.addStep(interner.intern(ClosureParamNameT()))
+        val closureParamVarName2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
 
         val borrowExpr =
           localHelper.borrowSoftLoad(
@@ -243,9 +270,9 @@ class ExpressionCompiler(
               ReferenceLocalVariableT(closureParamVarName2, FinalT, closuredVarsStructRefRef)))
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
 
-        vassert(closuredVarsStructRef.fullName.steps == id.steps.init)
+//        vassert(closuredVarsStructRef.fullName.steps == id.steps.init)
 
-        vassert(closuredVarsStructDef.members.map(_.name).contains(id.localName))
+        vassert(closuredVarsStructDef.members.map(_.name).contains(id))
         val lookup = AddressMemberLookupTE(ranges.head, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
@@ -253,6 +280,11 @@ class ExpressionCompiler(
         val closuredVarsStructFullName = closuredVarsStructRef.fullName
         val closuredVarsStructTemplateFullName =
           TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructTemplateName =
+          closuredVarsStructTemplateFullName.localName match {
+            case n @ LambdaCitizenTemplateNameT(_) => n
+            case _ => vwat()
+          }
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
@@ -263,14 +295,14 @@ class ExpressionCompiler(
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
 
-        vassert(closuredVarsStructDef.members.map(_.name).contains(varName.localName))
+        vassert(closuredVarsStructDef.members.map(_.name).contains(varName))
 
         val borrowExpr =
           localHelper.borrowSoftLoad(
             coutputs,
             LocalLookupTE(
               ranges.head,
-              ReferenceLocalVariableT(nenv.fullName.addStep(interner.intern(ClosureParamNameT())), FinalT, closuredVarsStructRefCoord)))
+              ReferenceLocalVariableT(interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation)), FinalT, closuredVarsStructRefCoord)))
 
         val lookup = ReferenceMemberLookupTE(ranges.head, borrowExpr, varName, tyype, variability)
         Some(lookup)
@@ -679,7 +711,7 @@ class ExpressionCompiler(
                     case None => throw CompileErrorExceptionT(CouldntFindMemberT(range :: parentRanges, memberName.name.str))
                     case Some(x) => x
                   }
-                val memberFullName = structDef.templateName.addStep(structDef.members(memberIndex).name)
+//                val memberName = structDef.members(memberIndex).name
                 val unsubstitutedMemberType = structMember.tyype.expectReferenceMember().reference;
                 val memberType =
                   TemplataCompiler.getPlaceholderSubstituter(
@@ -692,9 +724,9 @@ class ExpressionCompiler(
                       vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
                     .substituteForCoord(coutputs, unsubstitutedMemberType)
 
-                vassert(structDef.members.exists(member => structDef.templateName.addStep(member.name) == memberFullName))
+                vassert(structDef.members.exists(_.name == memberName))
 
-                ast.ReferenceMemberLookupTE(range, containerExpr2, memberFullName, memberType, structMember.variability)
+                ast.ReferenceMemberLookupTE(range, containerExpr2, memberName, memberType, structMember.variability)
               }
               case as@contentsStaticSizedArrayTT(_, _, _, _) => {
                 if (memberNameStr.str.forall(Character.isDigit)) {
@@ -932,7 +964,7 @@ class ExpressionCompiler(
             case _ => {
               val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
               if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.localName))
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head))
               }
             }
           }
@@ -1016,7 +1048,7 @@ class ExpressionCompiler(
 
               val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
               if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.localName))
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head))
               }
 
               val whileTE = WhileTE(bodyTE)
@@ -1139,12 +1171,12 @@ class ExpressionCompiler(
 
           val allLocals = nenv.getAllLocals()
           val unstackifiedLocals = nenv.getAllUnstackifiedLocals()
-          val variablesToDestruct = allLocals.filter(x => !unstackifiedLocals.contains(x.id))
+          val variablesToDestruct = allLocals.filter(x => !unstackifiedLocals.contains(x.name))
           val reversedVariablesToDestruct = variablesToDestruct.reverse
 
           val returns = returnsFromInnerExpr + innerExpr2.result.coord
 
-          val resultVarId = nenv.fullName.addStep(interner.intern(TypingPassFunctionResultVarNameT()))
+          val resultVarId = interner.intern(TypingPassFunctionResultVarNameT())
           val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, innerExpr2.result.coord)
           val resultLet = ast.LetNormalTE(resultVariable, innerExpr2)
           nenv.addVariable(resultVariable)
@@ -1557,7 +1589,7 @@ class ExpressionCompiler(
     life: LocationInFunctionEnvironment,
     expr: ReferenceExpressionTE):
   (ReferenceExpressionTE, ReferenceLocalVariableT) = {
-    val resultVarId = nenv.fullName.addStep(interner.intern(TypingPassBlockResultVarNameT(life)))
+    val resultVarId = interner.intern(TypingPassBlockResultVarNameT(life))
     val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, expr.result.coord)
     val resultLet = LetNormalTE(resultVariable, expr)
     nenv.addVariable(resultVariable)

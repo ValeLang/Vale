@@ -189,7 +189,7 @@ object TemplatasStore {
       case RuneNameT(r) => Some(interner.intern(RuneNameS(r)))
       case LambdaCitizenNameT(template) => getImpreciseName(interner, template)
       case LambdaCitizenTemplateNameT(loc) => Some(interner.intern(LambdaStructImpreciseNameS(interner.intern(LambdaImpreciseNameS()))))
-      case ClosureParamNameT() => Some(interner.intern(ClosureParamNameS()))
+      case ClosureParamNameT(codeLoc) => Some(interner.intern(ClosureParamImpreciseNameS()))
       case SelfNameT() => Some(interner.intern(SelfNameS()))
       case ArbitraryNameT() => Some(interner.intern(ArbitraryNameS()))
       case AnonymousSubstructImplNameT(_, _, _) => None

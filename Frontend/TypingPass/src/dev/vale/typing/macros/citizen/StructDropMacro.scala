@@ -189,7 +189,7 @@ class StructDropMacro(
                           // We received an instance of this type, so we can use the bounds from it.
                           InheritBoundsFromTypeItself)
                       val reference = substituter.substituteForCoord(coutputs, unsubstitutedReference)
-                      Vector(ReferenceLocalVariableT(env.fullName.addStep(name), FinalT, reference))
+                      Vector(ReferenceLocalVariableT(name, FinalT, reference))
                     }
                     case NormalStructMemberT(_, _, AddressMemberTypeT(_)) => {
                       // See Destructure2 and its handling of addressible members for why

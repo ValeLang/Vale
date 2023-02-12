@@ -25,15 +25,15 @@ case class LocalsBox(var inner: Locals) {
 
   def snapshot = inner
 
-  def typingPassLocals: Map[IdT[IVarNameT], VariableIdH] = inner.typingPassLocals
+  def typingPassLocals: Map[IVarNameT, VariableIdH] = inner.typingPassLocals
   def unstackifiedVars: Set[VariableIdH] = inner.unstackifiedVars
   def locals: Map[VariableIdH, Local] = inner.locals
   def nextLocalIdNumber: Int = inner.nextLocalIdNumber
 
-  def get(id: IdT[IVarNameT]) = inner.get(id)
+  def get(id: IVarNameT) = inner.get(id)
   def get(id: VariableIdH) = inner.get(id)
 
-  def markUnstackified(varId2: IdT[IVarNameT]): Unit = {
+  def markUnstackified(varId2: IVarNameT): Unit = {
     inner = inner.markUnstackified(varId2)
   }
 
@@ -54,7 +54,7 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addTypingPassLocal(
-    varId2: IdT[IVarNameT],
+    varId2: IVarNameT,
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -72,7 +72,7 @@ case class LocalsBox(var inner: Locals) {
 case class Locals(
      // This doesn't have all the locals that are in the locals list, this just
      // has any locals added by typingpass.
-     typingPassLocals: Map[IdT[IVarNameT], VariableIdH],
+     typingPassLocals: Map[IVarNameT, VariableIdH],
 
      unstackifiedVars: Set[VariableIdH],
 
@@ -83,7 +83,7 @@ case class Locals(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def addCompilerLocal(
-    varId2: IdT[IVarNameT],
+    varId2: IVarNameT,
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -123,7 +123,7 @@ case class Locals(
     (newLocals, newLocal)
   }
 
-  def markUnstackified(varId2: IdT[IVarNameT]): Locals = {
+  def markUnstackified(varId2: IVarNameT): Locals = {
     markUnstackified(typingPassLocals(varId2))
   }
 
@@ -136,7 +136,7 @@ case class Locals(
     Locals(typingPassLocals, unstackifiedVars + varIdH, locals, nextLocalIdNumber)
   }
 
-  def get(varId: IdT[IVarNameT]): Option[Local] = {
+  def get(varId: IVarNameT): Option[Local] = {
     typingPassLocals.get(varId) match {
       case None => None
       case Some(index) => Some(locals(index))

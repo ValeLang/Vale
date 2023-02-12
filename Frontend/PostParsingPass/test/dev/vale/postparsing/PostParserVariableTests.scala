@@ -579,7 +579,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     lamBlock.locals.head match {
       case LocalS(name, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
         name match {
-          case ClosureParamNameS() =>
+          case ClosureParamNameS(_) =>
         }
       }
     }
@@ -602,9 +602,8 @@ class PostParserVariableTests extends FunSuite with Matchers {
         case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     val locals = lamBlock.locals
-    locals.find(_.varName match { case ClosureParamNameS() => true case _ => false }).get match {
-      case LocalS(ClosureParamNameS(),
-        NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+    locals.find(_.varName match { case ClosureParamNameS(_) => true case _ => false }).get match {
+      case LocalS(ClosureParamNameS(_), NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 }

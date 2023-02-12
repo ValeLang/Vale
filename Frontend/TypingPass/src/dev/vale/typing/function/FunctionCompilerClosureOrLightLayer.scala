@@ -436,15 +436,15 @@ class FunctionCompilerClosureOrLightLayer(
         InheritBoundsFromTypeItself)
     val variables =
       closureStructDef.members.map(member => {
-        val variableFullName = closureStructDef.instantiatedCitizen.fullName.addStep(member.name)
+        val varName = member.name
         member match {
           case NormalStructMemberT(name, variability, ReferenceMemberTypeT(reference)) => {
             ReferenceClosureVariableT(
-              variableFullName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
+              varName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
           }
           case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
             AddressibleClosureVariableT(
-              variableFullName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
+              varName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
           }
           case VariadicStructMemberT(name, tyype) => vimpl()
         }

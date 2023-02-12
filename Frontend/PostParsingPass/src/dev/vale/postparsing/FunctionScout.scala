@@ -237,7 +237,7 @@ class FunctionScout(
               case ParentInterface(_, _, _, _) => noDeclarations
               case ParentFunction(_) => {
                 // Every lambda has a closure as its first arg, even if its empty
-                val closureParamName = interner.intern(ClosureParamNameS())
+                val closureParamName = interner.intern(ClosureParamNameS(rangeS.begin))
                 val closureDeclaration =
                   VariableDeclarations(Vector(VariableDeclaration(closureParamName)))
                 closureDeclaration
@@ -365,9 +365,9 @@ class FunctionScout(
                 throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
               }
 
-              val closureParamName = interner.intern(ClosureParamNameS())
               val closureParamPos = PostParser.evalPos(parentStackFrame.file, range.begin)
               val closureParamRange = RangeS(closureParamPos, closureParamPos)
+              val closureParamName = interner.intern(ClosureParamNameS(closureParamPos))
 
               val closureStructKindRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
               runeToExplicitType += ((closureStructKindRune.rune, KindTemplataType()))

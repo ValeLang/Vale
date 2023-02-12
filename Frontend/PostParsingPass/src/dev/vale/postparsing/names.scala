@@ -83,7 +83,8 @@ case class AnonymousSubstructImplDeclarationNameS(interface: TopLevelInterfaceDe
 case class ExportAsNameS(codeLocation: CodeLocationS) extends INameS {  }
 case class LetNameS(codeLocation: CodeLocationS) extends INameS {  }
 //case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS {  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ClosureParamNameS() extends IVarNameS with IImpreciseNameS {  }
+case class ClosureParamNameS(codeLocation: CodeLocationS) extends IVarNameS {  }
+case class ClosureParamImpreciseNameS() extends IImpreciseNameS {  }
 // All prototypes can be looked up via this name.
 case class PrototypeNameS() extends IImpreciseNameS {  }
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS {  }

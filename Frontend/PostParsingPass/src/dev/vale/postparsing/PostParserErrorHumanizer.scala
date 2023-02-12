@@ -82,7 +82,7 @@ object PostParserErrorHumanizer {
   def humanizeName(name: INameS): String = {
     name match {
 //      case UnnamedLocalNameS(codeLocation) => "(unnamed)"
-      case ClosureParamNameS() => "(closure)"
+      case ClosureParamNameS(_) => "(closure)"
 //      case FreeDeclarationNameS(_) => "(free)"
 //      case CodeNameS(n) => n
       case GlobalFunctionFamilyNameS(n) => n

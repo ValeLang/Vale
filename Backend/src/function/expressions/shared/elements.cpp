@@ -6,6 +6,7 @@
 #include "../../../utils/branch.h"
 #include "elements.h"
 #include "../../../utils/counters.h"
+#include <region/common/migration.h>
 
 LLVMValueRef checkIndexInBounds(
     GlobalState* globalState,
@@ -32,7 +33,7 @@ LLVMValueRef checkIndexInBounds(
 LLVMValueRef getStaticSizedArrayContentsPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE staticSizedArrayWrapperPtrLE) {
-  return LLVMBuildStructGEP(
+  return unmigratedLLVMBuildStructGEP(
       builder,
       staticSizedArrayWrapperPtrLE.refLE,
       1, // Array is after the control block.
@@ -49,7 +50,7 @@ LLVMValueRef getRuntimeSizedArrayContentsPtr(
       (capacityExists ? 1 : 0); // capacity
   int index = numThingsBefore;
 
-  return LLVMBuildStructGEP(
+  return unmigratedLLVMBuildStructGEP(
       builder,
       arrayWrapperPtrLE.refLE,
       index,
@@ -61,7 +62,7 @@ LLVMValueRef getRuntimeSizedArrayLengthPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
   auto resultLE =
-      LLVMBuildStructGEP(
+      unmigratedLLVMBuildStructGEP(
           builder,
           runtimeSizedArrayWrapperPtrLE.refLE,
           1, // Length is after the control block and before the capacity.
@@ -75,7 +76,7 @@ LLVMValueRef getRuntimeSizedArrayCapacityPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
   auto resultLE =
-      LLVMBuildStructGEP(
+      unmigratedLLVMBuildStructGEP(
           builder,
           runtimeSizedArrayWrapperPtrLE.refLE,
           2, // Length is after the control block and before contents.
@@ -105,11 +106,11 @@ LoadResult loadElement(
       constI32LE(globalState, 0),
       indexLE
   };
-  auto fromArrayLE =
-      LLVMBuildLoad(
-          builder,
-          LLVMBuildGEP(builder, elemsPtrLE, indices, 2, "indexPtr"),
-          "index");
+
+  auto elementLT = globalState->getRegion(elementRefM)->translateType(elementRefM);
+  auto elementPtrLE =
+      unmigratedLLVMBuildGEP(builder, elemsPtrLE, indices, 2, "indexPtr");
+  auto fromArrayLE = unmigratedLLVMBuildLoad(builder, elementPtrLE, "index");
 
   auto sourceRef = wrap(globalState->getRegion(elementRefM), elementRefM, fromArrayLE);
   globalState->getRegion(elementRefM)
@@ -129,7 +130,7 @@ void storeInnerArrayMember(
       constI32LE(globalState, 0),
       indexLE
   };
-  auto destPtrLE = LLVMBuildGEP(builder, elemsPtrLE, indices, 2, "destPtr");
+  auto destPtrLE = unmigratedLLVMBuildGEP(builder, elemsPtrLE, indices, 2, "destPtr");
   //buildFlare(FL(), globalState, functionState, builder, "writing a reference to ", ptrToIntLE(globalState, builder, destPtrLE));
   LLVMBuildStore(builder, sourceLE, destPtrLE);
 }
@@ -256,15 +257,15 @@ void intRangeLoop(
       globalState,
       functionState,
       builder,
-      [globalState, sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
+      [globalState, int32LT, sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
         auto iterationIndexLE =
-            LLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
+            LLVMBuildLoad2(conditionBuilder, int32LT, iterationIndexPtrLE, "iterationIndex");
         auto isBeforeEndLE =
             LLVMBuildICmp(conditionBuilder, LLVMIntSLT, iterationIndexLE, sizeLE, "iterationIndexIsBeforeEnd");
         return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isBeforeEndLE);
       },
-      [globalState, iterationBuilder, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
-        auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
+      [globalState, iterationBuilder, int32LT, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
+        auto iterationIndexLE = LLVMBuildLoad2(bodyBuilder, int32LT, iterationIndexPtrLE, "iterationIndex");
         iterationBuilder(iterationIndexLE, bodyBuilder);
         adjustCounter(globalState, bodyBuilder, globalState->metalCache->i32, iterationIndexPtrLE, 1);
       });
@@ -293,7 +294,7 @@ void intRangeLoopReverseV(
       builder,
       [globalState, iterationIndexPtrLE, innt](LLVMBuilderRef conditionBuilder) {
         auto iterationIndexLE =
-            LLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
+            unmigratedLLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
         auto zeroLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), 0, false);
         auto isBeforeEndLE =
             LLVMBuildICmp(conditionBuilder, LLVMIntSGT, iterationIndexLE, zeroLE, "iterationIndexIsBeforeEnd");
@@ -301,7 +302,7 @@ void intRangeLoopReverseV(
       },
       [globalState, iterationBuilder, innt, inntRefMT, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
         adjustCounter(globalState, bodyBuilder, innt, iterationIndexPtrLE, -1);
-        auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
+        auto iterationIndexLE = unmigratedLLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
         auto iterationIndexRef = wrap(globalState->getRegion(inntRefMT), inntRefMT, iterationIndexLE);
         iterationBuilder(iterationIndexRef, bodyBuilder);
       });

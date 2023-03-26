@@ -276,7 +276,7 @@ void RCImm::declareInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 
 void RCImm::defineInterface(
     InterfaceDefinition* interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -307,7 +307,7 @@ void RCImm::declareEdge(Edge* edge) {
 void RCImm::defineEdge(Edge* edge) {
   auto interfaceM = globalState->program->getInterface(edge->interfaceName);
 
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 
@@ -788,7 +788,7 @@ void RCImm::discard(
 //                globalState->getRegion(sourceMT)->checkValidReference(FL(),
 //                    functionState, thenBuilder, true, sourceMT, sourceRef);
 //            std::vector<LLVMValueRef> argExprsL = {sourceLE};
-//            return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
+//            return unmigratedLLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
           });
     }
   } else {
@@ -1414,14 +1414,14 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
       });
 }
 
-LLVMValueRef RCImm::getInterfaceMethodFunctionPtr(
+FuncPtrLE RCImm::getInterfaceMethodFunctionPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 LLVMValueRef RCImm::stackify(

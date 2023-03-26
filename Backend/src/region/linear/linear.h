@@ -422,6 +422,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
+      LLVMTypeRef structInnerLT,
       Ref structRef,
       int memberIndex,
       Reference* expectedMemberType,
@@ -456,7 +457,7 @@ public:
 
   Weakability getKindWeakability(Kind* kind) override;
 
-  LLVMValueRef getInterfaceMethodFunctionPtr(
+  FuncPtrLE getInterfaceMethodFunctionPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* virtualParamMT,

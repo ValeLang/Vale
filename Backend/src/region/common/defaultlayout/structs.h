@@ -30,7 +30,7 @@ public:
   void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
-      std::vector<LLVMValueRef> functions);
+      std::vector<FuncPtrLE> functions);
   void declareInterface(InterfaceKind* interface, Weakability weakable);
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL);
   void declareStaticSizedArray(StaticSizedArrayT* staticSizedArrayMT, Weakability weakable);
@@ -57,8 +57,8 @@ public:
       Reference* reference,
       WrapperPtrLE wrapperPtrLE);
 
-
   LLVMTypeRef getStringWrapperStruct();
+
   WrapperPtrLE makeWrapperPtr(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
@@ -92,6 +92,8 @@ public:
       LLVMBuilderRef builder,
       WrapperPtrLE ptrLE);
   LLVMValueRef getStringLen(
+      FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE);
+  LLVMValueRef getStringLenPtr(
       FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE);
 
 

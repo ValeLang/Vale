@@ -1,6 +1,7 @@
 #include "controlblock.h"
 #include "../../function/expressions/shared/shared.h"
 #include "../../utils/counters.h"
+#include <region/common/migration.h>
 
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
@@ -8,9 +9,9 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  return LLVMBuildLoad(
+  return unmigratedLLVMBuildLoad(
       builder,
-      LLVMBuildStructGEP(
+      unmigratedLLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
           structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),

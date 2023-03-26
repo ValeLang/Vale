@@ -8,8 +8,9 @@
 #include "function.h"
 #include "expression.h"
 #include "boundary.h"
+#include <region/common/migration.h>
 
-LLVMValueRef declareFunction(
+FuncPtrLE declareFunction(
     GlobalState* globalState,
     Function* functionM) {
 
@@ -17,12 +18,10 @@ LLVMValueRef declareFunction(
   auto valeReturnTypeL =
       globalState->getRegion(functionM->prototype->returnType)
           ->translateType(functionM->prototype->returnType);
-  LLVMTypeRef valeFunctionTypeL =
-      LLVMFunctionType(valeReturnTypeL, valeParamTypesL.data(), valeParamTypesL.size(), 0);
 
   auto valeFunctionNameL = functionM->prototype->name->name;
-
-  LLVMValueRef valeFunctionL = LLVMAddFunction(globalState->mod, valeFunctionNameL.c_str(), valeFunctionTypeL);
+  auto valeFunctionL =
+      addFunction(globalState->mod, valeFunctionNameL.c_str(), valeReturnTypeL, valeParamTypesL);
 
   assert(globalState->functions.count(functionM->prototype->name->name) == 0);
   globalState->functions.emplace(functionM->prototype->name->name, valeFunctionL);
@@ -127,7 +126,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
     auto cArgLE = LLVMGetParam(exportFunctionL, cParamIndex);;
     LLVMValueRef hostArgRefLE = nullptr;
     if (typeNeedsPointerParameter(globalState, valeParamMT)) {
-      hostArgRefLE = LLVMBuildLoad(builder, cArgLE, "arg");
+      hostArgRefLE = unmigratedLLVMBuildLoad(builder, cArgLE, "arg");
     } else {
       hostArgRefLE = cArgLE;
     }
@@ -191,7 +190,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMDisposeBuilder(builder);
 }
 
-LLVMValueRef declareExternFunction(
+FuncPtrLE declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM) {
@@ -225,9 +224,8 @@ LLVMValueRef declareExternFunction(
   auto userFuncNameL = package->getFunctionExternName(prototypeM);
   auto abiFuncNameL = std::string("vale_abi_") + userFuncNameL;
 
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(externReturnLT, externParamTypesL.data(), externParamTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, abiFuncNameL.c_str(), functionTypeL);
+  FuncPtrLE functionL =
+      addFunction(globalState->mod, abiFuncNameL.c_str(), externReturnLT, externParamTypesL);
 
   assert(globalState->externFunctions.count(prototypeM->name->name) == 0);
   globalState->externFunctions.emplace(prototypeM->name->name, functionL);
@@ -244,16 +242,18 @@ void translateFunction(
 
   auto localsBlockName = std::string("localsBlock");
   auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, localsBlockName.c_str());
+  LLVMBasicBlockRef localsBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, functionL.ptrLE, localsBlockName.c_str());
   LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
 
   auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, firstBlockName.c_str());
+  LLVMBasicBlockRef firstBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, functionL.ptrLE, firstBlockName.c_str());
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
   FunctionState functionState(
-      functionM->prototype->name->name, functionL, returnTypeL, localsBuilder);
+      functionM->prototype->name->name, functionL.ptrLE, returnTypeL, localsBuilder);
 
   // There are other builders made elsewhere for various blocks in the function,
   // but this is the one for the top level.
@@ -324,8 +324,7 @@ void declareExtraFunction(
     paramsLT.push_back(globalState->getRegion(paramMT)->translateType(paramMT));
   }
 
-  auto functionLT = LLVMFunctionType(returnTypeLT, paramsLT.data(), paramsLT.size(), false);
-  auto functionL = LLVMAddFunction(globalState->mod, llvmName.c_str(), functionLT);
+  auto functionL = addFunction(globalState->mod, llvmName.c_str(), returnTypeLT, paramsLT);
   // Don't define it yet, we're just declaring them right now.
   globalState->extraFunctions.emplace(std::make_pair(prototype, functionL));
 }
@@ -338,7 +337,7 @@ void defineFunctionBodyV(
   auto retType = globalState->getRegion(prototype->returnType)->translateType(prototype->returnType);
   defineFunctionBody(
       globalState->context,
-      functionL,
+      functionL.ptrLE,
       retType,
       prototype->name->name,
       definer);

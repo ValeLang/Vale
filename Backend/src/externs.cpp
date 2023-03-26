@@ -48,27 +48,27 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   //   registers and even more so, allocatable registers.
   // So, only use it for stack pointer, on those architectures.
   readRegisterI64Intrinsic = addExtern(mod, "llvm.read_register.i64", int64LT, {metadataLT});
-  assert(LLVMGetIntrinsicID(readRegisterI64Intrinsic));
+  assert(LLVMGetIntrinsicID(readRegisterI64Intrinsic.ptrLE));
   writeRegisterI64Intrinsinc = addExtern(mod, "llvm.write_register.i64", voidLT, {metadataLT, int64LT});
-  assert(LLVMGetIntrinsicID(writeRegisterI64Intrinsinc));
+  assert(LLVMGetIntrinsicID(writeRegisterI64Intrinsinc.ptrLE));
 
   setjmpIntrinsic = addExtern(mod, "llvm.eh.sjlj.setjmp", int32LT, {int8PtrLT});
-  assert(LLVMGetIntrinsicID(setjmpIntrinsic));
+  assert(LLVMGetIntrinsicID(setjmpIntrinsic.ptrLE));
   longjmpIntrinsic = addExtern(mod, "llvm.eh.sjlj.longjmp", voidLT, {int8PtrLT});
-  assert(LLVMGetIntrinsicID(longjmpIntrinsic));
+  assert(LLVMGetIntrinsicID(longjmpIntrinsic.ptrLE));
 
   stacksaveIntrinsic = addExtern(mod, "llvm.stacksave", int8PtrLT, {});
-  assert(LLVMGetIntrinsicID(setjmpIntrinsic));
+  assert(LLVMGetIntrinsicID(setjmpIntrinsic.ptrLE));
   stackrestoreIntrinsic = addExtern(mod, "llvm.stackrestore", voidLT, {int8PtrLT});
-  assert(LLVMGetIntrinsicID(longjmpIntrinsic));
+  assert(LLVMGetIntrinsicID(longjmpIntrinsic.ptrLE));
 
   strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyPtrLT, int8PtrLT});
-  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyPtrLT, int8PtrLT, int8PtrLT});
+  strEquatorCallLF = addExtern(mod, "strEquatorCall", int1LT, {emptyPtrLT, int8PtrLT, int8PtrLT});
 
   int256HasherCallLF =
       addFunction(mod, "int256HasherCall", int64LT, {emptyPtrLT, int256LT});
   defineFunctionBody(
-      context, int256HasherCallLF, int64LT, "int256HasherCall",
+      context, int256HasherCallLF.ptrLE, int64LT, "int256HasherCall",
       [int64LT, int256LT](FunctionState* functionState, LLVMBuilderRef builder) {
         // Ignore 'this' arg 0
         auto int256LE = LLVMGetParam(functionState->containingFuncL, 1);
@@ -103,7 +103,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   int256EquatorCallLF =
       addFunction(mod, "int256EquatorCall", int1LT, {emptyPtrLT, int256LT, int256LT});
   defineFunctionBody(
-      context, int256EquatorCallLF, int1LT, "int256HasherCall",
+      context, int256EquatorCallLF.ptrLE, int1LT, "int256HasherCall",
       [](FunctionState* functionState, LLVMBuilderRef builder) {
         // Ignore 'this' arg 0
         LLVMGetParam(functionState->containingFuncL, 0);

@@ -10,13 +10,46 @@ class GlobalState;
 class IRegion;
 
 
+struct FuncPtrLE {
+  LLVMValueRef ptrLE;
+  LLVMTypeRef funcLT;
+
+  FuncPtrLE() : funcLT(nullptr), ptrLE(nullptr) { }
+
+  FuncPtrLE(LLVMTypeRef funcLT_, LLVMValueRef ptrLE_)
+    : funcLT(funcLT_),
+      ptrLE(ptrLE_) {
+    assert(LLVMTypeOf(ptrLE) == LLVMPointerType(funcLT, 0));
+  }
+
+  LLVMValueRef call(LLVMBuilderRef builder, const std::vector<LLVMValueRef>& argsLE, const char* name) const {
+    return LLVMBuildCall2(
+        builder, funcLT, ptrLE, const_cast<LLVMValueRef*>(argsLE.data()), argsLE.size(), name);
+  }
+};
+
+//
+//struct PtrLE {
+//  LLVMTypeRef pointeeLT;
+//  LLVMValueRef ptrLE;
+//
+//  PtrLE(LLVMTypeRef pointeeLT_, LLVMValueRef ptrLE_)
+//      : pointeeLT(pointeeLT_), ptrLE(ptrLE_) {
+//    assert(LLVMTypeOf(ptrLE) == LLVMPointerType(pointeeLT, 0));
+//  }
+//};
+
+
 struct WrapperPtrLE {
   Reference* const refM;
+  LLVMTypeRef wrapperStructLT;
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_)
-      : refM(refM_), refLE(refLE_) { }
+  WrapperPtrLE(Reference* refM_, LLVMTypeRef wrapperStructLT_, LLVMValueRef refLE_)
+      : refM(refM_), wrapperStructLT(wrapperStructLT_), refLE(refLE_) {
+    assert(LLVMTypeOf(refLE) == LLVMPointerType(wrapperStructLT, 0));
+  }
 };
 
 

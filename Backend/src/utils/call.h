@@ -3,8 +3,23 @@
 
 #include <globalstate.h>
 
+LLVMValueRef unmigratedBuildSimpleCall(
+    LLVMBuilderRef builder,
+    LLVMValueRef function,
+    std::vector<LLVMValueRef> args,
+    const std::string& name = "");
+
+LLVMValueRef problematicBuildSimpleCall(
+    LLVMBuilderRef builder,
+    LLVMValueRef function,
+    LLVMTypeRef returnLT,
+    std::vector<LLVMValueRef> args,
+    const std::string& name = "");
+
 LLVMValueRef buildSimpleCall(
-    LLVMBuilderRef builder, LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef function,
+    LLVMTypeRef funcLT,
     std::vector<LLVMValueRef> args,
     const std::string& name = "");
 

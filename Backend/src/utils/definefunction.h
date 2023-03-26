@@ -3,7 +3,7 @@
 
 #include <globalstate.h>
 
-LLVMValueRef addFunction(
+FuncPtrLE addFunction(
     LLVMModuleRef mod,
     const std::string& name,
     LLVMTypeRef returnLT,

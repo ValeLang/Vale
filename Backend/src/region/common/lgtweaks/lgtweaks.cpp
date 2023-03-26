@@ -7,6 +7,7 @@
 #include "../../../utils/branch.h"
 #include "../common.h"
 #include "lgtweaks.h"
+#include <region/common/migration.h>
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
@@ -46,7 +47,7 @@ void LgtWeaks::buildCheckLgti(
       break;
   }
   std::vector<LLVMValueRef> args = { lgtTablePtrLE, lgtiLE };
-  LLVMBuildCall(builder, globalState->checkLgti, args.data(), args.size(), "");
+  unmigratedLLVMBuildCall(builder, globalState->checkLgti.ptrLE, args.data(), args.size(), "");
 }
 
 static LLVMValueRef makeLgtiHeader(
@@ -68,11 +69,11 @@ LLVMValueRef LgtWeaks::getLGTEntryGenPtr(
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
-      LLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "lgtEntriesArrayPtr");
+      unmigratedLLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "lgtEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
+      unmigratedLLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
-      LLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_GEN, "ptrToLGTEntryGen");
+      unmigratedLLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_GEN, "ptrToLGTEntryGen");
   return ptrToLGTEntryGenLE;
 }
 
@@ -80,11 +81,11 @@ LLVMValueRef LgtWeaks::getLGTEntryNextFreePtr(
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
-      LLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "genEntriesArrayPtr");
+      unmigratedLLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "genEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
+      unmigratedLLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
-      LLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE, "ptrToLGTEntryNextFree");
+      unmigratedLLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE, "ptrToLGTEntryNextFree");
   return ptrToLGTEntryGenLE;
 }
 
@@ -92,7 +93,7 @@ LLVMValueRef LgtWeaks::getActualGenFromLGT(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
-  return LLVMBuildLoad(builder, getLGTEntryGenPtr(functionState, builder, lgtiLE), "lgti");
+  return unmigratedLLVMBuildLoad(builder, getLGTEntryGenPtr(functionState, builder, lgtiLE), "lgti");
 }
 
 static LLVMValueRef getLgtiFromControlBlockPtr(
@@ -109,12 +110,12 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
     return nullptr;
   } else {
     auto lgtiPtrLE =
-        LLVMBuildStructGEP(
+        unmigratedLLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
             structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::LGTI_32B),
             "lgtiPtr");
-    return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
+    return unmigratedLLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
 }
 
@@ -160,13 +161,13 @@ void LgtWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder)
         LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
             builder,
-            LLVMBuildCall(
-                builder, globalState->getNumLiveLgtEntries, &lgtTablePtrLE, 1, "numLgtEntries"),
+            unmigratedLLVMBuildCall(
+                builder, globalState->getNumLiveLgtEntries.ptrLE, &lgtTablePtrLE, 1, "numLgtEntries"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(builder, globalState->externs->assertI64Eq, args, 3, "");
+    unmigratedLLVMBuildCall(builder, globalState->externs->assertI64Eq.ptrLE, args, 3, "");
   }
 }
 
@@ -330,9 +331,9 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
           //        }
           //        buildPrint(globalState, thenBuilder, "Exiting!\n");
           //        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
-          //        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+          //        unmigratedLLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
 
-          auto ptrToWriteToLE = LLVMBuildLoad(
+          auto ptrToWriteToLE = unmigratedLLVMBuildLoad(
               thenBuilder, globalState->crashGlobal,
               "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
           LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
@@ -347,7 +348,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
   // uint64_t resultLgti = __lgt_firstFree;
-  auto resultLgtiLE = LLVMBuildLoad(builder, getLgtFirstFreeLgtiPtr(builder), "resultLgti");
+  auto resultLgtiLE = unmigratedLLVMBuildLoad(builder, getLgtFirstFreeLgtiPtr(builder), "resultLgti");
 
   // if (resultLgti == __lgt_capacity) {
   //   __expandLgtTable();
@@ -357,14 +358,14 @@ LLVMValueRef LgtWeaks::getNewLgti(
           builder,
           LLVMIntEQ,
           resultLgtiLE,
-          LLVMBuildLoad(builder, getLgtCapacityPtr(builder), "lgtCapacity"),
+          unmigratedLLVMBuildLoad(builder, getLgtCapacityPtr(builder), "lgtCapacity"),
           "atCapacity");
   buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
-        LLVMBuildCall(thenBuilder, globalState->expandLgt, &lgtTablePtrLE, 1, "");
+        unmigratedLLVMBuildCall(thenBuilder, globalState->expandLgt.ptrLE, &lgtTablePtrLE, 1, "");
       });
 
   // __LGT_Entry* lgtEntryPtr = &__lgt_entries[resultLgti];
@@ -374,7 +375,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
   LLVMBuildStore(
       builder,
       // lgtEntryPtr->nextFree
-      LLVMBuildLoad(builder, lgtNextFreePtrLE, ""),
+      unmigratedLLVMBuildLoad(builder, lgtNextFreePtrLE, ""),
       // __lgt_firstFree
       getLgtFirstFreeLgtiPtr(builder));
 
@@ -395,7 +396,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
   // __lgt_entries[lgti] = __lgt_firstFree;
   LLVMBuildStore(
       builder,
-      LLVMBuildLoad(
+      unmigratedLLVMBuildLoad(
           builder, getLgtFirstFreeLgtiPtr(builder), "firstFreeLgti"),
       ptrToLgtEntryNextFreeLE);
   // __lgt_firstFree = lgti;
@@ -441,7 +442,7 @@ LLVMValueRef LgtWeaks::getIsAliveFromWeakFatPtr(
       buildCheckLgti(builder, lgtiLE);
     }
     auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-    auto actualGenLE = LLVMBuildLoad(builder, ptrToActualGenLE, "gen");
+    auto actualGenLE = unmigratedLLVMBuildLoad(builder, ptrToActualGenLE, "gen");
 
     return LLVMBuildICmp(
         builder,
@@ -629,11 +630,11 @@ LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId
 }
 
 LLVMValueRef LgtWeaks::getLgtCapacityPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 0, "wrcCapacityPtr");
+  return unmigratedLLVMBuildStructGEP(builder, lgtTablePtrLE, 0, "wrcCapacityPtr");
 }
 LLVMValueRef LgtWeaks::getLgtFirstFreeLgtiPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 1, "wrcFirstFree");
+  return unmigratedLLVMBuildStructGEP(builder, lgtTablePtrLE, 1, "wrcFirstFree");
 }
 LLVMValueRef LgtWeaks::getLgtEntriesArrayPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 2, "entries");
+  return unmigratedLLVMBuildStructGEP(builder, lgtTablePtrLE, 2, "entries");
 }

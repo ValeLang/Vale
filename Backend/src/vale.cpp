@@ -74,10 +74,10 @@ std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
 
-std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
+std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
 Prototype* makeValeMainFunction(
     GlobalState* globalState,
-    LLVMValueRef stringSetupFunctionL,
+    FuncPtrLE stringSetupFunctionL,
     Prototype* mainSetupFuncProto,
     Prototype* userMainFunctionPrototype,
     Prototype* mainCleanupFunctionPrototype);
@@ -86,7 +86,7 @@ LLVMValueRef makeEntryFunction(
     Prototype* valeMainPrototype);
 //LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState);
 
-LLVMValueRef declareFunction(
+FuncPtrLE declareFunction(
   GlobalState* globalState,
   Function* functionM);
 
@@ -740,7 +740,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     }
   }
 
-  LLVMValueRef stringSetupFunctionL = nullptr;
+  FuncPtrLE stringSetupFunctionL;
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;

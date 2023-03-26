@@ -1,44 +1,62 @@
 #include "string.h"
 #include "../../../region/common/heap.h"
+#include <region/common/migration.h>
 
 LLVMValueRef getInnerStrPtrFromWrapperPtr(
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder, strWrapperPtrLE.refLE, 1, "strInnerStructPtr");
+  auto resultLE =
+      LLVMBuildStructGEP2(
+          builder, strWrapperPtrLE.wrapperStructLT, strWrapperPtrLE.refLE, 1, "strInnerStructPtr");
+  assert(LLVMTypeOf(resultLE) == LLVMPointerType(stringInnerStructLT, 0));
+  return resultLE;
 }
 
 LLVMValueRef getLenPtrFromStrWrapperPtr(
+    LLVMContextRef context,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE) {
+  auto int32LT = LLVMInt32TypeInContext(context);
+  auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto innerStringPtrLE =
-      getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
+      getInnerStrPtrFromWrapperPtr(builder, stringInnerStructLT, strWrapperPtrLE);
+  assert(LLVMTypeOf(innerStringPtrLE) == LLVMPointerType(stringInnerStructLT, 0));
   auto lenPtrLE =
-      LLVMBuildStructGEP(builder, innerStringPtrLE, 0, "lenPtr");
+      LLVMBuildStructGEP2(builder, stringInnerStructLT, innerStringPtrLE, 0, "lenPtrA");
   return lenPtrLE;
 }
 
 LLVMValueRef getCharsPtrFromWrapperPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE) {
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+
   auto innerStringPtrLE =
-      getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
+      getInnerStrPtrFromWrapperPtr(builder, stringInnerStructLT, strWrapperPtrLE);
   auto charsArrayPtrLE =
-      LLVMBuildStructGEP(builder, innerStringPtrLE, 1, "charsPtr");
+      LLVMBuildStructGEP2(builder, stringInnerStructLT, innerStringPtrLE, 1, "charsPtr");
+  assert(LLVMTypeOf(charsArrayPtrLE) == LLVMPointerType(LLVMArrayType(int8LT, 0), 0));
 
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), constI64LE(globalState, 0) };
   auto firstCharPtrLE =
-      LLVMBuildGEP(
-          builder, charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
-  assert(LLVMTypeOf(firstCharPtrLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
+      problematicLLVMBuildGEP(
+          builder, LLVMPointerType(LLVMArrayType(int8LT, 0), 0), charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
+  assert(LLVMGetTypeKind(LLVMTypeOf(firstCharPtrLE)) == LLVMPointerTypeKind);
   return firstCharPtrLE;
 }
 
 LLVMValueRef getLenFromStrWrapperPtr(
+    LLVMContextRef context,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE) {
-  return LLVMBuildLoad(builder, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE), "len");
+  auto int32LT = LLVMInt32TypeInContext(context);
+  auto lenPtrLE = getLenPtrFromStrWrapperPtr(context, builder, stringInnerStructLT, strWrapperPtrLE);
+  return LLVMBuildLoad2(builder, int32LT, lenPtrLE, "lenX");
 }
 
 Ref buildConstantVStr(
@@ -65,7 +83,7 @@ Ref buildConstantVStr(
 //      ,
 //      lengthLE
 //  };
-//  LLVMBuildCall(builder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
+//  unmigratedLLVMBuildCall(builder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
 
   return strRef;
 }

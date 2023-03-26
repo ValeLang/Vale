@@ -335,7 +335,7 @@ void NaiveRC::declareEdge(Edge* edge) {
 }
 
 void NaiveRC::defineEdge(Edge* edge) {
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
@@ -346,7 +346,7 @@ void NaiveRC::declareInterface(InterfaceDefinition* interfaceM) {
 }
 
 void NaiveRC::defineInterface(InterfaceDefinition* interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -1033,14 +1033,14 @@ Weakability NaiveRC::getKindWeakability(Kind* kind) {
   }
 }
 
-LLVMValueRef NaiveRC::getInterfaceMethodFunctionPtr(
+FuncPtrLE NaiveRC::getInterfaceMethodFunctionPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 LLVMValueRef NaiveRC::stackify(

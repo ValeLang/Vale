@@ -368,7 +368,7 @@ void ResilientV3::declareEdge(Edge *edge) {
 }
 
 void ResilientV3::defineEdge(Edge *edge) {
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
@@ -384,7 +384,7 @@ void ResilientV3::declareInterface(InterfaceDefinition *interfaceM) {
 }
 
 void ResilientV3::defineInterface(InterfaceDefinition *interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -997,14 +997,14 @@ Weakability ResilientV3::getKindWeakability(Kind *kind) {
   }
 }
 
-LLVMValueRef ResilientV3::getInterfaceMethodFunctionPtr(
+FuncPtrLE ResilientV3::getInterfaceMethodFunctionPtr(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 LLVMValueRef ResilientV3::stackify(

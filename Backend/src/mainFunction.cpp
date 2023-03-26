@@ -1,21 +1,22 @@
 #include <utils/branch.h>
 #include <utils/call.h>
+#include <region/common/migration.h>
 #include "function/function.h"
 #include "function/expressions/expressions.h"
 #include "determinism/determinism.h"
 #include "globalstate.h"
 #include "translatetype.h"
+#include <region/common/migration.h>
 
 #define STACK_SIZE (8 * 1024 * 1024)
 
-std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
+std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
 
-  auto functionLT = LLVMFunctionType(voidLT, nullptr, 0, false);
-  auto functionL = LLVMAddFunction(globalState->mod, "__Vale_SetupStrings", functionLT);
+  auto functionL = addFunction(globalState->mod, "__Vale_SetupStrings", voidLT, {});
 
   auto stringsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef blockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, "stringsBlock");
+  LLVMBasicBlockRef blockL = LLVMAppendBasicBlockInContext(globalState->context, functionL.ptrLE, "stringsBlock");
   LLVMPositionBuilderAtEnd(stringsBuilder, blockL);
   auto ret = LLVMBuildRetVoid(stringsBuilder);
   LLVMPositionBuilderBefore(stringsBuilder, ret);
@@ -26,7 +27,7 @@ std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* gl
 
 Prototype* makeValeMainFunction(
     GlobalState* globalState,
-    LLVMValueRef stringSetupFunctionL,
+    FuncPtrLE stringSetupFunctionL,
     Prototype* mainSetupFuncProto,
     Prototype* userMainFunctionPrototype,
     Prototype* mainCleanupFunctionPrototype) {
@@ -48,8 +49,8 @@ Prototype* makeValeMainFunction(
           FunctionState *functionState, LLVMBuilderRef entryBuilder) {
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
-        LLVMBuildCall(entryBuilder, stringSetupFunctionL, nullptr, 0, "");
-        LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
+        stringSetupFunctionL.call(entryBuilder, {}, "");
+        globalState->lookupFunction(mainSetupFuncProto).call(entryBuilder, {}, "");
 //
 //        LLVMBuildStore(
 //            entryBuilder,
@@ -76,7 +77,7 @@ Prototype* makeValeMainFunction(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
 
             //buildFlare(FL(), globalState, functionState, entryBuilder, ptrToIntLE(globalState, entryBuilder, itablePtrAsVoidPtrLE));
-            LLVMBuildCall(entryBuilder, globalState->externs->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
+            unmigratedLLVMBuildCall(entryBuilder, globalState->externs->censusAdd.ptrLE, &itablePtrAsVoidPtrLE, 1, "");
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
         }
@@ -97,7 +98,7 @@ Prototype* makeValeMainFunction(
           buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
           buildPrint(
               globalState, entryBuilder,
-              LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
+              unmigratedLLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
           buildPrint(globalState, entryBuilder, "\n");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
@@ -110,16 +111,16 @@ Prototype* makeValeMainFunction(
             LLVMValueRef itablePtrAsVoidPtrLE =
                 LLVMBuildBitCast(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-            LLVMBuildCall(entryBuilder, globalState->externs->censusRemove, &itablePtrAsVoidPtrLE, 1, "");
+            unmigratedLLVMBuildCall(entryBuilder, globalState->externs->censusRemove.ptrLE, &itablePtrAsVoidPtrLE, 1, "");
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
 
           LLVMValueRef numLiveObjAssertArgs[3] = {
               LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
-              LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
+              unmigratedLLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
               globalState->getOrMakeStringConstant("Memory leaks!"),
           };
-          LLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq, numLiveObjAssertArgs, 3, "");
+          unmigratedLLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq.ptrLE, numLiveObjAssertArgs, 3, "");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
@@ -169,13 +170,13 @@ Prototype* makeValeMainFunction(
 ////  auto calleeFuncPtrLE =
 ////      LLVMBuildPointerCast(
 ////          entryBuilder,
-////          LLVMBuildLoad(entryBuilder, globalState->sideStackArgCalleeFuncPtrPtr, "calleeFuncPtr"),
+////          unmigratedLLVMBuildLoad(entryBuilder, globalState->sideStackArgCalleeFuncPtrPtr, "calleeFuncPtr"),
 ////          LLVMPointerType(LLVMFunctionType(int64LT, paramTypes.data(), paramTypes.size(), false), 0),
 ////          "calleeFuncPtrCasted");
 ////  buildCall(globalState, entryBuilder, calleeFuncPtrLE, {});
 //
 ////  auto returnDestPtrLE =
-////      LLVMBuildLoad(entryBuilder, globalState->sideStackArgReturnDestPtr, "returnDestPtr");
+////      unmigratedLLVMBuildLoad(entryBuilder, globalState->sideStackArgReturnDestPtr, "returnDestPtr");
 ////  buildPrint(globalState, entryBuilder, "Jumping back to:");
 ////  buildPrint(globalState, entryBuilder, ptrToIntLE(globalState, entryBuilder, returnDestPtrLE));
 ////  buildPrint(globalState, entryBuilder, "\n");
@@ -183,7 +184,7 @@ Prototype* makeValeMainFunction(
 ////  //start here
 ////  // seems the been-here workaround doesnt work.
 ////  // lets try the stacksave and stackrestore that zig was doing.
-////  LLVMBuildCall(entryBuilder, globalState->externs->longjmpIntrinsic, &returnDestPtrLE, 1, "");
+////  unmigratedLLVMBuildCall(entryBuilder, globalState->externs->longjmpIntrinsic, &returnDestPtrLE, 1, "");
 //
 //  LLVMBuildRetVoid(entryBuilder);
 //
@@ -203,6 +204,7 @@ LLVMValueRef makeEntryFunction(
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
 
   // This is the actual entry point for the binary. However, it wont contain much.
   // It'll just have a
@@ -233,10 +235,10 @@ LLVMValueRef makeEntryFunction(
     // argv[numConsumed] = argv[0], to move the zeroth arg up.
     LLVMBuildStore(
         entryBuilder,
-        LLVMBuildLoad(entryBuilder, mainArgsLE, "zerothArg"),
-        LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
+        LLVMBuildLoad2(entryBuilder, int8PtrPtrLT, mainArgsLE, "zerothArg"),
+        LLVMBuildGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
     // argv += numConsumed
-    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
+    mainArgsLE = LLVMBuildGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
     // argc -= numConsumed
     numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "newMainArgsCount");
   }
@@ -251,12 +253,17 @@ LLVMValueRef makeEntryFunction(
   }
 
   auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
-  auto resultLE = buildMaybeNeverCall(globalState, entryBuilder, calleeUserFunction, {});
+  auto calleeUserFunctionReturnMT = valeMainPrototype->returnType;
+  auto calleeUserFunctionReturnLT =
+      globalState->getRegion(calleeUserFunctionReturnMT)->translateType(calleeUserFunctionReturnMT);
+  auto resultLE =
+      buildMaybeNeverCall(
+          globalState, entryBuilder, calleeUserFunction, {});
 
   if (globalState->opt->enableSideCalling) {
     buildMaybeNeverCall(
         globalState, entryBuilder, globalState->externs->free,
-        { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
+        { unmigratedLLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
   }
 
   if (globalState->opt->enableReplaying) {

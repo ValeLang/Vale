@@ -38,8 +38,13 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, KindStructs* weakRe
 
 LoadResult loadInnerInnerStructMember(
     GlobalState* globalState,
-  FunctionState* functionState,
-    LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, Reference* expectedType, std::string memberName);
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef innerStructLT,
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    Reference* expectedType,
+    std::string memberName);
 void storeInnerInnerStructMember(
     LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, std::string memberName, LLVMValueRef newValueLE);
 
@@ -178,6 +183,7 @@ void fillInnerStruct(
     LLVMBuilderRef builder,
     StructDefinition* structM,
     std::vector<Ref> membersLE,
+    LLVMTypeRef innerStructLT,
     LLVMValueRef innerStructPtrLE);
 Ref constructWrappedStruct(
     GlobalState* globalState,
@@ -590,10 +596,11 @@ void callFree(
     LLVMValueRef ptrLE);
 
 
-LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
+FuncPtrLE getInterfaceMethodFunctionPtrFromItable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    KindStructs* structs,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge);

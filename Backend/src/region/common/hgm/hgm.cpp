@@ -7,6 +7,7 @@
 #include "../../../utils/branch.h"
 #include "../common.h"
 #include "hgm.h"
+#include <region/common/migration.h>
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 
@@ -47,7 +48,9 @@ static LLVMValueRef makeGenHeader(
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
          globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   auto headerLE = LLVMGetUndef(kindStructs->getWeakRefHeaderStruct(kind));
-  headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
+  headerLE =
+      LLVMBuildInsertValue(
+          builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
 }
 
@@ -57,17 +60,20 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
     KindStructs* structs,
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
              globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   assert(LLVMTypeOf(controlBlockPtr.refLE) == LLVMPointerType(structs->getControlBlock(kindM)->getStruct(), 0));
 
   auto genPtrLE =
-      LLVMBuildStructGEP(
+      LLVMBuildStructGEP2(
           builder,
+          structs->getControlBlock(kindM)->getStruct(),
           controlBlockPtr.refLE,
           structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B),
           "genPtr");
-  return LLVMBuildLoad(builder, genPtrLE, "gen");
+  return LLVMBuildLoad2(builder, int32LT, genPtrLE, "gen");
 }
 
 WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
@@ -624,7 +630,13 @@ void HybridGenerationalMemory::deallocate(
               FL(), functionState, builder, sourceRefMT, sourceRefLE));
   int genMemberIndex =
       kindStructs->getControlBlock(sourceRefMT->kind)->getMemberIndex(ControlBlockMember::GENERATION_32B);
-  auto genPtrLE = LLVMBuildStructGEP(builder, controlBlockPtr.refLE, genMemberIndex, "genPtr");
+  auto genPtrLE =
+      LLVMBuildStructGEP2(
+          builder,
+          kindStructs->getControlBlock(sourceRefMT->kind)->getStruct(),
+          controlBlockPtr.refLE,
+          genMemberIndex,
+          "genPtr");
   adjustCounter(globalState, builder, globalState->metalCache->i32, genPtrLE, 1);
 
   innerDeallocate(from, globalState, functionState, kindStructs, builder, sourceRefMT, sourceRef);

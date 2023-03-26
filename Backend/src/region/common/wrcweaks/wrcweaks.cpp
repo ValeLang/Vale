@@ -7,6 +7,7 @@
 #include "../../../utils/branch.h"
 #include "../common.h"
 #include "wrcweaks.h"
+#include <region/common/migration.h>
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
 
@@ -43,7 +44,7 @@ void WrcWeaks::buildCheckWrc(
       wrcTablePtrLE,
       wrciLE,
   };
-  LLVMBuildCall(builder, globalState->checkWrci, checkWrcsArgs.data(), checkWrcsArgs.size(), "");
+  unmigratedLLVMBuildCall(builder, globalState->checkWrci.ptrLE, checkWrcsArgs.data(), checkWrcsArgs.size(), "");
 }
 
 LLVMValueRef WrcWeaks::getWrciFromWeakRef(
@@ -68,7 +69,7 @@ void WrcWeaks::maybeReleaseWrc(
         // __wrc_entries[wrcIndex] = __wrc_firstFree;
         LLVMBuildStore(
             thenBuilder,
-            LLVMBuildLoad(
+            unmigratedLLVMBuildLoad(
                 thenBuilder, getWrcFirstFreeWrciPtr(thenBuilder), "firstFreeWrci"),
             ptrToWrcLE);
         // __wrc_firstFree = wrcIndex;
@@ -90,12 +91,12 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     return nullptr;
   } else {
     auto wrciPtrLE =
-        LLVMBuildStructGEP(
+        unmigratedLLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
             structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::WRCI_32B),
             "wrciPtr");
-    return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
+    return unmigratedLLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
 }
 
@@ -103,9 +104,9 @@ LLVMValueRef WrcWeaks::getWrcPtr(
     LLVMBuilderRef builder,
     LLVMValueRef wrciLE) {
   auto wrcEntriesPtrLE =
-      LLVMBuildLoad(builder, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
+      unmigratedLLVMBuildLoad(builder, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
   auto ptrToWrcLE =
-      LLVMBuildGEP(builder, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
+      unmigratedLLVMBuildGEP(builder, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
   return ptrToWrcLE;
 }
 
@@ -146,24 +147,24 @@ void WrcWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder)
         LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
             builder,
-            LLVMBuildCall(
-                builder, globalState->getNumWrcs, &wrcTablePtrLE, 1, "numWrcs"),
+            unmigratedLLVMBuildCall(
+                builder, globalState->getNumWrcs.ptrLE, &wrcTablePtrLE, 1, "numWrcs"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(builder, globalState->externs->assertI64Eq, args, 3, "");
+    unmigratedLLVMBuildCall(builder, globalState->externs->assertI64Eq.ptrLE, args, 3, "");
   }
 }
 
 LLVMValueRef WrcWeaks::getWrcCapacityPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, wrcTablePtrLE, 0, "wrcCapacityPtr");
+  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 0, "wrcCapacityPtr");
 }
 LLVMValueRef WrcWeaks::getWrcFirstFreeWrciPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, wrcTablePtrLE, 1, "wrcFirstFree");
+  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 1, "wrcFirstFree");
 }
 LLVMValueRef WrcWeaks::getWrcEntriesArrayPtr(LLVMBuilderRef builder) {
-  return LLVMBuildStructGEP(builder, wrcTablePtrLE, 2, "entries");
+  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 2, "entries");
 }
 
 WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
@@ -331,7 +332,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
         buildPrint(globalState, thenBuilder, "Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+        unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
       });
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, weakFatPtrLE);
 }
@@ -345,7 +346,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
           globalState->opt->regionOverride == RegionOverride::FAST);
 
   // uint64_t resultWrci = __wrc_firstFree;
-  auto resultWrciLE = LLVMBuildLoad(builder, getWrcFirstFreeWrciPtr(builder), "resultWrci");
+  auto resultWrciLE = unmigratedLLVMBuildLoad(builder, getWrcFirstFreeWrciPtr(builder), "resultWrci");
 
   // if (resultWrci == __wrc_capacity) {
   //   __expandWrcTable();
@@ -355,14 +356,14 @@ LLVMValueRef WrcWeaks::getNewWrci(
           builder,
           LLVMIntEQ,
           resultWrciLE,
-          LLVMBuildLoad(builder, getWrcCapacityPtr(builder), "wrcCapacity"),
+          unmigratedLLVMBuildLoad(builder, getWrcCapacityPtr(builder), "wrcCapacity"),
           "atCapacity");
   buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
-        LLVMBuildCall(thenBuilder, globalState->expandWrcTable, &wrcTablePtrLE, 1, "");
+        unmigratedLLVMBuildCall(thenBuilder, globalState->expandWrcTable.ptrLE, &wrcTablePtrLE, 1, "");
       });
 
   // u64* wrcPtr = &__wrc_entries[resultWrci];
@@ -372,7 +373,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
   LLVMBuildStore(
       builder,
       // *wrcPtr
-      LLVMBuildLoad(builder, wrcPtrLE, ""),
+      unmigratedLLVMBuildLoad(builder, wrcPtrLE, ""),
       // __wrc_firstFree
       getWrcFirstFreeWrciPtr(builder));
 
@@ -393,10 +394,10 @@ void WrcWeaks::innerNoteWeakableDestroyed(
   auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, kindStructsSource, concreteRefM,
       controlBlockPtrLE);
 
-  //  LLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
+  //  unmigratedLLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto prevWrcLE = LLVMBuildLoad(builder, ptrToWrcLE, "wrc");
+  auto prevWrcLE = unmigratedLLVMBuildLoad(builder, ptrToWrcLE, "wrc");
 
   auto wrcLE =
       LLVMBuildAnd(
@@ -472,7 +473,7 @@ LLVMValueRef WrcWeaks::getIsAliveFromWeakFatPtr(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = LLVMBuildLoad(builder, ptrToWrcLE, "wrc");
+  auto wrcLE = unmigratedLLVMBuildLoad(builder, ptrToWrcLE, "wrc");
   return LLVMBuildICmp(
       builder,
       LLVMIntNE,

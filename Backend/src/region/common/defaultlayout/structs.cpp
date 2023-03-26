@@ -3,6 +3,7 @@
 #include "../../../function/expressions/shared/shared.h"
 #include "../../../function/expressions/shared/string.h"
 #include "structs.h"
+#include <region/common/migration.h>
 
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
@@ -31,9 +32,7 @@ KindStructs::KindStructs(
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
-    stringInnerStructL =
-        LLVMStructCreateNamed(
-            globalState->context, "__Str");
+    stringInnerStructL = LLVMStructCreateNamed(globalState->context, "__Str");
     std::vector<LLVMTypeRef> memberTypesL;
     memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
     memberTypesL.push_back(LLVMArrayType(int8LT, 0));
@@ -42,9 +41,7 @@ KindStructs::KindStructs(
   }
 
   {
-    stringWrapperStructL =
-        LLVMStructCreateNamed(
-            globalState->context, "__Str_rc");
+    stringWrapperStructL = LLVMStructCreateNamed(globalState->context, "__Str_rc");
     std::vector<LLVMTypeRef> memberTypesL;
     memberTypesL.push_back(nonWeakableControlBlock.getStruct());
     memberTypesL.push_back(stringInnerStructL);
@@ -246,13 +243,13 @@ void KindStructs::declareEdge(
 void KindStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
-    std::vector<LLVMValueRef> functions) {
+    std::vector<FuncPtrLE> functions) {
   auto interfaceTableStructL =
       getInterfaceTableStruct(edge->interfaceName);
   auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
-    auto entryLE = LLVMConstBitCast(functions[i], interfaceFunctionsLT[i]);
+    auto entryLE = LLVMConstBitCast(functions[i].ptrLE, interfaceFunctionsLT[i]);
     itableLE = LLVMBuildInsertValue(builder, itableLE, entryLE, i, std::to_string(i).c_str());
   }
   LLVMDisposeBuilder(builder);
@@ -466,11 +463,13 @@ ControlBlockPtrLE KindStructs::getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* reference,
     WrapperPtrLE wrapperPtrLE) {
+  auto controlBlock = getControlBlock(reference->kind);
   // Control block is always the 0th element of every concrete struct.
+  auto controlBlockPtrLE =
+      LLVMBuildStructGEP2(builder, wrapperPtrLE.wrapperStructLT, wrapperPtrLE.refLE, 0, "controlPtr");
+  assert(LLVMTypeOf(controlBlockPtrLE) == LLVMPointerType(controlBlock->getStruct(), 0));
   return makeControlBlockPtr(
-      from, functionState, builder,
-      wrapperPtrLE.refM->kind,
-      LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
+      from, functionState, builder, wrapperPtrLE.refM->kind, controlBlockPtrLE);
 }
 
 ControlBlockPtrLE KindStructs::getConcreteControlBlockPtrWithoutChecking(
@@ -483,7 +482,8 @@ ControlBlockPtrLE KindStructs::getConcreteControlBlockPtrWithoutChecking(
   return makeControlBlockPtrWithoutChecking(
       from, functionState, builder,
       wrapperPtrLE.refM->kind,
-      LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
+      LLVMBuildStructGEP2(
+          builder, wrapperPtrLE.wrapperStructLT, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
 
 WrapperPtrLE KindStructs::makeWrapperPtr(
@@ -568,11 +568,8 @@ ControlBlockPtrLE KindStructs::makeControlBlockPtrWithoutChecking(
     LLVMBuilderRef builder,
     Kind* kindM,
     LLVMValueRef controlBlockPtrLE) {
-  auto actualTypeOfControlBlockPtrLE = LLVMTypeOf(controlBlockPtrLE);
   auto expectedControlBlockStructL = getControlBlock(kindM)->getStruct();
-  auto expectedControlBlockStructPtrL = LLVMPointerType(expectedControlBlockStructL, 0);
-  assert(actualTypeOfControlBlockPtrLE == expectedControlBlockStructPtrL);
-
+  assert(LLVMTypeOf(controlBlockPtrLE) == LLVMPointerType(expectedControlBlockStructL, 0));
   return ControlBlockPtrLE(kindM, controlBlockPtrLE);
 }
 
@@ -580,12 +577,17 @@ LLVMValueRef KindStructs::getStringBytesPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE ptrLE) {
-  return getCharsPtrFromWrapperPtr(globalState, builder, ptrLE);
+  return getCharsPtrFromWrapperPtr(globalState, builder, stringInnerStructL, ptrLE);
 }
 
 LLVMValueRef KindStructs::getStringLen(
     FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
-  return getLenFromStrWrapperPtr(builder, ptrLE);
+  return getLenFromStrWrapperPtr(globalState->context, builder, stringInnerStructL, ptrLE);
+}
+
+LLVMValueRef KindStructs::getStringLenPtr(
+    FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
+  return getLenPtrFromStrWrapperPtr(globalState->context, builder, stringInnerStructL, ptrLE);
 }
 
 
@@ -727,8 +729,9 @@ LLVMValueRef KindStructs::getStructContentsPtr(
     LLVMBuilderRef builder,
     Kind* kind,
     WrapperPtrLE wrapperPtrLE) {
-  return LLVMBuildStructGEP(
+  return LLVMBuildStructGEP2(
       builder,
+      wrapperPtrLE.wrapperStructLT,
       wrapperPtrLE.refLE,
       1, // Inner struct is after the control block.
       "contentsPtr");
@@ -752,9 +755,9 @@ LLVMValueRef KindStructs::getObjIdFromControlBlockPtr(
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->census);
-  return LLVMBuildLoad(
+  return unmigratedLLVMBuildLoad(
       builder,
-      LLVMBuildStructGEP(
+      unmigratedLLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
           getControlBlock(kindM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
@@ -788,7 +791,7 @@ LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
   }
 
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(builder, refM, structExpr);
-  return LLVMBuildLoad(builder, rcPtrLE, "rc");
+  return unmigratedLLVMBuildLoad(builder, rcPtrLE, "rc");
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
@@ -810,8 +813,9 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
       assert(false);
   }
 
-  return LLVMBuildStructGEP(
+  return LLVMBuildStructGEP2(
       builder,
+      getControlBlock(refM->kind)->getStruct(),
       controlBlockPtr.refLE,
       getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::STRONG_RC_32B),
       "rcPtr");
@@ -840,7 +844,7 @@ WrapperPtrLE KindStructs::makeWrapperPtrWithoutChecking(
   } else assert(false);
   assert(LLVMTypeOf(ptrLE) == LLVMPointerType(wrapperStructLT, 0));
 
-  WrapperPtrLE wrapperPtrLE(referenceM, ptrLE);
+  WrapperPtrLE wrapperPtrLE(referenceM, wrapperStructLT, ptrLE);
 
   return wrapperPtrLE;
 }

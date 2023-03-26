@@ -9,6 +9,7 @@
 #include "../../utils/branch.h"
 #include "../../function/expressions/shared/string.h"
 #include "common.h"
+#include <region/common/migration.h>
 
 constexpr int INTERFACE_REF_MEMBER_INDEX_FOR_OBJ_PTR = 0;
 constexpr int INTERFACE_REF_MEMBER_INDEX_FOR_ITABLE_PTR = 1;
@@ -94,6 +95,7 @@ LoadResult loadInnerInnerStructMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    LLVMTypeRef innerStructLT,
     LLVMValueRef innerStructPtrLE,
     int memberIndex,
     Reference* expectedType,
@@ -101,17 +103,10 @@ LoadResult loadInnerInnerStructMember(
   assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
 
   auto ptrToMemberLE =
-      LLVMBuildStructGEP(builder, innerStructPtrLE, memberIndex, memberName.c_str());
-  auto resultLE =
-      LLVMBuildLoad(
-          builder,
-          ptrToMemberLE,
-          memberName.c_str());
-  if (LLVMGetTypeKind(LLVMTypeOf(resultLE)) == LLVMIntegerTypeKind) {
-    buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE), ", value ", resultLE);
-  } else {
-    buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE));
-  }
+      LLVMBuildStructGEP2(builder, innerStructLT, innerStructPtrLE, memberIndex, memberName.c_str());
+
+  auto memberLT = globalState->getRegion(expectedType)->translateType(expectedType);
+  auto resultLE = LLVMBuildLoad2(builder, memberLT, ptrToMemberLE, memberName.c_str());
   return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, resultLE)};
 }
 
@@ -121,7 +116,7 @@ void storeInnerInnerStructMember(
   LLVMBuildStore(
       builder,
       newValueLE,
-      LLVMBuildStructGEP(
+      unmigratedLLVMBuildStructGEP(
           builder, innerStructPtrLE, memberIndex, memberName.c_str()));
 }
 
@@ -295,7 +290,7 @@ void callFree(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
   buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, concreteAsCharPtrLE));
-  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
+  globalState->externs->free.call(builder, {concreteAsCharPtrLE}, "");
 }
 
 void innerDeallocateYonder(
@@ -331,7 +326,7 @@ void innerDeallocateYonder(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->externs->censusRemove, &resultAsVoidPtrLE, 1,
+    unmigratedLLVMBuildCall(builder, globalState->externs->censusRemove.ptrLE, &resultAsVoidPtrLE, 1,
         "");
   }
 
@@ -455,7 +450,7 @@ LLVMValueRef callMalloc(
     LLVMBuilderRef builder,
     LLVMValueRef sizeLE) {
   assert(LLVMTypeOf(sizeLE) == LLVMInt64TypeInContext(globalState->context));
-  return LLVMBuildCall(builder, globalState->externs->malloc, &sizeLE, 1, "");
+  return globalState->externs->malloc.call(builder, {sizeLE}, "");
 }
 
 WrapperPtrLE mallocStr(
@@ -466,6 +461,9 @@ WrapperPtrLE mallocStr(
     LLVMValueRef sourceCharsPtrLE,
     KindStructs* kindStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
   auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "lenAsI64");
   // The +1 is for the null terminator at the end, for C compatibility.
   auto sizeBytesLE =
@@ -487,7 +485,7 @@ WrapperPtrLE mallocStr(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, destCharPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
+    unmigratedLLVMBuildCall(builder, globalState->externs->censusAdd.ptrLE, &resultAsVoidPtrLE, 1, "");
   }
 
   auto newStrWrapperPtrLE =
@@ -498,6 +496,7 @@ WrapperPtrLE mallocStr(
               destCharPtrLE,
               LLVMPointerType(kindStructs->getStringWrapperStruct(), 0),
               "newStrWrapperPtr"));
+  assert(LLVMTypeOf(newStrWrapperPtrLE.refLE) == LLVMPointerType(kindStructs->getStringWrapperStruct(), 0));
 
   fillControlBlock(
       builder,
@@ -506,16 +505,17 @@ WrapperPtrLE mallocStr(
   LLVMBuildStore(
       builder,
       lenI32LE,
-      getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
+      kindStructs->getStringLenPtr(functionState, builder, newStrWrapperPtrLE));
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
-  auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, newStrWrapperPtrLE);
+  auto charsBeginPtr =
+      kindStructs->getStringBytesPtr(functionState, builder, newStrWrapperPtrLE);
 
 
   std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lenI64LE };
-  LLVMBuildCall(builder, globalState->externs->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
+  globalState->externs->strncpy.call(builder, strncpyArgsLE, "");
 
-  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lenI32LE, 1, "charsEndPtr");
+  auto charsEndPtr = LLVMBuildGEP2(builder, int8LT, charsBeginPtr, &lenI32LE, 1, "charsEndPtrZ");
   LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
 
   // The caller still needs to initialize the actual chars inside!
@@ -554,7 +554,7 @@ LLVMValueRef mallocKnownSize(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, resultPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
+    unmigratedLLVMBuildCall(builder, globalState->externs->censusAdd.ptrLE, &resultAsVoidPtrLE, 1, "");
   }
   return resultPtrLE;
 }
@@ -565,13 +565,14 @@ void fillInnerStruct(
     LLVMBuilderRef builder,
     StructDefinition* structM,
     std::vector<Ref> membersLE,
+    LLVMTypeRef innerStructLT,
     LLVMValueRef innerStructPtrLE) {
   for (int i = 0; i < membersLE.size(); i++) {
     auto memberRef = membersLE[i];
     auto memberType = structM->members[i]->type;
     auto memberName = structM->members[i]->name;
     auto ptrLE =
-        LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
+        LLVMBuildStructGEP2(builder, innerStructLT, innerStructPtrLE, i, memberName.c_str());
     auto memberLE =
         globalState->getRegion(memberType)
             ->checkValidReference(FL(), functionState, builder, false, structM->members[i]->type, memberRef);
@@ -607,10 +608,17 @@ Ref constructWrappedStruct(
       builder,
       kindStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, structTypeM, newStructWrapperPtrLE));
+  auto structContentsPtrLT = kindStructsSource->getStructInnerStruct(structM->kind);
+  auto structContentsPtrLE =
+      kindStructsSource->getStructContentsPtr(builder, structTypeM->kind, newStructWrapperPtrLE);
   fillInnerStruct(
-      globalState, functionState,
-      builder, structM, membersLE,
-      kindStructsSource->getStructContentsPtr(builder, structTypeM->kind, newStructWrapperPtrLE));
+      globalState,
+      functionState,
+      builder,
+      structM,
+      membersLE,
+      structContentsPtrLT,
+      structContentsPtrLE);
 
   auto refLE = wrap(globalState->getRegion(structTypeM), structTypeM, newStructWrapperPtrLE.refLE);
 
@@ -748,7 +756,7 @@ LLVMValueRef mallocRuntimeSizedArray(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, newWrapperPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
+    unmigratedLLVMBuildCall(builder, globalState->externs->censusAdd.ptrLE, &resultAsVoidPtrLE, 1, "");
   }
 
   return LLVMBuildBitCast(
@@ -782,7 +790,7 @@ Ref getRuntimeSizedArrayLength(
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE) {
   auto lengthPtrLE = getRuntimeSizedArrayLengthPtr(globalState, builder, arrayRefLE);
-  auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "rsaLen");
+  auto intLE = unmigratedLLVMBuildLoad(builder, lengthPtrLE, "rsaLen");
   return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
 
@@ -792,7 +800,7 @@ Ref getRuntimeSizedArrayCapacity(
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE) {
   auto capacityPtrLE = getRuntimeSizedArrayCapacityPtr(globalState, builder, arrayRefLE);
-  auto intLE = LLVMBuildLoad(builder, capacityPtrLE, "rsaCapacity");
+  auto intLE = unmigratedLLVMBuildLoad(builder, capacityPtrLE, "rsaCapacity");
   return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
 
@@ -1082,7 +1090,7 @@ Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLV
   // We need to load the old ref *after* we evaluate the source expression,
   // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
   // See mutswaplocals.vale for test case.
-  auto oldRefLE = LLVMBuildLoad(builder, localAddr, local->id->maybeName.c_str());
+  auto oldRefLE = unmigratedLLVMBuildLoad(builder, localAddr, local->id->maybeName.c_str());
   auto oldRef = wrap(region, local->type, oldRefLE);
   region->checkValidReference(FL(), functionState, builder, false, local->type, oldRef);
   auto toStoreLE = region->checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
@@ -1410,10 +1418,13 @@ LoadResult resilientLoadWeakMember(
   auto wrapperPtrLE =
       globalState->getRegion(structRefMT)->lockWeakRef(
           FL(), functionState, builder, structRefMT, structRef, structKnownLive);
-  auto innerStructPtrLE = kindStructs->getStructContentsPtr(builder,
-      structRefMT->kind, wrapperPtrLE);
+  auto innerStructPtrLE =
+      kindStructs->getStructContentsPtr(builder, structRefMT->kind, wrapperPtrLE);
+  auto structMT = dynamic_cast<StructKind*>(structRefMT->kind);
+  assert(structMT);
+  auto innerStructLT = kindStructs->getStructInnerStruct(structMT);
   return loadInnerInnerStructMember(
-      globalState, functionState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
+      globalState, functionState, builder, innerStructLT, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
 }
 
 Ref upcastStrong(
@@ -1625,12 +1636,22 @@ LoadResult regularLoadStrongMember(
       kindStructs->makeWrapperPtr(FL(), functionState, builder, structRefMT,
           globalState->getRegion(structRefMT)
               ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef));
-  auto innerStructPtrLE = kindStructs->getStructContentsPtr(builder,
-      structRefMT->kind, wrapperPtrLE);
+  auto innerStructPtrLE =
+      kindStructs->getStructContentsPtr(builder, structRefMT->kind, wrapperPtrLE);
+
+  auto structMT = dynamic_cast<StructKind*>(structRefMT->kind);
+  assert(structMT);
+  auto innerStructLT = kindStructs->getStructInnerStruct(structMT);
 
   auto memberLE =
       loadInnerInnerStructMember(
-          globalState, functionState, builder, innerStructPtrLE, memberIndex, expectedMemberType,
+          globalState,
+          functionState,
+          builder,
+          innerStructLT,
+          innerStructPtrLE,
+          memberIndex,
+          expectedMemberType,
           memberName);
   return memberLE;
 }
@@ -1809,10 +1830,11 @@ void storeMemberWeak(
   storeInnerInnerStructMember(builder, innerStructPtrLE, memberIndex, memberName, newValueLE);
 }
 
-LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
+FuncPtrLE getInterfaceMethodFunctionPtrFromItable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    KindStructs* structs,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
@@ -1832,11 +1854,16 @@ LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
 
   assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
   //buildFlare(FL(), globalState, functionState, builder, "index in edge: ", indexInEdge);
-  auto funcPtrPtrLE = LLVMBuildStructGEP(builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+  auto itableStructLT = structs->getInterfaceTableStruct(interfaceMT);
+  auto funcPtrPtrLE =
+      LLVMBuildStructGEP2(builder, itableStructLT, itablePtrLE, indexInEdge, "methodPtrPtr");
 
-  auto resultLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+  auto funcLT =
+      globalState->getInterfaceFunctionTypesNonPointer(interfaceMT)[indexInEdge];
+
+  auto resultLE = LLVMBuildLoad2(builder, LLVMPointerType(funcLT, 0), funcPtrPtrLE, "methodPtr");
   //buildFlare(FL(), globalState, functionState, builder, "method ptr: ", ptrToIntLE(globalState, builder, resultLE));
-  return resultLE;
+  return FuncPtrLE(funcLT, resultLE);
 }
 
 
@@ -1870,7 +1897,8 @@ void initializeElementInRSA(
 
 Ref normalLocalLoad(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
   auto region = globalState->getRegion(local->type);
-  auto sourceLE = LLVMBuildLoad(builder, localAddr, local->id->maybeName.c_str());
+  auto localLT = globalState->getRegion(local->type)->translateType(local->type);
+  auto sourceLE = LLVMBuildLoad2(builder, localLT, localAddr, local->id->maybeName.c_str());
   auto sourceRef = wrap(region, local->type, sourceLE);
   region->checkValidReference(FL(), functionState, builder, false, local->type, sourceRef);
   return sourceRef;
@@ -2148,7 +2176,7 @@ std::string generateUniversalRefStructDefC(Package* currentPackage, const std::s
 
 void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder) {
   if (globalState->opt->fastCrash) {
-    auto ptrToWriteToLE = LLVMBuildLoad(builder, globalState->crashGlobal,
+    auto ptrToWriteToLE = unmigratedLLVMBuildLoad(builder, globalState->crashGlobal,
         "crashGlobal");
     LLVMBuildStore(builder, constI64LE(globalState, 0), ptrToWriteToLE);
   } else {
@@ -2157,7 +2185,7 @@ void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef
     buildPrint(globalState, builder, "Exiting!\n");
     // See MPESC for status codes
     auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-    LLVMBuildCall(builder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+    globalState->externs->exit.call(builder, {exitCodeIntLE}, "");
   }
 }
 

@@ -164,13 +164,13 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM);
 
-LLVMValueRef declareFunction(
+FuncPtrLE declareFunction(
     GlobalState* globalState,
     Function* functionM);
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
-LLVMValueRef declareExternFunction(
+FuncPtrLE declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM);

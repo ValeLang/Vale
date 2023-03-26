@@ -242,7 +242,7 @@ void Assist::declareEdge(
 }
 
 void Assist::defineEdge(Edge* edge) {
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
@@ -255,7 +255,7 @@ void Assist::declareInterface(
 
 void Assist::defineInterface(
     InterfaceDefinition* interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -302,7 +302,7 @@ void Assist::noteWeakableDestroyed(
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
-        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+        unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
       });
 
   if (auto structKindM = dynamic_cast<StructKind*>(refM->kind)) {
@@ -1013,14 +1013,14 @@ Weakability Assist::getKindWeakability(Kind* kind) {
 }
 
 
-LLVMValueRef Assist::getInterfaceMethodFunctionPtr(
+FuncPtrLE Assist::getInterfaceMethodFunctionPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs,  virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 LLVMValueRef Assist::stackify(

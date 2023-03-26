@@ -13,6 +13,7 @@
 #include "../../function/expressions/shared/string.h"
 #include "resilientv4.h"
 #include <sstream>
+#include <region/common/migration.h>
 
 ControlBlock makeResilientV4WeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
@@ -386,7 +387,7 @@ void ResilientV4::declareEdge(Edge *edge) {
 }
 
 void ResilientV4::defineEdge(Edge *edge) {
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
@@ -402,7 +403,7 @@ void ResilientV4::declareInterface(InterfaceDefinition *interfaceM) {
 }
 
 void ResilientV4::defineInterface(InterfaceDefinition *interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -768,8 +769,8 @@ void ResilientV4::deallocate(
 
   auto controlBlock = kindStructs.getControlBlock(refMT->kind);
   auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
-  auto tetherPtrLE = LLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
-  auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
+  auto tetherPtrLE = unmigratedLLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
+  auto tetherI32LE = unmigratedLLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
   auto tetheredLE = LLVMBuildTrunc(builder, tetherI32LE, LLVMInt1TypeInContext(globalState->context), "wasAlive");
   buildVoidIfElse(
       globalState, functionState, builder, tetheredLE,
@@ -777,7 +778,7 @@ void ResilientV4::deallocate(
         buildPrint(globalState, thenBuilder, "Tried to deallocate an object while borrowed!");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+        unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
       },
       [this, from, functionState, refMT, ref](LLVMBuilderRef elseBuilder) {
         buildFlare(FL(), globalState, functionState, elseBuilder);
@@ -1034,14 +1035,14 @@ Weakability ResilientV4::getKindWeakability(Kind *kind) {
   }
 }
 
-LLVMValueRef ResilientV4::getInterfaceMethodFunctionPtr(
+FuncPtrLE ResilientV4::getInterfaceMethodFunctionPtr(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 void ResilientV4::untether(
@@ -1049,7 +1050,7 @@ void ResilientV4::untether(
     LLVMBuilderRef builder,
     Local* local,
     LLVMValueRef localAddr) {
-  auto localStructValueLE = LLVMBuildLoad(builder, localAddr, "localStruct");
+  auto localStructValueLE = unmigratedLLVMBuildLoad(builder, localAddr, "localStruct");
   auto sourceRefLE = LLVMBuildExtractValue(builder, localStructValueLE, 0, "ref");
   auto wasAliveLE = LLVMBuildExtractValue(builder, localStructValueLE, 1, "wasAlive");
   auto sourceWeakFatPtrLE = kindStructs.makeWeakFatPtr(local->type, sourceRefLE);
@@ -1071,7 +1072,7 @@ void ResilientV4::untether(
 
   auto controlBlock = kindStructs.getControlBlock(local->type->kind);
   auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
-  auto tetherPtrLE = LLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
+  auto tetherPtrLE = unmigratedLLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
   auto wasAliveI32LE = LLVMBuildZExt(builder, wasAliveLE, LLVMInt32TypeInContext(globalState->context), "wasAliveI32");
   LLVMBuildStore(builder, wasAliveI32LE, tetherPtrLE);
 }
@@ -1144,17 +1145,17 @@ void ResilientV4::storeAndTether(
   auto controlBlock = kindStructs.getControlBlock(local->type->kind);
   auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
   auto controlBlockPtrLE = kindStructs.getConcreteControlBlockPtr(FL(), functionState, builder, local->type, newWrapperPtrLE);
-  auto tetherPtrLE = LLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
-  auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
+  auto tetherPtrLE = unmigratedLLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
+  auto tetherI32LE = unmigratedLLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
   auto wasTetheredLE = LLVMBuildTrunc(builder, tetherI32LE, LLVMInt1TypeInContext(globalState->context), "wasAlive");
 
   buildFlare(FL(), globalState, functionState, builder, "Tethering!");
   LLVMBuildStore(builder, constI32LE(globalState, 1), tetherPtrLE);
 
-  auto refMemberPtrLE = LLVMBuildStructGEP(builder, localAddr, 0, "refMemberPtr");
+  auto refMemberPtrLE = unmigratedLLVMBuildStructGEP(builder, localAddr, 0, "refMemberPtr");
   LLVMBuildStore(builder, newWeakFatPtr.refLE, refMemberPtrLE);
 
-  auto wasTetheredMemberPtrLE = LLVMBuildStructGEP(builder, localAddr, 1, "wasTetheredMemberPtr");
+  auto wasTetheredMemberPtrLE = unmigratedLLVMBuildStructGEP(builder, localAddr, 1, "wasTetheredMemberPtr");
   LLVMBuildStore(builder, wasTetheredLE, wasTetheredMemberPtrLE);
 }
 
@@ -1197,13 +1198,13 @@ Ref ResilientV4::loadLocal(FunctionState* functionState, LLVMBuilderRef builder,
     case Ownership::OWN:
     case Ownership::SHARE:
     case Ownership::WEAK: {
-      auto refLE = LLVMBuildLoad(builder, localAddr, "loaded");
+      auto refLE = unmigratedLLVMBuildLoad(builder, localAddr, "loaded");
       buildFlare(FL(), globalState, functionState, builder);
       return wrap(this, local->type, refLE);
     }
     case Ownership::BORROW: {
       if (local->keepAlive) {
-        auto localStructValueLE = LLVMBuildLoad(builder, localAddr, (local->id->maybeName + "__andWasAlive").c_str());
+        auto localStructValueLE = unmigratedLLVMBuildLoad(builder, localAddr, (local->id->maybeName + "__andWasAlive").c_str());
         auto sourceRefLE = LLVMBuildExtractValue(builder, localStructValueLE, 0, local->id->maybeName.c_str());
         auto sourceRef = wrap(this, local->type, sourceRefLE);
         checkValidReference(FL(), functionState, builder, false, local->type, sourceRef);
@@ -1211,7 +1212,7 @@ Ref ResilientV4::loadLocal(FunctionState* functionState, LLVMBuilderRef builder,
         return sourceRef;
       } else {
         buildFlare(FL(), globalState, functionState, builder);
-        auto refLE = LLVMBuildLoad(builder, localAddr, "loaded");
+        auto refLE = unmigratedLLVMBuildLoad(builder, localAddr, "loaded");
         buildFlare(FL(), globalState, functionState, builder);
         return wrap(this, local->type, refLE);
       }
@@ -1224,7 +1225,7 @@ Ref ResilientV4::unstackify(FunctionState* functionState, LLVMBuilderRef builder
     case Ownership::OWN:
     case Ownership::SHARE:
     case Ownership::WEAK: {
-      auto refLE = LLVMBuildLoad(builder, localAddr, "loaded");
+      auto refLE = unmigratedLLVMBuildLoad(builder, localAddr, "loaded");
       return wrap(this, local->type, refLE);
     }
     case Ownership::BORROW:
@@ -1232,7 +1233,7 @@ Ref ResilientV4::unstackify(FunctionState* functionState, LLVMBuilderRef builder
         buildFlare(FL(), globalState, functionState, builder);
         return loadAndUntether(functionState, builder, local, localAddr);
       } else {
-        auto refLE = LLVMBuildLoad(builder, localAddr, "loaded");
+        auto refLE = unmigratedLLVMBuildLoad(builder, localAddr, "loaded");
         return wrap(this, local->type, refLE);
       }
     default:

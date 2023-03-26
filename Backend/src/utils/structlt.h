@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <region/common/migration.h>
 
 class GlobalState;
 
@@ -27,12 +28,15 @@ public:
   // TODO: Rename to loadMemberPtr
   LLVMValueRef getMemberPtr(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member) const {
     assert(LLVMTypeOf(ptrLE) == LLVMPointerType(structLT, 0));
-    return LLVMBuildStructGEP(builder, ptrLE, member, "memberPtr");
+    auto resultLE = problematicLLVMBuildStructGEP(builder, membersLT[member], ptrLE, member, "memberPtr");
+    assert(LLVMTypeOf(resultLE) == LLVMPointerType(membersLT[member], 0));
+    return resultLE;
   }
 
   // TODO: Rename to loadMember
   LLVMValueRef getMember(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member, const std::string& name = "member") const {
-    return LLVMBuildLoad(builder, getMemberPtr(builder, ptrLE, member), name.c_str());
+    return problematicLLVMBuildLoad(
+        builder, membersLT[member], getMemberPtr(builder, ptrLE, member), name.c_str());
   }
 
   LLVMValueRef extractMember(LLVMBuilderRef builder, LLVMValueRef structLE, EnumType member) const {

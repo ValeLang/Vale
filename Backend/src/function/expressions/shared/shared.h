@@ -161,7 +161,7 @@ Ref buildInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    LLVMValueRef methodFunctionPtrLE,
+    FuncPtrLE methodFunctionPtrLE,
     std::vector<Ref> argRefs,
     int virtualParamIndex);
 
@@ -169,7 +169,7 @@ Ref buildInterfaceCall(
 LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int64_t value);
 
 LLVMValueRef makeConstExpr(
-    FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
+    FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef constExpr);
 
 inline LLVMValueRef constI8LE(GlobalState* globalState, int n) {
   return LLVMConstInt(LLVMInt8TypeInContext(globalState->context), n, false);
@@ -221,11 +221,10 @@ Ref buildCallV(
 LLVMValueRef buildMaybeNeverCall(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef functionLE,
+    FuncPtrLE functionLE,
     std::vector<LLVMValueRef> argsLE);
 
-
-LLVMValueRef addExtern(
+FuncPtrLE addExtern(
     LLVMModuleRef mod,
     const std::string& name,
     LLVMTypeRef retType,
@@ -242,10 +241,9 @@ inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder,
 // A side call is a call using different stack memory
 LLVMValueRef buildSideCall(
     GlobalState* globalState,
-    LLVMTypeRef calleeFuncLT,
     LLVMBuilderRef entryBuilder,
     LLVMValueRef sideStackStartPtrAsI8PtrLE,
-    LLVMValueRef calleeFuncLE,
+    FuncPtrLE calleeFuncLE,
     const std::vector<LLVMValueRef>& userArgsLE);
 
 #endif

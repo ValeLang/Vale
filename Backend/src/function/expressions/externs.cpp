@@ -46,7 +46,6 @@ void replayExportCalls(
         assert(
             LLVMTypeOf(replayerFuncPtrLE) ==
             LLVMPointerType(LLVMFunctionType(voidLT, nullptr, 0, false), 0));
-        assert(LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(replayerFuncPtrLE))) == voidLT);
         auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, builder, replayerFuncPtrLE);
         auto replayerFuncPtrNotNullLE =
             LLVMBuildICmp(

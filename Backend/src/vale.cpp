@@ -3,6 +3,7 @@
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/IRReader.h>
+#include "llvm/Passes/PassBuilder.h"
 
 #include <sys/stat.h>
 
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+
 
 #include "json.hpp"
 #include "function/expressions/shared/shared.h"
@@ -1324,21 +1326,54 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     }
   }
 
-  // Optimize the generated LLVM IR
-  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+  if (globalState->opt->release) {
+    if (globalState->opt->flares) {
+      std::cout << "Warning: Running release optimizations with flares enabled!" << std::endl;
+    }
+    std::cout << "Running release optimizations..." << std::endl;
 
-//  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
-////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
-//  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
-//  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
-//  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+    // Create the analysis managers.
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
 
-//  if (globalState->opt->release) {
-//    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
-//  }
+    // Create the new pass manager builder.
+    // Take a look at the PassBuilder constructor parameters for more
+    // customization, e.g. specifying a TargetMachine or various debugging
+    // options.
+    llvm::PassBuilder PB;
 
-  LLVMRunPassManager(passmgr, globalState->mod);
-  LLVMDisposePassManager(passmgr);
+    // Register all the basic analyses with the managers.
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    // Create the pass manager.
+    // This one corresponds to a typical -O3 optimization pipeline.
+    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+
+    // Optimize the IR!
+    MPM.run(*llvm::unwrap(globalState->mod), MAM);
+  }
+//
+//  // Optimize the generated LLVM IR
+//  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+//
+////  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
+//////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
+////  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
+////  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
+////  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+//
+////  if (globalState->opt->release) {
+////    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
+////  }
+//
+//  LLVMRunPassManager(passmgr, globalState->mod);
+//  LLVMDisposePassManager(passmgr);
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {

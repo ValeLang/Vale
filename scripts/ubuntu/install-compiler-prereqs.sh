@@ -78,10 +78,12 @@ fi
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing Java...${TEXT_RESET}"
-  wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-  sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+  apt-get install -y wget apt-transport-https gnupg
+  wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | apt-key add -
+  echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
+
   sudo apt update
-  sudo apt install -y adoptopenjdk-11-hotspot # Java 11 / HotSpot VM
+  sudo apt install temurin-11-jdk 
 fi
 
 # Install SBT

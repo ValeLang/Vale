@@ -4,6 +4,7 @@
 
 #include "llvm.h"
 #include <region/common/migration.h>
+#include <cassert>
 
 inline LLVMValueRef constI64LE(LLVMContextRef context, int64_t n) {
   return LLVMConstInt(LLVMInt64TypeInContext(context), n, false);

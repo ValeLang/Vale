@@ -765,7 +765,7 @@ Ref NaiveRC::loadMember(
             functionState, builder, expectedMemberType, targetType, unupgradedMemberLE);
       }
     }
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4: {
+    case RegionOverride::RESILIENT_V3: {
       if (structRefMT->ownership == Ownership::SHARE) {
         assert(false);
       } else {
@@ -911,7 +911,7 @@ LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference)
       }
       break;
     }
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4: {
+    case RegionOverride::RESILIENT_V3: {
       switch (reference->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE:

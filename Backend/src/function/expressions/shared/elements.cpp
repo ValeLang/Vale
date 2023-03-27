@@ -33,8 +33,9 @@ LLVMValueRef checkIndexInBounds(
 LLVMValueRef getStaticSizedArrayContentsPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE staticSizedArrayWrapperPtrLE) {
-  return unmigratedLLVMBuildStructGEP(
+  return LLVMBuildStructGEP2(
       builder,
+      staticSizedArrayWrapperPtrLE.wrapperStructLT,
       staticSizedArrayWrapperPtrLE.refLE,
       1, // Array is after the control block.
       "ssaElemsPtr");
@@ -50,8 +51,9 @@ LLVMValueRef getRuntimeSizedArrayContentsPtr(
       (capacityExists ? 1 : 0); // capacity
   int index = numThingsBefore;
 
-  return unmigratedLLVMBuildStructGEP(
+  return LLVMBuildStructGEP2(
       builder,
+      arrayWrapperPtrLE.wrapperStructLT,
       arrayWrapperPtrLE.refLE,
       index,
       "rsaElemsPtr");
@@ -62,8 +64,9 @@ LLVMValueRef getRuntimeSizedArrayLengthPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
   auto resultLE =
-      unmigratedLLVMBuildStructGEP(
+      LLVMBuildStructGEP2(
           builder,
+          runtimeSizedArrayWrapperPtrLE.wrapperStructLT,
           runtimeSizedArrayWrapperPtrLE.refLE,
           1, // Length is after the control block and before the capacity.
           "rsaLenPtr");
@@ -76,8 +79,9 @@ LLVMValueRef getRuntimeSizedArrayCapacityPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
   auto resultLE =
-      unmigratedLLVMBuildStructGEP(
+      LLVMBuildStructGEP2(
           builder,
+          runtimeSizedArrayWrapperPtrLE.wrapperStructLT,
           runtimeSizedArrayWrapperPtrLE.refLE,
           2, // Length is after the control block and before contents.
           "rsaCapacityPtr");
@@ -109,8 +113,8 @@ LoadResult loadElement(
 
   auto elementLT = globalState->getRegion(elementRefM)->translateType(elementRefM);
   auto elementPtrLE =
-      unmigratedLLVMBuildGEP(builder, elemsPtrLE, indices, 2, "indexPtr");
-  auto fromArrayLE = unmigratedLLVMBuildLoad(builder, elementPtrLE, "index");
+      LLVMBuildGEP2(builder, LLVMArrayType(elementLT, 0), elemsPtrLE, indices, 2, "indexPtr");
+  auto fromArrayLE = LLVMBuildLoad2(builder, elementLT, elementPtrLE, "index");
 
   auto sourceRef = wrap(globalState->getRegion(elementRefM), elementRefM, fromArrayLE);
   globalState->getRegion(elementRefM)
@@ -122,6 +126,7 @@ void storeInnerArrayMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elemsPtrLE,
     LLVMValueRef indexLE,
     LLVMValueRef sourceLE) {
@@ -130,8 +135,8 @@ void storeInnerArrayMember(
       constI32LE(globalState, 0),
       indexLE
   };
-  auto destPtrLE = unmigratedLLVMBuildGEP(builder, elemsPtrLE, indices, 2, "destPtr");
-  //buildFlare(FL(), globalState, functionState, builder, "writing a reference to ", ptrToIntLE(globalState, builder, destPtrLE));
+  auto destPtrLE =
+      LLVMBuildGEP2(builder, LLVMArrayType(elementLT, 0), elemsPtrLE, indices, 2, "destPtr");
   LLVMBuildStore(builder, sourceLE, destPtrLE);
 }
 
@@ -172,9 +177,11 @@ Ref swapElement(
   auto sourceLE =
       globalState->getRegion(elementRefM)
           ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
+  auto elementLT = globalState->getRegion(elementRefM)->translateType(elementRefM);
+
   buildFlare(FL(), globalState, functionState, builder);
   auto resultLE = loadElement(globalState, functionState, builder, arrayPtrLE, elementRefM, sizeRef, indexRef);
-  storeInnerArrayMember(globalState, functionState, builder, arrayPtrLE, indexLE, sourceLE);
+  storeInnerArrayMember(globalState, functionState, builder, elementLT, arrayPtrLE, indexLE, sourceLE);
   return resultLE.move();
 }
 
@@ -197,7 +204,9 @@ void initializeElementAndIncrementSize(
   auto sourceLE =
       globalState->getRegion(elementRefM)
           ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
-  storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
+  auto elementLT = globalState->getRegion(elementRefM)->translateType(elementRefM);
+  storeInnerArrayMember(
+      globalState, functionState, builder, elementLT, elemsPtrLE, indexLE, sourceLE);
 }
 
 void initializeElementWithoutIncrementSize(
@@ -216,7 +225,8 @@ void initializeElementWithoutIncrementSize(
   auto sourceLE =
       globalState->getRegion(elementRefM)
           ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
-  storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
+  auto elementLT = globalState->getRegion(elementRefM)->translateType(elementRefM);
+  storeInnerArrayMember(globalState, functionState, builder, elementLT, elemsPtrLE, indexLE, sourceLE);
 }
 
 void intRangeLoopV(
@@ -292,17 +302,17 @@ void intRangeLoopReverseV(
       globalState,
       functionState,
       builder,
-      [globalState, iterationIndexPtrLE, innt](LLVMBuilderRef conditionBuilder) {
+      [globalState, iterationIndexPtrLE, innt, intLT](LLVMBuilderRef conditionBuilder) {
         auto iterationIndexLE =
-            unmigratedLLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
+            LLVMBuildLoad2(conditionBuilder, intLT, iterationIndexPtrLE, "iterationIndex");
         auto zeroLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), 0, false);
         auto isBeforeEndLE =
             LLVMBuildICmp(conditionBuilder, LLVMIntSGT, iterationIndexLE, zeroLE, "iterationIndexIsBeforeEnd");
         return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isBeforeEndLE);
       },
-      [globalState, iterationBuilder, innt, inntRefMT, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
+      [globalState, iterationBuilder, innt, intLT, inntRefMT, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
         adjustCounter(globalState, bodyBuilder, innt, iterationIndexPtrLE, -1);
-        auto iterationIndexLE = unmigratedLLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
+        auto iterationIndexLE = LLVMBuildLoad2(bodyBuilder, intLT, iterationIndexPtrLE, "iterationIndex");
         auto iterationIndexRef = wrap(globalState->getRegion(inntRefMT), inntRefMT, iterationIndexLE);
         iterationBuilder(iterationIndexRef, bodyBuilder);
       });

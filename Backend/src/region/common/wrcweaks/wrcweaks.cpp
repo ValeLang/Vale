@@ -29,10 +29,9 @@ void WrcWeaks::buildCheckWrc(
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
-    case RegionOverride::ASSIST:
       // fine, proceed
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       // These dont have WRCs
       assert(false);
       break;
@@ -44,7 +43,7 @@ void WrcWeaks::buildCheckWrc(
       wrcTablePtrLE,
       wrciLE,
   };
-  unmigratedLLVMBuildCall(builder, globalState->checkWrci.ptrLE, checkWrcsArgs.data(), checkWrcsArgs.size(), "");
+  globalState->checkWrci.call(builder, checkWrcsArgs, "");
 }
 
 LLVMValueRef WrcWeaks::getWrciFromWeakRef(
@@ -61,16 +60,17 @@ void WrcWeaks::maybeReleaseWrc(
     LLVMValueRef wrciLE,
     LLVMValueRef ptrToWrcLE,
     LLVMValueRef wrcLE) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
   buildIfV(
       globalState, functionState,
       builder,
       isZeroLE(builder, wrcLE),
-      [this, functionState, wrciLE, ptrToWrcLE](LLVMBuilderRef thenBuilder) {
+      [this, functionState, wrciLE, ptrToWrcLE, int32LT](LLVMBuilderRef thenBuilder) {
         // __wrc_entries[wrcIndex] = __wrc_firstFree;
         LLVMBuildStore(
             thenBuilder,
-            unmigratedLLVMBuildLoad(
-                thenBuilder, getWrcFirstFreeWrciPtr(thenBuilder), "firstFreeWrci"),
+            LLVMBuildLoad2(
+                thenBuilder, int32LT, getWrcFirstFreeWrciPtr(thenBuilder), "firstFreeWrci"),
             ptrToWrcLE);
         // __wrc_firstFree = wrcIndex;
         LLVMBuildStore(thenBuilder, wrciLE, getWrcFirstFreeWrciPtr(thenBuilder));
@@ -83,6 +83,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
 //  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
 
   if (refM->ownership == Ownership::SHARE) {
@@ -91,22 +92,25 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     return nullptr;
   } else {
     auto wrciPtrLE =
-        unmigratedLLVMBuildStructGEP(
+        LLVMBuildStructGEP2(
             builder,
+            controlBlockPtr.structLT,
             controlBlockPtr.refLE,
             structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::WRCI_32B),
             "wrciPtr");
-    return unmigratedLLVMBuildLoad(builder, wrciPtrLE, "wrci");
+    return LLVMBuildLoad2(builder, int32LT, wrciPtrLE, "wrci");
   }
 }
 
 LLVMValueRef WrcWeaks::getWrcPtr(
     LLVMBuilderRef builder,
     LLVMValueRef wrciLE) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto wrcEntriesPtrLE =
-      unmigratedLLVMBuildLoad(builder, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
+      LLVMBuildLoad2(builder, int32PtrLT, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
   auto ptrToWrcLE =
-      unmigratedLLVMBuildGEP(builder, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
+      LLVMBuildGEP2(builder, int32LT, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
   return ptrToWrcLE;
 }
 
@@ -143,28 +147,28 @@ void WrcWeaks::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
 
 void WrcWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
   if (globalState->opt->census) {
-    LLVMValueRef args[3] = {
+    std::vector<LLVMValueRef> args = {
         LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
             builder,
-            unmigratedLLVMBuildCall(
-                builder, globalState->getNumWrcs.ptrLE, &wrcTablePtrLE, 1, "numWrcs"),
+            globalState->getNumWrcs.call(
+                builder, {wrcTablePtrLE}, "numWrcs"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    unmigratedLLVMBuildCall(builder, globalState->externs->assertI64Eq.ptrLE, args, 3, "");
+    globalState->externs->assertI64Eq.call(builder, args, "");
   }
 }
 
 LLVMValueRef WrcWeaks::getWrcCapacityPtr(LLVMBuilderRef builder) {
-  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 0, "wrcCapacityPtr");
+  return LLVMBuildStructGEP2(builder, globalState->wrcTableStructLT, wrcTablePtrLE, 0, "wrcCapacityPtr");
 }
 LLVMValueRef WrcWeaks::getWrcFirstFreeWrciPtr(LLVMBuilderRef builder) {
-  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 1, "wrcFirstFree");
+  return LLVMBuildStructGEP2(builder, globalState->wrcTableStructLT, wrcTablePtrLE, 1, "wrcFirstFree");
 }
 LLVMValueRef WrcWeaks::getWrcEntriesArrayPtr(LLVMBuilderRef builder) {
-  return unmigratedLLVMBuildStructGEP(builder, wrcTablePtrLE, 2, "entries");
+  return LLVMBuildStructGEP2(builder, globalState->wrcTableStructLT, wrcTablePtrLE, 2, "entries");
 }
 
 WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
@@ -180,10 +184,9 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
-    case RegionOverride::ASSIST:
       // continue
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(false);
       break;
     default:
@@ -259,7 +262,7 @@ WeakFatPtrLE WrcWeaks::assembleStructWeakRef(
 //  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
 //    assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
 //  } else
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+    if (
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
     assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE || structTypeM->ownership == Ownership::BORROW);
@@ -332,7 +335,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
         buildPrint(globalState, thenBuilder, "Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-        unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
+        globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
       });
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, weakFatPtrLE);
 }
@@ -340,13 +343,14 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
 LLVMValueRef WrcWeaks::getNewWrci(
     FunctionState* functionState,
     LLVMBuilderRef builder) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
   assert(
-      globalState->opt->regionOverride == RegionOverride::ASSIST ||
+
           globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
           globalState->opt->regionOverride == RegionOverride::FAST);
 
   // uint64_t resultWrci = __wrc_firstFree;
-  auto resultWrciLE = unmigratedLLVMBuildLoad(builder, getWrcFirstFreeWrciPtr(builder), "resultWrci");
+  auto resultWrciLE = LLVMBuildLoad2(builder, int32LT, getWrcFirstFreeWrciPtr(builder), "resultWrci");
 
   // if (resultWrci == __wrc_capacity) {
   //   __expandWrcTable();
@@ -356,14 +360,14 @@ LLVMValueRef WrcWeaks::getNewWrci(
           builder,
           LLVMIntEQ,
           resultWrciLE,
-          unmigratedLLVMBuildLoad(builder, getWrcCapacityPtr(builder), "wrcCapacity"),
+          LLVMBuildLoad2(builder, int32LT, getWrcCapacityPtr(builder), "wrcCapacity"),
           "atCapacity");
   buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
-        unmigratedLLVMBuildCall(thenBuilder, globalState->expandWrcTable.ptrLE, &wrcTablePtrLE, 1, "");
+        globalState->expandWrcTable.call(thenBuilder, {wrcTablePtrLE}, "");
       });
 
   // u64* wrcPtr = &__wrc_entries[resultWrci];
@@ -373,7 +377,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
   LLVMBuildStore(
       builder,
       // *wrcPtr
-      unmigratedLLVMBuildLoad(builder, wrcPtrLE, ""),
+      LLVMBuildLoad2(builder, int32LT, wrcPtrLE, ""),
       // __wrc_firstFree
       getWrcFirstFreeWrciPtr(builder));
 
@@ -391,13 +395,15 @@ void WrcWeaks::innerNoteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* concreteRefM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, kindStructsSource, concreteRefM,
-      controlBlockPtrLE);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto wrciLE =
+      getWrciFromControlBlockPtr(
+          globalState, builder, kindStructsSource, concreteRefM, controlBlockPtrLE);
 
   //  unmigratedLLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto prevWrcLE = unmigratedLLVMBuildLoad(builder, ptrToWrcLE, "wrc");
+  auto prevWrcLE = LLVMBuildLoad2(builder, int32LT, ptrToWrcLE, "wrc");
 
   auto wrcLE =
       LLVMBuildAnd(
@@ -467,13 +473,14 @@ LLVMValueRef WrcWeaks::getIsAliveFromWeakFatPtr(
     LLVMBuilderRef builder,
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto wrciLE = getWrciFromWeakRef(builder, weakFatPtrLE);
   if (globalState->opt->census) {
     buildCheckWrc(builder, wrciLE);
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = unmigratedLLVMBuildLoad(builder, ptrToWrcLE, "wrc");
+  auto wrcLE = LLVMBuildLoad2(builder, int32LT, ptrToWrcLE, "wrc");
   return LLVMBuildICmp(
       builder,
       LLVMIntNE,
@@ -492,14 +499,13 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(
           weakRefM->ownership == Ownership::BORROW ||
               weakRefM->ownership == Ownership::WEAK);
       break;
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
-    case RegionOverride::ASSIST:
       assert(weakRefM->ownership == Ownership::WEAK);
       break;
     default:

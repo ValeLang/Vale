@@ -45,7 +45,7 @@ Prototype* makeValeMainFunction(
       globalState->metalCache->getPrototype(valeMainName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, valeMainProto, valeMainName->name,
-      [globalState, stringSetupFunctionL, mainSetupFuncProto, userMainFunctionPrototype, mainCleanupFunctionPrototype](
+      [globalState, stringSetupFunctionL, mainSetupFuncProto, int64LT, userMainFunctionPrototype, mainCleanupFunctionPrototype](
           FunctionState *functionState, LLVMBuilderRef entryBuilder) {
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
@@ -77,7 +77,7 @@ Prototype* makeValeMainFunction(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
 
             //buildFlare(FL(), globalState, functionState, entryBuilder, ptrToIntLE(globalState, entryBuilder, itablePtrAsVoidPtrLE));
-            unmigratedLLVMBuildCall(entryBuilder, globalState->externs->censusAdd.ptrLE, &itablePtrAsVoidPtrLE, 1, "");
+            globalState->externs->censusAdd.call(entryBuilder, {itablePtrAsVoidPtrLE}, "");
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
         }
@@ -98,7 +98,8 @@ Prototype* makeValeMainFunction(
           buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
           buildPrint(
               globalState, entryBuilder,
-              unmigratedLLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
+              LLVMBuildLoad2(
+                  entryBuilder, LLVMInt64TypeInContext(globalState->context), globalState->livenessCheckCounter, "livenessCheckCounter"));
           buildPrint(globalState, entryBuilder, "\n");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
@@ -111,16 +112,16 @@ Prototype* makeValeMainFunction(
             LLVMValueRef itablePtrAsVoidPtrLE =
                 LLVMBuildBitCast(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-            unmigratedLLVMBuildCall(entryBuilder, globalState->externs->censusRemove.ptrLE, &itablePtrAsVoidPtrLE, 1, "");
+            globalState->externs->censusRemove.call(entryBuilder, {itablePtrAsVoidPtrLE}, "");
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
 
-          LLVMValueRef numLiveObjAssertArgs[3] = {
+          std::vector<LLVMValueRef> numLiveObjAssertArgs = {
               LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
-              unmigratedLLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
+              LLVMBuildLoad2(entryBuilder, int64LT, globalState->liveHeapObjCounter, "numLiveObjs"),
               globalState->getOrMakeStringConstant("Memory leaks!"),
           };
-          unmigratedLLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq.ptrLE, numLiveObjAssertArgs, 3, "");
+          globalState->externs->assertI64Eq.call(entryBuilder, numLiveObjAssertArgs, "");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
@@ -263,7 +264,7 @@ LLVMValueRef makeEntryFunction(
   if (globalState->opt->enableSideCalling) {
     buildMaybeNeverCall(
         globalState, entryBuilder, globalState->externs->free,
-        { unmigratedLLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
+        { LLVMBuildLoad2(entryBuilder, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), globalState->sideStack, "") });
   }
 
   if (globalState->opt->enableReplaying) {

@@ -28,14 +28,14 @@ public:
   // TODO: Rename to loadMemberPtr
   LLVMValueRef getMemberPtr(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member) const {
     assert(LLVMTypeOf(ptrLE) == LLVMPointerType(structLT, 0));
-    auto resultLE = problematicLLVMBuildStructGEP(builder, membersLT[member], ptrLE, member, "memberPtr");
+    auto resultLE = LLVMBuildStructGEP2(builder, structLT, ptrLE, member, "memberPtr");
     assert(LLVMTypeOf(resultLE) == LLVMPointerType(membersLT[member], 0));
     return resultLE;
   }
 
   // TODO: Rename to loadMember
   LLVMValueRef getMember(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member, const std::string& name = "member") const {
-    return problematicLLVMBuildLoad(
+    return LLVMBuildLoad2(
         builder, membersLT[member], getMemberPtr(builder, ptrLE, member), name.c_str());
   }
 

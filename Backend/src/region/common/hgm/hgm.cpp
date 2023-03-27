@@ -32,8 +32,7 @@ LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
     KindStructs* kindStructs,
     Kind* kind,
     WeakFatPtrLE weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-             globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3);
   auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakRefLE);
   assert(LLVMTypeOf(headerLE) == kindStructs->getWeakRefHeaderStruct(kind));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
@@ -45,8 +44,7 @@ static LLVMValueRef makeGenHeader(
     LLVMBuilderRef builder,
     Kind* kind,
     LLVMValueRef targetGenLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-         globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3);
   auto headerLE = LLVMGetUndef(kindStructs->getWeakRefHeaderStruct(kind));
   headerLE =
       LLVMBuildInsertValue(
@@ -62,8 +60,7 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
     ControlBlockPtrLE controlBlockPtr) {
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
 
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-             globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3);
   assert(LLVMTypeOf(controlBlockPtr.refLE) == LLVMPointerType(structs->getControlBlock(kindM)->getStruct(), 0));
 
   auto genPtrLE =
@@ -86,12 +83,11 @@ WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
     InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       // continue
       break;
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
-    case RegionOverride::ASSIST:
       assert(false);
       break;
     default:

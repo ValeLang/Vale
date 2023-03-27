@@ -7,13 +7,13 @@
 #include <stddef.h>
 
 enum class RegionOverride {
-  ASSIST,
+//  ASSIST,
   NAIVE_RC,
 //  RESILIENT_V0,
 //  RESILIENT_V1,
 //  RESILIENT_V2,
   RESILIENT_V3,
-  RESILIENT_V4,
+//  RESILIENT_V4,
 //  RESILIENT_LIMIT,
   FAST
 };

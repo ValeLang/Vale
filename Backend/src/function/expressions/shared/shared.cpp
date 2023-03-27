@@ -72,13 +72,12 @@ LLVMValueRef adjustStrongRc(
     Reference* refM,
     int amount) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -102,13 +101,13 @@ LLVMValueRef strongRcIsZero(
     ControlBlockPtrLE controlBlockPtrLE) {
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
+//    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -128,7 +127,7 @@ void buildPrint(
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
   auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
   assert(LLVMTypeOf(s) == LLVMPointerType(int8LT, 0));
-  problematicLLVMBuildCall(builder, voidLT, globalState->externs->printCStr.ptrLE, &s, 1, "");
+  globalState->externs->printCStr.call(builder, {s}, "");
 }
 
 void buildPrint(
@@ -145,7 +144,7 @@ void buildPrint(
     globalState->externs->printInt.call(builder, {int64LE}, "");
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
     auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
-    unmigratedLLVMBuildCall(builder, globalState->externs->printInt.ptrLE, &i64LE, 1, "");
+    globalState->externs->printInt.call(builder, {i64LE}, "");
   } else if (LLVMGetTypeKind(LLVMTypeOf(exprLE)) == LLVMPointerTypeKind) {
     // It's a pointer, so interpret it as a char* and print it as a string.
     globalState->externs->printCStr.call(builder, {exprLE}, "");
@@ -180,7 +179,7 @@ void buildAssertWithExitCode(
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
-        unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
+        globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
       });
 }
 
@@ -328,12 +327,11 @@ void buildAssertCensusContains(
           buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
           // See MPESC for status codes
           auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-          unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
+          globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
         });
 
     auto isRegisteredIntLE =
-        unmigratedLLVMBuildCall(
-            builder, globalState->externs->censusContains.ptrLE, &resultAsVoidPtrLE, 1, "");
+        globalState->externs->censusContains.call(builder, {resultAsVoidPtrLE}, "");
     auto isRegisteredBoolLE =
         LLVMBuildTruncOrBitCast(
             builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context), "");
@@ -346,7 +344,7 @@ void buildAssertCensusContains(
           buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
           // See MPESC for status codes
           auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-          unmigratedLLVMBuildCall(thenBuilder, globalState->externs->exit.ptrLE, &exitCodeIntLE, 1, "");
+          globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
         });
   }
 }
@@ -415,11 +413,12 @@ LLVMValueRef getArgsAreaPtr(
     int64_t argsAreaSize,
     LLVMBuilderRef builder,
     LLVMValueRef sideStackStartPtrAsI8PtrLE) {
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto argsStructPtrLT = LLVMPointerType(argsStructLT, 0);
 
   auto offsetIntoNewStackLE = constI64LE(globalState, -argsAreaSize);
   auto sideStackPtrBeforeSwitchAsI8PtrLE =
-      unmigratedLLVMBuildGEP(builder, sideStackStartPtrAsI8PtrLE, &offsetIntoNewStackLE, 1, "sideStackPtr");
+      LLVMBuildGEP2(builder, int8LT, sideStackStartPtrAsI8PtrLE, &offsetIntoNewStackLE, 1, "sideStackPtr");
 
   auto argsAreaPtrBeforeSwitchLE =
       LLVMBuildPointerCast(builder, sideStackPtrBeforeSwitchAsI8PtrLE, argsStructPtrLT, "");
@@ -595,7 +594,7 @@ LLVMValueRef buildSideCall(
   // change our registers and maybe spill onto the stack, causing havoc.
 
   auto argsStructAfterSwitchLE =
-      unmigratedLLVMBuildLoad(entryBuilder, argsAreaPtrAfterSwitchLE, "argsAreaPtrAfterSwitch");
+      LLVMBuildLoad2(entryBuilder, argsStructLT, argsAreaPtrAfterSwitchLE, "argsAreaPtrAfterSwitch");
 
   std::vector<LLVMValueRef> argsAfterSwitchLE;
   for (int i = 0; i < userArgsLE.size(); i++) {
@@ -639,7 +638,8 @@ LLVMValueRef buildSideCall(
   auto calleeFuncReturnLT = LLVMGetReturnType(calleeFuncLE.funcLT);
   if (calleeFuncReturnLT != voidLT) {
     auto callResultPtrBeforeReturnLE =
-        unmigratedLLVMBuildStructGEP(entryBuilder, argsAreaPtrAfterSwitchLE, numPaddingInts + userArgsLE.size() + 2, "");
+        LLVMBuildStructGEP2(
+            entryBuilder, argsStructLT, argsAreaPtrAfterSwitchLE, numPaddingInts + userArgsLE.size() + 2, "");
 
     // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
     // change our registers and maybe spill onto the stack, causing havoc.
@@ -696,8 +696,9 @@ LLVMValueRef buildSideCall(
     // change our registers and maybe spill onto the stack, causing havoc.
 
     auto callResultPtrAfterReturnLE =
-        unmigratedLLVMBuildStructGEP(entryBuilder, argsAreaPtrAfterReturnLE, numPaddingInts + userArgsLE.size() + 2, "callResultPtrAfterReturn");
-    callResultAfterReturnLE = unmigratedLLVMBuildLoad(entryBuilder, callResultPtrAfterReturnLE, "callResultAfterReturn");
+        LLVMBuildStructGEP2(entryBuilder, argsStructLT, argsAreaPtrAfterReturnLE, numPaddingInts + userArgsLE.size() + 2, "callResultPtrAfterReturn");
+    callResultAfterReturnLE =
+        LLVMBuildLoad2(entryBuilder, returnLT, callResultPtrAfterReturnLE, "callResultAfterReturn");
 
     // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
     // change our registers and maybe spill onto the stack, causing havoc.

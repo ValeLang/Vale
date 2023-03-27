@@ -43,8 +43,8 @@ LLVMValueRef getCharsPtrFromWrapperPtr(
 
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), constI64LE(globalState, 0) };
   auto firstCharPtrLE =
-      problematicLLVMBuildGEP(
-          builder, LLVMPointerType(LLVMArrayType(int8LT, 0), 0), charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
+      LLVMBuildGEP2(
+          builder, LLVMArrayType(int8LT, 0), charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
   assert(LLVMGetTypeKind(LLVMTypeOf(firstCharPtrLE)) == LLVMPointerTypeKind);
   return firstCharPtrLE;
 }

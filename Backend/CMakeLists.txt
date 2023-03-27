@@ -9,7 +9,7 @@ if (MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:4194304")
 endif (MSVC)
 
-find_package(LLVM 14 REQUIRED CONFIG)
+find_package(LLVM 16 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(
 	${LLVM_INCLUDE_DIRS}
@@ -30,6 +30,7 @@ set(LLVM_LINK_COMPONENTS
 		Core
 		Support
 		IRReader
+		Passes
 		x86asmparser x86codegen x86desc x86disassembler x86info
 		webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo
 )

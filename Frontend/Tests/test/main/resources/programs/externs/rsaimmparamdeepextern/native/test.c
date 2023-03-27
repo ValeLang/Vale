@@ -16,8 +16,10 @@ int64_t nextMultipleOf16(int64_t x) {
 extern ValeInt vtest_cSumFuel_vasp(vtest_ImmSpaceshipArray* arr, ValeInt arrSize) {
   int runNumber = incrementIntFile("myfile.bin");
 
+  printf("assert(arr->length == 5);\n  arr->length = %lld\n", arr->length);
   assert(arr->length == 5);
   int64_t arrayAddr = (int64_t)(void*)arr;
+  printf("arrayAddr = %lld\n", arrayAddr);
   int64_t arrayShallowSize = sizeof(vtest_ImmSpaceshipArray) + sizeof(vtest_Spaceship*) * arr->length;
   // AP = And Padding; to get the next multiple of 16 from the end of the array's header struct.
   int64_t arrayShallowAPEndAddr = nextMultipleOf16(arrayAddr + arrayShallowSize);
@@ -47,6 +49,8 @@ extern ValeInt vtest_cSumFuel_vasp(vtest_ImmSpaceshipArray* arr, ValeInt arrSize
     assert(lastElementAPEndAddr == (lastElementAPEndAddr & ~0x7));
   }
 
+  printf("assert((int64_t)(void*)arr->elements[0] == firstElementAddr);\n  arr->elements[0] = %lld\n  firstElementAddr = %lld\n", arr->elements[0], firstElementAddr);
+  printf("assert((int64_t)(void*)arr->elements[4] == lastElementAddr);\n  arr->elements[4] = %lld\n  lastElementAddr = %lld\n", arr->elements[4], lastElementAddr);
   assert((int64_t)(void*)arr->elements[0] == firstElementAddr);
   assert((int64_t)(void*)arr->elements[4] == lastElementAddr);
 

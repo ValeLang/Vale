@@ -15,11 +15,11 @@ exported func main() {
 
   suite.test("List from SSA of primitives", {
     list =
-      List([#][
+      List([#](
         13,
         14,
         15
-      ]);
+      ));
     sum = 0;
     list.each({ set sum = sum + _; });
     sum should_equal 42;
@@ -27,11 +27,11 @@ exported func main() {
 
   suite.test("List from SSA of instances", {
     list =
-      List([#][
+      List([#](
         Ship(13),
         Ship(14),
         Ship(15)
-      ]);
+      ));
     sum = 0;
     list.each({ set sum = sum + _.fuel; });
     sum should_equal 42;
@@ -45,14 +45,14 @@ exported func main() {
   });
 
   suite.test("List from SSA", {
-    list = List([#][13, 14, 15]);
+    list = List([#](13, 14, 15));
     list.get(0) should_equal 13;
     list.get(1) should_equal 14;
     list.get(2) should_equal 15;
   });
 
   suite.test("clone List", {
-    original = List([#][13, 14, 15]);
+    original = List([#](13, 14, 15));
     list = original.clone();
     list.get(0) should_equal 13;
     list.get(1) should_equal 14;
@@ -60,7 +60,7 @@ exported func main() {
   });
 
   suite.test("List.map", {
-    list = List([#][13, 14, 15]);
+    list = List([#](13, 14, 15));
     newlist = list.map<int>({ _ + 3 });
     newlist.get(1) should_equal 17;
   });

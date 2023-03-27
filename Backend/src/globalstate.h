@@ -65,7 +65,7 @@ public:
   LLVMTypeRef wrcTableStructLT = nullptr;
   FuncPtrLE expandWrcTable, checkWrci, getNumWrcs;
 
-  LLVMTypeRef lgtTableStructLT, lgtEntryStructLT = nullptr; // contains generation and next free
+  LLVMTypeRef lgtTableStructLT = nullptr, lgtEntryStructLT = nullptr; // contains generation and next free
   FuncPtrLE expandLgt, checkLgti, getNumLiveLgtEntries;
 
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;

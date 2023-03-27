@@ -66,6 +66,7 @@ Ref buildCallOrSideCall(
     LLVMBuilderRef builder,
     Prototype* prototype,
     const std::vector<Ref>& valeArgRefs) {
+  auto int8PtrLT = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
 
   auto hostArgsLE = std::vector<LLVMValueRef>{};
   hostArgsLE.reserve(valeArgRefs.size() + 1);
@@ -125,7 +126,7 @@ Ref buildCallOrSideCall(
     hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
 
     if (globalState->opt->enableSideCalling) {
-      auto sideStackI8PtrLE = unmigratedLLVMBuildLoad(builder, globalState->sideStack, "sideStack");
+      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStack, "sideStack");
       auto resultLE =
           buildSideCall(
               globalState, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
@@ -139,7 +140,7 @@ Ref buildCallOrSideCall(
         LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
   } else {
     if (globalState->opt->enableSideCalling) {
-      auto sideStackI8PtrLE = unmigratedLLVMBuildLoad(builder, globalState->sideStack, "sideStack");
+      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStack, "sideStack");
       hostReturnLE =
           buildSideCall(globalState, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
     } else {
@@ -493,11 +494,11 @@ Ref buildExternCall(
     buildPrint(globalState, builder, "(panic)\n");
     // See MPESC for status codes
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt64TypeInContext(globalState->context), 1);
-    unmigratedLLVMBuildCall(builder, globalState->externs->exit.ptrLE, &exitCodeLE, 1, "");
+    globalState->externs->exit.call(builder, {exitCodeLE}, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
   } else if (prototype->name->name == "__vbi_getch") {
-    auto resultIntLE = unmigratedLLVMBuildCall(builder, globalState->externs->getch.ptrLE, nullptr, 0, "");
+    auto resultIntLE = globalState->externs->getch.call(builder, {}, "");
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
   } else if (prototype->name->name == "__vbi_eqFloatFloat") {
     assert(args.size() == 2);

@@ -34,5 +34,5 @@ LLVMValueRef subscript(
     LLVMValueRef elementsPtrLE,
     LLVMValueRef indexLE,
     const std::string& name) {
-  return LLVMBuildLoad(builder, subscriptForPtr(builder, elementLT, elementsPtrLE, indexLE), name.c_str());
+  return LLVMBuildLoad2(builder, elementLT, subscriptForPtr(builder, elementLT, elementsPtrLE, indexLE), name.c_str());
 }

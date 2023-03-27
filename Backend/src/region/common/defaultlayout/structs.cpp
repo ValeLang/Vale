@@ -569,8 +569,7 @@ ControlBlockPtrLE KindStructs::makeControlBlockPtrWithoutChecking(
     Kind* kindM,
     LLVMValueRef controlBlockPtrLE) {
   auto expectedControlBlockStructL = getControlBlock(kindM)->getStruct();
-  assert(LLVMTypeOf(controlBlockPtrLE) == LLVMPointerType(expectedControlBlockStructL, 0));
-  return ControlBlockPtrLE(kindM, controlBlockPtrLE);
+  return ControlBlockPtrLE(kindM, expectedControlBlockStructL, controlBlockPtrLE);
 }
 
 LLVMValueRef KindStructs::getStringBytesPtr(
@@ -754,11 +753,14 @@ LLVMValueRef KindStructs::getObjIdFromControlBlockPtr(
     LLVMBuilderRef builder,
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(globalState->opt->census);
-  return unmigratedLLVMBuildLoad(
+  return LLVMBuildLoad2(
       builder,
-      unmigratedLLVMBuildStructGEP(
+      int64LT,
+      LLVMBuildStructGEP2(
           builder,
+          controlBlockPtr.structLT,
           controlBlockPtr.refLE,
           getControlBlock(kindM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
           "objIdPtr"),
@@ -776,14 +778,16 @@ LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE structExpr) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
+//    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -791,7 +795,7 @@ LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
   }
 
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(builder, refM, structExpr);
-  return unmigratedLLVMBuildLoad(builder, rcPtrLE, "rc");
+  return LLVMBuildLoad2(builder, int32LT, rcPtrLE, "rc");
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
@@ -800,13 +804,12 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
+    case RegionOverride::RESILIENT_V3:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:

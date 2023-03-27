@@ -45,9 +45,14 @@ LoadResult loadInnerInnerStructMember(
     int memberIndex,
     Reference* expectedType,
     std::string memberName);
-void storeInnerInnerStructMember(
-    LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, std::string memberName, LLVMValueRef newValueLE);
 
+void storeInnerInnerStructMember(
+    LLVMBuilderRef builder,
+    LLVMTypeRef innerStructLT,
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    std::string memberName,
+    LLVMValueRef newValueLE);
 
 LLVMValueRef getItablePtrFromInterfacePtr(
     GlobalState* globalState,

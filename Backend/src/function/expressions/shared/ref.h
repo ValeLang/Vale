@@ -9,6 +9,15 @@ class FunctionState;
 class GlobalState;
 class IRegion;
 
+// Perhaps we should switch to a structure that looks like this:
+// struct ArrayType : IType {
+//   Ref* refM;
+//   IType* elementType;
+//   LLVMTypeRef llvmType;
+// }
+// the LLVM type is no longer recursive since pointers are opaque.
+// Then we can have a PtrLE-like thing that contains that IType and an LLVMValueRef.
+// Perhaps we dont even need that IType* elementType? probably do. must think on it.
 
 struct FuncPtrLE {
   LLVMValueRef ptrLE;
@@ -55,11 +64,14 @@ struct WrapperPtrLE {
 
 struct ControlBlockPtrLE {
   Kind* const kindM;
+  LLVMTypeRef structLT;
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  ControlBlockPtrLE(Kind* refM_, LLVMValueRef refLE_)
-    : kindM(refM_), refLE(refLE_) { }
+  ControlBlockPtrLE(Kind* refM_, LLVMTypeRef structLT_, LLVMValueRef refLE_)
+    : kindM(refM_), structLT(structLT_), refLE(refLE_) {
+    assert(LLVMTypeOf(refLE) == LLVMPointerType(structLT, 0));
+  }
 };
 
 

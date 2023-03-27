@@ -31,7 +31,6 @@
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
-#include "region/assist/assist.h"
 #include "region/resilientv3/resilientv3.h"
 #include "region/unsafe/unsafe.h"
 #include "function/expressions/shared/string.h"
@@ -40,7 +39,6 @@
 #include "function/expressions/shared/members.h"
 #include "function/expressions/expressions.h"
 #include "region/naiverc/naiverc.h"
-#include "region/resilientv4/resilientv4.h"
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -662,9 +660,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   }
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      std::cout << "Region override: assist" << std::endl;
-      break;
+//    case RegionOverride::ASSIST:
+//      std::cout << "Region override: assist" << std::endl;
+//      break;
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
       break;
@@ -674,22 +672,22 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     case RegionOverride::RESILIENT_V3:
       std::cout << "Region override: resilient-v3" << std::endl;
       break;
-    case RegionOverride::RESILIENT_V4:
-      std::cout << "Region override: resilient-v4" << std::endl;
-      break;
+//    case RegionOverride::RESILIENT_V4:
+//      std::cout << "Region override: resilient-v4" << std::endl;
+//      break;
     default:
       assert(false);
       break;
   }
 
-  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-    if (!globalState->opt->census) {
-      std::cout << "Warning: not using census when in assist mode!" << std::endl;
-    }
-    if (globalState->opt->fastCrash) {
-      std::cout << "Warning: using fastCrash when in assist mode!" << std::endl;
-    }
-  } else {
+//  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+//    if (!globalState->opt->census) {
+//      std::cout << "Warning: not using census when in assist mode!" << std::endl;
+//    }
+//    if (globalState->opt->fastCrash) {
+//      std::cout << "Warning: using fastCrash when in assist mode!" << std::endl;
+//    }
+//  } else {
     if (globalState->opt->flares) {
       std::cout << "Warning: using flares outside of assist mode, will slow things down!" << std::endl;
     }
@@ -697,9 +695,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
     }
     if (!globalState->opt->fastCrash) {
-      std::cout << "Warning: not using fashCrash, will slow things down!" << std::endl;
+      std::cout << "Warning: not using fastCrash, will slow things down!" << std::endl;
     }
-  }
+//  }
 
 
 
@@ -826,9 +824,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      globalState->mutRegion = new Assist(globalState);
-      break;
     case RegionOverride::NAIVE_RC:
       globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->mutRegionId);
       break;
@@ -837,9 +832,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       break;
     case RegionOverride::RESILIENT_V3:
       globalState->mutRegion = new ResilientV3(globalState, globalState->metalCache->mutRegionId);
-      break;
-    case RegionOverride::RESILIENT_V4:
-      globalState->mutRegion = new ResilientV4(globalState, globalState->metalCache->mutRegionId);
       break;
     default:
       assert(false);

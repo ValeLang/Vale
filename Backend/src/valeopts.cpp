@@ -313,8 +313,8 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         case OPT_REGION_OVERRIDE: {
           if (s.arg_val == std::string("unsafe-fast")) {
             opt->regionOverride = RegionOverride::FAST;
-          } else if (s.arg_val == std::string("assist")) {
-            opt->regionOverride = RegionOverride::ASSIST;
+//          } else if (s.arg_val == std::string("assist")) {
+//            opt->regionOverride = RegionOverride::ASSIST;
           } else if (s.arg_val == std::string("naive-rc")) {
             opt->regionOverride = RegionOverride::NAIVE_RC;
 //          } else if (s.arg_val == std::string("resilient-v0")) {
@@ -325,8 +325,8 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
 //            opt->regionOverride = RegionOverride::RESILIENT_V2;
           } else if (s.arg_val == std::string("resilient-v3")) {
             opt->regionOverride = RegionOverride::RESILIENT_V3;
-          } else if (s.arg_val == std::string("resilient-v4")) {
-            opt->regionOverride = RegionOverride::RESILIENT_V4;
+//          } else if (s.arg_val == std::string("resilient-v4")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V4;
 //          } else if (s.arg_val == std::string("resilient-limit")) {
 //            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
           } else {

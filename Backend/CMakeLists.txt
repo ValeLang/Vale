@@ -91,9 +91,7 @@ add_executable(backend
 		src/region/common/wrcweaks/wrcweaks.cpp
 		src/region/common/hgm/hgm.cpp
 		src/region/common/fatweaks/fatweaks.cpp
-		src/region/assist/assist.cpp
 		src/region/resilientv3/resilientv3.cpp
-		src/region/resilientv4/resilientv4.cpp
 		src/region/naiverc/naiverc.cpp
 		src/region/unsafe/unsafe.cpp
 		src/region/linear/linear.cpp
@@ -101,7 +99,23 @@ add_executable(backend
 		src/region/regions.cpp
 
 		src/fileio.cpp
-		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h src/utils/definefunction.cpp src/utils/definefunction.h src/utils/flags.cpp src/utils/flags.h src/simplehash/cppsimplehashmap.cpp src/simplehash/cppsimplehashmap.h src/simplehash/llvmsimplehashmap.cpp src/simplehash/llvmsimplehashmap.h src/utils/llvm.cpp src/utils/llvm.h src/utils/structlt.h src/region/common/migration.h src/region/common/migration.cpp)
+		src/options.cpp src/mainFunction.cpp
+		src/externs.cpp
+		src/determinism/determinism.cpp
+		src/determinism/determinism.h
+		src/utils/definefunction.cpp
+		src/utils/definefunction.h
+		src/utils/flags.cpp
+		src/utils/flags.h
+		src/simplehash/cppsimplehashmap.cpp
+		src/simplehash/cppsimplehashmap.h
+		src/simplehash/llvmsimplehashmap.cpp
+		src/simplehash/llvmsimplehashmap.h
+		src/utils/llvm.cpp
+		src/utils/llvm.h
+		src/utils/structlt.h
+		src/region/common/migration.h
+		src/region/common/migration.cpp)
 
 target_link_libraries(backend ${llvm_libs})
 

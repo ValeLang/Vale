@@ -173,10 +173,9 @@ exported func main() int {
 
 
   if (include_regions.len() == 0) {
-    include_regions.add("assist");
     include_regions.add("naive-rc");
     include_regions.add("resilient-v3");
-    include_regions.add("resilient-v4");
+    //include_regions.add("resilient-v4");
     include_regions.add("unsafe-fast");
   }
 
@@ -244,30 +243,30 @@ exported func main() int {
     suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region, false);
   }
 
-  if (include_regions.exists({ _ == "assist" })) {
-    region = "assist";
-    suite.StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakFromCRefStruct", samples_path./("programs/weaks/weakFromCRefStruct.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "loadFromWeakable", samples_path./("programs/weaks/loadFromWeakable.vale"), &List<str>(), region, false);
-    suite.StartTest(42, "weakDropThenLockInterface", samples_path./("programs/weaks/dropThenLockInterface.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakLockWhileLiveInterface", samples_path./("programs/weaks/lockWhileLiveInterface.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region, false);
-    suite.StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region, false);
-    suite.StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region, false);
-    suite.StartTest(42, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region, false);
-  }
+  //if (include_regions.exists({ _ == "assist" })) {
+  //  region = "assist";
+  //  suite.StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakFromCRefStruct", samples_path./("programs/weaks/weakFromCRefStruct.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "loadFromWeakable", samples_path./("programs/weaks/loadFromWeakable.vale"), &List<str>(), region, false);
+  //  suite.StartTest(42, "weakDropThenLockInterface", samples_path./("programs/weaks/dropThenLockInterface.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakLockWhileLiveInterface", samples_path./("programs/weaks/lockWhileLiveInterface.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region, false);
+  //  suite.StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region, false);
+  //  suite.StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region, false);
+  //  suite.StartTest(42, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region, false);
+  //}
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region, false);
   }
 
-  if (include_regions.exists({ _ == "resilient-v4" })) {
-    region = "resilient-v4";
-    suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region, false);
-  }
+  //if (include_regions.exists({ _ == "resilient-v4" })) {
+  //  region = "resilient-v4";
+  //  suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region, false);
+  //}
 
   include_regions.each((region) => {
     suite.StartTest(42, "mutswaplocals", samples_path./("programs/mutswaplocals.vale"), &List<str>(), region, false);

@@ -118,30 +118,32 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   for (int logicalParamIndex = 0; logicalParamIndex < functionM->prototype->params.size(); logicalParamIndex++) {
     auto cParamIndex = logicalParamIndex + (usingReturnOutParam ? 1 : 0);
 
-    auto valeParamMT = functionM->prototype->params[logicalParamIndex];
+    auto valeParamRefMT = functionM->prototype->params[logicalParamIndex];
     auto hostParamMT =
-        (valeParamMT->ownership == Ownership::SHARE ?
-         globalState->linearRegion->linearizeReference(valeParamMT) :
-         valeParamMT);
+        (valeParamRefMT->ownership == Ownership::SHARE ?
+         globalState->linearRegion->linearizeReference(valeParamRefMT) :
+         valeParamRefMT);
+    // Doesn't include the pointifying, this is just the pointee. It's what we'll have after the
+    // below if-statement.
+    auto hostParamRefLT = globalState->getRegion(valeParamRefMT)->getExternalType(valeParamRefMT);
     auto cArgLE = LLVMGetParam(exportFunctionL, cParamIndex);;
     LLVMValueRef hostArgRefLE = nullptr;
-    if (typeNeedsPointerParameter(globalState, valeParamMT)) {
-      hostArgRefLE = unmigratedLLVMBuildLoad(builder, cArgLE, "arg");
+    if (typeNeedsPointerParameter(globalState, valeParamRefMT)) {
+      hostArgRefLE = LLVMBuildLoad2(builder, hostParamRefLT, cArgLE, "arg");
     } else {
       hostArgRefLE = cArgLE;
     }
 
-
     auto valeRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
-        globalState->getRegion(valeParamMT)->createRegionInstanceLocal(&functionState, builder);
+        globalState->getRegion(valeParamRefMT)->createRegionInstanceLocal(&functionState, builder);
     auto hostRegionInstanceRef =
         globalState->linearRegion->createRegionInstanceLocal(
             &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
 
     auto valeRef =
         receiveHostObjectIntoVale(
-            globalState, &functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostParamMT, valeParamMT, hostArgRefLE);
+            globalState, &functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostParamMT, valeParamRefMT, hostArgRefLE);
 
     argsToActualFunction.push_back(valeRef);
 

@@ -56,12 +56,14 @@ public:
   LLVMValueRef getRuntimeSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      RuntimeSizedArrayT* rsaMT,
       LLVMValueRef ptrLE);
   LLVMValueRef getStaticSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      StaticSizedArrayT* ssaMT,
       LLVMValueRef ptrLE);
-  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+//  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
   LLVMValueRef getVoidPtrFromInterfacePtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,

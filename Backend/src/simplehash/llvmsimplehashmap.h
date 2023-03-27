@@ -121,11 +121,11 @@ public:
         nodesGlobalLE, LLVMConstArray(nodeStructLT.getStructLT(), nodesElementsLE.data(), nodesElementsLE.size()));
 
     std::vector<LLVMValueRef> presencesIndices = {constI64LE(globalState->context, 0), constI64LE(globalState->context, 0) };
-    auto presencesFirstPtrLE = LLVMConstGEP(presencesGlobalLE, presencesIndices.data(), presencesIndices.size());
+    auto presencesFirstPtrLE = LLVMConstGEP2(LLVMArrayType(int8LT, cppMap.capacity), presencesGlobalLE, presencesIndices.data(), presencesIndices.size());
     assert(LLVMTypeOf(presencesFirstPtrLE) == int8PtrLT);
 
     std::vector<LLVMValueRef> nodesIndices = {constI64LE(globalState->context, 0), constI64LE(globalState->context, 0) };
-    auto nodesFirstPtrLE = LLVMConstGEP(nodesGlobalLE, nodesIndices.data(), nodesIndices.size());
+    auto nodesFirstPtrLE = LLVMConstGEP2(LLVMArrayType(nodeStructLT.getStructLT(), cppMap.capacity), nodesGlobalLE, nodesIndices.data(), nodesIndices.size());
 
     std::vector<LLVMValueRef> mapMembersLE = {
         constI64LE(globalState, cppMap.capacity),

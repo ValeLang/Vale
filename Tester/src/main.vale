@@ -210,7 +210,6 @@ exported func main() int {
     suite.StartTest(42, "floatarithmetic", samples_path./("programs/floatarithmetic.vale"), &List<str>(), region, false);
     suite.StartTest(42, "floateq", samples_path./("programs/floateq.vale"), &List<str>(), region, false);
     suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region, false);
-    suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region, false);
     suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region, false);
     suite.StartReplayTest(42, 84, "structimmreturnextern", samples_path./("programs/externs/structimmreturnextern"), &List<str>(), region, false);
     suite.StartReplayTest(42, 84, "structimmreturnexport", samples_path./("programs/externs/structimmreturnexport"), &List<str>(), region, false);
@@ -236,11 +235,13 @@ exported func main() int {
     suite.StartTest(42, "ssaimmreturnexport", samples_path./("programs/externs/ssaimmreturnexport"), &List<str>(), region, false);
     suite.StartReplayTest(42, 84, "ssaimmparamdeepextern", samples_path./("programs/externs/ssaimmparamdeepextern"), &List<str>(), region, false);
     suite.StartReplayTest(42, 84, "ssaimmparamdeepexport", samples_path./("programs/externs/ssaimmparamdeepexport"), &List<str>(), region, false);
-    suite.StartTest(6, "strreturnexport", samples_path./("programs/externs/strreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(6, 12, "strreturnexport", samples_path./("programs/externs/strreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(11, 22, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region, false);
     suite.StartTest(42, "smallstr", samples_path./("programs/strings/smallstr.vale"), &List<str>(), region, false);
     suite.StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region, false);
     suite.StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region, false);
     suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region, false);
+    //suite.StartReplayTest(11, 22, "roguelike", samples_path./("programs/roguelike.vale"), &List<str>(), region, false);
   }
 
   //if (include_regions.exists({ _ == "assist" })) {

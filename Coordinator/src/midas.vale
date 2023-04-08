@@ -12,6 +12,7 @@ func invoke_backend(
   verify bool,
   llvm_ir bool,
   enable_replaying bool,
+  replay_whitelist_extern str,
   enable_side_calling bool,
   pic bool,
   print_mem_overhead bool,
@@ -30,45 +31,48 @@ Subprocess {
   command_line_args.add("--output_dir");
   command_line_args.add(output_dir.str());
 
-  if (not maybe_region_override.isEmpty()) {
+  if not maybe_region_override.isEmpty() {
     command_line_args.add("--region_override");
     command_line_args.add(maybe_region_override.get());
   }
-  if (not maybe_cpu.isEmpty()) {
+  if not maybe_cpu.isEmpty() {
     command_line_args.add("--cpu");
     command_line_args.add(maybe_cpu.get());
   }
-  if (flares) {
+  if flares {
     command_line_args.add("--flares");
   }
-  if (gen_heap) {
+  if gen_heap {
     command_line_args.add("--gen_heap");
   }
-  if (census) {
+  if census {
     command_line_args.add("--census");
   }
-  if (verify) {
+  if verify {
     command_line_args.add("--verify");
   }
-  if (llvm_ir) {
+  if llvm_ir {
     command_line_args.add("--llvm_ir");
   }
-  if (enable_replaying) {
+  if enable_replaying {
     command_line_args.add("--enable_replaying=true");
   }
-  if (enable_side_calling) {
+  if replay_whitelist_extern != "" {
+    command_line_args.add("--replay_whitelist_extern={replay_whitelist_extern}");
+  }
+  if enable_side_calling {
     command_line_args.add("--enable_side_calling=true");
   }
-  if (pic) {
+  if pic {
     command_line_args.add("--pic");
   }
-  if (print_mem_overhead) {
+  if print_mem_overhead {
     command_line_args.add("--print_mem_overhead");
   }
-  if (elide_checks_for_known_live) {
+  if elide_checks_for_known_live {
     command_line_args.add("--elide_checks_for_known_live");
   }
-  if (override_known_live_true) {
+  if override_known_live_true {
     command_line_args.add("--override_known_live_true");
   }
 

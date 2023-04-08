@@ -10,8 +10,10 @@ public:
   FuncPtrLE perror;
   FuncPtrLE assertI64Eq;
   FuncPtrLE printCStr;
+  FuncPtrLE printCStrToStderr;
   FuncPtrLE getch;
   FuncPtrLE printInt;
+  FuncPtrLE printIntToStderr;
   FuncPtrLE strlen;
   FuncPtrLE memset;
   FuncPtrLE strncpy;

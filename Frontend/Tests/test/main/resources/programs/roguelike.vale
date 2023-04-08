@@ -138,6 +138,8 @@ exported func main() int {
   goblins.add(27, Goblin(Vec(#[#](4, 6))));
   goblins.add(29, Goblin(Vec(#[#](7, 4))));
 
+  num_turns = 0;
+
   running = true;
   while (running) {
     display(
@@ -179,6 +181,9 @@ exported func main() int {
       println("You win!");
       set running = false;
     }
+
+    set num_turns = num_turns + 1;
   }
-  return 0;
+
+  return num_turns;
 }

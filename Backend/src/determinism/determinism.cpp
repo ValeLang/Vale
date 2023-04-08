@@ -965,10 +965,11 @@ Ref Determinism::buildReadValueFromFile(
       dynamic_cast<StaticSizedArrayT*>(targetRefMT->kind) ||
       dynamic_cast<Str*>(targetRefMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(targetRefMT->kind)) {
-    buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
+    buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct/str/rsa/ssa");
     auto valueSizeLE = readI64FromFile(functionState, builder);
+    buildFlare(FL(), globalState, functionState, builder, "Malloc'ing size ", valueSizeLE);
     auto tempBufferPtrLE = globalState->externs->malloc.call(builder, {valueSizeLE}, "");
-    buildFlare(FL(), globalState, functionState, builder, "Size ", valueSizeLE);
+    buildFlare(FL(), globalState, functionState, builder, "Got pointer ", ptrToIntLE(globalState, builder, tempBufferPtrLE));
 
     auto freadResultLE =
         globalState->externs->fread.call(

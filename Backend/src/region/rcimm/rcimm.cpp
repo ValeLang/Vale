@@ -991,20 +991,6 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
     auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
-  } else if (dynamic_cast<Str*>(hostRefMT->kind)) {
-    auto strLenLE = sourceRegion->getStringLen(functionState, builder, sourceRegionInstanceRef, sourceRef);
-    auto strLenBytesPtrLE = sourceRegion->getStringBytesPtr(functionState, builder, sourceRegionInstanceRef, sourceRef);
-
-    auto vstrRef =
-        mallocStr(
-            makeVoidRef(globalState), functionState, builder, strLenLE, strLenBytesPtrLE);
-
-    buildFlare(FL(), globalState, functionState, builder, "done storing");
-
-    sourceRegion->dealias(FL(), functionState, builder, hostRefMT, sourceRef);
-
-    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
-    return std::make_pair(vstrRef, globalState->constI32(0));
   } else if (dynamic_cast<Str*>(hostRefMT->kind) ||
              dynamic_cast<StructKind*>(hostRefMT->kind) ||
              dynamic_cast<InterfaceKind*>(hostRefMT->kind) ||

@@ -117,7 +117,6 @@ LLVMValueRef strongRcIsZero(
   return isZeroLE(builder, structs->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE));
 }
 
-
 void buildPrint(
     GlobalState* globalState,
     LLVMBuilderRef builder,
@@ -165,6 +164,55 @@ void buildPrint(
     LLVMBuilderRef builder,
     int num) {
   buildPrint(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
+}
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    const std::string& first) {
+  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
+  auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+  assert(LLVMTypeOf(s) == LLVMPointerType(int8LT, 0));
+  globalState->externs->printCStrToStderr.call(builder, {s}, "");
+}
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE) {
+  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+
+  if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
+    globalState->externs->printIntToStderr.call(builder, {exprLE}, "");
+  } else if (LLVMGetTypeKind(LLVMTypeOf(exprLE)) == LLVMIntegerTypeKind) {
+    assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(exprLE)) <= 64);
+    auto int64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "");
+    globalState->externs->printIntToStderr.call(builder, {int64LE}, "");
+  } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
+    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
+    globalState->externs->printIntToStderr.call(builder, {i64LE}, "");
+  } else if (LLVMGetTypeKind(LLVMTypeOf(exprLE)) == LLVMPointerTypeKind) {
+    // It's a pointer, so interpret it as a char* and print it as a string.
+    globalState->externs->printCStrToStderr.call(builder, {exprLE}, "");
+  } else {
+    assert(false);
+  }
+}
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Ref ref) {
+  buildPrintToStderr(globalState, builder, ref.refLE);
+}
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    int num) {
+  buildPrintToStderr(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
 }
 
 void buildAssertWithExitCode(

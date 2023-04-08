@@ -89,6 +89,10 @@ void buildAssertIntEq(
     LLVMValueRef bLE,
     const std::string& failMessage);
 
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, int num);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
@@ -100,7 +104,7 @@ inline void buildFlareInner(
     LLVMBuilderRef builder,
     First&& first,
     Rest&&... rest) {
-  buildPrint(globalState, builder, std::forward<First>(first));
+  buildPrintToStderr(globalState, builder, std::forward<First>(first));
   buildFlareInner(globalState, builder, std::forward<Rest>(rest)...);
 }
 
@@ -118,6 +122,19 @@ inline void buildPrintAreaAndFileAndLine(GlobalState* globalState, LLVMBuilderRe
   if (!from.area.empty()) {
     buildPrint(globalState, builder, getFileName(from.area));
     buildPrint(globalState, builder, ": ");
+  }
+}
+
+inline void buildPrintAreaAndFileAndLineToStderr(GlobalState* globalState, LLVMBuilderRef builder, AreaAndFileAndLine from) {
+  buildPrintToStderr(globalState, builder, "\033[0;34m");
+  buildPrintToStderr(globalState, builder, getFileName(from.file));
+  buildPrintToStderr(globalState, builder, ":");
+  buildPrintToStderr(globalState, builder, from.line);
+  buildPrintToStderr(globalState, builder, "\033[0m");
+  buildPrintToStderr(globalState, builder, " ");
+  if (!from.area.empty()) {
+    buildPrintToStderr(globalState, builder, getFileName(from.area));
+    buildPrintToStderr(globalState, builder, ": ");
   }
 }
 
@@ -143,10 +160,10 @@ inline void buildFlare(
     for (int i = 0; i < functionState->instructionDepthInAst; i++)
       indentStr += " ";
 
-    buildPrint(globalState, builder, indentStr);
-    buildPrintAreaAndFileAndLine(globalState, builder, from);
+    buildPrintToStderr(globalState, builder, indentStr);
+    buildPrintAreaAndFileAndLineToStderr(globalState, builder, from);
     buildFlareInner(globalState, builder, std::forward<T>(rest)...);
-    buildPrint(globalState, builder, "\n");
+    buildPrintToStderr(globalState, builder, "\n");
   }
 }
 

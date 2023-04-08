@@ -159,6 +159,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "If true, the program will be able to make recordings, such that we can deterministically replay them."),
         Flag(
+          "--replay_whitelist_extern",
+          FLAG_STR(),
+          "Makes it so replays will still call this extern function.",
+          "",
+          "Makes it so replays will still call this extern function, instead of skipping it and returning the original recorded value."),
+        Flag(
           "--enable_side_calling",
           FLAG_BOOL(),
           "Whether to enable fearless FFI and green threads.",
@@ -272,6 +278,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
   pic = parsed_flags.get_bool_flag("--pic", true);
   pie = parsed_flags.get_bool_flag("--pie", true);
+  replay_whitelist_extern = parsed_flags.get_string_flag("--replay_whitelist_extern", "");
   print_mem_overhead = parsed_flags.get_bool_flag("--print_mem_overhead", false);
   elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
   override_known_live_true = parsed_flags.get_bool_flag("--override_known_live_true", false);
@@ -413,6 +420,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           verify,
           llvm_ir,
           enable_replaying,
+          replay_whitelist_extern,
           enable_side_calling,
           pic,
           print_mem_overhead,

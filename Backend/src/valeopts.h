@@ -5,26 +5,19 @@
 #include <string>
 #include <stdint.h>
 #include <stddef.h>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 enum class RegionOverride {
-//  ASSIST,
   NAIVE_RC,
-//  RESILIENT_V0,
-//  RESILIENT_V1,
-//  RESILIENT_V2,
   RESILIENT_V3,
-//  RESILIENT_V4,
-//  RESILIENT_LIMIT,
   FAST
 };
 
+
 // Compiler options
 struct ValeOptions {
-//    std::string srcpath;    // Full path
-//    std::string srcDir;    // Just the directory
-//    std::string srcNameNoExt;    // Just the name of the file, without extension
-//    std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
-
     std::string outputDir;
 
     std::string triple;
@@ -50,6 +43,7 @@ struct ValeOptions {
     bool printMemOverhead = false;    // Enables generational heap
     bool enableReplaying = false;    // Enables deterministic replaying
     bool enableSideCalling = false;    // Enables side calling, used for fearless FFI
+    std::unordered_map<std::string, std::unordered_set<std::string>> projectNameToReplayWhitelistedExterns;
 
     RegionOverride regionOverride = RegionOverride::RESILIENT_V3;
 };

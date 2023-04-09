@@ -57,9 +57,9 @@ LLVMValueRef processFlag(
                   globalState, functionState, builder,
                   LLVMBuildICmp(builder, LLVMIntULE, mainArgsCountLE, constI64LE(globalState, 1), ""),
                   [globalState, flagName, int8PtrLT](LLVMBuilderRef builder) {
-                    buildPrint(globalState, builder, "Error: Must supply a value after ");
-                    buildPrint(globalState, builder, flagName);
-                    buildPrint(globalState, builder, ".\n");
+                    buildPrintToStderr(globalState, builder, "Error: Must supply a value after ");
+                    buildPrintToStderr(globalState, builder, flagName);
+                    buildPrintToStderr(globalState, builder, ".\n");
                     buildMaybeNeverCall(globalState, builder, globalState->externs->exit, {constI64LE(globalState, 1)});
                     return LLVMGetUndef(int8PtrLT);
                   });

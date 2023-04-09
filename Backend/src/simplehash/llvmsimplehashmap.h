@@ -258,7 +258,7 @@ private:
                       return indexInTableLE;
                     });
               });
-          buildPrint(globalState, builder, "Unreachable!\n");
+          buildPrintToStderr(globalState, builder, "Unreachable!\n");
           // exit(1); // We shouldnt get here, it would mean the table is full.
           buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, -1)});
           LLVMBuildUnreachable(builder);

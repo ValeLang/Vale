@@ -321,14 +321,14 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
   buildIfV(
       globalState, functionState, builder, isZeroLE(builder, isAliveLE),
       [this, from, functionState, weakFatPtrLE](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
-        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
+        buildPrintAreaAndFileAndLineToStderr(globalState, thenBuilder, from);
+        buildPrintToStderr(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
 //        assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
         auto wrciLE = getWrciFromWeakRef(thenBuilder, weakFatPtrLE);
-        buildPrint(globalState, thenBuilder, "Wrci: ");
-        buildPrint(globalState, thenBuilder, wrciLE);
-        buildPrint(globalState, thenBuilder, " ");
-        buildPrint(globalState, thenBuilder, "Exiting!\n");
+        buildPrintToStderr(globalState, thenBuilder, "Wrci: ");
+        buildPrintToStderr(globalState, thenBuilder, wrciLE);
+        buildPrintToStderr(globalState, thenBuilder, " ");
+        buildPrintToStderr(globalState, thenBuilder, "Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
         LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");

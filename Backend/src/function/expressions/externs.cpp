@@ -270,21 +270,7 @@ Ref replayReturnOrCallAndOrRecord(
                 // should assert that we're calling the same function as last time
                 globalState->determinism->buildMatchCallFromRecordingFile(functionState, builder, prototype);
 
-                for (int i = 0; i < args.size(); i++) {
-                  auto valeArgRefMT = prototype->params[i];
-                  if (valeArgRefMT->ownership == Ownership::SHARE) {
-                    globalState->getRegion(valeArgRefMT)->dealias(FL(), functionState, builder, valeArgRefMT, args[i]);
-                  } else {
-                    // read from the file, add mapping to the hash map
-                    auto argLE =
-                        globalState->getRegion(valeArgRefMT)
-                            ->checkValidReference(FL(), functionState, builder, false, valeArgRefMT, args[i]);
-                    auto recordedRefLE =
-                        globalState->determinism->buildMapRefFromRecordingFile(builder, valeArgRefMT);
-                    assert(false);
-                  }
-                }
-
+                bool whitelisted = false;
                 auto thisModuleReplayWhitelistedExternsIter =
                     globalState->opt->projectNameToReplayWhitelistedExterns.find(
                         prototype->name->packageCoord->projectName);
@@ -294,10 +280,30 @@ Ref replayReturnOrCallAndOrRecord(
                       thisModuleReplayWhitelistedExternsIter->second;
                   if (thisModuleReplayWhitelistedExterns.find(prototype->name->name) !=
                       thisModuleReplayWhitelistedExterns.end()) {
-                    std::cerr << "WHITELISTING CALL to " << prototype->name->name << std::endl; // DO NOT SUBMIT
-                    auto valeReturnRef = callUserExtern(builder);
-                    // Ignore the return value, we'll still be using the one from the file.
-                    // Later on, we'll add an exception for opaque types here.
+                    whitelisted = true;
+                  }
+                }
+
+                if (whitelisted) {
+                  auto valeReturnRef = callUserExtern(builder);
+                  // Ignore the return value, we'll still be using the one from the file.
+                  // Later on, we'll add an exception for opaque types here.
+                } else {
+                  // Dealias all the incoming arguments, we don't care about them when we're not
+                  // actually calling that extern function.
+                  for (int i = 0; i < args.size(); i++) {
+                    auto valeArgRefMT = prototype->params[i];
+                    if (valeArgRefMT->ownership == Ownership::SHARE) {
+                      globalState->getRegion(valeArgRefMT)->dealias(FL(), functionState, builder, valeArgRefMT, args[i]);
+                    } else {
+                      // read from the file, add mapping to the hash map
+                      auto argLE =
+                          globalState->getRegion(valeArgRefMT)
+                              ->checkValidReference(FL(), functionState, builder, false, valeArgRefMT, args[i]);
+                      auto recordedRefLE =
+                          globalState->determinism->buildMapRefFromRecordingFile(builder, valeArgRefMT);
+                      assert(false);
+                    }
                   }
                 }
 

@@ -21,7 +21,7 @@ import stdlib.stdin.*;
 // already occupied by a goblin ("g"), it will destroy the goblin.
 
 
-struct Vec<N, T> where N Int
+struct Vec<N Int, T>
 {
   values [#N]<imm>T;
 }

@@ -325,13 +325,14 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               << std::endl;
           exit(1);
         }
-        auto functionName = argStr.substr(dotPos);
+        auto functionName = argStr.substr(dotPos + 1);
         if (functionName.empty()) {
           std::cerr
               << "Error: Invalid --replay_whitelist_extern argument. Must be in the form [module_name].[extern_name], for example --replay_whitelist_extern=mylibrary.paintRectangle"
               << std::endl;
           exit(1);
         }
+        std::cerr << "Adding whitelist: " << moduleName << "." << functionName << std::endl;
         opt->projectNameToReplayWhitelistedExterns[moduleName].insert(functionName);
         break;
       }

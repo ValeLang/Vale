@@ -243,7 +243,7 @@ exported func main() int {
     suite.StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region, false, None<str>());
-    suite.StartReplayTest(42, 84, "replayprint", samples_path./("programs/externs/replayprint"), &List<str>().add("--replay_whitelist_extern").add("stdlib.printstr"), region, false, Some("Howdy!\n"));
+    suite.StartReplayTest(42, 84, "replayprint", samples_path./("programs/externs/replayprint"), &List<str>().add("--replay_whitelist_extern").add("__vale.printstr"), region, false, Some("Howdy!\n"));
     //suite.StartReplayTest(11, 22, "roguelike", samples_path./("programs/roguelike.vale"), &List<str>(), region, false);
   }
 
@@ -446,8 +446,8 @@ func FinishTests(suite &TestSuite, until_this_many_left int) {
               println("Invalid result for test {test_name} (region {region}), expected empty stdout.");
             }
             set print_stdout_stderr = true;
+            set this_run_succeeded = false;
           }
-          set this_run_succeeded = false;
         }
 
         if print_stdout_stderr {

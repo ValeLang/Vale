@@ -36,6 +36,9 @@ case class LocalsBox(var inner: Locals) {
   def markUnstackified(varId2: IVarNameT): Unit = {
     inner = inner.markUnstackified(varId2)
   }
+  def markRestackified(varId2: IVarNameT): Unit = {
+    inner = inner.markRestackified(varId2)
+  }
 
   def markUnstackified(varIdH: VariableIdH): Unit = {
     inner = inner.markUnstackified(varIdH)
@@ -127,6 +130,10 @@ case class Locals(
     markUnstackified(typingPassLocals(varId2))
   }
 
+  def markRestackified(varId2: IVarNameT): Locals = {
+    markRestackified(typingPassLocals(varId2))
+  }
+
   def markUnstackified(varIdH: VariableIdH): Locals = {
     // Make sure it existed and wasnt already unstackified
     vassert(locals.contains(varIdH))
@@ -134,6 +141,15 @@ case class Locals(
       vfail("Already unstackified " + varIdH)
     }
     Locals(typingPassLocals, unstackifiedVars + varIdH, locals, nextLocalIdNumber)
+  }
+
+  def markRestackified(varIdH: VariableIdH): Locals = {
+    // Make sure it existed and was unstackified
+    vassert(locals.contains(varIdH))
+    if (!unstackifiedVars.contains(varIdH)) {
+      vfail("Already unstackified " + varIdH)
+    }
+    Locals(typingPassLocals, unstackifiedVars - varIdH, locals, nextLocalIdNumber)
   }
 
   def get(varId: IVarNameT): Option[Local] = {

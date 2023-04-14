@@ -89,6 +89,11 @@ public:
   }
 
 
+  void restackify(VariableId* varId) {
+    assert(localWasUnstackified(varId, true));
+    unstackifiedLocalIds.erase(varId);
+  }
+
   void checkAllIntroducedLocalsWereUnstackified() {
     for (auto localIdAndLocalAddr : localAddrByLocalId) {
       auto localId = localIdAndLocalAddr.first;

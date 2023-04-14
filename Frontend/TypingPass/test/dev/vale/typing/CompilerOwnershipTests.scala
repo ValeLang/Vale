@@ -3,6 +3,9 @@ package dev.vale.typing
 import dev.vale._
 import OverloadResolver.FindFunctionFailure
 import dev.vale.postparsing.CodeNameS
+import dev.vale.typing.ast.RestackifyTE
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.names.CodeVarNameT
 import dev.vale.vassert
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -200,6 +203,16 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |
         |""".stripMargin)
     compile.expectCompilerOutputs()
+  }
+
+  test("Restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile =
+      CompilerTestCompilation.test(readCodeFromResource("programs/restackify.vale"))
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
+    Collector.only(main, {
+      case RestackifyTE(ReferenceLocalVariableT(CodeVarNameT(StrI("ship")), _, _), _) =>
+    })
   }
 }
 

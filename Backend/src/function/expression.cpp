@@ -144,6 +144,32 @@ Ref translateExpressionInner(
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
     return makeVoidRef(globalState);
+  } else if (auto restackify = dynamic_cast<Restackify*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    // The purpose of LocalStore is to put a swap value into a local, and give
+    // what was in it.
+    auto localAddr = blockState->getLocalAddr(restackify->local->id);
+
+    auto refToStore =
+        translateExpression(
+            globalState, functionState, blockState, builder, restackify->sourceExpr);
+
+    // This needs to be after translating sourceExpr because it might be unstackified then, and then
+    // we immediately restackify it after.
+    blockState->restackify(restackify->local->id);
+
+    // We need to load the old ref *after* we evaluate the source expression,
+    // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
+    // See mutswaplocals.vale for test case.
+    auto oldRef =
+        globalState->getRegion(restackify->local->type)
+            ->localStore(functionState, builder, restackify->local, localAddr, refToStore, restackify->knownLive);
+
+    auto toStoreLE =
+        globalState->getRegion(restackify->local->type)->checkValidReference(FL(),
+            functionState, builder, false, restackify->local->type, refToStore);
+    LLVMBuildStore(builder, toStoreLE, localAddr);
+    return makeVoidRef(globalState);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give

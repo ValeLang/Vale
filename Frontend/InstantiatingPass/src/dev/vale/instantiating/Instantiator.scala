@@ -1324,6 +1324,7 @@ class Instantiator(
     val resultRefExpr =
       expr match {
         case LetNormalTE(variable, inner) => LetNormalTE(translateLocalVariable(variable), translateRefExpr(inner))
+        case RestackifyTE(variable, inner) => RestackifyTE(translateLocalVariable(variable), translateRefExpr(inner))
         case BlockTE(inner) => BlockTE(translateRefExpr(inner))
         case ReturnTE(inner) => ReturnTE(translateRefExpr(inner))
         case ConsecutorTE(inners) => ConsecutorTE(inners.map(translateRefExpr))

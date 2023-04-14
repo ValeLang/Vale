@@ -312,6 +312,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readLocal(cache, expression["local"]),
         expression["knownLive"],
         "");
+  } else if (type == "Restackify") {
+    return new Restackify(
+        readExpression(cache, expression["sourceExpr"]),
+        readLocal(cache, expression["local"]),
+        expression["knownLive"],
+        "");
   } else if (type == "LocalStore") {
     return new LocalStore(
         readLocal(cache, expression["local"]),

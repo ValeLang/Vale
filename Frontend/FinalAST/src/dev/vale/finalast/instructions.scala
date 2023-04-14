@@ -132,6 +132,25 @@ case class StackifyH(
   override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
+// Takes a value from the source expression and puts it into a local
+// variable on the stack.
+case class RestackifyH(
+  // The expressions to read a value from.
+  sourceExpr: ExpressionH[KindHT],
+  // Describes the local we're making.
+  local: Local,
+  // Name of the local variable. Used for debugging.
+  name: Option[IdH]
+) extends ExpressionH[KindHT] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+
+  // See BRCOBS, source shouldn't be Never.
+  sourceExpr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
+  vassert(sourceExpr.resultType == local.typeH)
+
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
+}
+
 // Takes a value from a local variable on the stack, and produces it.
 // The local variable is now invalid, since its value has been taken out.
 // See LocalLoadH for a similar instruction that *doesnt* invalidate the local var.

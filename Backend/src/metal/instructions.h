@@ -101,6 +101,24 @@ public:
     maybeName(maybeName_) {}
 };
 
+class Restackify : public Expression {
+public:
+  Expression* sourceExpr;
+  Local* local;
+  bool knownLive;
+  std::string maybeName;
+
+  Restackify(
+      Expression* sourceExpr_,
+      Local* local_,
+      bool knownLive_,
+      std::string maybeName_) :
+      sourceExpr(sourceExpr_),
+      local(local_),
+      knownLive(knownLive_),
+      maybeName(maybeName_) {}
+};
+
 
 class Unstackify : public Expression {
 public:

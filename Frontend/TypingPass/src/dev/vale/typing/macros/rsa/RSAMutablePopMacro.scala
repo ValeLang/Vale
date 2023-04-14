@@ -15,7 +15,6 @@ import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.types._
 import dev.vale.typing.ast
 
-
 class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFunctionBodyMacro {
   val generatorId: StrI = keywords.vale_runtime_sized_array_pop
 

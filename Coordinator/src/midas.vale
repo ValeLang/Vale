@@ -67,7 +67,7 @@ Subprocess {
     command_line_args.add("--pic");
   }
   if print_mem_overhead {
-    command_line_args.add("--print_mem_overhead");
+    command_line_args.add("--print_mem_overhead=true");
   }
   if elide_checks_for_known_live {
     command_line_args.add("--elide_checks_for_known_live");

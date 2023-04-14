@@ -984,7 +984,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
-
   test("Restackify") {
     // Allow set on variables that have been moved already, which is useful for linear style.
     val compile = RunCompilation.test(Tests.loadExpected("programs/restackify.vale"))

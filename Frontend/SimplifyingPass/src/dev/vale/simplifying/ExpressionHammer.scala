@@ -60,6 +60,11 @@ class ExpressionHammer(
           letHammer.translateLet(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (letH, Vector.empty)
       }
+      case let2 @ RestackifyTE(_, _) => {
+        val letH =
+          letHammer.translateRestackify(hinputs, hamuts, currentFunctionHeader, locals, let2)
+        (letH, Vector.empty)
+      }
       case let2 @ LetAndLendTE(_, _, _) => {
         val borrowAccess =
           letHammer.translateLetAndPoint(hinputs, hamuts, currentFunctionHeader, locals, let2)

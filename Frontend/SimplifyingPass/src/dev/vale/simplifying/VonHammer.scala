@@ -513,6 +513,16 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
             VonMember("knownLive", VonBool(false)),
             VonMember("optName", vonifyOptional[IdH](name, n => vonifyName(n)))))
       }
+      case RestackifyH(sourceExpr, local, name) => {
+        VonObject(
+          "Restackify",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("local", vonifyLocal(local)),
+            VonMember("knownLive", VonBool(false)),
+            VonMember("optName", vonifyOptional[IdH](name, n => vonifyName(n)))))
+      }
       case UnstackifyH(local) => {
         VonObject(
           "Unstackify",

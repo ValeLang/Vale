@@ -1,12 +1,12 @@
 package dev.vale.simplifying
 
-import dev.vale.finalast.{BorrowH, ConsecutorH, DestroyH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, Final, KindHT, Local, NeverHT, NewStructH, OwnH, CoordH, StackifyH, UnstackifyH, YonderH}
+import dev.vale.finalast.{BorrowH, ConsecutorH, CoordH, DestroyH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, Final, KindHT, Local, NeverHT, NewStructH, OwnH, StackifyH, UnstackifyH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, FunctionHeaderT, LetAndLendTE, LetNormalTE, ReferenceExpressionTE, UnletTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import dev.vale.typing.names.{IdT, IVarNameT}
+import dev.vale.typing.names.{IVarNameT, IdT}
 import dev.vale.typing.types._
-import dev.vale.{vassert, vfail, vimpl, vwat, finalast => m}
+import dev.vale.{vassert, vassertSome, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
 import dev.vale.typing._
 import dev.vale.typing.ast._
@@ -54,6 +54,42 @@ class LetHammer(
         }
         case AddressibleLocalVariableT(varId, variability, reference) => {
           translateAddressibleLet(
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, sourceResultPointerTypeH, varId, variability, reference)
+        }
+      }
+
+    expressionHammer.translateDeferreds(
+      hinputs, hamuts, currentFunctionHeader, locals, stackifyNode, deferreds)
+  }
+
+  def translateRestackify(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderT,
+    locals: LocalsBox,
+    let2: RestackifyTE):
+  ExpressionH[KindHT] = {
+    val RestackifyTE(localVariable, sourceExpr2) = let2
+
+    val (sourceExprHE, deferreds) =
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
+    val (sourceResultPointerTypeH) =
+      typeHammer.translateCoord(hinputs, hamuts, sourceExpr2.result.coord)
+
+    sourceExprHE.resultType.kind match {
+      // We'll never get to this let, so strip it out. See BRCOBS.
+      case NeverHT(_) => return sourceExprHE
+      case _ =>
+    }
+
+    val stackifyNode =
+      localVariable match {
+        case ReferenceLocalVariableT(varId, variability, type2) => {
+          translateMundaneRestackify(
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, varId)
+        }
+        case AddressibleLocalVariableT(varId, variability, reference) => {
+          translateAddressibleRestackify(
             hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, sourceResultPointerTypeH, varId, variability, reference)
         }
       }
@@ -121,6 +157,34 @@ class LetHammer(
       Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
   }
 
+  private def translateAddressibleRestackify(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderT,
+    locals: LocalsBox,
+    sourceExprHE: ExpressionH[KindHT],
+    sourceResultPointerTypeH: CoordH[KindHT],
+    varId: IVarNameT,
+    variability: VariabilityT,
+    reference: CoordT):
+  ExpressionH[KindHT] = {
+    val (boxStructRefH) =
+      structHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
+    val expectedLocalBoxType = CoordH(OwnH, YonderH, boxStructRefH)
+
+    locals.markRestackified(varId)
+
+    val local = vassertSome(locals.get(varId))
+
+    RestackifyH(
+      NewStructH(
+        Vector(sourceExprHE),
+        hamuts.structDefs.find(_.getRef == boxStructRefH).get.members.map(_.name),
+        expectedLocalBoxType),
+      local,
+      Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
+  }
+
   private def translateAddressibleLetAndPoint(
     hinputs: Hinputs,
     hamuts: HamutsBox,
@@ -171,6 +235,29 @@ class LetHammer(
       StackifyH(
         sourceExprHE,
         localIndex,
+        Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
+    stackNode
+  }
+
+  private def translateMundaneRestackify(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderT,
+    locals: LocalsBox,
+    sourceExprHE: ExpressionH[KindHT],
+    varId: IVarNameT):
+  RestackifyH = {
+    locals.markRestackified(varId)
+
+    sourceExprHE.resultType.kind match {
+      case NeverHT(_) => vwat()
+      case _ =>
+    }
+    val local = vassertSome(locals.get(varId))
+    val stackNode =
+      RestackifyH(
+        sourceExprHE,
+        local,
         Some(nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))))
     stackNode
   }

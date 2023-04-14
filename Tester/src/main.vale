@@ -278,6 +278,7 @@ exported func main() int {
     suite.StartTest(5, "memberrefcount", samples_path./("programs/structs/memberrefcount.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "bigstructimm", samples_path./("programs/structs/bigstructimm.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(8, "structmut", samples_path./("programs/structs/structmut.vale"), &List<str>(), region, false, None<str>());
+    suite.StartTest(42, "restackify", samples_path./("programs/restackify.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "lambda", samples_path./("programs/lambdas/lambda.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "if", samples_path./("programs/if/if.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "upcastif", samples_path./("programs/if/upcastif.vale"), &List<str>(), region, false, None<str>());

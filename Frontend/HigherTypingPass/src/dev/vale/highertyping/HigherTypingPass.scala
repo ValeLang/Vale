@@ -3,7 +3,7 @@ package dev.vale.highertyping
 import dev.vale
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.lexing.{FailedParse, RangeL}
-import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, StrI, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, SourceCodeUtils, StrI, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, OwnP}
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}
@@ -601,7 +601,14 @@ class HigherTypingCompilation(
     getAstrouts() match {
       case Ok(x) => x
       case Err(e) => {
-        vfail(HigherTypingErrorHumanizer.humanize(scoutCompilation.getCodeMap().getOrDie(), e))
+        val codeMap = scoutCompilation.getCodeMap().getOrDie()
+        vfail(
+          HigherTypingErrorHumanizer.humanize(
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            e))
       }
     }
   }

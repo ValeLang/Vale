@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, StrI, vassertSome, vfail}
+import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, SourceCodeUtils, StrI, vassertSome, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing._
@@ -13,7 +13,15 @@ class PostParsingRuleTests extends FunSuite with Matchers {
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
     val compile = PostParserTestCompilation.test(code, interner)
     compile.getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+      case Err(e) => {
+        val codeMap = compile.getCodeMap().getOrDie()
+        vfail(PostParserErrorHumanizer.humanize(
+          SourceCodeUtils.humanizePos(codeMap, _),
+          SourceCodeUtils.linesBetween(codeMap, _, _),
+          SourceCodeUtils.lineRangeContaining(codeMap, _),
+          SourceCodeUtils.lineContaining(codeMap, _),
+          e))
+      }
       case Ok(t) => t.expectOne()
     }
   }

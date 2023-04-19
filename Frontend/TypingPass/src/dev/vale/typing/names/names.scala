@@ -19,7 +19,6 @@ case class IdT[+T <: INameT](
   initSteps: Vector[INameT],
   localName: T
 )  {
-
   this match {
     case IdT(_,Vector(),ImplNameT(ImplTemplateNameT(_),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),StructTT(IdT(_,Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("Bipedal"))),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))))))) => {
       vpass()
@@ -95,8 +94,6 @@ case class IdT[+T <: INameT](
   def addStep[Y <: INameT](newLast: Y): IdT[Y] = {
     IdT[Y](packageCoord, steps, newLast)
   }
-
-
 }
 
 sealed trait INameT extends IInterning

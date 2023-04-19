@@ -20,6 +20,10 @@ FuncPtrLE declareFunction(
           ->translateType(functionM->prototype->returnType);
 
   auto valeFunctionNameL = functionM->prototype->name->name;
+  if (valeFunctionNameL == "main") {
+    // Otherwise we conflict with the main that we create for setting up things like replaying
+    valeFunctionNameL = ":main";
+  }
   auto valeFunctionL =
       addFunction(globalState->mod, valeFunctionNameL.c_str(), valeReturnTypeL, valeParamTypesL);
 

@@ -1,9 +1,8 @@
 package dev.vale.postparsing
 
-import dev.vale.{FileCoordinateMap, vimpl}
+import dev.vale.{CodeLocationS, FileCoordinateMap, RangeS, vimpl}
 import dev.vale.postparsing.rules._
 import dev.vale.solver.SolverErrorHumanizer
-import dev.vale.vimpl
 import dev.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
 import dev.vale.parsing.ast.{BorrowP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, ShareP, VariabilityP, VaryingP, WeakP}
 import dev.vale.parsing.ast._
@@ -11,7 +10,10 @@ import dev.vale.postparsing.rules._
 
 object PostParserErrorHumanizer {
   def humanize(
-    codeMap: FileCoordinateMap[String],
+    codeMap: CodeLocationS => String,
+    linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+    lineRangeContaining: (CodeLocationS) => RangeS,
+    lineContaining: (CodeLocationS) => String,
     err: ICompileErrorS):
   String = {
     val errorStrBody =
@@ -26,11 +28,14 @@ object PostParserErrorHumanizer {
         case CantOverrideOwnershipped(range) => s": Can only impl a plain interface, remove symbol."
         case CouldntSolveRulesS(range, error) => {
           s": Couldn't solve:\n" +
-          SolverErrorHumanizer.humanizeFailedSolve(
+          SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataType, IRuneTypeRuleError](
             codeMap,
+            linesBetween,
+            lineRangeContaining,
+            lineContaining,
             PostParserErrorHumanizer.humanizeRune,
-            (codeMap, tyype: ITemplataType) => tyype.toString,
-            (codeMap, u: IRuneTypeRuleError) => humanizeRuneTypeError(codeMap, u),
+            (tyype: ITemplataType) => tyype.toString,
+            (u: IRuneTypeRuleError) => humanizeRuneTypeError(codeMap, u),
             (rule: IRulexSR) => rule.range,
             (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
             (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -39,11 +44,14 @@ object PostParserErrorHumanizer {
         }
         case IdentifyingRunesIncompleteS(range, error) => {
           s": Not enough identifying runes:\n" +
-            SolverErrorHumanizer.humanizeFailedSolve(
+            SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, Boolean, IIdentifiabilityRuleError](
               codeMap,
+              linesBetween,
+              lineRangeContaining,
+              lineContaining,
               PostParserErrorHumanizer.humanizeRune,
-              (codeMap, identified: Boolean) => identified.toString,
-              (codeMap, u: IIdentifiabilityRuleError) => humanizeIdentifiabilityRuleErrorr(codeMap, u),
+              (identified: Boolean) => identified.toString,
+              (u: IIdentifiabilityRuleError) => humanizeIdentifiabilityRuleErrorr(codeMap, u),
               (rule: IRulexSR) => rule.range,
               (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
               (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -61,19 +69,25 @@ object PostParserErrorHumanizer {
 //        case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range) => s": Initializing a statically-sized array requires a size in-between the square brackets."
       })
 
-    val posStr = humanizePos(codeMap, err.range.begin)
-    val nextStuff = lineContaining(codeMap, err.range.begin)
+    val posStr = codeMap(err.range.begin)
+    val nextStuff = lineContaining(err.range.begin)
     val errorId = "S"
     f"${posStr} error ${errorId}: ${errorStrBody}\n${nextStuff}\n"
   }
 
-  def humanizeRuneTypeError(codeMap: FileCoordinateMap[String], error: IRuneTypeRuleError): String = {
+  def humanizeRuneTypeError(
+    codeMap: CodeLocationS => String,
+    error: IRuneTypeRuleError):
+  String = {
     error match {
       case other => vimpl(other)
     }
   }
 
-  def humanizeIdentifiabilityRuleErrorr(codeMap: FileCoordinateMap[String], error: IIdentifiabilityRuleError): String = {
+  def humanizeIdentifiabilityRuleErrorr(
+    codeMap: CodeLocationS => String,
+    error: IIdentifiabilityRuleError):
+  String = {
     error match {
       case other => vimpl(other)
     }

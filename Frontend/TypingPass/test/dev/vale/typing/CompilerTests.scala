@@ -1210,131 +1210,136 @@ class CompilerTests extends FunSuite with Matchers {
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
 
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    val humanizePos = (x: CodeLocationS) => SourceCodeUtils.humanizePos(filenamesAndSources, x)
+    val linesBetween = (x: CodeLocationS, y: CodeLocationS) => SourceCodeUtils.linesBetween(filenamesAndSources, x, y)
+    val lineRangeContaining = (x: CodeLocationS) => SourceCodeUtils.lineRangeContaining(filenamesAndSources, x)
+    val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(filenamesAndSources, x)
+
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindTypeT(tz, "Spaceship")).nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,
         FindFunctionFailure(
           CodeNameS(StrI("someFunc")),
           Vector(),
           Map()))).nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,
         FindFunctionFailure(CodeNameS(interner.intern(StrI(""))), Vector(), Map())))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CannotSubscriptT(
         tz,
         fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindIdentifierToLoadT(
         tz,
         CodeNameS(StrI("spaceship"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindMemberT(
         tz,
         "hp"))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       BodyResultDoesntMatch(
         tz,
         FunctionNameS(StrI("myFunc"), CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForReturnT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForMutateT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForMutateT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantMoveOutOfMemberT(
         tz,
         CodeVarNameT(StrI("hp"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantUseUnstackifiedLocal(
         tz,
         CodeVarNameT(StrI("firefly"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantUnstackifyOutsideLocalFromInsideWhile(
         tz,
         CodeVarNameT(StrI("firefly"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       FunctionAlreadyExists(tz.head, tz.head, fireflySignature.fullName))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantMutateFinalMember(
         tz,
         serenityKind,
         CodeVarNameT(StrI("bork"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       LambdaReturnDoesntMatchInterfaceConstructor(
         tz))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       IfConditionIsntBoolean(
         tz, fireflyCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       WhileConditionIsntBoolean(
         tz, fireflyCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantImplNonInterface(
         tz, KindTemplata(fireflyKind)))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ImmStructCantHaveVaryingMember(
         tz, TopLevelStructDeclarationNameS(interner.intern(StrI("SpaceshipSnapshot")), tz.head), "fuel"))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantDowncastUnrelatedTypes(
         tz, ispaceshipKind, unrelatedKind, Vector()))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantDowncastToInterface(
         tz, ispaceshipKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExportedFunctionDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), fireflySignature, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExportedImmutableKindDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), serenityKind, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExternFunctionDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), fireflySignature, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       TypeExportedMultipleTimes(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), Vector(fireflyExport, serenityExport)))
       .nonEmpty)
-//    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+//    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
 //      NotEnoughToSolveError(
 //        tz,
 //        Map(
 //          CodeRuneS(StrI("X")) -> KindTemplata(fireflyKind)),
 //        Vector(CodeRuneS(StrI("Y")))))
 //      .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       TypingPassSolverError(
         tz,
         FailedCompilerSolve(

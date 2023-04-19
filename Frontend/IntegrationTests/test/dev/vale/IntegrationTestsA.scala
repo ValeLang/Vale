@@ -2,7 +2,6 @@ package dev.vale
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
-import dev.vale.simplifying.VonHammer
 import dev.vale.finalast.{IdH, IntHT, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
@@ -316,7 +315,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val heap = new Heap(System.out)
     val ref =
       heap.add(OwnH, YonderH, StructInstanceV(
-        packageH.lookupStruct("SomeStruct"),
+        packageH.lookupStruct("SomeStruct<i32>"),
         Some(Vector())))
     compile.run(heap, Vector(ref))
   }
@@ -849,11 +848,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get(interner.intern(StrI("sqrt")))) match {
-      case PrototypeH(IdH("sqrt",_,PackageCoordinate(StrI("math"),Vector()),_),_,_) =>
+      case PrototypeH(IdH("sqrt",PackageCoordinate(StrI("math"),Vector()),_,_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call
-    val externSqrt = packageH.lookupFunction("sqrt")
+    val externSqrt = packageH.lookupFunction("sqrt(float)")
     vassert(externSqrt.isExtern)
 
     compile.evalForKind(Vector()) match { case VonInt(4) => }

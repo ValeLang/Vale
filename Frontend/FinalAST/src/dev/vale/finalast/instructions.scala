@@ -986,8 +986,9 @@ case class Local(
   // The type of the reference this local variable has.
   typeH: CoordH[KindHT],
 
-  // Usually filled by catalyst, for Midas' benefit. Used in HGM.
-  keepAlive: Boolean) {
+//  // Usually filled by catalyst, for Midas' benefit. Used in HGM.
+//  keepAlive: Boolean
+) {
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 }

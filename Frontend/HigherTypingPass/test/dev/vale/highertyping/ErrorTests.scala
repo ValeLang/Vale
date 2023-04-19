@@ -1,7 +1,7 @@
 package dev.vale.highertyping
 
 import dev.vale.postparsing.CodeNameS
-import dev.vale.{Err, Ok, StrI, vassert, vfail}
+import dev.vale.{Err, Ok, SourceCodeUtils, StrI, vassert, vfail}
 import dev.vale.postparsing.PostParser
 import org.scalatest.{FunSuite, Matchers}
 
@@ -23,7 +23,15 @@ class ErrorTests extends FunSuite with Matchers  {
 
     compileProgramForError(compilation) match {
       case e @ CouldntFindTypeA(_, CodeNameS(StrI("Bork"))) => {
-        val errorText = HigherTypingErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e)
+
+        val codeMap = compilation.getCodeMap().getOrDie()
+        val errorText =
+          HigherTypingErrorHumanizer.humanize(
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            e)
         vassert(errorText.contains("Couldn't find type `Bork`"))
       }
     }

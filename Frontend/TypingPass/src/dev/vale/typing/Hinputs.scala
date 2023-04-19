@@ -1,11 +1,11 @@
 package dev.vale.typing
 
-import dev.vale.postparsing.IRuneS
-import dev.vale.typing.ast.{EdgeT, FunctionExportT, FunctionExternT, FunctionDefinitionT, InterfaceEdgeBlueprint, KindExportT, KindExternT, PrototypeT, SignatureT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, IFunctionNameT, LambdaCitizenNameT}
-import dev.vale.typing.templata.{PrototypeTemplata, simpleName}
+import dev.vale.postparsing.{IRuneS, ITemplataType}
+import dev.vale.typing.ast.{EdgeT, FunctionDefinitionT, FunctionExportT, FunctionExternT, InterfaceEdgeBlueprint, KindExportT, KindExternT, PrototypeT, SignatureT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, IFunctionNameT, IdT, LambdaCitizenNameT}
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.{StrI, vassertOne, vassertSome, vcurious, vfail, vimpl}
+import dev.vale.{PackageCoordinate, StrI, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl}
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
 import dev.vale.typing.types._

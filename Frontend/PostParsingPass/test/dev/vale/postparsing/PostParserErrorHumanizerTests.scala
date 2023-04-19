@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, StrI, vassert, vfail}
+import dev.vale.{CodeLocationS, Err, FileCoordinateMap, Interner, Ok, RangeS, SourceCodeUtils, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing.patterns.AbstractSP
@@ -12,7 +12,16 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     val interner = new Interner()
     PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
+      case Err(e) => {
+        val codeMap = FileCoordinateMap.test(interner, code)
+        vfail(
+          PostParserErrorHumanizer.humanize(
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            e))
+      }
       case Ok(t) => t.expectOne()
     }
   }
@@ -29,19 +38,24 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
     val codeMap = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
     val tz = RangeS.testZero(interner)
 
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
+    val humanizePos = (x: CodeLocationS) => SourceCodeUtils.humanizePos(codeMap, x)
+    val linesBetween = (x: CodeLocationS, y: CodeLocationS) => SourceCodeUtils.linesBetween(codeMap, x, y)
+    val lineRangeContaining = (x: CodeLocationS) => SourceCodeUtils.lineRangeContaining(codeMap, x)
+    val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(codeMap, x)
+
+    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       VariableNameAlreadyExists(tz, CodeVarNameS(interner.intern(StrI("Spaceship")))))
       .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
+    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       InterfaceMethodNeedsSelf(tz))
       .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
+    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ForgotSetKeywordError(tz))
       .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
+    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantUseThatLocalName(tz, "set"))
       .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
+    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExternHasBody(tz))
       .nonEmpty)
   }

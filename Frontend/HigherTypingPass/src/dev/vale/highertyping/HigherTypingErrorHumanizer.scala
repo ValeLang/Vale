@@ -3,33 +3,39 @@ package dev.vale.highertyping
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing._
 import dev.vale.solver.SolverErrorHumanizer
-import dev.vale.{FileCoordinateMap, RangeS}
-import dev.vale.RangeS
+import dev.vale.{CodeLocationS, FileCoordinateMap, RangeS}
 import dev.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.solver.FailedSolve
 
 object HigherTypingErrorHumanizer {
   def assembleError(
-    filenamesAndSources: FileCoordinateMap[String],
+    filenamesAndSources: CodeLocationS => String,
+    lineContaining: (CodeLocationS) => String,
     range: RangeS,
     errorStrBody: String) = {
-    val posStr = humanizePos(filenamesAndSources, range.begin)
-    val nextStuff = lineContaining(filenamesAndSources, range.begin)
+    val posStr = filenamesAndSources(range.begin)
+    val nextStuff = lineContaining(range.begin)
     val errorId = "A"
     f"${posStr} error ${errorId}: ${errorStrBody}\n${nextStuff}\n"
   }
 
   def humanizeRuneTypeSolveError(
-    filenamesAndSources: FileCoordinateMap[String],
+    codeMap: CodeLocationS => String,
+    linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+    lineRangeContaining: (CodeLocationS) => RangeS,
+    lineContaining: (CodeLocationS) => String,
     err: RuneTypeSolveError):
   String = {
     ": Couldn't solve generics types:\n" +
-    SolverErrorHumanizer.humanizeFailedSolve(
-      filenamesAndSources,
+    SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataType, IRuneTypeRuleError](
+      codeMap,
+      linesBetween,
+      lineRangeContaining,
+      lineContaining,
       PostParserErrorHumanizer.humanizeRune,
-      (codeMap, tyype: ITemplataType) => tyype.toString,
-      PostParserErrorHumanizer.humanizeRuneTypeError,
+      (tyype: ITemplataType) => tyype.toString,
+      err => PostParserErrorHumanizer.humanizeRuneTypeError(codeMap, err),
       (rule: IRulexSR) => rule.range,
       (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
       (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -38,7 +44,10 @@ object HigherTypingErrorHumanizer {
   }
 
   def humanize(
-      filenamesAndSources: FileCoordinateMap[String],
+    codeMap: CodeLocationS => String,
+    linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+    lineRangeContaining: (CodeLocationS) => RangeS,
+    lineContaining: (CodeLocationS) => String,
       err: ICompileErrorA):
   String = {
     val errorStrBody =
@@ -51,11 +60,14 @@ object HigherTypingErrorHumanizer {
         }
         case CouldntSolveRulesA(range, err) => {
           ": Couldn't solve generics rules:\n" +
-          SolverErrorHumanizer.humanizeFailedSolve(
-            filenamesAndSources,
+          SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataType, IRuneTypeRuleError](
+            codeMap,
+            linesBetween,
+            lineRangeContaining,
+            lineContaining,
             PostParserErrorHumanizer.humanizeRune,
-            (codeMap, tyype: ITemplataType) => PostParserErrorHumanizer.humanizeTemplataType(tyype),
-            PostParserErrorHumanizer.humanizeRuneTypeError,
+            (tyype: ITemplataType) => PostParserErrorHumanizer.humanizeTemplataType(tyype),
+            err => PostParserErrorHumanizer.humanizeRuneTypeError(codeMap, err),
             (rule: IRulexSR) => rule.range,
             (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
             (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -66,6 +78,6 @@ object HigherTypingErrorHumanizer {
           ": Expected " + expectedNumArgs + " template args but received " + actualNumArgs + "\n"
         }
       }
-    assembleError(filenamesAndSources, err.range, errorStrBody)
+    assembleError(codeMap, lineContaining, err.range, errorStrBody)
   }
 }

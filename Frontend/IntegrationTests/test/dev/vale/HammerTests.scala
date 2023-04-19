@@ -23,7 +23,7 @@ class HammerTests extends FunSuite with Matchers {
 
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     vassert(testPackage.getAllUserFunctions.size == 1)
-    testPackage.getAllUserFunctions.head.prototype.fullName.toFullString() shouldEqual """test::F("main")"""
+    testPackage.getAllUserFunctions.head.prototype.fullName.fullyQualifiedName shouldEqual """main"""
   }
 
 //  // Make sure a ListNode struct made it out
@@ -59,14 +59,14 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     vassertSome(
       packageH.interfaces.find(interface => {
-        interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,i(32)))])"""
+        interface.fullName.fullyQualifiedName == """MyOption<i32>"""
       }))
 
-    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,i(32)))])""").get;
+    val mySome = packageH.structs.find(_.fullName.fullyQualifiedName == """MySome<i32>""").get;
     vassert(mySome.members.size == 1);
     vassert(mySome.members.head.tyype == CoordH[IntHT](ShareH, InlineH, IntHT.i32))
 
-    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(@,<,i(32)))])""").get;
+    val myNone = packageH.structs.find(_.fullName.fullyQualifiedName == """MyNone<i32>""").get;
     vassert(myNone.members.isEmpty);
   }
 
@@ -83,8 +83,8 @@ class HammerTests extends FunSuite with Matchers {
 //        |func wot(b *MyStruct impl Blark) int { return 9; }
 //      """.stripMargin)
 //    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
-//    packageH.nonExternFunctions.find(f => f.prototype.fullName.toFullString().startsWith("""F("wot"""")).get;
-//    packageH.nonExternFunctions.find(f => f.prototype.fullName.toFullString() == """F("MyStruct")""").get;
+//    packageH.nonExternFunctions.find(f => f.prototype.fullName.fullyQualifiedName.startsWith("""F("wot"""")).get;
+//    packageH.nonExternFunctions.find(f => f.prototype.fullName.fullyQualifiedName == """F("MyStruct")""").get;
 //    vassert(packageH.abstractFunctions.size == 2)
 //    vassert(packageH.getAllUserImplementedFunctions.size == 1)
 //    vassert(packageH.getAllUserFunctions.size == 1)
@@ -103,7 +103,7 @@ class HammerTests extends FunSuite with Matchers {
     val main = packageH.lookupFunction("main")
     main.body match {
       case BlockH(CallH(PrototypeH(fullNameH, Vector(), CoordH(_, _, NeverHT(_))), Vector())) => {
-        vassert(fullNameH.toFullString().contains("__vbi_panic"))
+        vassert(fullNameH.fullyQualifiedName.contains("__vbi_panic"))
       }
     }
   }

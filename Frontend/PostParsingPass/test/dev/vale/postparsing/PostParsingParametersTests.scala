@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail, vimpl}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, SourceCodeUtils, StrI, vassert, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.BorrowP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -16,7 +16,15 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
     val compilation = PostParserTestCompilation.test(code, interner)
     compilation.getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e))
+      case Err(e) => {
+        val codeMap = compilation.getCodeMap().getOrDie()
+        vfail(PostParserErrorHumanizer.humanize(
+          SourceCodeUtils.humanizePos(codeMap, _),
+          SourceCodeUtils.linesBetween(codeMap, _, _),
+          SourceCodeUtils.lineRangeContaining(codeMap, _),
+          SourceCodeUtils.lineContaining(codeMap, _),
+          e))
+      }
       case Ok(t) => t.expectOne()
     }
   }

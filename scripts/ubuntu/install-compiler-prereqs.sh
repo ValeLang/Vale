@@ -102,6 +102,8 @@ fi
 # Install bootstrap compiler
 if [[ $BOOTSTRAPPING_VALEC_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR...${TEXT_RESET}"
+  sudo apt-get update
+  sudo apt-get install -y unzip
   # Install stable valec, for the .vale parts of the compiler
   curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Ubuntu-0.2.0.23.zip -o /tmp/BootstrappingValeCompiler.zip
   unzip /tmp/BootstrappingValeCompiler.zip -d $BOOTSTRAPPING_VALEC_DIR
@@ -112,6 +114,8 @@ fi
 # Install LLVM
 if [[ $LLVM_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping LLVM to $LLVM_DIR...${TEXT_RESET}"
+  sudo apt-get update
+  sudo apt-get install -y tar xz-utils
   curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$CLANG_VERSION/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz --output /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz
   mkdir -p $LLVM_DIR
   tar xf /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz -C $LLVM_DIR

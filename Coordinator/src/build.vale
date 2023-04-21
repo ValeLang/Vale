@@ -330,14 +330,9 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
     }
   } else {
     if output_dir.exists() {
-      dest_dir = GetTempDir()./("old_output_dir_" + str(MtpId()));
-      if dest_dir.exists() {
-        println("Deleting existing {dest_dir.str()}.");
-        dest_dir.RemoveDirAll().expect();
-        vassert(not dest_dir.exists(), "Removing old dir {dest_dir.str()} failed!");
-      }
-      println("Moving existing output directory {output_dir.str()} to {dest_dir.str()}.");
-      output_dir.Rename(&dest_dir).expect();
+      println("Deleting existing {output_dir.str()}.");
+      output_dir.RemoveDirAll().expect();
+      vassert(not output_dir.exists(), "Removing old dir {output_dir.str()} failed!");
     }
     output_dir.CreateDirAll(true);
     frontend_process =

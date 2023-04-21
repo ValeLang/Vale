@@ -24,7 +24,10 @@ WORKDIR /Outer/Vale
 # Install dependencies needed to build the compiler sources
 RUN ./scripts/ubuntu/install-compiler-prereqs.sh -d -j -s -l /Outer/LLVMForVale -b /Outer/BootstrappingValeCompiler
 
-# Create the command that will do the actual build, and tell it the branch we're using.
+# Build the compiler sources into a compiler
+RUN ./scripts/ubuntu/build-compiler.sh /Outer/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 /Outer/BootstrappingValeCompiler --test=all ./scripts/VERSION
+
+# Create the command that will update from github and do a rebuild
 ENV VALE_BRANCH=$BRANCH
 COPY entrypoint.sh .
 ENTRYPOINT ["sh", "entrypoint.sh"]

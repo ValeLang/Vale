@@ -11,8 +11,8 @@ usage() {
   echo "Usage: $(basename $0) [options]"
   echo -e "\nOptions:"
   echo " -d        install basic build tools from APT"
-  echo " -j        install Java from JFrog.io APT repository"
-  echo " -s        install SBT from scala-sbt.org APT repository"
+  echo " -j        install Java from JFrog.io APT-get repository"
+  echo " -s        install SBT from scala-sbt.org APT-get repository"
   echo " -b <DIR>  install Vale bootstrap compiler to specified directory"
   echo " -l <DIR>  install LLVM to specified directory"
   echo " -h        display this help and exit"
@@ -71,19 +71,19 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
 if [[ $INSTALL_DEBS != 0 ]]; then
-  sudo apt --fix-missing update -y
-  sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+  sudo apt-get --fix-missing update -y
+  sudo apt-get install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
 fi
 
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing Java...${TEXT_RESET}"
-  sudo apt install -y wget apt-transport-https
+  sudo apt-get install -y wget apt-transport-https
   mkdir -p /etc/apt/keyrings
   wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
   echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
-  sudo apt update
-  sudo apt install -y temurin-11-jdk
+  sudo apt-get update
+  sudo apt-get install -y temurin-11-jdk
 fi
 
 # Install SBT

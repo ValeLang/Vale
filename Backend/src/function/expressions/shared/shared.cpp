@@ -217,7 +217,7 @@ void buildPrintToStderr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     int num) {
-  buildPrint(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
+  buildPrintToStderr(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
 }
 
 void buildAssertWithExitCode(

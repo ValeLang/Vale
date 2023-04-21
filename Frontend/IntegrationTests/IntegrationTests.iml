@@ -23,8 +23,8 @@
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
     <orderEntry type="module" module-name="Builtins" />
-    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
     <orderEntry type="module" module-name="CompileOptions" />
     <orderEntry type="module" module-name="LexingPass" />
+    <orderEntry type="library" name="scala-sdk-2.12.17" level="application" />
   </component>
 </module>

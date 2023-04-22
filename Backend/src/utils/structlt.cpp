@@ -69,10 +69,11 @@ std::vector<LLVMValueRef> buildDecompressStructInner(
     auto bigIntShiftedLE = LLVMBuildLShr(builder, bigIntLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
     // buildPrint(globalState, builder, "Shifted result right by maskBeginBit\n");
     auto onesLE = LLVMConstNot(LLVMConstInt(memberLT, 0, false));
+    auto ones256LE = LLVMBuildZExt(builder, onesLE, bigIntLT, "");
     // buildPrint(globalState, builder, "Ones: ");
     // buildPrint(globalState, builder, onesLE);
     // buildPrint(globalState, builder, "\n");
-    auto bigIntMaskedLE = LLVMBuildAnd(builder, bigIntShiftedLE, onesLE, "");
+    auto bigIntMaskedLE = LLVMBuildAnd(builder, bigIntShiftedLE, ones256LE, "");
     // buildPrint(globalState, builder, "Anded by ones\n");
     auto memberLE = LLVMBuildTrunc(builder, bigIntMaskedLE, memberLT, "");
 

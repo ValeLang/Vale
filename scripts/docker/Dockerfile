@@ -27,7 +27,7 @@ COPY ${VALE_DIR}/scripts/ubuntu/install-compiler-prereqs.sh /Vale/scripts/ubuntu
 # Install dependencies needed to build the compiler sources
 RUN /Vale/scripts/ubuntu/install-compiler-prereqs.sh -d -j -s -l /LLVMForVale -b /BootstrappingValeCompiler
 
-# Copy the Vale folder from the host again, handy for debugging the build step further down.
+# Copy the Vale folder from the host.
 COPY ${VALE_DIR} /Vale
 
 WORKDIR /Vale

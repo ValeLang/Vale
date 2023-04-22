@@ -17,9 +17,6 @@ LLVMValueRef buildCompressStructInner(
 
   LLVMValueRef resultLE = LLVMConstInt(bigIntLT, 0, false);
   for (int i = 0; i < membersLT.size(); i++) {
-    //buildPrint(globalState, builder, "Compressing member ");
-    //buildPrint(globalState, builder, i);
-    //buildPrint(globalState, builder, "\n");
     auto memberLT = membersLT[i];
     auto memberSmallLE = membersLE[i];
     auto memberBigLE = LLVMBuildZExt(builder, memberSmallLE, bigIntLT, "");
@@ -56,33 +53,32 @@ std::vector<LLVMValueRef> buildDecompressStructInner(
 
   int bitsSoFar = 0;
   for (int i = 0; i < membersLT.size(); i++) {
-    //buildPrint(globalState, builder, "Decompressing member ");
-    //buildPrint(globalState, builder, i);
-    //buildPrint(globalState, builder, "\n");
+    // buildPrint(globalState, builder, "Decompressing member ");
+    // buildPrint(globalState, builder, i);
+    // buildPrint(globalState, builder, "\n");
     auto memberLT = membersLT[i];
 
     auto memberBits = LLVMSizeOfTypeInBits(globalState->dataLayout, memberLT);
-    //buildPrint(globalState, builder, "Member bits: ");
-    //buildPrint(globalState, builder, memberBits);
-    //buildPrint(globalState, builder, "\n");
+    // buildPrint(globalState, builder, "Member bits: ");
+    // buildPrint(globalState, builder, memberBits);
+    // buildPrint(globalState, builder, "\n");
     int maskBeginBit = totalBits - bitsSoFar - memberBits;
-    //buildPrint(globalState, builder, "Mask begin bit: ");
-    //buildPrint(globalState, builder, maskBeginBit);
-    //buildPrint(globalState, builder, "\n");
+    // buildPrint(globalState, builder, "Mask begin bit: ");
+    // buildPrint(globalState, builder, maskBeginBit);
+    // buildPrint(globalState, builder, "\n");
     auto bigIntShiftedLE = LLVMBuildLShr(builder, bigIntLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
-    //buildPrint(globalState, builder, "Shifted result right by maskBeginBit\n");
+    // buildPrint(globalState, builder, "Shifted result right by maskBeginBit\n");
     auto onesLE = LLVMConstNot(LLVMConstInt(memberLT, 0, false));
-    auto ones256LE = LLVMBuildZExt(builder, onesLE, bigIntLT, "");
-    //buildPrint(globalState, builder, "Ones: ");
-    //buildPrint(globalState, builder, onesLE);
-    //buildPrint(globalState, builder, "\n");
-    auto bigIntMaskedLE = LLVMBuildAnd(builder, bigIntShiftedLE, ones256LE, "");
-    //buildPrint(globalState, builder, "Anded by ones\n");
+    // buildPrint(globalState, builder, "Ones: ");
+    // buildPrint(globalState, builder, onesLE);
+    // buildPrint(globalState, builder, "\n");
+    auto bigIntMaskedLE = LLVMBuildAnd(builder, bigIntShiftedLE, onesLE, "");
+    // buildPrint(globalState, builder, "Anded by ones\n");
     auto memberLE = LLVMBuildTrunc(builder, bigIntMaskedLE, memberLT, "");
 
-    //buildPrint(globalState, builder, "Member: ");
-    //buildPrint(globalState, builder, memberLE);
-    //buildPrint(globalState, builder, "\n");
+    // buildPrint(globalState, builder, "Member: ");
+    // buildPrint(globalState, builder, memberLE);
+    // buildPrint(globalState, builder, "\n");
 
     membersLE.push_back(memberLE);
 

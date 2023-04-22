@@ -520,7 +520,7 @@ Ref buildExternCall(
     auto result = LLVMBuildFAdd(builder, leftLE, rightLE, "add");
     return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
   } else if (prototype->name->name == "__vbi_panic") {
-    buildPrint(globalState, builder, "(panic)\n");
+    buildPrintToStderr(globalState, builder, "(panic)\n");
     // See MPESC for status codes
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt64TypeInContext(globalState->context), 1);
     globalState->externs->exit.call(builder, {exitCodeLE}, "");

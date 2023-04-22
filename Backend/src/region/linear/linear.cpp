@@ -2097,9 +2097,9 @@ FuncPtrLE Linear::getInterfaceMethodFunctionPtr(
   buildIfV(
       globalState, functionState, builder, isZeroLE(builder, isValidEdgeNumLE),
       [this, edgeNumLE](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, "Invalid edge number (");
-        buildPrint(globalState, thenBuilder, edgeNumLE);
-        buildPrint(globalState, thenBuilder, "), exiting!\n");
+        buildPrintToStderr(globalState, thenBuilder, "Invalid edge number (");
+        buildPrintToStderr(globalState, thenBuilder, edgeNumLE);
+        buildPrintToStderr(globalState, thenBuilder, "), exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
         globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
       });

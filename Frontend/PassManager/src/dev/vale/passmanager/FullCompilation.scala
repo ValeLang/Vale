@@ -5,14 +5,13 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing._
 import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
-import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.lexing.{FailedParse, RangeL}
-import dev.vale.simplifying.{HammerCompilation, HammerCompilationOptions, VonHammer}
 import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.postparsing.PostParser
+import dev.vale.simplifying._
 import dev.vale.typing.ICompileErrorT
 import dev.vale.testvm.ReferenceV
 

@@ -29,11 +29,11 @@ echo Installing brew...
 
 # Install stable valec, for the .vale parts of the compiler
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."
-curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0.23.zip --output /tmp/BootstrappingValec.zip
+curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0.26.zip --output /tmp/BootstrappingValec.zip
 unzip /tmp/BootstrappingValec.zip -d $BOOTSTRAPPING_VALEC_DIR
 
 # Install misc dependencies
 echo "Downloading and unzipping depdendencies and LLVM..."
-brew install llvm@14 sbt cmake coreutils
+brew install llvm@16 sbt cmake coreutils
 # coreutils is for greadlink which we use in build-compiler.sh
 

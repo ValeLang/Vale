@@ -56,6 +56,7 @@ Subprocess {
 
   if (pic) {
     args.add("-fPIC");
+    args.add("-fPIE");
   }
 
   if (pie) {

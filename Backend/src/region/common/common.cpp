@@ -2200,9 +2200,9 @@ void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef
             builder, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), globalState->crashGlobal, "crashGlobal");
     LLVMBuildStore(builder, constI64LE(globalState, 0), ptrToWriteToLE);
   } else {
-    buildPrintAreaAndFileAndLine(globalState, builder, from);
-    buildPrint(globalState, builder, "Tried dereferencing dangling reference! ");
-    buildPrint(globalState, builder, "Exiting!\n");
+    buildPrintAreaAndFileAndLineToStderr(globalState, builder, from);
+    buildPrintToStderr(globalState, builder, "Tried dereferencing dangling reference! ");
+    buildPrintToStderr(globalState, builder, "Exiting!\n");
     // See MPESC for status codes
     auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
     globalState->externs->exit.call(builder, {exitCodeIntLE}, "");

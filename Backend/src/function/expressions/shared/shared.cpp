@@ -225,7 +225,7 @@ void buildAssertWithExitCode(
   buildIf(
       globalState, function, builder, isZeroLE(builder, conditionLE),
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        buildPrintToStderr(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
         globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
       });
@@ -262,7 +262,7 @@ void buildAssertWithExitCodeV(
   buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        buildPrintToStderr(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
         globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
       });
@@ -281,12 +281,12 @@ void buildAssertIntEq(
   buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, functionState, failMessage, aLE, bLE](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, "Assertion failed! Expected ");
-        buildPrint(globalState, thenBuilder, aLE);
-        buildPrint(globalState, thenBuilder, " to equal ");
-        buildPrint(globalState, thenBuilder, bLE);
-        buildPrint(globalState, thenBuilder, ".\n");
-        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        buildPrintToStderr(globalState, thenBuilder, "Assertion failed! Expected ");
+        buildPrintToStderr(globalState, thenBuilder, aLE);
+        buildPrintToStderr(globalState, thenBuilder, " to equal ");
+        buildPrintToStderr(globalState, thenBuilder, bLE);
+        buildPrintToStderr(globalState, thenBuilder, ".\n");
+        buildPrintToStderr(globalState, thenBuilder, failMessage + " Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
         globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
@@ -371,8 +371,8 @@ void buildAssertCensusContains(
     buildIfV(
         globalState, functionState, builder, isNullLE,
         [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
-          buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-          buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
+          buildPrintAreaAndFileAndLineToStderr(globalState, thenBuilder, checkerAFL);
+          buildPrintToStderr(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
           // See MPESC for status codes
           auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
           globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
@@ -386,10 +386,10 @@ void buildAssertCensusContains(
     buildIfV(
         globalState, functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
         [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
-          buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-          buildPrint(globalState, thenBuilder, "Object &");
-          buildPrint(globalState, thenBuilder, ptrToIntLE(globalState, thenBuilder, ptrLE));
-          buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
+          buildPrintAreaAndFileAndLineToStderr(globalState, thenBuilder, checkerAFL);
+          buildPrintToStderr(globalState, thenBuilder, "Object &");
+          buildPrintToStderr(globalState, thenBuilder, ptrToIntLE(globalState, thenBuilder, ptrLE));
+          buildPrintToStderr(globalState, thenBuilder, " not registered with census, exiting!\n");
           // See MPESC for status codes
           auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
           globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
@@ -481,8 +481,6 @@ LLVMValueRef buildSideCall(
     LLVMValueRef sideStackStartPtrAsI8PtrLE,
     FuncPtrLE calleeFuncLE,
     const std::vector<LLVMValueRef>& userArgsLE) {
-  buildPrint(globalState, entryBuilder, "In buildSideCall!\n");
-
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);

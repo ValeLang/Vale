@@ -298,11 +298,11 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
         buildIfNever(
             globalState, functionState->containingFuncL, builder, lengthsDifferentLE,
             [this, recordedCalledFuncNamePtrLE, replayingCalledFuncNamePtrLE, voidLT](LLVMBuilderRef builder){
-              buildPrint(globalState, builder, "Recording file expected a call to ");
-              buildPrint(globalState, builder, recordedCalledFuncNamePtrLE);
-              buildPrint(globalState, builder, " but this execution is calling ");
-              buildPrint(globalState, builder, replayingCalledFuncNamePtrLE);
-              buildPrint(globalState, builder, ", aborting!\n");
+              buildPrintToStderr(globalState, builder, "Recording file expected a call to ");
+              buildPrintToStderr(globalState, builder, recordedCalledFuncNamePtrLE);
+              buildPrintToStderr(globalState, builder, " but this execution is calling ");
+              buildPrintToStderr(globalState, builder, replayingCalledFuncNamePtrLE);
+              buildPrintToStderr(globalState, builder, ", aborting!\n");
               globalState->externs->exit.call(builder, {constI64LE(globalState, 1)}, "");
             });
         auto stringsDifferentIntLE =
@@ -314,11 +314,11 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
         buildIfNever(
             globalState, functionState->containingFuncL, builder, stringsDifferentLE,
             [this, recordedCalledFuncNamePtrLE, replayingCalledFuncNamePtrLE, voidLT](LLVMBuilderRef builder){
-              buildPrint(globalState, builder, "Recording file expected a call to ");
-              buildPrint(globalState, builder, recordedCalledFuncNamePtrLE);
-              buildPrint(globalState, builder, " but this execution is calling ");
-              buildPrint(globalState, builder, replayingCalledFuncNamePtrLE);
-              buildPrint(globalState, builder, ", aborting!\n");
+              buildPrintToStderr(globalState, builder, "Recording file expected a call to ");
+              buildPrintToStderr(globalState, builder, recordedCalledFuncNamePtrLE);
+              buildPrintToStderr(globalState, builder, " but this execution is calling ");
+              buildPrintToStderr(globalState, builder, replayingCalledFuncNamePtrLE);
+              buildPrintToStderr(globalState, builder, ", aborting!\n");
               globalState->externs->exit.call(builder, {constI64LE(globalState, 1)}, "");
             });
         buildFlare(FL(), globalState, functionState, builder, "Returning from function matchCallFromRecordingFile");
@@ -434,7 +434,7 @@ void Determinism::writeBytesToFile(
       globalState, functionState->containingFuncL, builder,
       LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, voidLT](LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Couldn't write to recording file.");
+          buildPrintToStderr(globalState, builder, "Couldn't write to recording file.");
         globalState->externs->exit.call(builder, {constI64LE(globalState, 1)}, "");
       });
 }
@@ -462,7 +462,7 @@ LLVMValueRef Determinism::openFile(FunctionState* functionState, LLVMBuilderRef 
       globalState, functionState->containingFuncL, builder,
       LLVMBuildICmp(builder, LLVMIntEQ, fileAsI64LE, constI64LE(globalState, 0), ""),
       [this, voidLT](LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Couldn't open recording file.");
+        buildPrintToStderr(globalState, builder, "Couldn't open recording file.");
         globalState->externs->exit.call(builder, {constI64LE(globalState, 1)}, "");
       });
   return fileLE;
@@ -637,7 +637,7 @@ void Determinism::readLimitedStringFromFile(
 //      globalState, functionState->containingFuncL, builder,
 //      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
 //      [this](LLVMBuilderRef builder){
-//        buildPrint(globalState, builder, "Couldn't read from recording file.");
+//        buildPrintToStderr(globalState, builder, "Couldn't read from recording file.");
 //        unmigratedBuildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
 //      });
 //
@@ -1083,7 +1083,7 @@ FuncPtrLE Determinism::makeFuncToReplayExportCall(Prototype* prototype) {
       voidLT,
       replayerFuncName,
       [this, int8LT, replayerFuncLT](FunctionState* functionState, LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Implement makeFuncToReplayExportCall");
+        buildPrintToStderr(globalState, builder, "Implement makeFuncToReplayExportCall");
         LLVMBuildRetVoid(builder);
       });
 

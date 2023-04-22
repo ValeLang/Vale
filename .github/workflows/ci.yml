@@ -36,13 +36,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build docker image
-        run: docker build --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
+        run: docker build -t ValeCompiler --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
       - name: Retrieve built compiler
-        run: docker cp CONTAINER:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
+        run: docker cp ValeCompiler:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Ubuntu-0-From-Docker.zip
-          path: ./release-ubuntu/Vale-Ubuntu-0.zip
+          path: Vale-Ubuntu-0.zip
 
   build_and_test_ubuntu:
     runs-on: ubuntu-20.04

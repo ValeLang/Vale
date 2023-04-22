@@ -17,8 +17,8 @@ ARG VALE_DIR
 # Install basic dependencies needed to download compiler sources
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install git
 RUN apt-get -y install sudo
+RUN apt-get -y install git
 RUN apt-get -y install curl
 
 # Copy the install prereqs script from the host.

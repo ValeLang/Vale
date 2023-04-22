@@ -8,7 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="HigherTypingPass" />
-    <orderEntry type="module" module-name="SimplifyingPass" />
     <orderEntry type="module" module-name="Highlighter" />
     <orderEntry type="module" module-name="FinalAST" />
     <orderEntry type="module" module-name="ParsingPass" exported="" />
@@ -23,5 +22,6 @@
     <orderEntry type="library" name="lift-json_2.12-3.4.3" level="project" />
     <orderEntry type="module" module-name="LexingPass" />
     <orderEntry type="library" name="scala-sdk-2.12.17" level="application" />
+    <orderEntry type="module" module-name="SimplifyingPass" />
   </component>
 </module>

@@ -38,7 +38,7 @@ jobs:
       - name: Build docker image
         run: docker build -t valec --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
       - name: Retrieve built compiler
-        run: docker cp ValeCompiler:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
+        run: docker cp valec:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Ubuntu-0-From-Docker.zip

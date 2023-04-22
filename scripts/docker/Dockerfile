@@ -33,7 +33,7 @@ COPY ${VALE_DIR} /Vale
 WORKDIR /Vale
 
 # Build the compiler sources into a compiler
-RUN ./scripts/ubuntu/build-compiler.sh /LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 /BootstrappingValeCompiler --test=all ./scripts/VERSION
+RUN ./scripts/ubuntu/build-compiler.sh /LLVMForVale/clang+llvm-16.0.0-x86_64-linux-gnu-ubuntu-18.04 /BootstrappingValeCompiler --test=all ./scripts/VERSION
 
 WORKDIR /u
 

@@ -638,7 +638,7 @@ void Determinism::readLimitedStringFromFile(
 //      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
 //      [this](LLVMBuilderRef builder){
 //        buildPrintToStderr(globalState, builder, "Couldn't read from recording file.");
-//        unmigratedBuildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
+//        buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
 //      });
 //
 //  return i64PtrLE;

@@ -421,7 +421,7 @@ Ref translateExpressionInner(
     auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
     buildIfV(
         globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
         });
 
     auto newcomerRef = translateExpression(globalState, functionState, blockState, builder, newcomerExpr);
@@ -472,7 +472,7 @@ Ref translateExpressionInner(
     auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
     buildIfV(
         globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
         });
 
     auto resultRef =
@@ -511,7 +511,7 @@ Ref translateExpressionInner(
     auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
     buildIfV(
         globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Destroying non-empty array!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Destroying non-empty array!");
         });
 
     if (arrayType->ownership == Ownership::OWN) {

@@ -95,12 +95,12 @@ Prototype* makeValeMainFunction(
 
         if (globalState->opt->printMemOverhead) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
-          buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
-          buildPrint(
+          buildPrintToStderr(globalState, entryBuilder, "\nLiveness checks: ");
+          buildPrintToStderr(
               globalState, entryBuilder,
               LLVMBuildLoad2(
                   entryBuilder, LLVMInt64TypeInContext(globalState->context), globalState->livenessCheckCounter, "livenessCheckCounter"));
-          buildPrint(globalState, entryBuilder, "\n");
+          buildPrintToStderr(globalState, entryBuilder, "\n");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 

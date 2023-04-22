@@ -98,6 +98,24 @@ void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef e
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, int num);
 
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    const std::string& first);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Ref ref);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    int num);
+
 template<typename First, typename... Rest>
 inline void buildFlareInner(
     GlobalState* globalState,

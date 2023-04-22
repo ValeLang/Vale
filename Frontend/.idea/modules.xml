@@ -6,8 +6,6 @@
       <module fileurl="file://$PROJECT_DIR$/CompileOptions/CompileOptions.iml" filepath="$PROJECT_DIR$/CompileOptions/CompileOptions.iml" />
       <module fileurl="file://$PROJECT_DIR$/CompileServer/CompileServer.iml" filepath="$PROJECT_DIR$/CompileServer/CompileServer.iml" />
       <module fileurl="file://$PROJECT_DIR$/FinalAST/FinalAST.iml" filepath="$PROJECT_DIR$/FinalAST/FinalAST.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Frontend.iml" filepath="$PROJECT_DIR$/.idea/modules/Frontend.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Frontend-build.iml" filepath="$PROJECT_DIR$/.idea/modules/Frontend-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" filepath="$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/Highlighter/Highlighter.iml" filepath="$PROJECT_DIR$/Highlighter/Highlighter.iml" />
       <module fileurl="file://$PROJECT_DIR$/InstantiatingPass/InstantiatingPass.iml" filepath="$PROJECT_DIR$/InstantiatingPass/InstantiatingPass.iml" />

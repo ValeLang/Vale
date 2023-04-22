@@ -1,0 +1,7 @@
+.*
+**/*.idea
+**/*.md
+**/*.bat
+**/.gitignore
+**/.git
+**/.DS_Store

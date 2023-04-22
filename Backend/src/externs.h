@@ -10,8 +10,10 @@ public:
   LLVMValueRef perror = nullptr;
   LLVMValueRef assertI64Eq = nullptr;
   LLVMValueRef printCStr = nullptr;
+  LLVMValueRef printCStrToStderr = nullptr;
   LLVMValueRef getch = nullptr;
   LLVMValueRef printInt = nullptr;
+  LLVMValueRef printIntToStderr = nullptr;
   LLVMValueRef strlen = nullptr;
   LLVMValueRef memset = nullptr;
   LLVMValueRef strncpy = nullptr;

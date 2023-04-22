@@ -20,8 +20,6 @@
       <module fileurl="file://$PROJECT_DIR$/TypingPass/TypingPass.iml" filepath="$PROJECT_DIR$/TypingPass/TypingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/Utils/Utils.iml" filepath="$PROJECT_DIR$/Utils/Utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/Von/Von.iml" filepath="$PROJECT_DIR$/Von/Von.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/frontend_8350.iml" filepath="$PROJECT_DIR$/.idea/modules/frontend_8350.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/frontend_8350-build.iml" filepath="$PROJECT_DIR$/.idea/modules/frontend_8350-build.iml" />
     </modules>
   </component>
 </project>

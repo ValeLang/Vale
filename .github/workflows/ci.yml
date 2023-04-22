@@ -36,7 +36,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build docker image
-        run: docker build --build-arg VALE_DIR=. --file scripts/docker/Dockerfile
+        run: docker build --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
       - name: Retrieve built compiler
         run: docker cp CONTAINER:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
       - uses: actions/upload-artifact@v2

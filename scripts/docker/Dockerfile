@@ -1,8 +1,8 @@
 # Can be run like:
-#   git clone https://github.com/Verdagon/Outer/Vale --single-branch --branch $BRANCH --depth=1
+#   git clone https://github.com/Verdagon/Vale --single-branch --branch $BRANCH --depth=1
 #   podman build --build-arg VALE_DIR=. --file scripts/docker/Dockerfile
 # Can retrieve the built compiler with:
-#   podman cp CONTAINER:/Outer/Vale/release-ubuntu/Outer/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
+#   podman cp CONTAINER:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
 # Can re-build it with a new Vale repo by doing:
 #   podman build --build-arg VALE_DIR=. --file scripts/docker/Dockerfile --build-arg RECOPY_FOR_BUILD_DUMMY=`date +%s`
 # Can compile a Vale program with:

@@ -30,6 +30,29 @@ jobs:
           name: Vale-Windows-0.zip
           path: .\release-windows\Vale-Windows-0.zip
 
+  build_docker_image:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build docker image
+        run: docker build --build-arg BRANCH=stable ./scripts/docker
+
+  build_and_test_docker:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build docker image
+        run: docker build --build-arg VALE_DIR=. ./scripts/docker
+      - name: Retrieve built compiler
+        run: docker cp CONTAINER:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Vale-Ubuntu-0-From-Docker.zip
+          path: ./release-ubuntu/Vale-Ubuntu-0-From-Docker.zip
+
   build_and_test_ubuntu:
     runs-on: ubuntu-20.04
     steps: 
@@ -52,7 +75,7 @@ jobs:
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
-    runs-on: macOS-11
+    runs-on: macOS-latest
     steps: 
       - name: Checkout
         uses: actions/checkout@v2
@@ -69,4 +92,3 @@ jobs:
         with:
           name: Vale-Mac-0.zip
           path: ./release-mac/Vale-Mac-0.zip
-

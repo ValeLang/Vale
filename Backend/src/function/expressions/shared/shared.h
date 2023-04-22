@@ -94,6 +94,24 @@ void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef e
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, int num);
 
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    const std::string& first);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Ref ref);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    int num);
+
 template<typename First, typename... Rest>
 inline void buildFlareInner(
     GlobalState* globalState,
@@ -121,6 +139,19 @@ inline void buildPrintAreaAndFileAndLine(GlobalState* globalState, LLVMBuilderRe
   }
 }
 
+inline void buildPrintAreaAndFileAndLineToStderr(GlobalState* globalState, LLVMBuilderRef builder, AreaAndFileAndLine from) {
+  buildPrintToStderr(globalState, builder, "\033[0;34m");
+  buildPrintToStderr(globalState, builder, getFileName(from.file));
+  buildPrintToStderr(globalState, builder, ":");
+  buildPrintToStderr(globalState, builder, from.line);
+  buildPrintToStderr(globalState, builder, "\033[0m");
+  buildPrintToStderr(globalState, builder, " ");
+  if (!from.area.empty()) {
+    buildPrintToStderr(globalState, builder, getFileName(from.area));
+    buildPrintToStderr(globalState, builder, ": ");
+  }
+}
+
 inline void buildPrintIndent(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -143,10 +174,10 @@ inline void buildFlare(
     for (int i = 0; i < functionState->instructionDepthInAst; i++)
       indentStr += " ";
 
-    buildPrint(globalState, builder, indentStr);
-    buildPrintAreaAndFileAndLine(globalState, builder, from);
+    buildPrintToStderr(globalState, builder, indentStr);
+    buildPrintAreaAndFileAndLineToStderr(globalState, builder, from);
     buildFlareInner(globalState, builder, std::forward<T>(rest)...);
-    buildPrint(globalState, builder, "\n");
+    buildPrintToStderr(globalState, builder, "\n");
   }
 }
 

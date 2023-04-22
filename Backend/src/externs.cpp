@@ -28,8 +28,10 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   assert = addExtern(mod, "__vassert", voidLT, {int1LT, int8PtrLT});
   assertI64Eq = addExtern(mod, "__vassertI64Eq", voidLT, {int64LT, int64LT, int8PtrLT});
   printCStr = addExtern(mod, "__vprintCStr", voidLT, {int8PtrLT});
+  printCStrToStderr = addExtern(mod, "__vprintCStrToStderr", voidLT, {int8PtrLT});
   getch = addExtern(mod, "getchar", int64LT, {});
   printInt = addExtern(mod, "__vprintI64", voidLT, {int64LT});
+  printIntToStderr = addExtern(mod, "__vprintI64ToStderr", voidLT, {int64LT});
   strlen = addExtern(mod, "strlen", int32LT, {int8PtrLT});
   strncpy = addExtern(mod, "strncpy", voidLT, {int8PtrLT, int8PtrLT, int64LT});
   strncmp = addExtern(mod, "strncmp", int64LT, {int8PtrLT, int8PtrLT, int64LT});

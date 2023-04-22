@@ -10,8 +10,9 @@ set -euo pipefail
 usage() {
   echo "Usage: $(basename $0) [options]"
   echo -e "\nOptions:"
-  echo " -j        install Java from JFrog.io APT repository"
-  echo " -s        install SBT from scala-sbt.org APT repository"
+  echo " -d        install basic build tools from APT"
+  echo " -j        install Java from JFrog.io APT-get repository"
+  echo " -s        install SBT from scala-sbt.org APT-get repository"
   echo " -b <DIR>  install Vale bootstrap compiler to specified directory"
   echo " -l <DIR>  install LLVM to specified directory"
   echo " -h        display this help and exit"
@@ -25,16 +26,20 @@ bail() {
 CLANG_VERSION="13.0.1"
 CLANG_UBUNTU_VERSION="18.04"
 
+INSTALL_DEBS=0
 INSTALL_JAVA=0
 INSTALL_SBT=0
 LLVM_DIR=""
 BOOTSTRAPPING_VALEC_DIR=""
 
-while getopts ":hjsb:l:" opt; do
+while getopts ":hdjsb:l:" opt; do
   case ${opt} in
     h )
       usage
       exit 0
+      ;;
+    d )
+      INSTALL_DEBS=1
       ;;
     j )
       INSTALL_JAVA=1
@@ -65,31 +70,40 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-sudo apt --fix-missing update -y
-sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+if [[ $INSTALL_DEBS != 0 ]]; then
+  sudo apt-get --fix-missing update -y
+  sudo apt-get install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+fi
 
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing Java...${TEXT_RESET}"
-  wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-  sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
-  sudo apt update
-  sudo apt install -y adoptopenjdk-11-hotspot # Java 11 / HotSpot VM
+  sudo apt-get install -y wget apt-transport-https
+  mkdir -p /etc/apt/keyrings
+  wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
+  echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+  sudo apt-get update
+  sudo apt-get install -y temurin-11-jdk
 fi
 
 # Install SBT
 if [[ $INSTALL_SBT != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing sbt...${TEXT_RESET}"
+  sudo apt-get update
+  sudo apt-get install -y apt-transport-https curl gnupg -yqq
   echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
   echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
-  curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
-  sudo apt update
-  sudo apt install -y sbt
+  curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo -H gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/scalasbt-release.gpg --import
+  sudo chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg
+  sudo apt-get update
+  sudo apt-get install -y sbt
 fi
 
 # Install bootstrap compiler
 if [[ $BOOTSTRAPPING_VALEC_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR...${TEXT_RESET}"
+  sudo apt-get update
+  sudo apt-get install -y unzip
   # Install stable valec, for the .vale parts of the compiler
   curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Ubuntu-0.2.0.11.zip -o /tmp/BootstrappingValeCompiler.zip
   unzip /tmp/BootstrappingValeCompiler.zip -d $BOOTSTRAPPING_VALEC_DIR
@@ -100,6 +114,8 @@ fi
 # Install LLVM
 if [[ $LLVM_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping LLVM to $LLVM_DIR...${TEXT_RESET}"
+  sudo apt-get update
+  sudo apt-get install -y tar xz-utils
   # Install LLVM 13.0.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
   curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$CLANG_VERSION/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz --output /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz
   mkdir -p $LLVM_DIR

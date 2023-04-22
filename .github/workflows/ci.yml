@@ -38,7 +38,7 @@ jobs:
       - name: Build docker image
         run: docker build -t valec --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
       - name: Create image
-        run: docker create --name bork -i `podman images -q --no-trunc | head -n1`
+        run: docker create --name bork -i valec
       - name: Retrieve built compiler
         run: docker cp bork:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
       - uses: actions/upload-artifact@v2

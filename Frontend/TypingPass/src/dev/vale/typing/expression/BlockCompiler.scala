@@ -51,6 +51,7 @@ class BlockCompiler(
   // Returns:
   // - The resulting block expression
   // - All locals from outside the block that we unstackified inside the block
+  // - All locals from outside the block that we restackified inside the block
   // - Num anonymous variables that were made
   // - Types of all returns from inside the block
   def evaluateBlock(
@@ -59,7 +60,7 @@ class BlockCompiler(
     life: LocationInFunctionEnvironment,
     parentRanges: List[RangeS],
     block1: BlockSE):
-  (BlockTE, Set[IVarNameT], Set[CoordT]) = {
+  (BlockTE, Set[IVarNameT], Set[IVarNameT], Set[CoordT]) = {
     val nenv = NodeEnvironmentBox(parentFate.makeChildNodeEnvironment(block1, life))
     val startingNenv = nenv.snapshot
 
@@ -69,8 +70,8 @@ class BlockCompiler(
 
     val block2 = BlockTE(expressionsWithResult)
 
-    val (unstackifiedAncestorLocals) = nenv.snapshot.getEffectsSince(startingNenv)
-    (block2, unstackifiedAncestorLocals, returnsFromExprs)
+    val (unstackifiedAncestorLocals, restackifiedAncestorLocals) = nenv.snapshot.getEffectsSince(startingNenv)
+    (block2, unstackifiedAncestorLocals, restackifiedAncestorLocals, returnsFromExprs)
   }
 
 

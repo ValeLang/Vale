@@ -33,18 +33,18 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
   }
   test("Name-only Capture") {
     compile("a") match {
-      case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("a")))), None, None, None) =>
+      case PatternPP(_, _,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)), None, None, None) =>
     }
   }
   test("Empty pattern") {
-    compile("_") match { case PatternPP(_,_, Some(IgnoredLocalNameDeclarationP(_)),None,None,None) => }
+    compile("_") match { case PatternPP(_,_, Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)),None,None,None) => }
   }
 
   test("Capture with type with destructure") {
     compile("a Moo[a, b]") shouldHave {
       case PatternPP(
           _,_,
-          Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
+          Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
           Some(NameOrRunePT(NameP(_, StrI("Moo")))),
           Some(DestructureP(_,Vector(capture("a"),capture("b")))),
           None) =>
@@ -57,9 +57,9 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
     compile("moo T[a int]") shouldHave {
       case PatternPP(
           _,_,
-          Some(LocalNameDeclarationP(NameP(_, StrI("moo")))),
+          Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("moo"))), None)),
           Some(NameOrRunePT(NameP(_, StrI("T")))),
-          Some(DestructureP(_,Vector(PatternPP(_,_, Some(LocalNameDeclarationP(NameP(_, StrI("a")))),Some(NameOrRunePT(NameP(_, StrI("int")))),None,None)))),
+          Some(DestructureP(_,Vector(PatternPP(_,_, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),Some(NameOrRunePT(NameP(_, StrI("int")))),None,None)))),
           None) =>
     }
   }
@@ -68,7 +68,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
     compile("a (int, bool)[a, b]") shouldHave {
       case PatternPP(
           _,_,
-          Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
+          Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
           Some(
             TuplePT(_,
                   Vector(

@@ -476,8 +476,8 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         case Err(e) => return Err(e)
       }
 
-    pattern.capture match {
-      case Some(LocalNameDeclarationP(name)) => vassert(name.str != keywords.set)
+    pattern.destination match {
+      case Some(DestinationLocalP(LocalNameDeclarationP(name), None)) => vassert(name.str != keywords.set)
       case _ =>
     }
 
@@ -1569,7 +1569,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           iter.advance()
           iter.advance()
           iter.advance()
-          val param = PatternPP(paramRange, None, Some(LocalNameDeclarationP(NameP(paramRange, paramName))), None, None, None)
+          val param = PatternPP(paramRange, None, Some(DestinationLocalP(LocalNameDeclarationP(NameP(paramRange, paramName)), None)), None, None, None)
           val params = ParamsP(paramRange, Vector(param))
           val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           val range = RangeL(begin, iter.getPrevEndPos())

@@ -148,7 +148,7 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
     // what was in it.
-    auto localAddr = blockState->getLocalAddr(restackify->local->id);
+    auto localAddr = blockState->getLocalAddr(restackify->local->id, false);
 
     auto refToStore =
         translateExpression(
@@ -174,7 +174,7 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
     // what was in it.
-    auto localAddr = blockState->getLocalAddr(localStore->local->id);
+    auto localAddr = blockState->getLocalAddr(localStore->local->id, true);
 
     auto refToStore =
         translateExpression(
@@ -230,7 +230,7 @@ Ref translateExpressionInner(
     // The purpose of Unstackify is to destroy the local and give what was in
     // it, but in LLVM there's no instruction (or need) for destroying a local.
     // So, we just give what was in it. It's ironically identical to LocalLoad.
-    auto localAddr = blockState->getLocalAddr(unstackify->local->id);
+    auto localAddr = blockState->getLocalAddr(unstackify->local->id, true);
     blockState->markLocalUnstackified(unstackify->local->id);
     return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {

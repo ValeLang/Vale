@@ -45,7 +45,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
             stackFrame1, lidb.child(),
             LetPE(
               inKeywordRange,
-              PatternPP(inKeywordRange, None, Some(IterableNameDeclarationP(inKeywordRange)), None, None, None),
+              PatternPP(inKeywordRange, None, Some(DestinationLocalP(IterableNameDeclarationP(inKeywordRange), None)), None, None, None),
               iterableExpr),
             UseP)
         val (stackFrame3, letIteratorSE, letIteratorSelfUses, letIteratorChildUses) =
@@ -53,7 +53,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
             stackFrame2, lidb.child(),
             LetPE(
               inKeywordRange,
-              PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
+              PatternPP(inKeywordRange, None, Some(DestinationLocalP(IteratorNameDeclarationP(inKeywordRange), None)), None, None, None),
               FunctionCallPE(
                 inKeywordRange, inKeywordRange,
                 LookupPE(LookupNameP(NameP(inKeywordRange, keywords.begin)), None),
@@ -114,7 +114,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
                 Vector(
                   LetPE(
                     entryPatternPP.range,
-                    PatternPP(inKeywordRange, None, Some(IterationOptionNameDeclarationP(inKeywordRange)), None, None, None),
+                    PatternPP(inKeywordRange, None, Some(DestinationLocalP(IterationOptionNameDeclarationP(inKeywordRange), None)), None, None, None),
                     FunctionCallPE(
                       inKeywordRange,
                       inKeywordRange,

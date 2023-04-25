@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.{Collector, Interner, StrI}
-import dev.vale.parsing.ast.{BinaryCallPE, BlockPE, ConsecutorPE, ConstantBoolPE, ConstantIntPE, IExpressionPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, NameP, PatternPP, VoidPE, WhilePE}
+import dev.vale.parsing.ast._
 import dev.vale.lexing.{Lexer, LexingIterator}
 import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
@@ -25,7 +25,7 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
       case WhilePE(_,
         ConsecutorPE(
           Vector(
-            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,None)),
+            LetPE(_,PatternPP(_,None,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("x"))), None)),None,None,None),ConstantIntPE(_,4,None)),
           BinaryCallPE(_,NameP(_,StrI(">")),LookupPE(LookupNameP(NameP(_, StrI("x"))),None),ConstantIntPE(_,6,None)))),
         BlockPE(_,None,VoidPE(_))) =>
     }

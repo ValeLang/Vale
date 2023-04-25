@@ -97,6 +97,7 @@ case class CantUseUnstackifiedLocal(range: List[RangeS], localId: IVarNameT) ext
   vpass()
 }
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: List[RangeS], localId: IVarNameT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CantRestackifyOutsideLocalFromInsideWhile(range: List[RangeS], localId: IVarNameT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: IdT[IFunctionNameT]) extends ICompileErrorT {
   override def range: List[RangeS] = List(newFunctionRange)
   vpass()

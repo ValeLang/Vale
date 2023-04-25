@@ -214,5 +214,25 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
       case RestackifyTE(ReferenceLocalVariableT(CodeVarNameT(StrI("ship")), _, _), _) =>
     })
   }
+
+  test("Loop restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile =
+      CompilerTestCompilation.test(readCodeFromResource("programs/loop_restackify.vale"))
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
+    Collector.only(main, {
+      case RestackifyTE(ReferenceLocalVariableT(CodeVarNameT(StrI("ship")), _, _), _) =>
+    })
+  }
+
+  test("Destructure restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile =
+      CompilerTestCompilation.test(readCodeFromResource("programs/destructure_restackify.vale"))
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
+    Collector.only(main, {
+      case RestackifyTE(ReferenceLocalVariableT(CodeVarNameT(StrI("ship")), _, _), _) =>
+    })
+  }
 }
 

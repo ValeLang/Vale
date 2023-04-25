@@ -81,7 +81,7 @@ class ExpressionCompiler(
     delegate: IExpressionCompilerDelegate) {
   val localHelper = new LocalHelper(opts, interner, nameTranslator, destructorCompiler)
   val callCompiler = new CallCompiler(opts, interner, keywords, templataCompiler, convertHelper, localHelper, overloadCompiler)
-  val patternCompiler = new PatternCompiler(opts, interner, keywords, inferCompiler, arrayCompiler, convertHelper, destructorCompiler, localHelper)
+  val patternCompiler = new PatternCompiler(opts, interner, keywords, inferCompiler, arrayCompiler, convertHelper, nameTranslator, destructorCompiler, localHelper)
   val blockCompiler = new BlockCompiler(opts, destructorCompiler, localHelper, new IBlockCompilerDelegate {
     override def evaluateAndCoerceToReferenceExpression(
       coutputs: CompilerOutputs,

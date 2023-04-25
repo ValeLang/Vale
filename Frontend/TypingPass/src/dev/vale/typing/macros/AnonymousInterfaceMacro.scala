@@ -467,7 +467,7 @@ class AnonymousInterfaceMacro(
           ParameterS(
             AtomSP(
               abstractParamRange,
-              Some(CaptureS(interner.intern(SelfNameS()))),
+              Some(CaptureS(interner.intern(SelfNameS()), false)),
               None,//Some(OverrideSP(abstractParamRange, RuneUsage(abstractParamCoordRune.range, AnonymousSubstructParentInterfaceTemplateRuneS()))),
               Some(RuneUsage(abstractParamCoordRune.range, selfCoordRune)),
               None))

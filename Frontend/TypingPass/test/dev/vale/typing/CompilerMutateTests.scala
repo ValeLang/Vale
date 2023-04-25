@@ -234,6 +234,30 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.expectCompilerOutputs()
   }
 
+  test("Can restackify in destructure pattern") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveStructDrop
+        |struct Ship { fuel int; }
+        |
+        |/// TODO: Bring tuples back
+        |#!DeriveStructDrop
+        |struct GetFuelResult { fuel int; ship Ship; }
+        |
+        |func GetFuel(ship Ship) GetFuelResult {
+        |  return GetFuelResult(ship.fuel, ship);
+        |}
+        |
+        |exported func main() int {
+        |  ship = Ship(42);
+        |  [fuel, set ship] = GetFuel(ship);
+        |  [f] = ship;
+        |  return fuel;
+        |}
+        |""".stripMargin)
+    compile.expectCompilerOutputs()
+  }
+
   test("Humanize errors") {
     val interner = new Interner()
     val keywords = new Keywords(interner)

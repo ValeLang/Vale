@@ -227,7 +227,7 @@ class BodyCompiler(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
+      case ParameterS(AtomSP(_, Some(CaptureS(name, false)), _, _, _)) => {
         if (!nenv.declaredLocals.exists(_.name == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }

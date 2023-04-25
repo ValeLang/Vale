@@ -62,7 +62,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       param match {
         case ParameterS(
           AtomSP(_,
-            Some(CaptureS(CodeVarNameS(StrI("moo")))),
+            Some(CaptureS(CodeVarNameS(StrI("moo")), false)),
             None,
             Some(RuneUsage(_, tcr @ ImplicitRuneS(_))),
             None)) => tcr

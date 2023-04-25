@@ -9,7 +9,8 @@ import dev.vale.RangeS
 import scala.collection.immutable.List
 
 case class CaptureS(
-  name: IVarNameS) {
+    name: IVarNameS,
+    mutate: Boolean) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 

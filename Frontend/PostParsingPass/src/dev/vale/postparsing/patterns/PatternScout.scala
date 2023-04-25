@@ -24,7 +24,11 @@ class PatternScout(
         maybeDestructure.toVector.flatten.flatMap(getParameterCaptures)
   }
   private def getCaptureCaptures(capture: CaptureS): Vector[VariableDeclaration] = {
-    Vector(VariableDeclaration(capture.name))
+    if (capture.mutate) {
+      Vector()
+    } else {
+      Vector(VariableDeclaration(capture.name))
+    }
   }
 
   // Returns:
@@ -92,26 +96,26 @@ class PatternScout(
 //          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
           None
         }
-        case Some(IgnoredLocalNameDeclarationP(_)) => {
+        case Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), _)) => {
           None
         }
-        case Some(LocalNameDeclarationP(NameP(_, name))) => {
+        case Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), maybeMutate)) => {
           if (name.str == "set" || name.str == "mut") {
             throw CompileErrorExceptionS(CantUseThatLocalName(PostParser.evalRange(stackFrame.file, range), name.str))
           }
-          Some(CaptureS(interner.intern(CodeVarNameS(name))))
+          Some(CaptureS(interner.intern(CodeVarNameS(name)), maybeMutate.nonEmpty))
         }
-        case Some(ConstructingMemberNameDeclarationP(NameP(_, name))) => {
-          Some(CaptureS(interner.intern(ConstructingMemberNameS(name))))
+        case Some(DestinationLocalP(ConstructingMemberNameDeclarationP(NameP(_, name)), maybeMutate)) => {
+          Some(CaptureS(interner.intern(ConstructingMemberNameS(name)), maybeMutate.nonEmpty))
         }
-        case Some(IterableNameDeclarationP(range)) => {
-          Some(CaptureS(interner.intern(IterableNameS(PostParser.evalRange(stackFrame.file, range)))))
+        case Some(DestinationLocalP(IterableNameDeclarationP(range), maybeMutate)) => {
+          Some(CaptureS(interner.intern(IterableNameS(PostParser.evalRange(stackFrame.file, range))), maybeMutate.nonEmpty))
         }
-        case Some(IteratorNameDeclarationP(range)) => {
-          Some(CaptureS(interner.intern(IteratorNameS(PostParser.evalRange(stackFrame.file, range)))))
+        case Some(DestinationLocalP(IteratorNameDeclarationP(range), maybeMutate)) => {
+          Some(CaptureS(interner.intern(IteratorNameS(PostParser.evalRange(stackFrame.file, range))), maybeMutate.nonEmpty))
         }
-        case Some(IterationOptionNameDeclarationP(range)) => {
-          Some(CaptureS(interner.intern(IterationOptionNameS(PostParser.evalRange(stackFrame.file, range)))))
+        case Some(DestinationLocalP(IterationOptionNameDeclarationP(range), maybeMutate)) => {
+          Some(CaptureS(interner.intern(IterationOptionNameS(PostParser.evalRange(stackFrame.file, range))), maybeMutate.nonEmpty))
         }
       }
 

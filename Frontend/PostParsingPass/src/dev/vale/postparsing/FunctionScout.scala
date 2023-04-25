@@ -403,7 +403,7 @@ class FunctionScout(
                 ParameterS(
                   AtomSP(
                     closureParamRange,
-                    Some(CaptureS(closureParamName)),
+                    Some(CaptureS(closureParamName, false)),
                     None,
                     Some(closureParamTypeRune),
                     None))
@@ -419,7 +419,7 @@ class FunctionScout(
                       ParameterS(
                         AtomSP(
                           magicParamRange,
-                          Some(patterns.CaptureS(mpn)), None, Some(magicParamRune), None))
+                          Some(CaptureS(mpn, false)), None, Some(magicParamRune), None))
                     paramS
                   }
                 })

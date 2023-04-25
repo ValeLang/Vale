@@ -99,7 +99,7 @@ class StructDropMacro(
           ParameterS(
             AtomSP(
               range(-1340),
-              Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)))),
+              Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)), false)),
               None,
               Some(use(-64002, selfCoordRune)), None))),
         Some(use(-64002, voidCoordRune)),
@@ -128,7 +128,7 @@ class StructDropMacro(
         CodeRuneS(keywords.DropVK) -> KindTemplataType(),
         CodeRuneS(keywords.DropV) -> CoordTemplataType()),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)))), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
+        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)), false)), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
       Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV))),
       Vector(
         LookupSR(

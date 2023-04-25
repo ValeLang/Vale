@@ -270,7 +270,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("preBorrow", vonifyOptional(preBorrow, vonifyRange)),
-        VonMember("capture", vonifyOptional(capture, vonifyNameDeclaration)),
+        VonMember("capture", vonifyOptional(capture, vonifyDestinationLocal)),
         VonMember("templex", vonifyOptional(templex, vonifyTemplex)),
         VonMember("destructure", vonifyOptional(destructure, vonifyDestructure)),
         VonMember("virtuality", vonifyOptional(virtuality, vonifyVirtuality))))
@@ -285,6 +285,16 @@ object ParserVonifier {
 //        VonMember("range", vonifyRange(range)),
 //        VonMember("captureName", vonifyCaptureName(captureName))))
 //  }
+
+  def vonifyDestinationLocal(thing: DestinationLocalP): VonObject = {
+    val DestinationLocalP(decl, mutate) = thing
+    VonObject(
+      "DestinationLocal",
+      None,
+      Vector(
+        VonMember("name", vonifyNameDeclaration(decl)),
+        VonMember("mutate", vonifyOptional(mutate, vonifyRange))))
+  }
 
   def vonifyNameDeclaration(thing: INameDeclarationP): VonObject = {
     thing match {

@@ -34,14 +34,16 @@ public:
       unstackifiedLocalIds(0, addressNumberer_->makeHasher<VariableId*>()) {
   }
 
-  LLVMValueRef getLocalAddr(VariableId* varId) const {
-    assert(unstackifiedLocalIds.count(varId) == 0);
+  LLVMValueRef getLocalAddr(VariableId* varId, bool expectValid) const {
+    if (expectValid) {
+      assert(unstackifiedLocalIds.count(varId) == 0);
+    }
     auto localAddrIter = localAddrByLocalId.find(varId);
     if (localAddrIter != localAddrByLocalId.end()) {
       return localAddrIter->second;
     }
     if (maybeParentBlockState) {
-      return maybeParentBlockState->getLocalAddr(varId);
+      return maybeParentBlockState->getLocalAddr(varId, expectValid);
     } else {
       assert(false);
     }

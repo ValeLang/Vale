@@ -21,7 +21,7 @@ cd Backend
 
 echo Generating Backend...
 echo cmake -B build -D LLVM_DIR="%1\build\lib\cmake\llvm"
-cmake -B build -D LLVM_DIR="%1\build\lib\cmake\llvm" || echo "Backend generate failed, aborting." && exit /b 1
+cmake -B build -D LLVM_DIR="%1\lib\cmake\llvm" || echo "Backend generate failed, aborting." && exit /b 1
 
 echo Compiling Backend...
 cmake --build build || echo "Backend build failed, aborting." && exit /b 1

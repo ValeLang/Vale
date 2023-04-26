@@ -20,8 +20,8 @@ if exist "%5" (
 cd Backend
 
 echo Generating Backend...
-echo cmake -B build -D LLVM_DIR="C:\Program Files\LLVM\build\lib\cmake\llvm"
-cmake -B build -D LLVM_DIR="C:\Program Files\LLVM\lib\cmake\llvm" || echo "Backend generate failed, aborting." && exit /b 1
+echo cmake -B build -D LLVM_DIR="%1\build\lib\cmake\llvm"
+cmake -B build -D LLVM_DIR="%1\lib\cmake\llvm" || echo "Backend generate failed, aborting." && exit /b 1
 
 echo Compiling Backend...
 cmake --build build || echo "Backend build failed, aborting." && exit /b 1
@@ -60,7 +60,7 @@ copy all\valec-help.txt ..\release-windows\valec-help.txt
 copy all\valec-version.txt ..\release-windows\valec-version.txt
 rem echo d | xcopy /s /e /y all\helloworld ..\release-windows\samples\helloworld
 
-copy 'C:\Program Files\LLVM\bin\LLVM-C.dll' ..\release-windows\LLVM-C.dll
+copy %1\bin\LLVM-C.dll ..\release-windows\LLVM-C.dll
 
 cd ..\release-windows
 PATH=%PATH%;C:\Program Files\7-Zip

@@ -1,6 +1,9 @@
 
 echo Downloading minimal LLVM...
 
+dir 'C:\Program Files\Microsoft Visual Studio\2022\Community'
+dir 'C:\Program Files\Microsoft Visual Studio\2022\Community\DIA SDK'
+
 powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/Verdagon/LLVMWinMinimal/releases/download/v1.3/LLVM16.zip' -OutFile '%temp%\LLVM16.zip'"
 mkdir %1
 tar xf "%temp%\LLVM16.zip" -C %1

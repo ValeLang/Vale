@@ -1,6 +1,8 @@
 
 echo Downloading minimal LLVM...
 
+dir "C:\Program Files\Microsoft Visual Studio"
+dir "C:\Program Files\Microsoft Visual Studio\2022"
 dir "C:\Program Files\Microsoft Visual Studio\2022\Community"
 dir "C:\Program Files\Microsoft Visual Studio\2022\Community\DIA SDK"
 

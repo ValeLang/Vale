@@ -6,28 +6,10 @@
 #include "../function/expressions/shared/ref.h"
 #include "../metal/types.h"
 #include "../metal/ast.h"
+#include "../function/expressions/shared/elements.h"
 
 class FunctionState;
 class BlockState;
-
-// When we load something from an array, for example an owning reference,
-// we still need to alias it to a constraint reference. This wrapper serves
-// as a reminder that we need to do that.
-struct LoadResult {
-public:
-  explicit LoadResult(Ref ref) : ref(ref) {}
-
-  // This method is used when we intended to move the result, so no transformation
-  // or aliasing is needed.
-  Ref move() { return ref; }
-
-  // This is just a getter for the ref for the methods that actually implement the
-  // aliasing. It should ONLY be used by them.
-  Ref extractForAliasingInternals() { return ref; }
-
-private:
-  Ref ref;
-};
 
 class IRegion {
 public:
@@ -68,8 +50,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
-      Ref structRef,
-      bool structRefKnownLive,
+      LiveRef structRef,
       int memberIndex,
       const std::string& memberName,
       Reference* newMemberRefMT,
@@ -80,8 +61,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
-      Ref structRef,
-      bool structRefKnownLive,
+      LiveRef structRef,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetMemberType,
@@ -131,28 +111,70 @@ public:
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
-  virtual Ref constructStaticSizedArray(
+  virtual LiveRef constructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
       StaticSizedArrayT* kindM) = 0;
 
+  virtual LiveRef checkRefLive(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      bool refKnownLive) = 0;
+
+    virtual LiveRef wrapToLiveRef(
+        AreaAndFileAndLine checkerAFL,
+        FunctionState* functionState,
+        LLVMBuilderRef builder,
+        Ref regionInstanceRef,
+        Reference* refMT,
+        LLVMValueRef ref) = 0;
+
+  virtual LiveRef preCheckBorrow(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      bool refKnownLive) = 0;
+
+  virtual Ref mutabilify(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      Reference* targetRefMT) = 0;
+
+  virtual LiveRef immutabilify(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      Reference* targetRefMT) = 0;
+
   virtual Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* rsaRefMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive) = 0;
+      LiveRef arrayRef) = 0;
 
   virtual Ref getRuntimeSizedArrayCapacity(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* rsaRefMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive) = 0;
+      LiveRef arrayRef) = 0;
 
   virtual LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
@@ -161,6 +183,16 @@ public:
       bool expectLive,
       Reference* refM,
       Ref ref) = 0;
+
+  LLVMValueRef checkValidReference(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      LiveRef liveRef) {
+    auto ref = wrap(this, refM, liveRef.refLE);
+    return checkValidReference(checkerAFL, functionState, builder, true, refM, ref);
+  }
 
   virtual LLVMValueRef getCensusObjectId(
       AreaAndFileAndLine checkerAFL,
@@ -227,7 +259,7 @@ public:
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* sourceMT,
-      Ref sourceRef) = 0;
+      LiveRef sourceRef) = 0;
 
   virtual void noteWeakableDestroyed(
       FunctionState* functionState,
@@ -243,7 +275,7 @@ public:
       Reference* virtualParamMT,
       Ref virtualArgRef) = 0;
 
-  virtual FuncPtrLE getInterfaceMethodFunctionPtr(
+  virtual ValeFuncPtrLE getInterfaceMethodFunctionPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* virtualParamMT,
@@ -277,19 +309,18 @@ public:
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) = 0;
+      LiveRef structRef,
+      InBoundsLE indexLE) = 0;
 
   virtual void deallocate(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refMT,
-      Ref ref) = 0;
+      LiveRef ref) = 0;
 
 
-  virtual Ref constructRuntimeSizedArray(
+  virtual LiveRef constructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -304,9 +335,8 @@ public:
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef,
+      LiveRef arrayRef,
+      InBoundsLE sizeLE,
       Ref elementRef) = 0;
 
   virtual Ref popRuntimeSizedArrayNoBoundsCheck(
@@ -315,9 +345,8 @@ public:
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) = 0;
+      LiveRef arrayRef,
+      InBoundsLE indexLE) = 0;
 
   virtual void initializeElementInSSA(
       FunctionState* functionState,
@@ -325,9 +354,8 @@ public:
       Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef,
+      LiveRef structRef,
+      InBoundsLE indexLE,
       Ref elementRef) = 0;
 
   virtual Ref deinitializeElementFromSSA(
@@ -335,18 +363,16 @@ public:
       LLVMBuilderRef builder,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) = 0;
+      LiveRef structRef,
+      InBoundsLE indexLE) = 0;
 
   virtual Ref storeElementInRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef,
+      LiveRef structRef,
+      InBoundsLE indexLE,
       Ref elementRef) = 0;
 
   virtual void checkInlineStructType(
@@ -358,9 +384,11 @@ public:
   virtual Ref upgradeLoadResultToRefWithTargetOwnership(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* sourceType,
       Reference* targetType,
-      LoadResult sourceRef) = 0;
+      LoadResult sourceRef,
+      bool resultKnownLive) = 0;
 
   // For instance regions, this will return the handle's type.
   // For value regions, we'll just be returning linear's translateType.
@@ -372,9 +400,8 @@ public:
       Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) = 0;
+      LiveRef structRef,
+      InBoundsLE indexRef) = 0;
 
   // Receives a regular reference to an object in another region, so we can move
   // (or copy) it.
@@ -404,13 +431,15 @@ public:
   virtual LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Reference* refMT,
       Ref regionInstanceRef,
-      Ref ref) = 0;
+      LiveRef ref) = 0;
   virtual LLVMValueRef getStringLen(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Reference* refMT,
       Ref regionInstanceRef,
-      Ref ref) = 0;
+      LiveRef ref) = 0;
   // TODO:
   // One use is for makeNewStrFunc, make that private to the unsafe region.
   // Change this to also take in the bytes pointer.
@@ -449,5 +478,24 @@ public:
   // perhaps the FunctionState?
   virtual Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) = 0;
 };
+
+LLVMValueRef checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool expectLive,
+    Reference* refM,
+    Ref ref);
+
+LLVMValueRef checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool expectLive,
+    Reference* refM,
+    LiveRef liveRef);
+
 
 #endif

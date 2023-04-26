@@ -85,11 +85,18 @@ void buildBreakyWhile(
     LLVMBuilderRef builder,
     std::function<void(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
 
-void buildWhile(
+void buildWhileV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     std::function<Ref(LLVMBuilderRef)> buildCondition,
+    std::function<void(LLVMBuilderRef)> buildBody);
+
+void buildWhile(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildCondition,
     std::function<void(LLVMBuilderRef)> buildBody);
 
 #endif

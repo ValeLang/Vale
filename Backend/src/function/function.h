@@ -151,16 +151,19 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
+  std::optional<LLVMValueRef> nextGenPtrLE;
 
   FunctionState(
       std::string containingFuncName_,
       LLVMValueRef containingFuncL_,
       LLVMTypeRef returnTypeL_,
-      LLVMBuilderRef localsBuilder_) :
+      LLVMBuilderRef localsBuilder_,
+      std::optional<LLVMValueRef> nextGenPtrLE_) :
     containingFuncName(containingFuncName_),
     containingFuncL(containingFuncL_),
     returnTypeL(returnTypeL_),
-    localsBuilder(localsBuilder_) {}
+    localsBuilder(localsBuilder_),
+    nextGenPtrLE(nextGenPtrLE_) {}
 
   std::string nextBlockName() {
     return std::string("block") + std::to_string(nextBlockNumber++);
@@ -171,13 +174,13 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM);
 
-FuncPtrLE declareFunction(
+ValeFuncPtrLE declareFunction(
     GlobalState* globalState,
     Function* functionM);
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
-FuncPtrLE declareExternFunction(
+RawFuncPtrLE declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM);

@@ -7,13 +7,14 @@
 #include "globalstate.h"
 #include "translatetype.h"
 #include <region/common/migration.h>
+#include <utils/counters.h>
 
 #define STACK_SIZE (8 * 1024 * 1024)
 
-std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
+std::tuple<RawFuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
 
-  auto functionL = addFunction(globalState->mod, "__Vale_SetupStrings", voidLT, {});
+  auto functionL = addRawFunction(globalState->mod, "__Vale_SetupStrings", voidLT, {});
 
   auto stringsBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMBasicBlockRef blockL = LLVMAppendBasicBlockInContext(globalState->context, functionL.ptrLE, "stringsBlock");
@@ -27,7 +28,7 @@ std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globa
 
 Prototype* makeValeMainFunction(
     GlobalState* globalState,
-    FuncPtrLE stringSetupFunctionL,
+    RawFuncPtrLE stringSetupFunctionL,
     Prototype* mainSetupFuncProto,
     Prototype* userMainFunctionPrototype,
     Prototype* mainCleanupFunctionPrototype) {
@@ -50,15 +51,18 @@ Prototype* makeValeMainFunction(
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
         stringSetupFunctionL.call(entryBuilder, {}, "");
-        globalState->lookupFunction(mainSetupFuncProto).call(entryBuilder, {}, "");
-//
+        // Main has the next gen ptr handed in from the entry function.
+        auto nextGenPtrLE = functionState->nextGenPtrLE.value();
+        globalState->lookupFunction(mainSetupFuncProto)
+            .call(entryBuilder, nextGenPtrLE, {}, "");
+
 //        LLVMBuildStore(
 //            entryBuilder,
 //            LLVMBuildUDiv(
 //                entryBuilder,
 //                LLVMBuildPointerCast(
 //                    entryBuilder,
-//                    globalState->writeOnlyGlobal,
+//                    globalState->writeOnlyGlobalLE,
 //                    LLVMInt64TypeInContext(globalState->context),
 //                    "ptrAsIntToWriteOnlyGlobal"),
 //                constI64LE(globalState, 8),
@@ -94,15 +98,25 @@ Prototype* makeValeMainFunction(
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
         if (globalState->opt->printMemOverhead) {
-          buildFlare(FL(), globalState, functionState, entryBuilder);
+          buildPrintToStderr(globalState, entryBuilder, "\nRC adjustments: ");
+          buildPrintToStderr(
+              globalState, entryBuilder,
+              LLVMBuildLoad2(entryBuilder, int64LT, globalState->mutRcAdjustCounterLE, "rcadjusts"));
+
+
           buildPrintToStderr(globalState, entryBuilder, "\nLiveness checks: ");
           buildPrintToStderr(
               globalState, entryBuilder,
-              LLVMBuildLoad2(
-                  entryBuilder, LLVMInt64TypeInContext(globalState->context), globalState->livenessCheckCounter, "livenessCheckCounter"));
+              LLVMBuildLoad2(entryBuilder, int64LT, globalState->livenessCheckCounterLE, "genprechecks"));
+
+          buildPrintToStderr(globalState, entryBuilder, "\nLiveness pre-checks: ");
+          buildPrintToStderr(
+              globalState, entryBuilder,
+              LLVMBuildLoad2(entryBuilder, int64LT, globalState->livenessPreCheckCounterLE, "genchecks"));
+
           buildPrintToStderr(globalState, entryBuilder, "\n");
         }
-        buildFlare(FL(), globalState, functionState, entryBuilder);
+
 
         if (globalState->opt->census) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
@@ -118,7 +132,7 @@ Prototype* makeValeMainFunction(
 
           std::vector<LLVMValueRef> numLiveObjAssertArgs = {
               LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
-              LLVMBuildLoad2(entryBuilder, int64LT, globalState->liveHeapObjCounter, "numLiveObjs"),
+              LLVMBuildLoad2(entryBuilder, int64LT, globalState->liveHeapObjCounterLE, "numLiveObjs"),
               globalState->getOrMakeStringConstant("Memory leaks!"),
           };
           globalState->externs->assertI64Eq.call(entryBuilder, numLiveObjAssertArgs, "");
@@ -225,8 +239,8 @@ LLVMValueRef makeEntryFunction(
 
   auto numMainArgsLE = LLVMGetParam(entryFunctionL, 0);
   auto mainArgsLE = LLVMGetParam(entryFunctionL, 1);
-  LLVMBuildStore(entryBuilder, numMainArgsLE, globalState->numMainArgs);
-  LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
+  LLVMBuildStore(entryBuilder, numMainArgsLE, globalState->numMainArgsLE);
+  LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgsLE);
 
   if (globalState->opt->enableReplaying) {
     auto numConsumedArgsLE =
@@ -237,9 +251,9 @@ LLVMValueRef makeEntryFunction(
     LLVMBuildStore(
         entryBuilder,
         LLVMBuildLoad2(entryBuilder, int8PtrPtrLT, mainArgsLE, "zerothArg"),
-        LLVMBuildGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
+        LLVMBuildInBoundsGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
     // argv += numConsumed
-    mainArgsLE = LLVMBuildGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
+    mainArgsLE = LLVMBuildInBoundsGEP2(entryBuilder, int8PtrPtrLT, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
     // argc -= numConsumed
     numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "newMainArgsCount");
   }
@@ -250,21 +264,27 @@ LLVMValueRef makeEntryFunction(
         buildMaybeNeverCall(
             globalState, entryBuilder, globalState->externs->malloc,
             { constI64LE(globalState, STACK_SIZE) }),
-        globalState->sideStack);
+        globalState->sideStackLE);
   }
+
+  auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
+  auto newGenLE =
+      adjustCounterReturnOld(entryBuilder, genLT, globalState->nextGenThreadGlobalIntLE, GEN_PRIME_INCREMENT);
+  auto nextGenLocalPtrLE = LLVMBuildAlloca(entryBuilder, genLT, "nextGenLocalPtr");
+  LLVMBuildStore(entryBuilder, newGenLE, nextGenLocalPtrLE);
 
   auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
   auto calleeUserFunctionReturnMT = valeMainPrototype->returnType;
   auto calleeUserFunctionReturnLT =
       globalState->getRegion(calleeUserFunctionReturnMT)->translateType(calleeUserFunctionReturnMT);
   auto resultLE =
-      buildMaybeNeverCall(
-          globalState, entryBuilder, calleeUserFunction, {});
+      buildMaybeNeverCallV(
+          globalState, entryBuilder, calleeUserFunction, nextGenLocalPtrLE, {});
 
   if (globalState->opt->enableSideCalling) {
     buildMaybeNeverCall(
         globalState, entryBuilder, globalState->externs->free,
-        { LLVMBuildLoad2(entryBuilder, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), globalState->sideStack, "") });
+        { LLVMBuildLoad2(entryBuilder, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), globalState->sideStackLE, "") });
   }
 
   if (globalState->opt->enableReplaying) {

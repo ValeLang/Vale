@@ -1,5 +1,5 @@
-#ifndef REGION_RESILIENTV3_RESILIENTV3_H_
-#define REGION_RESILIENTV3_RESILIENTV3_H_
+#ifndef REGION_SAFE_SAFE_H_
+#define REGION_SAFE_SAFE_H_
 
 #include <llvm-c/Core.h>
 #include "../../function/expressions/shared/afl.h"
@@ -12,10 +12,10 @@
 #include "../../function/function.h"
 #include "../iregion.h"
 
-class ResilientV3 : public IRegion {
+class Safe : public IRegion {
 public:
-  ResilientV3(GlobalState* globalState, RegionId* regionId);
-  ~ResilientV3() override = default;
+  Safe(GlobalState* globalState);
+  ~Safe() override = default;
 
   Ref allocate(
       Ref regionInstanceRef,
@@ -72,6 +72,28 @@ public:
   void defineRuntimeSizedArray(
       RuntimeSizedArrayDefinitionT* runtimeSizedArrayDefinitionMT) override;
 
+  WrapperPtrLE lockWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref weakRefLE,
+      bool weakRefKnownLive) override;
+
+  Ref lockWeak(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool thenResultIsNever,
+      bool elseResultIsNever,
+      Reference* resultOptTypeM,
+//      LLVMTypeRef resultOptTypeL,
+      Reference* constraintRefM,
+      Reference* sourceWeakRefMT,
+      Ref sourceWeakRefLE,
+      bool weakRefKnownLive,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) override;
+
   LiveRef checkRefLive(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
@@ -97,28 +119,6 @@ public:
       Reference* refMT,
       Ref ref,
       bool refKnownLive) override;
-
-  WrapperPtrLE lockWeakRef(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* refM,
-      Ref weakRefLE,
-      bool weakRefKnownLive) override;
-
-  Ref lockWeak(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      bool thenResultIsNever,
-      bool elseResultIsNever,
-      Reference* resultOptTypeM,
-//      LLVMTypeRef resultOptTypeL,
-      Reference* constraintRefM,
-      Reference* sourceWeakRefMT,
-      Ref sourceWeakRefLE,
-      bool weakRefKnownLive,
-      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
-      std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
   Ref asSubtype(
       FunctionState* functionState,
@@ -231,7 +231,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
-      LiveRef structLiveRef,
+      LiveRef structRef,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetType,
@@ -371,7 +371,6 @@ public:
       LiveRef arrayRef,
       InBoundsLE indexLE) override;
 
-
   Ref mallocStr(
       Ref regionInstanceRef,
       FunctionState* functionState,
@@ -381,19 +380,32 @@ public:
 
   RegionId* getRegionId() override;
 
-  LLVMValueRef stackify(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Local* local,
-      Ref refToStore,
-      bool knownLive) override;
+//  LLVMValueRef mallocKnownSize(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Location location,
+//      LLVMTypeRef kindLT) override;
 
-  Ref unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
+//  LLVMValueRef mallocRuntimeSizedArray(
+//      LLVMBuilderRef builder,
+//      LLVMTypeRef rsaWrapperLT,
+//      LLVMTypeRef rsaElementLT,
+//      LLVMValueRef lengthLE) override;
 
-  Ref loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
-
-  Ref localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) override;
-
+  // TODO Make these private once refactor is done
+//  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
+//    return structs.makeWeakFatPtr(referenceM_, ptrLE);
+//  }
+  // TODO get rid of these once refactor is done
+//  ControlBlock* getControlBlock(Kind* kind) override {
+//    return kindStructs.getControlBlock(kind);
+//  }
+//  KindStructs* getKindStructsSource() override {
+//    return &kindStructs;
+//  }
+//  KindStructs* getWeakRefStructsSource() override {
+//    return &weakRefStructs;
+//  }
   LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -401,10 +413,9 @@ public:
       Ref regionInstanceRef,
       LiveRef ref) override {
     assert(refMT->kind == globalState->metalCache->str);
-    auto strWrapperPtrLE = kindStructs.makeWrapperPtr(FL(), functionState, builder, refMT, ref.refLE);
+    auto strWrapperPtrLE = toWrapperPtr(functionState, builder, &kindStructs, refMT, ref);
     return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
   }
-
   LLVMValueRef getStringLen(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -412,14 +423,14 @@ public:
       Ref regionInstanceRef,
       LiveRef ref) override {
     assert(refMT->kind == globalState->metalCache->str);
-    auto strWrapperPtrLE = kindStructs.makeWrapperPtr(FL(), functionState, builder, refMT, ref.refLE);
+    auto strWrapperPtrLE = toWrapperPtr(functionState, builder, &kindStructs, refMT, ref);
     return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
-//    return kindStructs.getWeakRefHeaderStruct(kind);
+//    return structs.getWeakRefHeaderStruct(kind);
 //  }
 //  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
-//    return kindStructs.getWeakVoidRefStruct(kind);
+//    return structs.getWeakVoidRefStruct(kind);
 //  }
   void fillControlBlock(
       AreaAndFileAndLine from,
@@ -433,16 +444,16 @@ public:
 
   std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
   std::string generateStructDefsC(
-    Package* currentPackage,
+      Package* currentPackage,
       StructDefinition* refMT) override;
   std::string generateInterfaceDefsC(
-    Package* currentPackage,
+      Package* currentPackage,
       InterfaceDefinition* refMT) override;
   std::string generateStaticSizedArrayDefsC(
-    Package* currentPackage,
+      Package* currentPackage,
       StaticSizedArrayDefinitionT* ssaDefM) override;
   std::string generateRuntimeSizedArrayDefsC(
-    Package* currentPackage,
+      Package* currentPackage,
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
   LLVMTypeRef getExternalType(Reference* refMT) override;
@@ -492,6 +503,19 @@ public:
       Ref virtualArgRef,
       int indexInEdge) override;
 
+  LLVMValueRef stackify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Local* local,
+      Ref refToStore,
+      bool knownLive) override;
+
+  Ref unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
+
+  Ref loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
+
+  Ref localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) override;
+
   void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) override;
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override;
 
@@ -500,6 +524,13 @@ public:
   // This is only temporarily virtual, while we're still creating fake ones on the fly.
   // Soon it'll be non-virtual, and parameters will differ by region.
   Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) override;
+
+  WrapperPtrLE getWrapperPtrLive(
+      AreaAndFileAndLine from,
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      Reference *refM,
+      LiveRef liveRef);
 
   Ref mutabilify(
       AreaAndFileAndLine checkerAFL,
@@ -520,32 +551,21 @@ public:
       Reference* targetRefMT) override;
 
 protected:
-  WrapperPtrLE getWrapperPtrNotLive(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Ref regionInstanceRef,
-      Reference* refM,
-      Ref weakRefLE,
-      bool weakRefKnownLive);
-
-  WrapperPtrLE getWrapperPtrLive(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* refM,
-      LiveRef ref);
+  LLVMValueRef fillControlBlockGeneration(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef controlBlockLE, Kind* kindM);
 
   GlobalState* globalState = nullptr;
 
-  RegionId* regionId;
-
+//  KindStructs mutNonWeakableStructs;
   KindStructs kindStructs;
 
-  FatWeaks fatWeaks;
-  HybridGenerationalMemory hgmWeaks;
+//  KindStructsRouter kindStructs;
+//  WeakRefStructsRouter weakRefStructs;
 
-  std::string namePrefix = "__ResilientV3";
+  FatWeaks fatWeaks;
+//  WrcWeaks wrcWeaks;
+
+
+  std::string namePrefix = "__Safe";
 
   StructKind* regionKind = nullptr;
   Reference* regionRefMT = nullptr;

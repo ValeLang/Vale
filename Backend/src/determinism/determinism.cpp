@@ -141,29 +141,29 @@ Determinism::Determinism(GlobalState* globalState_) :
   LLVMSetLinkage(exportNameToReplayerFunctionMapGlobalLE, LLVMExternalLinkage);
 
   maybeStartDeterministicModeLF =
-      addFunction(globalState->mod, maybeStartDeterministicModeFuncName, int64LT, {int64LT, int8PtrPtrLT});
+      addRawFunction(globalState->mod, maybeStartDeterministicModeFuncName, int64LT, {int64LT, int8PtrPtrLT});
   writeCallBeginToFileLF =
-      addFunction(globalState->mod, writeCallBeginToFileFuncName, voidLT, {int64LT, int8PtrLT});
+      addRawFunction(globalState->mod, writeCallBeginToFileFuncName, voidLT, {int64LT, int8PtrLT});
   writeRefToFileLF =
-      addFunction(globalState->mod, writeRefToFileFuncName, voidLT, {int256LT});
+      addRawFunction(globalState->mod, writeRefToFileFuncName, voidLT, {int256LT});
 //  writeValueToFileLF =
 //      addFunction(globalState->mod, writeValueToFileFuncName, voidLT, {int64LT, int8PtrLT});
   recordCallEndLF =
-      addFunction(globalState->mod, recordCallEndFuncName, voidLT, {int64LT, int8PtrLT});
+      addRawFunction(globalState->mod, recordCallEndFuncName, voidLT, {int64LT, int8PtrLT});
   matchCallFromRecordingFileLF =
-      addFunction(globalState->mod, matchCallFromRecordingFileFuncName, voidLT, {int64LT, int8PtrLT});
+      addRawFunction(globalState->mod, matchCallFromRecordingFileFuncName, voidLT, {int64LT, int8PtrLT});
   mapRefFromRecordingFileLF =
-      addFunction(globalState->mod, mapRefFromRecordingFileFuncName, int256LT, {int64LT, voidFuncPtrLT});
+      addRawFunction(globalState->mod, mapRefFromRecordingFileFuncName, int256LT, {int64LT, voidFuncPtrLT});
 //  readValueFromFileLF =
 //      addFunction(globalState->mod, readValueFromFileFuncName, voidLT, {int64LT, int8PtrLT});
 //  getNextExportCallStringLF =
 //      addFunction(globalState->mod, getNextExportCallStringFuncName, int8PtrLT, {});
   getMaybeReplayerFuncForNextExportNameLF =
-      addFunction(globalState->mod, getMaybeReplayerFuncForNextExportNameFuncName, voidFuncPtrLT, {});
+      addRawFunction(globalState->mod, getMaybeReplayerFuncForNextExportNameFuncName, voidFuncPtrLT, {});
   startRecordingLF =
-      addFunction(globalState->mod, startRecordingFuncName, voidLT, {int8PtrLT});
+      addRawFunction(globalState->mod, startRecordingFuncName, voidLT, {int8PtrLT});
   startReplayingLF =
-      addFunction(globalState->mod, startReplayingFuncName, voidLT, {int8PtrLT});
+      addRawFunction(globalState->mod, startReplayingFuncName, voidLT, {int8PtrLT});
 }
 
 void Determinism::registerFunction(Prototype* prototype) {
@@ -225,7 +225,7 @@ void Determinism::makeFuncToWriteCallBeginToFile() {
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context,
       writeCallBeginToFileLF.ptrLE,
       voidLT,
@@ -247,7 +247,7 @@ void Determinism::makeFuncToWriteRefToFile() {
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context,
       writeRefToFileLF.ptrLE,
       voidLT,
@@ -264,7 +264,7 @@ void Determinism::makeFuncToWriteRefToFile() {
 
 void Determinism::makeFuncToRecordCallEnd() {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context, recordCallEndLF.ptrLE, voidLT, recordCallEndFuncName,
       [this](FunctionState *functionState, LLVMBuilderRef builder) {
         buildFlare(FL(), globalState, functionState, builder, "Calling function recordCallEnd");
@@ -280,7 +280,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context, matchCallFromRecordingFileLF.ptrLE, voidLT, matchCallFromRecordingFileFuncName,
       [this, int1LT, int8LT, voidLT, int64LT](FunctionState *functionState, LLVMBuilderRef builder) {
         buildFlare(FL(), globalState, functionState, builder, "Calling function matchCallFromRecordingFile");
@@ -334,7 +334,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
 //  // we'll need to more or less reverse the linear writing thing.
 //
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-//  defineFunctionBody(
+//  defineRawFunctionBody(
 //      globalState, startRecordingLF, a raw gen ref see URSL, startRecordingFuncName,
 //      [this](FunctionState* functionState, LLVMBuilderRef builder) {
 //
@@ -346,7 +346,7 @@ void Determinism::makeFuncToMapRefFromRecordingFile() {
   // it also happens when an extern returns a ref.
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context, mapRefFromRecordingFileLF.ptrLE, int256LT, mapRefFromRecordingFileFuncName,
       [this, int256LT](FunctionState* functionState, LLVMBuilderRef builder) {
         buildFlare(FL(), globalState, functionState, builder, "Calling function mapRefFromRecordingFile");
@@ -373,7 +373,7 @@ void Determinism::makeFuncToMapRefFromRecordingFile() {
 
 void Determinism::makeFuncToStartReplaying() {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context, startReplayingLF.ptrLE, voidLT, startReplayingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder, "Calling function startReplaying");
@@ -396,7 +396,7 @@ void Determinism::makeFuncToStartReplaying() {
 
 void Determinism::makeFuncToStartRecording() {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context, startRecordingLF.ptrLE, voidLT, startRecordingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder, "Calling function startRecording");
@@ -669,7 +669,7 @@ void Determinism::makeFuncToGetReplayerFuncForExportName() {
   auto voidFuncPtrLT = LLVMPointerType(LLVMFunctionType(voidLT, nullptr, 0, false), 0);
   auto replayerFuncLT = makeReplayerFuncLT(globalState);
 
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context,
       getMaybeReplayerFuncForNextExportNameLF.ptrLE,
       voidFuncPtrLT,
@@ -723,7 +723,7 @@ void Determinism::makeFuncToMaybeStartDeterministicMode() {
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
 
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context,
       maybeStartDeterministicModeLF.ptrLE,
       voidLT,
@@ -822,8 +822,8 @@ void Determinism::buildWriteValueToFile(
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  assert(sourceRefMT->ownership == Ownership::SHARE); // not implemented for owns
-  auto hostRefMT = globalState->linearRegion->linearizeReference(sourceRefMT);
+  assert(sourceRefMT->ownership == Ownership::IMMUTABLE_SHARE || sourceRefMT->ownership == Ownership::MUTABLE_SHARE); // not implemented for owns
+  auto hostRefMT = globalState->linearRegion->linearizeReference(sourceRefMT, true);
 
   auto sourceRefLE =
       globalState->getRegion(sourceRefMT)
@@ -946,12 +946,12 @@ Ref Determinism::buildReadValueFromFile(
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  assert(targetRefMT->ownership == Ownership::SHARE); // not implemented for owns
-  auto hostRefMT = globalState->linearRegion->linearizeReference(targetRefMT);
+  assert(targetRefMT->ownership == Ownership::MUTABLE_SHARE); // not implemented for owns
+  auto hostRefMT = globalState->linearRegion->linearizeReference(targetRefMT, true);
 
   buildFlare(FL(), globalState, functionState, builder);
-  if (dynamic_cast<Int*>(targetRefMT->kind)) {
-    auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int32LT, "intFromRecording");
+  if (auto innt = dynamic_cast<Int*>(targetRefMT->kind)) {
+    auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), LLVMIntTypeInContext(globalState->context, innt->bits), "intFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, intLE);
   } else if (dynamic_cast<Void*>(targetRefMT->kind)) {
     return makeVoidRef(globalState);
@@ -1065,7 +1065,7 @@ LLVMValueRef Determinism::refToI256(
   return LLVMBuildBitCast(builder, refLE, int256LT, "refFrom256");
 }
 
-FuncPtrLE Determinism::makeFuncToReplayExportCall(Prototype* prototype) {
+RawFuncPtrLE Determinism::makeFuncToReplayExportCall(Prototype* prototype) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
@@ -1075,9 +1075,9 @@ FuncPtrLE Determinism::makeFuncToReplayExportCall(Prototype* prototype) {
   // TODO: Use exported names instead of regular function names, see URFNIEN.
   auto replayerFuncName = replayerFuncPrefix + prototype->name->name;
 
-  auto functionLF = addFunction(globalState->mod, replayerFuncName, voidLT, {});
+  auto functionLF = addRawFunction(globalState->mod, replayerFuncName, voidLT, {});
 
-  defineFunctionBody(
+  defineRawFunctionBody(
       globalState->context,
       functionLF.ptrLE,
       voidLT,

@@ -28,7 +28,7 @@ Ref receiveHostObjectIntoVale(
   //   copying between regions, so we'll call
   //   receiveUnencryptedAlienReference. HOWEVER, we don't yet support
   //   moving instances between regions, so this is only for vals for now.
-  if (hostRefMT->ownership == Ownership::SHARE) {
+  if (hostRefMT->ownership == Ownership::MUTABLE_SHARE || hostRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
     buildFlare(FL(), globalState, functionState, builder);
     auto hostRef =
         wrap(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
@@ -71,7 +71,7 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHostAndDealias(
   //   copying between regions, so we'll call
   //   receiveUnencryptedAlienReference. HOWEVER, we don't yet support
   //   moving instances between regions, so this is only for vals for now.
-  if (valeRefMT->ownership == Ownership::SHARE) {
+  if (valeRefMT->ownership == Ownership::MUTABLE_SHARE || valeRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
     auto [hostArgRef, sizeRef] =
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(

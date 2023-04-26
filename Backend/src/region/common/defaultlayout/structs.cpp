@@ -243,13 +243,13 @@ void KindStructs::declareEdge(
 void KindStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
-    std::vector<FuncPtrLE> functions) {
+    std::vector<ValeFuncPtrLE> functions) {
   auto interfaceTableStructL =
       getInterfaceTableStruct(edge->interfaceName);
   auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
-    auto entryLE = LLVMConstBitCast(functions[i].ptrLE, interfaceFunctionsLT[i]);
+    auto entryLE = LLVMConstBitCast(functions[i].inner.ptrLE, interfaceFunctionsLT[i]);
     itableLE = LLVMBuildInsertValue(builder, itableLE, entryLE, i, std::to_string(i).c_str());
   }
   LLVMDisposeBuilder(builder);
@@ -495,7 +495,7 @@ WrapperPtrLE KindStructs::makeWrapperPtr(
   assert(ptrLE != nullptr);
   Kind* kind = referenceM->kind;
 
-  WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
+  WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(referenceM, ptrLE);
 
   if (dynamic_cast<StructKind*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
@@ -708,16 +708,16 @@ ControlBlockPtrLE KindStructs::getControlBlockPtrWithoutChecking(
     auto referenceLE = makeInterfaceFatPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getControlBlockPtrWithoutChecking(from, functionState, builder, kindM, referenceLE);
   } else if (dynamic_cast<StructKind*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else {
     assert(false);
@@ -774,29 +774,6 @@ LLVMValueRef KindStructs::downcastPtr(LLVMBuilderRef builder, Reference* resultS
   return resultStructRefLE;
 }
 
-LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE structExpr) {
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-
-  switch (globalState->opt->regionOverride) {
-//    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-      break;
-    case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    default:
-      assert(false);
-  }
-
-  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(builder, refM, structExpr);
-  return LLVMBuildLoad2(builder, int32LT, rcPtrLE, "rc");
-}
 
 // See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
@@ -807,10 +784,12 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
+      assert(refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE);
       break;
     case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
+    case RegionOverride::SAFE:
+    case RegionOverride::SAFE_FASTEST:
+      assert(refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE);
       break;
     default:
       assert(false);
@@ -825,9 +804,6 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
 }
 
 WrapperPtrLE KindStructs::makeWrapperPtrWithoutChecking(
-    AreaAndFileAndLine checkerAFL,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
     Reference* referenceM,
     LLVMValueRef ptrLE) {
   assert(ptrLE != nullptr);

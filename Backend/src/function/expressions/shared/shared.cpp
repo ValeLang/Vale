@@ -75,10 +75,14 @@ LLVMValueRef adjustStrongRc(
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
+      assert(refM->ownership == Ownership::MUTABLE_SHARE);
+      // Shouldnt increment IMMUTABLE_SHARE's RC
       break;
     case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
+    case RegionOverride::SAFE:
+    case RegionOverride::SAFE_FASTEST:
+      assert(refM->ownership == Ownership::MUTABLE_SHARE);
+      // Shouldnt increment IMMUTABLE_SHARE's RC
       break;
     default:
       assert(false);
@@ -88,33 +92,17 @@ LLVMValueRef adjustStrongRc(
       kindStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
   auto rcPtrLE = kindStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
 //  auto oldRc = unmigratedLLVMBuildLoad(builder, rcPtrLE, "oldRc");
-  auto newRc = adjustCounter(globalState, builder, globalState->metalCache->i32, rcPtrLE, amount);
-//  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
-  return newRc;
-}
+  auto newRc =
+      adjustCounterV(
+          globalState, builder, globalState->metalCache->i32, rcPtrLE, amount, globalState->opt->useAtomicRc);
 
-LLVMValueRef strongRcIsZero(
-    GlobalState* globalState,
-    KindStructs* structs,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE controlBlockPtrLE) {
-
-  switch (globalState->opt->regionOverride) {
-//    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-      break;
-    case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    default:
-      assert(false);
+  if (globalState->opt->printMemOverhead) {
+    adjustCounterV(
+        globalState, builder, globalState->metalCache->i64, globalState->mutRcAdjustCounterLE, 1, false);
   }
 
-  return isZeroLE(builder, structs->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE));
+//  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
+  return newRc;
 }
 
 void buildPrint(
@@ -124,7 +112,7 @@ void buildPrint(
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
-  auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+  auto s = LLVMBuildInBoundsGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
   assert(LLVMTypeOf(s) == LLVMPointerType(int8LT, 0));
   globalState->externs->printCStr.call(builder, {s}, "");
 }
@@ -172,8 +160,10 @@ void buildPrintToStderr(
     const std::string& first) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int8PtrLT = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
-  auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+//  auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+  auto s = LLVMBuildLoad2(builder, int8PtrLT, globalState->getOrMakeStringConstant(first), "");
   assert(LLVMTypeOf(s) == LLVMPointerType(int8LT, 0));
   globalState->externs->printCStrToStderr.call(builder, {s}, "");
 }
@@ -298,7 +288,7 @@ Ref buildInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    FuncPtrLE methodFunctionPtrLE,
+    ValeFuncPtrLE methodFunctionPtrLE,
     std::vector<Ref> argRefs,
     int virtualParamIndex) {
   auto virtualParamMT = prototype->params[virtualParamIndex];
@@ -341,8 +331,8 @@ Ref buildInterfaceCall(
 
 
 
-  auto resultLE = methodFunctionPtrLE.call(builder, argsLE, "");
-  assert(LLVMTypeOf(resultLE) == LLVMGetReturnType(methodFunctionPtrLE.funcLT));
+  auto resultLE = methodFunctionPtrLE.call(builder, functionState->nextGenPtrLE.value(), argsLE, "");
+  assert(LLVMTypeOf(resultLE) == LLVMGetReturnType(methodFunctionPtrLE.inner.funcLT));
   buildFlare(FL(), globalState, functionState, builder);
   return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
 }
@@ -418,7 +408,7 @@ Ref buildCallV(
 
   buildFlare(FL(), globalState, functionState, builder, "Doing call");
 
-  auto resultLE = funcL.call(builder, argsLE, "");
+  auto resultLE = funcL.call(builder, functionState->nextGenPtrLE.value(), argsLE, "");
 
   buildFlare(FL(), globalState, functionState, builder, "Done with call");
 
@@ -430,7 +420,7 @@ Ref buildCallV(
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
@@ -442,17 +432,27 @@ Ref buildCallV(
 LLVMValueRef buildMaybeNeverCall(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    FuncPtrLE funcL,
+    RawFuncPtrLE funcL,
     std::vector<LLVMValueRef> argsLE) {
   auto resultLE = funcL.call(builder, argsLE, "");
 
   auto returnLT = LLVMGetReturnType(funcL.funcLT);
   if (returnLT == makeNeverType(globalState)) {
     LLVMBuildRet(builder, LLVMGetUndef(returnLT));
-    return globalState->neverPtr;
+    return globalState->neverPtrLE;
   } else {
     return resultLE;
   }
+}
+
+LLVMValueRef buildMaybeNeverCallV(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    ValeFuncPtrLE functionLE,
+    LLVMValueRef nextGenPtrLE,
+    std::vector<LLVMValueRef> argsLE) {
+  argsLE.insert(argsLE.begin(), nextGenPtrLE);
+  return buildMaybeNeverCall(globalState, builder, functionLE.inner, argsLE);
 }
 
 LLVMValueRef getArgsAreaPtr(
@@ -466,7 +466,7 @@ LLVMValueRef getArgsAreaPtr(
 
   auto offsetIntoNewStackLE = constI64LE(globalState, -argsAreaSize);
   auto sideStackPtrBeforeSwitchAsI8PtrLE =
-      LLVMBuildGEP2(builder, int8LT, sideStackStartPtrAsI8PtrLE, &offsetIntoNewStackLE, 1, "sideStackPtr");
+      LLVMBuildInBoundsGEP2(builder, int8LT, sideStackStartPtrAsI8PtrLE, &offsetIntoNewStackLE, 1, "sideStackPtr");
 
   auto argsAreaPtrBeforeSwitchLE =
       LLVMBuildPointerCast(builder, sideStackPtrBeforeSwitchAsI8PtrLE, argsStructPtrLT, "");
@@ -479,7 +479,7 @@ LLVMValueRef buildSideCall(
     GlobalState* globalState,
     LLVMBuilderRef entryBuilder,
     LLVMValueRef sideStackStartPtrAsI8PtrLE,
-    FuncPtrLE calleeFuncLE,
+    RawFuncPtrLE calleeFuncLE,
     const std::vector<LLVMValueRef>& userArgsLE) {
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
@@ -657,7 +657,7 @@ LLVMValueRef buildSideCall(
       LLVMBuildExtractValue(
           entryBuilder, argsStructAfterSwitchLE, numPaddingInts + userArgsLE.size() + 0, "returnDest");
   auto calleeFuncPtrAfterSwitchLE =
-      FuncPtrLE(
+      RawFuncPtrLE(
           calleeFuncLE.funcLT,
           LLVMBuildExtractValue(
               entryBuilder, argsStructAfterSwitchLE, numPaddingInts + userArgsLE.size() + 1, "calleeFuncPtr"));
@@ -756,8 +756,8 @@ LLVMValueRef buildSideCall(
 }
 
 
-FuncPtrLE addExtern(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
+RawFuncPtrLE addExtern(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
   auto funcLT = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
   auto funcLE = LLVMAddFunction(mod, name.c_str(), funcLT);
-  return FuncPtrLE(funcLT, funcLE);
+  return RawFuncPtrLE(funcLT, funcLE);
 }

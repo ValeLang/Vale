@@ -42,12 +42,12 @@ std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionPointerTypes(Interface
   return interfaceFunctionsLT;
 }
 
-std::vector<FuncPtrLE> GlobalState::getEdgeFunctions(Edge* edge) {
+std::vector<ValeFuncPtrLE> GlobalState::getEdgeFunctions(Edge* edge) {
   auto interfaceM = program->getInterface(edge->interfaceName);
 
   assert(edge->structPrototypesByInterfaceMethod.size() == interfaceM->methods.size());
 
-  std::vector<FuncPtrLE> edgeFunctionsL;
+  std::vector<ValeFuncPtrLE> edgeFunctionsL;
 
   {
     auto overridesBySubstructI = overridesBySubstructByInterface.find(edge->interfaceName);
@@ -141,7 +141,7 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
   }
 }
 
-FuncPtrLE GlobalState::getFunction(Prototype* prototype) {
+ValeFuncPtrLE GlobalState::getFunction(Prototype* prototype) {
   auto functionIter = functions.find(prototype->name->name);
   if (functionIter != functions.end()) {
     return functionIter->second;

@@ -26,6 +26,47 @@ Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE weakFatPtrLE) {
   return Ref(refM, weakFatPtrLE.refLE);
 }
 
+Ref wrap(GlobalState* globalState, Reference* refM, LiveRef liveRef) {
+  assert(refM == liveRef.refM);
+  return wrap(globalState->getRegion(refM), refM, liveRef.refLE);
+}
+
+// All wrapper pointers are regular references, so we can just translate directly
+LiveRef toLiveRef(WrapperPtrLE wrapperPtrLE) {
+  return LiveRef(wrapperPtrLE.refM, wrapperPtrLE.refLE);
+}
+
+WrapperPtrLE toWrapperPtr(FunctionState* functionState, LLVMBuilderRef builder, KindStructs* kindStructs, Reference* refMT, LiveRef liveRef) {
+  return kindStructs->makeWrapperPtr(FL(), functionState, builder, refMT, liveRef.refLE);
+}
+
+LiveRef toLiveRef(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* refM,
+    LLVMValueRef refLE) {
+  return globalState->getRegion(refM)->wrapToLiveRef(
+      checkerAFL, functionState, builder, regionInstanceRef, refM, refLE);
+}
+
+// TODO: We might want to get rid of KindStructs here. Only some regions will be using a wrapper
+// struct; linear doesn't.
+LiveRef toLiveRef(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* refM,
+    Ref ref,
+    bool knownLive) {
+  return globalState->getRegion(refM)->checkRefLive(
+      checkerAFL, functionState, builder, regionInstanceRef, refM, ref, knownLive);
+}
+
 LLVMValueRef checkValidInternalReference(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,

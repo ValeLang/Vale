@@ -12,6 +12,7 @@
 enum
 {
     OPT_DEBUG,
+    OPT_OPT_LEVEL,
     OPT_BUILDFLAG,
     OPT_STRIP,
     OPT_PATHS,
@@ -43,8 +44,12 @@ enum
     OPT_FLARES,
     OPT_FAST_CRASH,
     OPT_GEN_HEAP,
+    OPT_GENERATION_SIZE,
     OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
+    OPT_ELIDE_CHECKS_FOR_REGIONS,
+    OPT_INCLUDE_BOUNDS_CHECKS,
     OPT_OVERRIDE_KNOWN_LIVE_TRUE,
+    OPT_USE_ATOMIC_RC,
     OPT_PRINT_MEM_OVERHEAD,
     OPT_ENABLE_REPLAYING,
     OPT_REPLAY_WHITELIST_EXTERN,
@@ -87,9 +92,14 @@ static opt_arg_t args[] =
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
-    { "fast_crash", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
+    { "opt_level", '\0', OPT_ARG_REQUIRED, OPT_OPT_LEVEL },
+    { "fast_crash", '\0', OPT_ARG_OPTIONAL, OPT_FAST_CRASH },
     { "gen_heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
     { "elide_checks_for_known_live", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE },
+    { "gen_size", '\0', OPT_ARG_REQUIRED, OPT_GENERATION_SIZE },
+    { "elide_checks_for_regions", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_REGIONS },
+    { "include_bounds_checks", '\0', OPT_ARG_OPTIONAL, OPT_INCLUDE_BOUNDS_CHECKS },
+    { "use_atomic_rc", '\0', OPT_ARG_OPTIONAL, OPT_USE_ATOMIC_RC },
     { "override_known_live_true", '\0', OPT_ARG_NONE, OPT_OVERRIDE_KNOWN_LIVE_TRUE },
     { "print_mem_overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "enable_replaying", '\0', OPT_ARG_OPTIONAL, OPT_ENABLE_REPLAYING },
@@ -190,19 +200,20 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     // options->check.errors = errors_alloc();
 
     optInit(args, &s, argc, argv);
-    opt->release = 1;
+    opt->optLevel = 0;
     opt->flares = false;
     opt->fastCrash = false;
-    opt->elideChecksForKnownLive = false;
+    opt->generationSize = 32;
+    opt->elideChecksForKnownLive = true;
+    opt->elideChecksForRegions = true;
+    opt->includeBoundsChecks = true;
+    opt->useAtomicRc = false;
     opt->overrideKnownLiveTrue = false;
     opt->census = false;
 
 
   for (int id = 0; (id = optNext(&s)) != -1; ) {
     switch (id) {
-      case OPT_DEBUG:
-        opt->release = 0;
-        break;
       case OPT_OUTPUT_DIR:
         opt->outputDir = s.arg_val;
         break;
@@ -279,11 +290,6 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         break;
       }
 
-      case OPT_OVERRIDE_KNOWN_LIVE_TRUE: {
-        opt->overrideKnownLiveTrue = true;
-        break;
-      }
-
       case OPT_PRINT_MEM_OVERHEAD: {
         if (!s.arg_val) {
           opt->printMemOverhead = true;
@@ -296,17 +302,128 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         break;
       }
 
-      case OPT_ENABLE_REPLAYING: {
-        if (!s.arg_val) {
-          opt->enableReplaying = true;
-        } else if (s.arg_val == std::string("true")) {
-          opt->enableReplaying = true;
-        } else if (s.arg_val == std::string("false")) {
-          opt->enableReplaying = false;
-        } else
-          assert(false);
-        break;
-      }
+          case OPT_OPT_LEVEL: {
+            if (s.arg_val == std::string("O0")) {
+              opt->optLevel = 0;
+            } else if (s.arg_val == std::string("O1")) {
+              opt->optLevel = 1;
+            } else if (s.arg_val == std::string("O2")) {
+              opt->optLevel = 2;
+            } else if (s.arg_val == std::string("O3")) {
+              opt->optLevel = 3;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_GENERATION_SIZE: {
+            assert(s.arg_val);
+            if (s.arg_val == std::string("32")) {
+              opt->generationSize = 32;
+            } else if (s.arg_val == std::string("64")) {
+              opt->generationSize = 64;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_ELIDE_CHECKS_FOR_REGIONS: {
+            if (!s.arg_val) {
+              opt->elideChecksForRegions = true;
+            } else if (s.arg_val == std::string("true")) {
+              opt->elideChecksForRegions = true;
+            } else if (s.arg_val == std::string("false")) {
+              opt->elideChecksForRegions = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_INCLUDE_BOUNDS_CHECKS: {
+            if (!s.arg_val) {
+              opt->includeBoundsChecks = true;
+            } else if (s.arg_val == std::string("on") || s.arg_val == std::string("yes") || s.arg_val == std::string("true")) {
+              opt->includeBoundsChecks = true;
+            } else if (s.arg_val == std::string("off") || s.arg_val == std::string("no") || s.arg_val == std::string("false")) {
+              opt->includeBoundsChecks = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_USE_ATOMIC_RC: {
+            if (!s.arg_val) {
+              opt->useAtomicRc = true;
+            } else if (s.arg_val == std::string("on") || s.arg_val == std::string("yes") || s.arg_val == std::string("true")) {
+              opt->useAtomicRc = true;
+            } else if (s.arg_val == std::string("off") || s.arg_val == std::string("no") || s.arg_val == std::string("false")) {
+              opt->useAtomicRc = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_OVERRIDE_KNOWN_LIVE_TRUE: {
+            opt->overrideKnownLiveTrue = true;
+            break;
+          }
+
+          case OPT_ENABLE_REPLAYING: {
+            if (!s.arg_val) {
+              opt->enableReplaying = true;
+            } else if (s.arg_val == std::string("true")) {
+              opt->enableReplaying = true;
+            } else if (s.arg_val == std::string("false")) {
+              opt->enableReplaying = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_ENABLE_SIDE_CALLING: {
+            if (!s.arg_val) {
+              opt->enableSideCalling = true;
+            } else if (s.arg_val == std::string("true")) {
+              opt->enableSideCalling = true;
+            } else if (s.arg_val == std::string("false")) {
+              opt->enableSideCalling = false;
+            } else assert(false);
+            break;
+          }
+
+        case OPT_CENSUS: {
+          if (!s.arg_val) {
+            opt->census = true;
+          } else if (s.arg_val == std::string("on")) {
+            opt->census = true;
+          } else if (s.arg_val == std::string("off")) {
+            opt->census = false;
+          } else assert(false);
+          break;
+        }
+
+        case OPT_REGION_OVERRIDE: {
+          if (s.arg_val == std::string("unsafe-fast")) {
+            opt->regionOverride = RegionOverride::FAST;
+//          } else if (s.arg_val == std::string("assist")) {
+//            opt->regionOverride = RegionOverride::ASSIST;
+          } else if (s.arg_val == std::string("naive-rc")) {
+            opt->regionOverride = RegionOverride::NAIVE_RC;
+//          } else if (s.arg_val == std::string("resilient-v0")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V0;
+//          } else if (s.arg_val == std::string("resilient-v1")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V1;
+//          } else if (s.arg_val == std::string("resilient-v2")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V2;
+          } else if (s.arg_val == std::string("resilient-v3")) {
+            opt->regionOverride = RegionOverride::RESILIENT_V3;
+          } else if (s.arg_val == std::string("safe-fastest")) {
+            opt->regionOverride = RegionOverride::SAFE_FASTEST;
+          } else if (s.arg_val == std::string("safe")) {
+            opt->regionOverride = RegionOverride::SAFE;
+//          } else if (s.arg_val == std::string("resilient-limit")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
+          } else {
+            std::cerr << "Unknown region: " << s.arg_val << std::endl;
+            exit(1);
+            assert(false);
+          }
+          break;
+        }
 
       case OPT_REPLAY_WHITELIST_EXTERN: {
         assert(s.arg_val);
@@ -334,45 +451,6 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         }
         std::cerr << "Adding whitelist: " << moduleName << "." << functionName << std::endl;
         opt->projectNameToReplayWhitelistedExterns[moduleName].insert(functionName);
-        break;
-      }
-
-      case OPT_ENABLE_SIDE_CALLING: {
-        if (!s.arg_val) {
-          opt->enableSideCalling = true;
-        } else if (s.arg_val == std::string("true")) {
-          opt->enableSideCalling = true;
-        } else if (s.arg_val == std::string("false")) {
-          opt->enableSideCalling = false;
-        } else
-          assert(false);
-        break;
-      }
-
-      case OPT_CENSUS: {
-        if (!s.arg_val) {
-          opt->census = true;
-        } else if (s.arg_val == std::string("on")) {
-          opt->census = true;
-        } else if (s.arg_val == std::string("off")) {
-          opt->census = false;
-        } else
-          assert(false);
-        break;
-      }
-
-      case OPT_REGION_OVERRIDE: {
-        if (s.arg_val == std::string("unsafe-fast")) {
-          opt->regionOverride = RegionOverride::FAST;
-        } else if (s.arg_val == std::string("naive-rc")) {
-          opt->regionOverride = RegionOverride::NAIVE_RC;
-        } else if (s.arg_val == std::string("resilient-v3")) {
-          opt->regionOverride = RegionOverride::RESILIENT_V3;
-        } else {
-          std::cerr << "Unknown region: " << s.arg_val << std::endl;
-          exit(1);
-          assert(false);
-        }
         break;
       }
 

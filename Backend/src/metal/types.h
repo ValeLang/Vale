@@ -30,9 +30,11 @@ class RuntimeSizedArrayT;
 
 enum class Ownership {
   OWN,
-  BORROW,
+  MUTABLE_BORROW,
+  IMMUTABLE_BORROW,
   WEAK,
-  SHARE
+  MUTABLE_SHARE,
+  IMMUTABLE_SHARE
 };
 
 enum class Weakability {
@@ -94,7 +96,10 @@ public:
 //    , debugStr(debugStr_)
   {
 
-    if (ownership == Ownership::BORROW || ownership == Ownership::WEAK) {
+    if (location == Location::INLINE) {
+      assert(ownership == Ownership::OWN || ownership == Ownership::MUTABLE_SHARE);
+    }
+    if (ownership == Ownership::MUTABLE_BORROW || ownership == Ownership::IMMUTABLE_BORROW || ownership == Ownership::WEAK) {
       assert(location == Location::YONDER);
     }
   }

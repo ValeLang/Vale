@@ -1,6 +1,7 @@
 #include <iostream>
 #include "../region/common/common.h"
 #include "../utils/branch.h"
+#include "../utils/call.h"
 #include "expressions/shared/elements.h"
 #include "../region/common/controlblock.h"
 #include "expressions/shared/members.h"
@@ -12,6 +13,23 @@
 #include "expressions/shared/shared.h"
 #include "expressions/shared/members.h"
 #include "expression.h"
+
+// DO NOT SUBMIT do something more like catalyst instead
+bool exprResultKnownLive(GlobalState* globalState, Expression* expr) {
+  if (globalState->opt->overrideKnownLiveTrue) {
+    return true;
+  }
+  if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
+    if (localLoad->local->type->ownership == Ownership::OWN) {
+      return true;
+    }
+  } else if (auto immutabilify = dynamic_cast<Immutabilify*>(expr)) {
+    return exprResultKnownLive(globalState, immutabilify->sourceExpr);
+  } else if (auto preCheckBorrow = dynamic_cast<PreCheckBorrow*>(expr)) {
+    return exprResultKnownLive(globalState, preCheckBorrow->sourceExpr);
+  }
+  return false;
+}
 
 Ref translateExpressionInner(
     GlobalState* globalState,
@@ -58,7 +76,7 @@ Ref translateExpressionInner(
     auto resultLE = makeConstIntExpr(functionState, builder, LLVMIntTypeInContext(globalState->context, constantInt->bits), constantInt->value);
     auto intRef =
         globalState->metalCache->getReference(
-            Ownership::SHARE,
+            Ownership::MUTABLE_SHARE,
             Location::INLINE,
             globalState->metalCache->getInt(globalState->metalCache->rcImmRegionId, constantInt->bits));
     return wrap(globalState->getRegion(intRef), intRef, resultLE);
@@ -93,8 +111,31 @@ Ref translateExpressionInner(
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     Ref result = translateDiscard(globalState, functionState, blockState, builder, discardM);
+    return result;
+  } else if (auto mutabilifyM = dynamic_cast<Mutabilify*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+
+    auto regionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(mutabilifyM->sourceType)->createRegionInstanceLocal(functionState, builder);
+
+    Ref result = translateMutabilify(globalState, functionState, blockState, builder, regionInstanceRef, mutabilifyM);
 //    buildFlare(FL(), globalState, functionState, builder, std::string("/") + typeid(*expr).name());
     return result;
+  } else if (auto immutabilifyM = dynamic_cast<Immutabilify*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+
+    auto regionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(immutabilifyM->sourceType)->createRegionInstanceLocal(functionState, builder);
+
+    Ref result = translateImmutabilify(globalState, functionState, blockState, builder, regionInstanceRef, immutabilifyM);
+//    buildFlare(FL(), globalState, functionState, builder, std::string("/") + typeid(*expr).name());
+    return result;
+  } else if (auto preCheckBorrowM = dynamic_cast<PreCheckBorrow*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translatePreCheckBorrow(
+        globalState, functionState, blockState, builder, preCheckBorrowM);
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto sourceRef = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
@@ -105,7 +146,7 @@ Ref translateExpressionInner(
           globalState->getRegion(ret->sourceType)
               ->checkValidReference(FL(), functionState, builder, false, ret->sourceType, sourceRef);
       LLVMBuildRet(builder, toReturnLE);
-      return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
+      return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
     }
   } else if (auto breeak = dynamic_cast<Break*>(expr)) {
     if (auto nearestLoopBlockStateAndEnd = blockState->getNearestLoopEnd()) {
@@ -115,7 +156,7 @@ Ref translateExpressionInner(
 
       return wrap(
         globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
-        globalState->neverPtr);
+        globalState->neverPtrLE);
 
 //      buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 //      auto sourceRef = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
@@ -128,7 +169,7 @@ Ref translateExpressionInner(
 //        LLVMBuildRet(builder, toReturnLE);
 //        return wrap(
 //            globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
-//            globalState->neverPtr);
+//            globalState->neverPtrLE);
 //      }
     } else {
       std::cerr << "Error: found a break not inside a loop!" << std::endl;
@@ -235,9 +276,11 @@ Ref translateExpressionInner(
     return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " arg ", argument->argumentIndex);
-    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex);
+    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex + 1); // DO NOT SUBMIT
     auto resultRef = wrap(globalState->getRegion(argument->resultType), argument->resultType, resultLE);
-    globalState->getRegion(argument->resultType)->checkValidReference(FL(), functionState, builder, false, argument->resultType, resultRef);
+    auto resultLT = globalState->getRegion(argument->resultType)->translateType(argument->resultType);
+    globalState->getRegion(argument->resultType)
+        ->checkValidReference(FL(), functionState, builder, false, argument->resultType, resultRef);
 //    buildFlare(FL(), globalState, functionState, builder, "/", typeid(*expr).name());
     return resultRef;
   } else if (auto constantStr = dynamic_cast<ConstantStr*>(expr)) {
@@ -271,19 +314,28 @@ Ref translateExpressionInner(
   } else if (auto destructureM = dynamic_cast<Destroy*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateDestructure(globalState, functionState, blockState, builder, destructureM);
+  } else if (auto destroySSAIntoLocalsM = dynamic_cast<DestroyStaticSizedArrayIntoLocals*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translateDestroySSAIntoLocals(globalState, functionState, blockState, builder, destroySSAIntoLocalsM);
   } else if (auto memberLoad = dynamic_cast<MemberLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", memberLoad->memberName);
+    auto structType = memberLoad->structType;
+
     auto structRef =
         translateExpression(
             globalState, functionState, blockState, builder, memberLoad->structExpr);
     auto mutability = ownershipToMutability(memberLoad->structType->ownership);
     auto memberIndex = memberLoad->memberIndex;
     auto memberName = memberLoad->memberName;
-    bool structKnownLive = memberLoad->structKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool structKnownLive = exprResultKnownLive(globalState, memberLoad->structExpr);
 
     auto structRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(memberLoad->structType)->createRegionInstanceLocal(functionState, builder);
+
+    auto structLiveRef =
+        globalState->getRegion(memberLoad->structType)
+            ->checkRefLive(FL(), functionState, builder, structRegionInstanceRef, structType, structRef, structKnownLive);
 
     auto resultRef =
         loadMember(
@@ -293,8 +345,7 @@ Ref translateExpressionInner(
             builder,
             structRegionInstanceRef,
             memberLoad->structType,
-            structRef,
-            structKnownLive,
+            structLiveRef,
             mutability,
             memberLoad->expectedMemberType,
             memberIndex,
@@ -325,11 +376,12 @@ Ref translateExpressionInner(
     int arraySize = destroyStaticSizedArrayIntoFunction->arraySize;
     bool arrayKnownLive = true;
 
+    auto sizeLE = LLVMConstInt(LLVMInt32TypeInContext(globalState->context), arraySize, false);
     auto sizeRef =
         wrap(
             globalState->getRegion(globalState->metalCache->i32Ref),
             globalState->metalCache->i32Ref,
-            LLVMConstInt(LLVMInt32TypeInContext(globalState->context), arraySize, false));
+            sizeLE);
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
 
@@ -341,18 +393,26 @@ Ref translateExpressionInner(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
-    intRangeLoopReverseV(
-        globalState, functionState, builder, globalState->metalCache->i32, sizeRef,
-        [globalState, functionState, arrayRegionInstanceRef, elementType, consumerType, consumerMethod, arrayType, arrayKind, consumerRef, arrayRef, arrayKnownLive](
-            Ref indexRef, LLVMBuilderRef bodyBuilder) {
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
+    intRangeLoopReverse(
+        globalState, functionState, builder, globalState->metalCache->i32Ref, sizeLE,
+        [globalState, functionState, arrayRegionInstanceRef, elementType, consumerType, consumerMethod, arrayType, arrayKind, consumerRef, arrayLiveRef](
+            LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+          // We know it's in bounds because we used size as a bound for the loop.
+          auto inBoundsIndexLE = InBoundsLE{indexLE};
+
           globalState->getRegion(consumerType)->alias(
               AFL("DestroySSAIntoF consume iteration"),
               functionState, bodyBuilder, consumerType, consumerRef);
 
           auto elementLoadResult =
               globalState->getRegion(arrayType)->loadElementFromSSA(
-                  functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive,
-                  indexRef);
+                  functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind,
+                  arrayLiveRef,
+                  inBoundsIndexLE);
           auto elementRef = elementLoadResult.move();
 
           globalState->getRegion(elementType)
@@ -365,13 +425,13 @@ Ref translateExpressionInner(
 
     if (arrayType->ownership == Ownership::OWN) {
       globalState->getRegion(arrayType)
-          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
-    } else if (arrayType->ownership == Ownership::SHARE) {
+          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayLiveRef);
+    } else if (arrayType->ownership == Ownership::MUTABLE_SHARE || arrayType->ownership == Ownership::IMMUTABLE_SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
       globalState->getRegion(arrayType)
           ->deallocate(
-              AFL("DestroySSAIntoF"), functionState, builder, arrayType, arrayRef);
+              AFL("DestroySSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
       assert(false);
     }
@@ -387,10 +447,10 @@ Ref translateExpressionInner(
     auto arrayType = pushRuntimeSizedArray->arrayType;
     auto arrayMT = dynamic_cast<RuntimeSizedArrayT*>(arrayType->kind);
     assert(arrayMT);
-    bool arrayKnownLive = true;
+    bool arrayKnownLive = true; // DO NOT SUBMIT get this from catalyst
     auto newcomerExpr = pushRuntimeSizedArray->newcomerExpr;
     auto newcomerType = pushRuntimeSizedArray->newcomerType;
-    bool newcomerKnownLive = true;
+    bool newcomerKnownLive = false;
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
@@ -400,10 +460,14 @@ Ref translateExpressionInner(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
     auto arrayLenRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
     auto arrayLenLE =
         globalState->getRegion(globalState->metalCache->i32Ref)
             ->checkValidReference(FL(),
@@ -412,17 +476,9 @@ Ref translateExpressionInner(
     auto arrayCapacityRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayCapacity(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
-    auto arrayCapacityLE =
-        globalState->getRegion(globalState->metalCache->i32Ref)
-            ->checkValidReference(FL(),
-                functionState, builder, true, globalState->metalCache->i32Ref, arrayCapacityRef);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
 
-    auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
-    buildIfV(
-        globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrintToStderr(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
-        });
+    auto sizeInBoundsLE = checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32Ref, arrayCapacityRef, arrayLenLE, "Error: Array has no room for new element!");
 
     auto newcomerRef = translateExpression(globalState, functionState, blockState, builder, newcomerExpr);
     globalState->getRegion(newcomerType)
@@ -430,7 +486,7 @@ Ref translateExpressionInner(
 
     globalState->getRegion(arrayType)
         ->pushRuntimeSizedArrayNoBoundsCheck(
-            functionState, builder, arrayRegionInstanceRef, arrayType, arrayMT, arrayRef, arrayKnownLive, arrayLenRef, newcomerRef);
+            functionState, builder, arrayRegionInstanceRef, arrayType, arrayMT, arrayLiveRef, sizeInBoundsLE, newcomerRef);
 
     globalState->getRegion(arrayType)
         ->dealias(
@@ -439,50 +495,51 @@ Ref translateExpressionInner(
     return makeVoidRef(globalState);
   } else if (auto popRuntimeSizedArray = dynamic_cast<PopRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    auto arrayExpr = popRuntimeSizedArray->arrayExpr;
-    auto arrayType = popRuntimeSizedArray->arrayType;
-    auto arrayMT = dynamic_cast<RuntimeSizedArrayT*>(arrayType->kind);
-    assert(arrayMT);
-    bool arrayKnownLive = true;
+    auto rsaME = popRuntimeSizedArray->arrayExpr;
+    auto rsaRefMT = popRuntimeSizedArray->arrayType;
+    auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(rsaRefMT->kind);
+    assert(rsaMT);
+    bool arrayKnownLive = true; // DO NOT SUBMIT get this from catalyst
 
-    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-    globalState->getRegion(arrayType)
-        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, rsaME);
+    globalState->getRegion(rsaRefMT)
+        ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef);
+    auto rsaLT = globalState->getRegion(rsaRefMT)->translateType(rsaRefMT);
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
-        globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
+        globalState->getRegion(rsaRefMT)->createRegionInstanceLocal(functionState, builder);
+
+    auto arrayLiveRef =
+        globalState->getRegion(rsaRefMT)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, rsaRefMT, arrayRef, arrayKnownLive);
 
     auto arrayLenRef =
-        globalState->getRegion(arrayType)
+        globalState->getRegion(rsaRefMT)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+                functionState, builder, arrayRegionInstanceRef, rsaRefMT, arrayLiveRef);
     auto arrayLenLE =
         globalState->getRegion(globalState->metalCache->i32Ref)
             ->checkValidReference(FL(),
                 functionState, builder, true, globalState->metalCache->i32Ref, arrayLenRef);
-    globalState->getRegion(globalState->metalCache->i32Ref)
-        ->checkValidReference(FL(),
-            functionState, builder, true, globalState->metalCache->i32Ref, arrayLenRef);
 
     auto indexLE = LLVMBuildSub(builder, arrayLenLE, constI32LE(globalState, 1), "index");
     auto indexRef =
         wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
 
-    auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIfV(
-        globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrintToStderr(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
-        });
+    auto indexInBoundsLE =
+        checkLastElementExists(
+            globalState, functionState, builder, arrayLenRef,
+            "Error: Cannot pop element from empty array!");
 
     auto resultRef =
-        globalState->getRegion(arrayType)
+        globalState->getRegion(rsaRefMT)
             ->popRuntimeSizedArrayNoBoundsCheck(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayMT, arrayRef, arrayKnownLive, indexRef);
+                functionState, builder, arrayRegionInstanceRef, rsaRefMT, rsaMT, arrayLiveRef, indexInBoundsLE);
 
-    globalState->getRegion(arrayType)
+    globalState->getRegion(rsaRefMT)
         ->dealias(
-            AFL("popRuntimeSizedArrayNoBoundsCheck"), functionState, builder, arrayType, arrayRef);
+            AFL("popRuntimeSizedArrayNoBoundsCheck"), functionState, builder, rsaRefMT, arrayRef);
 
     return resultRef;
   } else if (auto dmrsa = dynamic_cast<DestroyMutRuntimeSizedArray*>(expr)) {
@@ -492,38 +549,35 @@ Ref translateExpressionInner(
     auto arrayType = dmrsa->arrayType;
     bool arrayKnownLive = true;
 
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
-    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
     globalState->getRegion(arrayType)
         ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
     auto arrayLenRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
-    auto arrayLenLE =
-        globalState->getRegion(globalState->metalCache->i32Ref)
-            ->checkValidReference(FL(),
-                functionState, builder, true, globalState->metalCache->i32Ref, arrayLenRef);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
 
-    auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIfV(
-        globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrintToStderr(globalState, bodyBuilder, "Error: Destroying non-empty array!");
-        });
+    checkArrayEmpty(globalState, functionState, builder, arrayLenRef, "Error: Destroying non-empty array!");
 
     if (arrayType->ownership == Ownership::OWN) {
       globalState->getRegion(arrayType)
-          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
-    } else if (arrayType->ownership == Ownership::SHARE) {
+          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayLiveRef);
+    } else if (arrayType->ownership == Ownership::MUTABLE_SHARE || arrayType->ownership == Ownership::IMMUTABLE_SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
       // Free it!
       globalState->getRegion(arrayType)
           ->deallocate(
-              AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayRef);
+              AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
       assert(false);
     }
@@ -546,10 +600,15 @@ Ref translateExpressionInner(
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
         ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
+
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
     auto arrayLenRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
     auto arrayLenLE =
         globalState->getRegion(globalState->metalCache->i32Ref)
             ->checkValidReference(FL(),
@@ -560,19 +619,22 @@ Ref translateExpressionInner(
         ->checkValidReference(FL(), functionState, builder, true, consumerType, consumerRef);
 
     intRangeLoopReverseV(
-        globalState, functionState, builder, globalState->metalCache->i32, arrayLenRef,
-        [globalState, functionState, arrayRegionInstanceRef, consumerType, consumerMethod, arrayKind, arrayType, arrayRef, arrayKnownLive, consumerRef](
+        globalState, functionState, builder, globalState->metalCache->i32Ref, arrayLenRef,
+        [globalState, functionState, arrayRegionInstanceRef, consumerType, consumerMethod, arrayKind, arrayType, arrayLiveRef, consumerRef](
             Ref indexRef, LLVMBuilderRef bodyBuilder) {
           globalState->getRegion(consumerType)
               ->alias(
                   AFL("DestroyRSAIntoF consume iteration"),
                   functionState, bodyBuilder, consumerType, consumerRef);
+          auto indexLE =
+              globalState->getRegion(globalState->metalCache->i32)
+                  ->checkValidReference(FL(), functionState, bodyBuilder, true, globalState->metalCache->i32Ref, indexRef);
+          auto indexInBoundsLE = InBoundsLE{indexLE};
 
           auto elementRef =
               globalState->getRegion(arrayType)
                   ->popRuntimeSizedArrayNoBoundsCheck(
-                      functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef,
-                      arrayKnownLive, indexRef);
+                      functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayLiveRef, indexInBoundsLE);
           std::vector<Ref> argExprRefs = {consumerRef, elementRef};
 
           buildCallV(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
@@ -588,14 +650,14 @@ Ref translateExpressionInner(
 
     if (arrayType->ownership == Ownership::OWN) {
       globalState->getRegion(arrayType)
-          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
-    } else if (arrayType->ownership == Ownership::SHARE) {
+          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayLiveRef);
+    } else if (arrayType->ownership == Ownership::MUTABLE_SHARE || arrayType->ownership == Ownership::IMMUTABLE_SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
       // Free it!
       globalState->getRegion(arrayType)
           ->deallocate(
-              AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayRef);
+              AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
       assert(false);
     }
@@ -613,7 +675,8 @@ Ref translateExpressionInner(
     auto arrayKind = staticSizedArrayLoad->arrayKind;
     auto elementType = staticSizedArrayLoad->arrayElementType;
     auto targetOwnership = staticSizedArrayLoad->targetOwnership;
-    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto targetLocation =
+        targetOwnership == Ownership::MUTABLE_SHARE ? elementType->location : Location::YONDER;
     auto resultType =
         globalState->metalCache->getReference(
             targetOwnership, targetLocation, elementType->kind);
@@ -631,7 +694,7 @@ Ref translateExpressionInner(
             globalState->getRegion(globalState->metalCache->i32Ref),
             globalState->metalCache->i32Ref,
             constI32LE(globalState, arraySize));
-    auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
+    auto indexRef = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
     globalState->getRegion(arrayType)
         ->dealias(AFL("SSALoad"), functionState, builder, arrayType, arrayRef);
@@ -639,15 +702,34 @@ Ref translateExpressionInner(
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
+    auto elementRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(staticSizedArrayLoad->resultType)->createRegionInstanceLocal(functionState, builder);
+
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
+    auto indexLE =
+        globalState->getRegion(resultType)
+            ->checkValidReference(
+                FL(), functionState, builder, false, staticSizedArrayLoad->resultType, indexRef);
+
+    auto intMT = globalState->metalCache->i32Ref;
+    auto indexInBoundsLE =
+        checkIndexInBounds(
+            globalState, functionState, builder, intMT, sizeLE, indexLE,
+            "Error: Array index out of bounds!");
 
     auto loadResult =
         globalState->getRegion(arrayType)
             ->loadElementFromSSA(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive, indexLE);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayLiveRef,
+                indexInBoundsLE);
     auto resultRef =
         globalState->getRegion(staticSizedArrayLoad->resultType)
             ->upgradeLoadResultToRefWithTargetOwnership(
-                functionState, builder, elementType, staticSizedArrayLoad->resultType, loadResult);
+                functionState, builder, elementRegionInstanceRef, elementType, staticSizedArrayLoad->resultType, loadResult, false);
     globalState->getRegion(resultType)
         ->checkValidReference(FL(), functionState, builder, false, staticSizedArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
@@ -663,30 +745,47 @@ Ref translateExpressionInner(
     auto arrayKind = runtimeSizedArrayLoad->arrayKind;
     auto elementType = runtimeSizedArrayLoad->arrayElementType;
     auto targetOwnership = runtimeSizedArrayLoad->targetOwnership;
-    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto targetLocation = targetOwnership == Ownership::MUTABLE_SHARE ? elementType->location : Location::YONDER;
     auto resultType = globalState->metalCache->getReference(targetOwnership, targetLocation, elementType->kind);
     bool arrayKnownLive = runtimeSizedArrayLoad->arrayKnownLive || globalState->opt->overrideKnownLiveTrue;
-
-    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-
-    globalState->getRegion(arrayType)
-        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
-
-//    auto sizeLE = getRuntimeSizedArrayLength(globalState, functionState, builder, arrayType, arrayRef);
-    auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
-    auto mutability = ownershipToMutability(arrayType->ownership);
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
+    auto elementRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(elementType)->createRegionInstanceLocal(functionState, builder);
+
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
+
+    auto sizeRef =
+        globalState->getRegion(arrayType)->getRuntimeSizedArrayLength(
+            functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
+    auto indexRef = translateExpression(globalState, functionState, blockState, builder, indexExpr);
+    auto indexLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(), functionState, builder, false, globalState->metalCache->i32Ref, indexRef);
+    auto indexInBoundsLE =
+        checkIndexInBounds(
+            globalState, functionState, builder, globalState->metalCache->i32Ref, sizeRef, indexLE,
+            "Error: Array index out of bounds!");
+
+    auto mutability = ownershipToMutability(arrayType->ownership);
 
     auto loadResult =
         globalState->getRegion(arrayType)->loadElementFromRSA(
-            functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive, indexLE);
+            functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayLiveRef, indexInBoundsLE);
     auto resultRef =
         globalState->getRegion(elementType)
             ->upgradeLoadResultToRefWithTargetOwnership(
-                functionState, builder, elementType, resultType, loadResult);
+                functionState, builder, elementRegionInstanceRef, elementType, resultType, loadResult, false);
 
     globalState->getRegion(resultType)
         ->alias(FL(), functionState, builder, resultType, resultRef);
@@ -704,31 +803,43 @@ Ref translateExpressionInner(
     auto arrayExpr = runtimeSizedArrayStore->arrayExpr;
     auto indexExpr = runtimeSizedArrayStore->indexExpr;
     auto arrayKind = runtimeSizedArrayStore->arrayKind;
-    bool arrayKnownLive = runtimeSizedArrayStore->arrayKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool arrayKnownLive = exprResultKnownLive(globalState, runtimeSizedArrayStore->arrayExpr);
 
     auto elementType = globalState->program->getRuntimeSizedArray(arrayKind)->elementType;
 
-    auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
-        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRefLE);
+        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
+
     auto sizeRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRefLE, arrayKnownLive);
-    globalState->getRegion(globalState->metalCache->i32Ref)
-        ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
+    auto sizeLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
 
 
     auto indexRef =
         translateExpression(globalState, functionState, blockState, builder, indexExpr);
+    auto indexLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, indexRef);
+
     auto mutability = ownershipToMutability(arrayType->ownership);
 
-
+    auto indexInBoundsLE =
+        checkIndexInBounds(
+            globalState, functionState, builder, globalState->metalCache->i32Ref, sizeRef, indexLE,
+            "Error: Array index out of bounds!");
 
     // The purpose of RuntimeSizedArrayStore is to put a swap value into a spot, and give
     // what was in it.
@@ -743,7 +854,7 @@ Ref translateExpressionInner(
     auto loadResult =
         globalState->getRegion(arrayType)->
             loadElementFromRSA(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRefLE, arrayKnownLive, indexRef);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayKind, arrayLiveRef, indexInBoundsLE);
     auto oldValueLE = loadResult.move();
     globalState->getRegion(elementType)
         ->checkValidReference(FL(), functionState, builder, false, elementType, oldValueLE);
@@ -752,34 +863,39 @@ Ref translateExpressionInner(
     globalState->getRegion(arrayType)
         ->storeElementInRSA(
             functionState, builder,
-            arrayType, arrayKind, arrayRefLE, arrayKnownLive, indexRef, valueToStoreLE);
+            arrayType, arrayKind, arrayLiveRef, indexInBoundsLE, valueToStoreLE);
 
     globalState->getRegion(arrayType)
-        ->dealias(AFL("RSAStore"), functionState, builder, arrayType, arrayRefLE);
+        ->dealias(AFL("RSAStore"), functionState, builder, arrayType, arrayRef);
 
     return oldValueLE;
   } else if (auto arrayLength = dynamic_cast<ArrayLength*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = arrayLength->sourceType;
     auto arrayExpr = arrayLength->sourceExpr;
-    bool arrayKnownLive = arrayLength->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+    // DO NOT SUBMIT get actual knownLive from catalyst
+    bool arrayKnownLive = true;//arrayLength->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
 //    auto indexExpr = arrayLength->indexExpr;
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
-    auto arrayRefLE =
+    auto arrayRef =
         translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
-        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRefLE);
+        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
+
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
 
     auto sizeLE =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRefLE, arrayKnownLive);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
     globalState->getRegion(arrayType)
-        ->dealias(AFL("RSALen"), functionState, builder, arrayType, arrayRefLE);
+        ->dealias(AFL("RSALen"), functionState, builder, arrayType, arrayRef);
 
     return sizeLE;
   } else if (auto arrayCapacity = dynamic_cast<ArrayCapacity*>(expr)) {
@@ -793,16 +909,20 @@ Ref translateExpressionInner(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
-    auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
-        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRefLE);
+        ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
+
+    auto arrayLiveRef =
+        globalState->getRegion(arrayType)
+            ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
 
     auto sizeLE =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayCapacity(
-                functionState, builder, arrayRegionInstanceRef, arrayType, arrayRefLE, arrayKnownLive);
+                functionState, builder, arrayRegionInstanceRef, arrayType, arrayLiveRef);
     globalState->getRegion(arrayType)
-        ->dealias(AFL("RSACapacity"), functionState, builder, arrayType, arrayRefLE);
+        ->dealias(AFL("RSACapacity"), functionState, builder, arrayType, arrayRef);
 
     return sizeLE;
   } else if (auto narrowPermission = dynamic_cast<NarrowPermission*>(expr)) {
@@ -854,25 +974,29 @@ Ref translateExpressionInner(
     globalState->getRegion(memberType)
         ->checkValidReference(FL(), functionState, builder, false, memberType, sourceExpr);
 
-    auto structExpr =
-        translateExpression(
-            globalState, functionState, blockState, builder, memberStore->structExpr);
-    globalState->getRegion(memberStore->structType)
-        ->checkValidReference(FL(), functionState, builder, true, memberStore->structType, structExpr);
-
     auto structRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(memberStore->structType)->createRegionInstanceLocal(functionState, builder);
 
+    auto structRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, memberStore->structExpr);
+    globalState->getRegion(memberStore->structType)
+        ->checkValidReference(FL(), functionState, builder, true, memberStore->structType, structRef);
+
+    auto structLiveRef =
+        globalState->getRegion(structType)
+            ->checkRefLive(FL(), functionState, builder, structRegionInstanceRef, structType, structRef, structKnownLive);
+
     auto oldMemberLE =
         swapMember(
-            globalState, functionState, builder, structRegionInstanceRef, structDefM, structType, structExpr, structKnownLive, memberIndex, memberName, sourceExpr);
+            globalState, functionState, builder, structRegionInstanceRef, structDefM, structType, structLiveRef, memberIndex, memberName, sourceExpr);
     globalState->getRegion(memberType)
         ->checkValidReference(FL(), functionState, builder, false, memberType, oldMemberLE);
     globalState->getRegion(structType)
         ->dealias(
             AFL("MemberStore discard struct"),
-            functionState, builder, structType, structExpr);
+            functionState, builder, structType, structRef);
     return oldMemberLE;
   } else if (auto structToInterfaceUpcast = dynamic_cast<StructToInterfaceUpcast*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -931,9 +1055,12 @@ Ref translateExpressionInner(
     globalState->getRegion(sourceType)
         ->checkValidReference(FL(), functionState, builder, false, sourceType, sourceLE);
 
+    // The below MUTABLE_BORROW used to be BORROW, just put MUTABLE_BORROW in temporarily until we
+    // figure out weaks.
+    assert(false);
     auto sourceTypeAsConstraintRefM =
         globalState->metalCache->getReference(
-            Ownership::BORROW,
+            Ownership::MUTABLE_BORROW,
             sourceType->location,
             sourceType->kind);
 

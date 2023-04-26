@@ -12,6 +12,8 @@
 enum class RegionOverride {
   NAIVE_RC,
   RESILIENT_V3,
+  SAFE_FASTEST,
+  SAFE,
   FAST
 };
 
@@ -28,17 +30,22 @@ struct ValeOptions {
 
     // Boolean flags
     bool wasm = false;        // 1=WebAssembly
-    bool release = false;    // 0=debug (no optimizations). 1=release (default)
+    int optLevel = 0;   // O0-O3
     bool library = false;    // 1=generate a C-API compatible static library
     bool pic = false;        // Compile using position independent code
     bool verify = false;        // Verify LLVM IR
+    bool debug = false;
     bool print_asm = false;        // Print out assembly file
     bool print_llvmir = false;    // Print out LLVM IR
     bool docs = false;            // Generate code documentation
     bool census = false;    // Enable census checking
     bool flares = false;    // Enable flare output
-    bool fastCrash = false;    // Enable single-instruction crash, a bit faster
-    bool elideChecksForKnownLive = false;    // Enables generational heap
+    bool fastCrash = true;    // Enable single-instruction crash, a bit faster
+    int generationSize = 32;    // Size of generation integer, in bits.
+    bool elideChecksForKnownLive = false;    // Elide checks for static-analysis-known live
+    bool elideChecksForRegions = false;    // Elide checks for immutable regions
+    bool includeBoundsChecks = true;
+    bool useAtomicRc = false;
     bool overrideKnownLiveTrue = false;    // Enables generational heap
     bool printMemOverhead = false;    // Enables generational heap
     bool enableReplaying = false;    // Enables deterministic replaying

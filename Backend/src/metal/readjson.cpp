@@ -216,14 +216,20 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
-  } else if (ownership["__type"].get<std::string>() == "Pointer") {
-    return Ownership::BORROW;
-  } else if (ownership["__type"].get<std::string>() == "Borrow") {
-    return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
     return Ownership::WEAK;
-  } else if (ownership["__type"].get<std::string>() == "Share") {
-    return Ownership::SHARE;
+  } else if (ownership["__type"].get<std::string>() == "Borrow") { // To work with old frontend
+    return Ownership::MUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "Share") { // To work with old frontend
+    return Ownership::MUTABLE_SHARE;
+  } else if (ownership["__type"].get<std::string>() == "ImmutableBorrow") {
+    return Ownership::IMMUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "MutableBorrow") {
+    return Ownership::MUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "ImmutableShare") {
+    return Ownership::IMMUTABLE_SHARE;
+  } else if (ownership["__type"].get<std::string>() == "MutableShare") {
+    return Ownership::MUTABLE_SHARE;
   } else {
     assert(false);
   }
@@ -334,7 +340,21 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["resultType"]),
         readName(cache, expression["memberName"])->name);
   } else if (type == "Discard") {
-    return new Discard(
+      return new Discard(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceResultType"]));
+  } else if (type == "Mutabilify") {
+      return new Mutabilify(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceType"]),
+              readReference(cache, expression["resultType"]));
+  } else if (type == "Immutabilify") {
+      return new Immutabilify(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceType"]),
+              readReference(cache, expression["resultType"]));
+  } else if (type == "PreCheckBorrow") {
+    return new PreCheckBorrow(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceResultType"]));
   } else if (type == "Argument") {
@@ -404,6 +424,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readArray(cache, expression["localTypes"], readReference),
         readArray(cache, expression["localIndices"], readLocal),
         readArray(cache, expression["localsKnownLives"], [](MetalCache*, const json& j) -> bool { return j; }));
+  } else if (type == "DestroyStaticSizedArrayIntoLocals") {
+      return new DestroyStaticSizedArrayIntoLocals(
+          readExpression(cache, expression["arrayExpr"]),
+          readReference(cache, expression["arrayType"]),
+          readArray(cache, expression["localTypes"], readReference),
+          readArray(cache, expression["localIndices"], readLocal));
   } else if (type == "MemberLoad") {
     return new MemberLoad(
         readExpression(cache, expression["structExpr"]),

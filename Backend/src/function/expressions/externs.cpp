@@ -22,7 +22,7 @@ Ref buildResultOrEarlyReturnOfNever(
     Ref resultRef) {
   if (prototype->returnType->kind == globalState->metalCache->never) {
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
   } else {
     if (prototype->returnType == globalState->metalCache->voidRef) {
       return makeVoidRef(globalState);
@@ -76,8 +76,8 @@ Ref buildCallOrSideCall(
   for (int i = 0; i < valeArgRefs.size(); i++) {
     auto valeArgRefMT = prototype->params[i];
     auto hostArgRefMT =
-        (valeArgRefMT->ownership == Ownership::SHARE ?
-         globalState->linearRegion->linearizeReference(valeArgRefMT) :
+        ((valeArgRefMT->ownership == Ownership::MUTABLE_SHARE || valeArgRefMT->ownership == Ownership::IMMUTABLE_SHARE) ?
+         globalState->linearRegion->linearizeReference(valeArgRefMT, true) :
          valeArgRefMT);
 
     auto valeRegionInstanceRef =
@@ -125,7 +125,7 @@ Ref buildCallOrSideCall(
     hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
 
     if (globalState->opt->enableSideCalling) {
-      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStack, "sideStack");
+      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStackLE, "sideStack");
       auto resultLE =
           buildSideCall(
               globalState, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
@@ -139,7 +139,7 @@ Ref buildCallOrSideCall(
         LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
   } else {
     if (globalState->opt->enableSideCalling) {
-      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStack, "sideStack");
+      auto sideStackI8PtrLE = LLVMBuildLoad2(builder, int8PtrLT, globalState->sideStackLE, "sideStack");
       hostReturnLE =
           buildSideCall(globalState, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
     } else {
@@ -156,8 +156,8 @@ Ref buildCallOrSideCall(
 
   auto valeReturnRefMT = prototype->returnType;
   auto hostReturnMT =
-      (valeReturnRefMT->ownership == Ownership::SHARE ?
-       globalState->linearRegion->linearizeReference(valeReturnRefMT) :
+      ((valeReturnRefMT->ownership == Ownership::MUTABLE_SHARE || valeReturnRefMT->ownership == Ownership::IMMUTABLE_SHARE) ?
+       globalState->linearRegion->linearizeReference(valeReturnRefMT, true) :
        valeReturnRefMT);
 
   auto valeRegionInstanceRef =
@@ -237,7 +237,7 @@ Ref replayReturnOrCallAndOrRecord(
                   auto argLE =
                       globalState->getRegion(prototype->params[i])
                           ->checkValidReference(FL(), functionState, builder, false, prototype->params[i], args[i]);
-                  if (valeArgRefMT->ownership == Ownership::SHARE) {
+                  if (valeArgRefMT->ownership == Ownership::MUTABLE_SHARE || valeArgRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
                     // Don't need to:
                     //   globalState->determinism->buildWriteValueToFile(builder, argLE);
                     // because we dont need these values in the recording.
@@ -255,7 +255,7 @@ Ref replayReturnOrCallAndOrRecord(
                 buildFlare(FL(), globalState, functionState, builder, "Recording return for ", prototype->name->name);
 
                 // write to the file what we received from C
-                if (valeReturnRefMT->ownership == Ownership::SHARE) {
+                if (valeReturnRefMT->ownership == Ownership::MUTABLE_SHARE || valeReturnRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
                   globalState->determinism->buildWriteValueToFile(
                       functionState, builder, prototype->returnType, valeReturnRef);
                 } else {
@@ -300,7 +300,7 @@ Ref replayReturnOrCallAndOrRecord(
                   // actually calling that extern function.
                   for (int i = 0; i < args.size(); i++) {
                     auto valeArgRefMT = prototype->params[i];
-                    if (valeArgRefMT->ownership == Ownership::SHARE) {
+                    if (valeArgRefMT->ownership == Ownership::MUTABLE_SHARE || valeArgRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
                       globalState->getRegion(valeArgRefMT)->dealias(FL(), functionState, builder, valeArgRefMT, args[i]);
                     } else {
                       // read from the file, add mapping to the hash map
@@ -321,7 +321,7 @@ Ref replayReturnOrCallAndOrRecord(
 
                 buildFlare(FL(), globalState, functionState, builder, "Replaying return value for ", prototype->name->name);
                 Ref valeReturnRef =
-                    (valeReturnRefMT->ownership == Ownership::SHARE ?
+                    ((valeReturnRefMT->ownership == Ownership::MUTABLE_SHARE || valeReturnRefMT->ownership == Ownership::IMMUTABLE_SHARE) ?
                      globalState->determinism->buildReadValueFromFile(functionState, builder, valeReturnRefMT) :
                      globalState->determinism->buildMapRefFromRecordingFile(builder, valeReturnRefMT));
 //                Ref valeReturnRef =
@@ -506,12 +506,27 @@ Ref buildExternCall(
 
     auto strRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
-        globalState->getRegion(globalState->metalCache->strRef)
+        globalState->getRegion(globalState->metalCache->mutStrRef)
             ->createRegionInstanceLocal(functionState, builder);
 
-    auto resultLenLE = globalState->getRegion(globalState->metalCache->strRef)->getStringLen(functionState, builder, strRegionInstanceRef, args[0]);
-    globalState->getRegion(globalState->metalCache->strRef)
-        ->dealias(FL(), functionState, builder, globalState->metalCache->strRef, args[0]);
+    auto expectedOwnership = prototype->params[0]->ownership;
+    assert(expectedOwnership == Ownership::IMMUTABLE_SHARE || expectedOwnership == Ownership::MUTABLE_SHARE);
+
+    auto expectedType =
+        expectedOwnership == Ownership::MUTABLE_SHARE ?
+        globalState->metalCache->mutStrRef :
+        globalState->metalCache->immStrRef;
+
+    auto strLiveRef =
+        globalState->getRegion(expectedType)
+        ->checkRefLive(FL(), functionState, builder, strRegionInstanceRef, expectedType, args[0], false);
+
+    auto resultLenLE =
+        globalState->getRegion(expectedType)
+        ->getStringLen(
+            functionState, builder, expectedType, strRegionInstanceRef, strLiveRef);
+    globalState->getRegion(expectedType)
+        ->dealias(FL(), functionState, builder, expectedType, args[0]);
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLenLE);
   } else if (prototype->name->name == "__vbi_addFloatFloat") {
     assert(args.size() == 2);
@@ -525,7 +540,7 @@ Ref buildExternCall(
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt64TypeInContext(globalState->context), 1);
     globalState->externs->exit.call(builder, {exitCodeLE}, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
   } else if (prototype->name->name == "__vbi_getch") {
     auto resultIntLE = globalState->externs->getch.call(builder, {}, "");
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
@@ -559,6 +574,11 @@ Ref buildExternCall(
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, true, prototype->params[1], args[1]);
     assert(args.size() == 2);
     auto result = LLVMBuildOr( builder, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__vbi_ExtendI32ToI64") {
+    auto intLE = checkValidInternalReference(FL(), globalState, functionState, builder, true, prototype->params[0], args[0]);
+    assert(args.size() == 1);
+    auto result = LLVMBuildSExt(builder, intLE, LLVMInt64TypeInContext(globalState->context), "");
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else {
     return replayReturnOrCallAndOrRecord(

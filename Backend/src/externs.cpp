@@ -68,8 +68,8 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   strEquatorCallLF = addExtern(mod, "strEquatorCall", int1LT, {emptyPtrLT, int8PtrLT, int8PtrLT});
 
   int256HasherCallLF =
-      addFunction(mod, "int256HasherCall", int64LT, {emptyPtrLT, int256LT});
-  defineFunctionBody(
+      addRawFunction(mod, "int256HasherCall", int64LT, {emptyPtrLT, int256LT});
+  defineRawFunctionBody(
       context, int256HasherCallLF.ptrLE, int64LT, "int256HasherCall",
       [int64LT, int256LT](FunctionState* functionState, LLVMBuilderRef builder) {
         // Ignore 'this' arg 0
@@ -103,8 +103,8 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
         LLVMBuildRet(builder, resultLE);
       });
   int256EquatorCallLF =
-      addFunction(mod, "int256EquatorCall", int1LT, {emptyPtrLT, int256LT, int256LT});
-  defineFunctionBody(
+      addRawFunction(mod, "int256EquatorCall", int1LT, {emptyPtrLT, int256LT, int256LT});
+  defineRawFunctionBody(
       context, int256EquatorCallLF.ptrLE, int1LT, "int256HasherCall",
       [](FunctionState* functionState, LLVMBuilderRef builder) {
         // Ignore 'this' arg 0

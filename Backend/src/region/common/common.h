@@ -87,17 +87,6 @@ void buildCheckGen(
     LLVMValueRef targetGenLE,
     LLVMValueRef actualGenLE);
 
-LoadResult loadElementFromSSAInner(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ssaRefMT,
-    StaticSizedArrayT* ssaMT,
-    int size,
-    Reference* elementType,
-    Ref indexRef,
-    LLVMValueRef arrayElementsPtrLE);
-
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -131,7 +120,7 @@ void innerDeallocate(
     KindStructs* kindStrutsSource,
     LLVMBuilderRef builder,
     Reference* refMT,
-    Ref ref);
+    LiveRef ref);
 
 void fillRuntimeSizedArray(
     GlobalState* globalState,
@@ -145,7 +134,7 @@ void fillRuntimeSizedArray(
     Prototype* generatorMethod,
     Ref generatorLE,
     Ref sizeLE,
-    Ref rsaRef);
+    LiveRef rsaRef);
 
 void fillStaticSizedArrayFromCallable(
     GlobalState* globalState,
@@ -159,7 +148,7 @@ void fillStaticSizedArrayFromCallable(
     Prototype* generatorMethod,
     Ref generatorLE,
     Ref sizeLE,
-    Ref ssaRef);
+    LiveRef ssaRef);
 
 std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref);
 
@@ -234,6 +223,7 @@ LLVMValueRef mallocRuntimeSizedArray(
     LLVMTypeRef rsaWrapperLT,
     LLVMTypeRef rsaElementLT,
     LLVMValueRef lengthLE);
+
 // Transmutes a ptr of one ownership (such as own) to another ownership (such as borrow).
 Ref transmutePtr(
     GlobalState* globalState,
@@ -244,11 +234,14 @@ Ref transmutePtr(
     Reference* targetRefMT,
     Ref sourceRef);
 
-Ref getRuntimeSizedArrayLength(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE arrayRefLE);
+//// Transmutes a ptr of one ownership (such as own) to another ownership (such as borrow).
+//LiveRef transmuteLiveRef(
+//    GlobalState* globalState,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Reference* sourceRefMT,
+//    Reference* targetRefMT,
+//    LiveRef sourceRef);
 
 Ref getRuntimeSizedArrayCapacity(
     GlobalState* globalState,
@@ -303,12 +296,12 @@ void fillStaticSizedArray(
     Ref arrayRegionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
-    Ref ssaRef,
+    LiveRef ssaRef,
     const std::vector<Ref>& elementRefs);
 
 // Returns a LLVMValueRef for a ref to the string object.
 // The caller should then use getStringBytesPtr to then fill the string's contents.
-Ref constructStaticSizedArray(
+LiveRef constructStaticSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -327,59 +320,21 @@ void regularCheckValidReference(
     Reference* refM,
     LLVMValueRef refLE);
 
-LoadResult regularLoadElementFromRSAWithoutUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    KindStructs* kindStructs,
-    bool capacityExists,
-    Reference* rsaRefMT,
-    RuntimeSizedArrayT* rsaMT,
-    Mutability mutability,
-    Reference* elementType,
-    Ref arrayRef,
-    bool arrayKnownLive,
-    Ref indexRef);
+//LoadResult resilientLoadElementFromRSAWithoutUpgrade(
+//    GlobalState* globalState,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    KindStructs* kindStructs,
+//    bool capacityExists,
+//    Reference* rsaRefMT,
+//    Mutability mutability,
+//    Reference* elementType,
+//    RuntimeSizedArrayT* rsaMT,
+//    LiveRef arrayRef,
+//    Ref indexRef);
 
-LoadResult resilientLoadElementFromRSAWithoutUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    KindStructs* kindStructs,
-    bool capacityExists,
-    Reference* rsaRefMT,
-    Mutability mutability,
-    Reference* elementType,
-    RuntimeSizedArrayT* rsaMT,
-    Ref arrayRef,
-    bool arrayKnownLive,
-    Ref indexRef);
 
-Ref regularStoreElementInSSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    KindStructs* kindStructs,
-    Reference* rsaRefMT,
-    Reference* elementType,
-    int size,
-    Ref arrayRef,
-    Ref indexRef,
-    Ref elementRef);
-
-void regularInitializeElementInSSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    KindStructs* kindStructs,
-    Reference* ssaRefMT,
-    Reference* elementType,
-    int size,
-    Ref arrayRef,
-    Ref indexRef,
-    Ref elementRef);
-
-Ref constructRuntimeSizedArray(
+LiveRef constructRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -401,7 +356,7 @@ LoadResult regularLoadStrongMember(
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* structRefMT,
-    Ref structRef,
+    LiveRef structRef,
     int memberIndex,
     Reference* expectedMemberType,
     Reference* targetType,
@@ -413,7 +368,7 @@ LoadResult regularLoadMember(
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* structRefMT,
-    Ref structRef,
+    LiveRef structLiveRef,
     int memberIndex,
     Reference* expectedMemberType,
     Reference* targetType,
@@ -455,20 +410,6 @@ Ref upcastWeak(
     Reference* targetInterfaceTypeM,
     InterfaceKind* targetInterfaceKindM);
 
-LoadResult regularloadElementFromSSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ssaRefMT,
-    StaticSizedArrayT* ssaMT,
-    Reference* elementType,
-    int arraySize,
-    Mutability mutability,
-    Ref arrayRef,
-    bool arrayKnownLive,
-    Ref indexRef,
-    KindStructs* kindStructs);
-
 LoadResult resilientloadElementFromSSA(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -478,9 +419,8 @@ LoadResult resilientloadElementFromSSA(
     int size,
     Mutability mutability,
     Reference* elementType,
-    Ref arrayRef,
-    bool arrayKnownLive,
-    Ref indexRef,
+    LiveRef arrayRef,
+    InBoundsLE indexLE,
     KindStructs* kindStructs);
 
 
@@ -512,7 +452,7 @@ Ref getRuntimeSizedArrayLengthStrong(
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* rsaRefMT,
-    Ref arrayRef);
+    LiveRef arrayRef);
 
 Ref getRuntimeSizedArrayCapacityStrong(
     GlobalState* globalState,
@@ -520,7 +460,7 @@ Ref getRuntimeSizedArrayCapacityStrong(
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* rsaRefMT,
-    Ref arrayRef);
+    LiveRef arrayRef);
 
 std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
     GlobalState* globalState,
@@ -541,15 +481,13 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeWeakInterfaceRef(
     Ref virtualArgRef,
     std::function<WeakFatPtrLE(WeakFatPtrLE weakInterfaceFatPtrLE)> weakInterfaceRefToWeakStructRef);
 
-
 void storeMemberStrong(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* structRefMT,
-    Ref structRef,
-    bool structKnownLive,
+    LiveRef structRef,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newValueLE);
@@ -560,8 +498,7 @@ void storeMemberWeak(
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
     Reference* structRefMT,
-    Ref structRef,
-    bool structKnownLive,
+    LiveRef structRef,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newValueLE);
@@ -601,7 +538,7 @@ void callFree(
     LLVMValueRef ptrLE);
 
 
-FuncPtrLE getInterfaceMethodFunctionPtrFromItable(
+ValeFuncPtrLE getInterfaceMethodFunctionPtrFromItable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -609,20 +546,6 @@ FuncPtrLE getInterfaceMethodFunctionPtrFromItable(
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge);
-
-void initializeElementInRSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    KindStructs* kindStructs,
-    bool capacityExists,
-    bool incrementSize,
-    RuntimeSizedArrayT* rsaMT,
-    Reference* rsaRefMT,
-    WrapperPtrLE arrayWrapperPtrLE,
-    Ref rsaRef,
-    Ref indexRef,
-    Ref elementRef);
 
 Ref normalLocalLoad(
     GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr);

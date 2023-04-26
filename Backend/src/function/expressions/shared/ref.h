@@ -8,6 +8,8 @@
 class FunctionState;
 class GlobalState;
 class IRegion;
+struct KindStructs;
+
 
 // Perhaps we should switch to a structure that looks like this:
 // struct ArrayType : IType {
@@ -19,15 +21,17 @@ class IRegion;
 // Then we can have a PtrLE-like thing that contains that IType and an LLVMValueRef.
 // Perhaps we dont even need that IType* elementType? probably do. must think on it.
 
-struct FuncPtrLE {
+// A "Raw function" is one that doesn't have a restrict nextgen ptr as the first parameter.
+// As opposed to a Vale function which does.
+struct RawFuncPtrLE {
   LLVMValueRef ptrLE;
   LLVMTypeRef funcLT;
 
-  FuncPtrLE() : funcLT(nullptr), ptrLE(nullptr) { }
+  RawFuncPtrLE() : funcLT(nullptr), ptrLE(nullptr) { }
 
-  FuncPtrLE(LLVMTypeRef funcLT_, LLVMValueRef ptrLE_)
-    : funcLT(funcLT_),
-      ptrLE(ptrLE_) {
+  RawFuncPtrLE(LLVMTypeRef funcLT_, LLVMValueRef ptrLE_)
+      : funcLT(funcLT_),
+        ptrLE(ptrLE_) {
     assert(LLVMTypeOf(ptrLE) == LLVMPointerType(funcLT, 0));
   }
 
@@ -35,6 +39,42 @@ struct FuncPtrLE {
     return LLVMBuildCall2(
         builder, funcLT, ptrLE, const_cast<LLVMValueRef*>(argsLE.data()), argsLE.size(), name);
   }
+
+  LLVMValueRef getRawArg(int index) {
+    return LLVMGetParam(ptrLE, index);
+  }
+};
+
+// A "Vale function" is one that has a restrict nextgen ptr as the first parameter.
+// As opposed to a raw function which doesnt.
+struct ValeFuncPtrLE {
+  RawFuncPtrLE inner;
+
+  ValeFuncPtrLE() { }
+
+  explicit ValeFuncPtrLE(RawFuncPtrLE inner_)
+      : inner(inner_) { }
+
+  LLVMValueRef call(LLVMBuilderRef builder, LLVMValueRef nextGenPtrLE, std::vector<LLVMValueRef> argsLE, const char* name) const {
+    argsLE.insert(argsLE.begin(), nextGenPtrLE);
+    return inner.call(builder, argsLE, name);
+  }
+
+  LLVMValueRef getValeParam(int index) {
+    // The 0th argument is always the next gen ptr.
+    return inner.getRawArg(index + 1);
+  }
+
+//  LLVMValueRef getNextGenPtrArg() {
+//    // The 0th argument is always the next gen ptr.
+//    return inner.getRawArg(0);
+//  }
+};
+
+// A type-system token to assure certain functions that we indeed checked the bounds of an array
+// we're about to access.
+struct InBoundsLE {
+  LLVMValueRef refLE;
 };
 
 //
@@ -95,8 +135,7 @@ struct WeakFatPtrLE {
       : refM(refM_), refLE(refLE_) { }
 };
 
-
-// An LLVM register, which contains a reference.
+// Represents the result of a previous instruction.
 struct Ref {
   Ref(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
 
@@ -120,10 +159,60 @@ private:
   friend void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 };
 
+// When we load something from an array, for example an owning reference,
+// we still need to alias it to a constraint reference. This wrapper serves
+// as a reminder that we need to do that.
+struct LoadResult {
+public:
+  explicit LoadResult(Ref ref) : ref(ref) {}
+
+  // This method is used when we intended to move the result, so no transformation
+  // or aliasing is needed.
+  Ref move() { return ref; }
+
+  // This is just a getter for the ref for the methods that actually implement the
+  // aliasing. It should ONLY be used by them.
+  Ref extractForAliasingInternals() { return ref; }
+
+private:
+  Ref ref;
+};
+
+// A LLVM value that we're sure is alive right now, and safe* to dereference.
+// (* Safe could mean NULL if the OS protects us from that.)
+// This isn't necessarily the same LLVMValueRef as would be in a Ref. It's up to the particular
+// region to decide what would be in here. It's probably either a WrapperPtrLE or a raw pointer.
+struct LiveRef {
+  Reference* const refM;
+  // TODO rename to ptrLE
+  LLVMValueRef const refLE;
+
+  LiveRef(Reference* refM_, LLVMValueRef refLE_)
+  : refM(refM_), refLE(refLE_) { }
+};
+
+// DO NOT SUBMIT rename to toRef
 Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);
 Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
 Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
 Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
+Ref wrap(GlobalState* globalState, Reference* refM, LiveRef exprLE);
+
+
+WrapperPtrLE toWrapperPtr(FunctionState* functionState, LLVMBuilderRef builder, KindStructs* kindStructs, Reference* refMT, LiveRef liveRef);
+
+LiveRef toLiveRef(WrapperPtrLE wrapperPtrLE);
+LiveRef toLiveRef(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* refM,
+    LLVMValueRef untrustedRefLE);
+LiveRef toLiveRef(AreaAndFileAndLine checkerAFL, GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Ref regionInstanceRef, Reference* refM, Ref ref, bool knownLive);
+
+
 
 LLVMValueRef checkValidInternalReference(
     AreaAndFileAndLine checkerAFL,

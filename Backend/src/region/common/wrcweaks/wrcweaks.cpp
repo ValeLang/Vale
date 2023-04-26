@@ -32,6 +32,7 @@ void WrcWeaks::buildCheckWrc(
       // fine, proceed
       break;
     case RegionOverride::RESILIENT_V3:
+      case RegionOverride::SAFE:
       // These dont have WRCs
       assert(false);
       break;
@@ -86,7 +87,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
 //  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
 
-  if (refM->ownership == Ownership::SHARE) {
+  if (refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE) {
     // Shares never have weak refs
     assert(false);
     return nullptr;
@@ -110,7 +111,7 @@ LLVMValueRef WrcWeaks::getWrcPtr(
   auto wrcEntriesPtrLE =
       LLVMBuildLoad2(builder, int32PtrLT, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
   auto ptrToWrcLE =
-      LLVMBuildGEP2(builder, int32LT, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
+      LLVMBuildInBoundsGEP2(builder, int32LT, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
   return ptrToWrcLE;
 }
 
@@ -187,6 +188,7 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
       // continue
       break;
     case RegionOverride::RESILIENT_V3:
+    case RegionOverride::SAFE:
       assert(false);
       break;
     default:
@@ -265,7 +267,12 @@ WeakFatPtrLE WrcWeaks::assembleStructWeakRef(
     if (
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
-    assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE || structTypeM->ownership == Ownership::BORROW);
+    assert(
+        structTypeM->ownership == Ownership::OWN ||
+        structTypeM->ownership == Ownership::MUTABLE_SHARE ||
+        structTypeM->ownership == Ownership::IMMUTABLE_SHARE ||
+        structTypeM->ownership == Ownership::MUTABLE_BORROW ||
+        structTypeM->ownership == Ownership::IMMUTABLE_BORROW);
   } else assert(false);
 
   auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
@@ -440,7 +447,7 @@ void WrcWeaks::aliasWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, 1);
+  adjustCounterV(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, 1, false);
 }
 
 void WrcWeaks::discardWeakRef(
@@ -460,7 +467,7 @@ void WrcWeaks::discardWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, -1);
+  auto wrcLE = adjustCounterV(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, -1, false);
 
   buildFlare(FL(), globalState, functionState, builder, "decrementing ", wrciLE, " to ", wrcLE);
 
@@ -500,9 +507,11 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
     Ref weakRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V3:
+    case RegionOverride::SAFE:
       assert(
-          weakRefM->ownership == Ownership::BORROW ||
-              weakRefM->ownership == Ownership::WEAK);
+          weakRefM->ownership == Ownership::IMMUTABLE_BORROW ||
+          weakRefM->ownership == Ownership::MUTABLE_BORROW ||
+          weakRefM->ownership == Ownership::WEAK);
       break;
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:

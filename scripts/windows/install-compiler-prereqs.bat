@@ -17,6 +17,10 @@ mkdir "C:\llvm-src"
 cd "C:\llvm-src"
 7z x "C:\llvm-tar\llvm-project-16.0.0.src.tar" -oC:\llvm-src
 dir "C:\llvm-src"
+dir "C:\llvm-src\llvm-project-16.0.0.src"
+dir "C:\llvm-src\llvm-project-16.0.0.src\lib"
+dir "C:\llvm-src\llvm-project-16.0.0.src\lib\cmake"
+dir "C:\llvm-src\llvm-project-16.0.0.src\lib\cmake\llvm"
 
 echo Building LLVM...
 

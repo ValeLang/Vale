@@ -20,10 +20,10 @@ dir "C:\llvm-src"
 
 echo Building LLVM...
 
-mkdir "C:\llvm-src\build"
-cd "C:\llvm-src\build"
-cmake "C:\LLVM" -G "Visual Studio 17 2022" -Thost=x64 -A x64 -D CMAKE_INSTALL_PREFIX=C:\LLVM -D CMAKE_BUILD_TYPE=MinSizeRel -D LLVM_TARGETS_TO_BUILD="X86;WebAssembly" -DCMAKE_INSTALL_PREFIX=%1
-dir "C:\llvm-src\build"
+mkdir "C:\llvm-src\llvm-project-16.0.0.src\build"
+cd "C:\llvm-src\llvm-project-16.0.0.src\build"
+cmake "C:\llvm-src\llvm-project-16.0.0.src" -G "Visual Studio 17 2022" -Thost=x64 -A x64 -D CMAKE_INSTALL_PREFIX=C:\LLVM -D CMAKE_BUILD_TYPE=MinSizeRel -D LLVM_TARGETS_TO_BUILD="X86;WebAssembly" -DCMAKE_INSTALL_PREFIX=%1
+dir "C:\llvm-src\llvm-project-16.0.0.src\build"
 
 echo Installing LLVM...
 

@@ -785,7 +785,7 @@ LoadResult Linear::loadElementFromSSA(
   auto hostMemberRefMT = linearizeReference(valeMemberRefMT, true);
 
   return loadElementFromSSAInner(
-      globalState, functionState, builder, hostSsaRefMT, indexInBoundsLE, elementsPtrLE);
+      globalState, functionState, builder, hostMemberRefMT, indexInBoundsLE, elementsPtrLE);
 }
 
 LoadResult Linear::loadElementFromRSA(
@@ -1872,7 +1872,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                       valeMemberRefMT;
                   auto sourceMemberRef =
                       globalState->getRegion(valeObjectRefMT)->upgradeLoadResultToRefWithTargetOwnership(
-                          functionState, bodyBuilder, sourceRegionInstanceRef, valeObjectRefMT, valeMemberTargetRefMT,
+                          functionState, bodyBuilder, sourceRegionInstanceRef, valeMemberRefMT, valeMemberTargetRefMT,
                           globalState->getRegion(valeObjectRefMT)
                               ->loadElementFromSSA(
                                   functionState, bodyBuilder, sourceRegionInstanceRef, valeObjectRefMT,
@@ -2516,6 +2516,11 @@ LiveRef Linear::immutabilify(
     Reference* refMT,
     Ref ref,
     Reference* targetRefMT) {
-  assert(refMT->ownership == Ownership::MUTABLE_BORROW);
-  assert(false); // impl
+  assert(refMT->ownership == Ownership::MUTABLE_BORROW || refMT->ownership == Ownership::MUTABLE_SHARE);
+  // Imm and mut refs in linear are the same, so we can just do a transmute.
+  auto transmutedRef =
+      transmutePtr(globalState, functionState, builder, true, refMT, targetRefMT, ref);
+  auto transmutedRefLE =
+      checkValidReference(FL(), functionState, builder, true, targetRefMT, transmutedRef);
+  return wrapToLiveRef(FL(), functionState, builder, regionInstanceRef, targetRefMT, transmutedRefLE);
 }

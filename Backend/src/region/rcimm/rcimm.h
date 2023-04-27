@@ -533,6 +533,7 @@ private:
       Ref regionInstanceRef,
       Ref sourceRegionInstanceRef,
       Kind* valeKind,
+      Reference* refMT,
       Ref objectRef);
 
   // Does the entire serialization process: measuring the length, allocating a buffer, and
@@ -543,6 +544,7 @@ private:
       Ref regionInstanceRef,
       Ref sourceRegionInstanceRef,
       Kind* valeKind,
+      Reference* refMT,
       Ref ref);
 
   InterfaceMethod* getFreeInterfaceMethod(Kind* valeKind);

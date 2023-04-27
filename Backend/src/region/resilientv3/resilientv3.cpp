@@ -1153,9 +1153,7 @@ WrapperPtrLE ResilientV3::getWrapperPtrLive(
     }
     case Ownership::MUTABLE_BORROW:
     case Ownership::WEAK: {
-      auto ref = wrap(globalState, refM, liveRef);
-      return hgmWeaks.getWrapperPtr(
-          from, functionState, builder, refM, ref);
+      return kindStructs.makeWrapperPtr(from, functionState, builder, refM, liveRef.refLE);
     }
     default:
       assert(false);

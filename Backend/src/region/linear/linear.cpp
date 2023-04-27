@@ -478,8 +478,6 @@ Ref Linear::loadMember(
       loadMember2(
           functionState, builder, regionInstanceRef, structRefMT, structInnerLT, structRef, memberIndex, expectedMemberType,
           targetMemberType, memberName);
-
-
   auto resultRef =
       upgradeLoadResultToRefWithTargetOwnership(
           functionState, builder, regionInstanceRef, expectedMemberType, targetMemberType, memberLE, false);
@@ -748,7 +746,7 @@ Ref Linear::upgradeLoadResultToRefWithTargetOwnership(
   if (sourceLocation == Location::INLINE) {
     return sourceRef;
   } else {
-    return sourceRef;
+    return transmutePtr(globalState, functionState, builder, true, sourceType, targetType, sourceRef);
   }
 }
 
@@ -1785,26 +1783,26 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 // Manually making InBoundsLE because the array's size is the bound of the containing loop.
                 auto indexInBoundsLE = InBoundsLE{indexLE};
 
-                auto valeMemberTargetRefMT =
+                auto valeMemberImmRefMT =
                     (valeMemberRefMT->ownership == Ownership::MUTABLE_SHARE && valeMemberRefMT->location == Location::YONDER) ?
                     globalState->metalCache->getReference(
                         Ownership::IMMUTABLE_SHARE,
                         valeMemberRefMT->location,
                         valeMemberRefMT->kind) :
                     valeMemberRefMT;
-                auto sourceMemberRef =
+                auto valeMemberImmRef =
                     globalState->getRegion(valeObjectRefMT)->upgradeLoadResultToRefWithTargetOwnership(
-                        functionState, bodyBuilder, sourceRegionInstanceRef, valeMemberRefMT, valeMemberTargetRefMT,
+                        functionState, bodyBuilder, sourceRegionInstanceRef, valeMemberRefMT, valeMemberImmRefMT,
                         globalState->getRegion(valeObjectRefMT)
                             ->loadElementFromRSA(
                                 functionState, bodyBuilder, sourceRegionInstanceRef, valeObjectRefMT, valeRsaMT,
                                 valeObjectLiveRef, indexInBoundsLE),
                         true);
-                buildFlare(FL(), globalState, functionState, bodyBuilder);
+                buildFlare(FL(), globalState, functionState, bodyBuilder, ptrToIntLE(globalState, bodyBuilder, valeMemberImmRef.refLE));
                 auto hostElementLiveRef =
                     serializeMemberOrElement(
-                        functionState, bodyBuilder, valeMemberRefMT, hostRegionInstanceRef, sourceRegionInstanceRef,
-                        sourceMemberRef, dryRunBoolRef);
+                        functionState, bodyBuilder, valeMemberImmRefMT, hostRegionInstanceRef, sourceRegionInstanceRef,
+                        valeMemberImmRef, dryRunBoolRef);
                 auto hostMemberRefMT = linearizeReference(valeMemberRefMT, true);
                 auto hostElementRef = wrap(globalState, hostMemberRefMT, hostElementLiveRef);
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
@@ -1863,7 +1861,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 // Manually making InBoundsLE because the array's size is the bound of the containing loop.
                 auto indexInBoundsLE = InBoundsLE{indexLE};
 
-                  auto valeMemberTargetRefMT =
+                  auto valeMemberImmRefMT =
                       (valeMemberRefMT->ownership == Ownership::MUTABLE_SHARE && valeMemberRefMT->location == Location::YONDER) ?
                       globalState->metalCache->getReference(
                           Ownership::IMMUTABLE_SHARE,
@@ -1872,7 +1870,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                       valeMemberRefMT;
                   auto sourceMemberRef =
                       globalState->getRegion(valeObjectRefMT)->upgradeLoadResultToRefWithTargetOwnership(
-                          functionState, bodyBuilder, sourceRegionInstanceRef, valeMemberRefMT, valeMemberTargetRefMT,
+                          functionState, bodyBuilder, sourceRegionInstanceRef, valeMemberRefMT, valeMemberImmRefMT,
                           globalState->getRegion(valeObjectRefMT)
                               ->loadElementFromSSA(
                                   functionState, bodyBuilder, sourceRegionInstanceRef, valeObjectRefMT,
@@ -1881,7 +1879,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto hostElementLiveRef =
                     serializeMemberOrElement(
-                        functionState, bodyBuilder, valeMemberRefMT, hostRegionInstanceRef, sourceRegionInstanceRef,
+                        functionState, bodyBuilder, valeMemberImmRefMT, hostRegionInstanceRef, sourceRegionInstanceRef,
                         sourceMemberRef, dryRunBoolRef);
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto dryRunBoolLE =
@@ -2021,9 +2019,9 @@ Reference* Linear::linearizeReference(Reference* immRcRefMT, bool mut) {
 Reference* Linear::unlinearizeReference(Reference* hostRefMT, bool mut) {
   assert(globalState->getRegion(hostRefMT) == globalState->linearRegion);
   auto valeKind = valeKindByHostKind.find(hostRefMT->kind)->second;
-  assert(hostRefMT->ownership == Ownership::MUTABLE_SHARE);
+//  assert(hostRefMT->ownership == Ownership::MUTABLE_SHARE);
   return globalState->metalCache->getReference(
-      Ownership::MUTABLE_SHARE, //mut ? Ownership::MUTABLE_SHARE : Ownership::IMMUTABLE_SHARE,
+      mut ? Ownership::MUTABLE_SHARE : Ownership::IMMUTABLE_SHARE,
       hostRefMT->location,
       valeKind);
 }

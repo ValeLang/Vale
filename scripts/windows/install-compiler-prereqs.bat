@@ -10,7 +10,7 @@ echo Unzipping LLVM...
 
 mkdir "C:\llvm-src"
 cd "C:\llvm-src"
-tar xf "C:\llvm-tar\llvm-project-16.0.0.src.tar.xz" -C "C:\llvm-src"
+7z x "C:\llvm-tar\llvm-project-16.0.0.src.tar.xz" -o "C:\llvm-src"
 dir "C:\llvm-src"
 
 echo Building LLVM...

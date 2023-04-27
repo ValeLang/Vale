@@ -1,15 +1,33 @@
 
-echo Downloading minimal LLVM...
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz' -OutFile '%temp%\llvm-project-16.0.0.src.tar.xz'"
-mkdir "%temp%\LLVM"
-tar xf "%temp%\llvm-project-16.0.0.src.tar.xz" -C "%temp%\LLVM" && exit /b 1
+echo Downloading LLVM...
+
+mkdir "C:\llvm-tar"
+cd "C:\llvm-tar"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz' -OutFile 'C:\llvm-tar\llvm-project-16.0.0.src.tar.xz'"
+dir "C:\llvm-tar"
+
+echo Unzipping LLVM...
+
+mkdir "C:\llvm-src"
+cd "C:\llvm-src"
+tar xf "C:\llvm-tar\llvm-project-16.0.0.src.tar.xz" -C "C:\llvm-src"
+dir "C:\llvm-src"
+
+echo Building LLVM...
+
+mkdir "C:\llvm-src\build"
+cd "C:\llvm-src\build"
+cmake "C:\LLVM" -G "Visual Studio 17 2022" -Thost=x64 -A x64 -D CMAKE_INSTALL_PREFIX=C:\LLVM -D CMAKE_BUILD_TYPE=MinSizeRel -D LLVM_TARGETS_TO_BUILD="X86;WebAssembly" -DCMAKE_INSTALL_PREFIX=%1
+dir "C:\llvm-src\build"
+
+echo Installing LLVM...
+
 mkdir %1
+cmake --build . --target install
 dir %1
-cmake "%temp%\LLVM" -G "Visual Studio 17 2022" -Thost=x64 -A x64 -D "CMAKE_INSTALL_PREFIX=%temp%\LLVM" -D CMAKE_BUILD_TYPE=MinSizeRel -D LLVM_TARGETS_TO_BUILD="X86;WebAssembly" -DCMAKE_INSTALL_PREFIX=%1 && exit /b 1
-cmake --build . --target install && exit /b 1
 
 echo Downloading bootstrapping Vale compiler...
 
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Windows-0.2.0.23.zip' -OutFile '%temp%\BootstrappingValeCompiler.zip'"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Windows-0.2.0.23.zip' -OutFile 'C:\BootstrappingValeCompiler.zip'"
 mkdir %2
-tar xf "%temp%\BootstrappingValeCompiler.zip" -C %2
+tar xf "C:\BootstrappingValeCompiler.zip" -C %2

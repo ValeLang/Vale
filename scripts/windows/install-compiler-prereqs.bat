@@ -1,7 +1,7 @@
 
 echo Downloading LLVM...
 
-mkdir "C:\llvm-tar"
+mkdir "C:\llvm-tar-xz"
 cd "C:\llvm-tar-xz"
 powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz' -OutFile 'C:\llvm-tar-xz\llvm-project-16.0.0.src.tar.xz'"
 dir "C:\llvm-tar-xz"

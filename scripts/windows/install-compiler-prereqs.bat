@@ -2,15 +2,20 @@
 echo Downloading LLVM...
 
 mkdir "C:\llvm-tar"
-cd "C:\llvm-tar"
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz' -OutFile 'C:\llvm-tar\llvm-project-16.0.0.src.tar.xz'"
-dir "C:\llvm-tar"
+cd "C:\llvm-tar-xz"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz' -OutFile 'C:\llvm-tar-xz\llvm-project-16.0.0.src.tar.xz'"
+dir "C:\llvm-tar-xz"
 
 echo Unzipping LLVM...
 
+mkdir "C:\llvm-tar"
+cd "C:\llvm-tar"
+7z x "C:\llvm-tar-xz\llvm-project-16.0.0.src.tar.xz" -oC:\llvm-tar
+dir "C:\llvm-tar"
+
 mkdir "C:\llvm-src"
 cd "C:\llvm-src"
-7z x "C:\llvm-tar\llvm-project-16.0.0.src.tar.xz" -oC:\llvm-src
+7z x "C:\llvm-tar\llvm-project-16.0.0.src.tar" -oC:\llvm-src
 dir "C:\llvm-src"
 
 echo Building LLVM...

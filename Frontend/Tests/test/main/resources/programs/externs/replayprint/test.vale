@@ -1,0 +1,13 @@
+import v.builtins.print.*;
+
+extern func runExtCommand() int;
+
+exported func main() int {
+  result = runExtCommand();
+
+  // The test should --replay_whitelist_extern=stdlib.printstr, which means this call will go
+  // through even in replay mode.
+  print("Howdy!\n");
+
+  return result;
+}

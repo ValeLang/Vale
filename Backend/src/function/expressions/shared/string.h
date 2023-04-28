@@ -5,19 +5,25 @@
 
 LLVMValueRef getInnerStrPtrFromWrapperPtr(
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE);
 
 LLVMValueRef getCharsPtrFromWrapperPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE);
 
 LLVMValueRef getLenPtrFromStrWrapperPtr(
+    LLVMContextRef context,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE);
 
 LLVMValueRef getLenFromStrWrapperPtr(
+    LLVMContextRef context,
     LLVMBuilderRef builder,
+    LLVMTypeRef stringInnerStructLT,
     WrapperPtrLE strWrapperPtrLE);
 
 Ref buildConstantVStr(

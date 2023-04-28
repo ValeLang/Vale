@@ -3,14 +3,14 @@
 #include "../function/function.h"
 #include "definefunction.h"
 
-LLVMValueRef addFunction(
+FuncPtrLE addFunction(
     LLVMModuleRef mod,
     const std::string& name,
     LLVMTypeRef returnLT,
     std::vector<LLVMTypeRef> argsLT) {
   auto functionLT = LLVMFunctionType(returnLT, argsLT.data(), argsLT.size(), false);
   auto functionLF = LLVMAddFunction(mod, name.c_str(), functionLT);
-  return functionLF;
+  return FuncPtrLE(functionLT, functionLF);
 }
 
 void defineFunctionBody(

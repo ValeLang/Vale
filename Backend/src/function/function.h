@@ -34,14 +34,16 @@ public:
       unstackifiedLocalIds(0, addressNumberer_->makeHasher<VariableId*>()) {
   }
 
-  LLVMValueRef getLocalAddr(VariableId* varId) const {
-    assert(unstackifiedLocalIds.count(varId) == 0);
+  LLVMValueRef getLocalAddr(VariableId* varId, bool expectValid) const {
+    if (expectValid) {
+      assert(unstackifiedLocalIds.count(varId) == 0);
+    }
     auto localAddrIter = localAddrByLocalId.find(varId);
     if (localAddrIter != localAddrByLocalId.end()) {
       return localAddrIter->second;
     }
     if (maybeParentBlockState) {
-      return maybeParentBlockState->getLocalAddr(varId);
+      return maybeParentBlockState->getLocalAddr(varId, expectValid);
     } else {
       assert(false);
     }
@@ -88,6 +90,11 @@ public:
     unstackifiedLocalIds.insert(variableId);
   }
 
+
+  void restackify(VariableId* varId) {
+    assert(localWasUnstackified(varId, true));
+    unstackifiedLocalIds.erase(varId);
+  }
 
   void checkAllIntroducedLocalsWereUnstackified() {
     for (auto localIdAndLocalAddr : localAddrByLocalId) {
@@ -164,13 +171,13 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM);
 
-LLVMValueRef declareFunction(
+FuncPtrLE declareFunction(
     GlobalState* globalState,
     Function* functionM);
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
-LLVMValueRef declareExternFunction(
+FuncPtrLE declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM);

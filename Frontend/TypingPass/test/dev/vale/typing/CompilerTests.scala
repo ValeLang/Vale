@@ -93,7 +93,7 @@ class CompilerTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     Collector.onlyOf(coutputs.lookupFunction("main"), classOf[ParameterT]).tyype == CoordT(ShareT, IntT.i32)
     val lookup = Collector.onlyOf(coutputs.lookupFunction("main"), classOf[LocalLookupTE]);
-    lookup.localVariable.id.localName match { case CodeVarNameT(StrI("a")) => }
+    lookup.localVariable.name match { case CodeVarNameT(StrI("a")) => }
     lookup.localVariable.coord match { case CoordT(ShareT, IntT.i32) => }
   }
 
@@ -134,7 +134,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |exported func main() int {
-        |  [#]int[6, 60, 103].2
+        |  [#]int(6, 60, 103).2
         |}
         |""".stripMargin)
     compile.expectCompilerOutputs()
@@ -199,7 +199,7 @@ class CompilerTests extends FunSuite with Matchers {
     val main = coutputs.lookupFunction("main")
     val tyype =
       Collector.only(main.body, {
-        case LetNormalTE(ReferenceLocalVariableT(IdT(_, _, CodeVarNameT(StrI("b"))), _, tyype), _) => tyype
+        case LetNormalTE(ReferenceLocalVariableT(CodeVarNameT(StrI("b")), _, tyype), _) => tyype
       })
     tyype.ownership shouldEqual BorrowT
   }
@@ -434,9 +434,7 @@ class CompilerTests extends FunSuite with Matchers {
     main shouldHave {
       case ReferenceMemberLookupTE(_,
         SoftLoadTE(_,BorrowT),
-        IdT(_,
-          Vector(StructTemplateNameT(StrI("MyStruct"))),
-          CodeVarNameT(StrI("a"))),
+        CodeVarNameT(StrI("a")),
         CoordT(ShareT,IntT(32)),
         FinalT) =>
     }
@@ -610,7 +608,7 @@ class CompilerTests extends FunSuite with Matchers {
 
     val main = coutputs.lookupFunction("main")
 
-    Collector.only(main, { case LetNormalTE(ReferenceLocalVariableT(IdT(_,_,CodeVarNameT(StrI("x"))),FinalT,CoordT(OwnT,InterfaceTT(simpleName("MyInterface")))), _) => })
+    Collector.only(main, { case LetNormalTE(ReferenceLocalVariableT(CodeVarNameT(StrI("x")),FinalT,CoordT(OwnT,InterfaceTT(simpleName("MyInterface")))), _) => })
 
     val upcast = Collector.onlyOf(main, classOf[UpcastTE])
     upcast.result.coord match { case CoordT(OwnT,InterfaceTT(IdT(x, Vector(), InterfaceNameT(InterfaceTemplateNameT(StrI("MyInterface")), Vector())))) => vassert(x.isTest) }
@@ -706,7 +704,7 @@ class CompilerTests extends FunSuite with Matchers {
     Collector.only(main, {
       case ReferenceMemberLookupTE(_,
         SoftLoadTE(LocalLookupTE(_,ReferenceLocalVariableT(_,FinalT,CoordT(_,StructTT(_)))),BorrowT),
-        IdT(_, Vector(StructTemplateNameT(StrI("Vec3i"))),CodeVarNameT(StrI("x"))),CoordT(ShareT,IntT.i32),FinalT) =>
+        CodeVarNameT(StrI("x")),CoordT(ShareT,IntT.i32),FinalT) =>
     })
   }
 
@@ -1212,131 +1210,136 @@ class CompilerTests extends FunSuite with Matchers {
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
 
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    val humanizePos = (x: CodeLocationS) => SourceCodeUtils.humanizePos(filenamesAndSources, x)
+    val linesBetween = (x: CodeLocationS, y: CodeLocationS) => SourceCodeUtils.linesBetween(filenamesAndSources, x, y)
+    val lineRangeContaining = (x: CodeLocationS) => SourceCodeUtils.lineRangeContaining(filenamesAndSources, x)
+    val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(filenamesAndSources, x)
+
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindTypeT(tz, "Spaceship")).nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,
         FindFunctionFailure(
           CodeNameS(StrI("someFunc")),
           Vector(),
           Map()))).nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,
         FindFunctionFailure(CodeNameS(interner.intern(StrI(""))), Vector(), Map())))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CannotSubscriptT(
         tz,
         fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindIdentifierToLoadT(
         tz,
         CodeNameS(StrI("spaceship"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindMemberT(
         tz,
         "hp"))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       BodyResultDoesntMatch(
         tz,
         FunctionNameS(StrI("myFunc"), CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForReturnT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForMutateT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForMutateT(
         tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantMoveOutOfMemberT(
         tz,
         CodeVarNameT(StrI("hp"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantUseUnstackifiedLocal(
         tz,
         CodeVarNameT(StrI("firefly"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantUnstackifyOutsideLocalFromInsideWhile(
         tz,
         CodeVarNameT(StrI("firefly"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       FunctionAlreadyExists(tz.head, tz.head, fireflySignature.fullName))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantMutateFinalMember(
         tz,
         serenityKind,
-        IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector(), CodeVarNameT(StrI("bork")))))
+        CodeVarNameT(StrI("bork"))))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       LambdaReturnDoesntMatchInterfaceConstructor(
         tz))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       IfConditionIsntBoolean(
         tz, fireflyCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       WhileConditionIsntBoolean(
         tz, fireflyCoord))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantImplNonInterface(
         tz, KindTemplata(fireflyKind)))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ImmStructCantHaveVaryingMember(
         tz, TopLevelStructDeclarationNameS(interner.intern(StrI("SpaceshipSnapshot")), tz.head), "fuel"))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantDowncastUnrelatedTypes(
         tz, ispaceshipKind, unrelatedKind, Vector()))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantDowncastToInterface(
         tz, ispaceshipKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExportedFunctionDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), fireflySignature, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExportedImmutableKindDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), serenityKind, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExternFunctionDependedOnNonExportedKind(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), fireflySignature, fireflyKind))
       .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       TypeExportedMultipleTimes(
         tz, PackageCoordinate.TEST_TLD(interner, keywords), Vector(fireflyExport, serenityExport)))
       .nonEmpty)
-//    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+//    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
 //      NotEnoughToSolveError(
 //        tz,
 //        Map(
 //          CodeRuneS(StrI("X")) -> KindTemplata(fireflyKind)),
 //        Vector(CodeRuneS(StrI("Y")))))
 //      .nonEmpty)
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       TypingPassSolverError(
         tz,
         FailedCompilerSolve(
@@ -1356,7 +1359,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |exported func main() int {
-        |  arr = [#][true, 42];
+        |  arr = [#](true, 42);
         |  return arr.1;
         |}
         |""".stripMargin)
@@ -1450,19 +1453,6 @@ class CompilerTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getCompilerOutputs() match {
       case Err(ImmStructCantHaveVaryingMember(_,TopLevelStructDeclarationNameS(StrI("Spaceship"),_),"name")) =>
-    }
-  }
-
-  test("Report when num elements mismatch") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |exported func main() bool {
-        |  arr = [#4][true, false, false];
-        |  return arr.0;
-        |}
-        |""".stripMargin)
-    compile.getCompilerOutputs() match {
-      case Err(InitializedWrongNumberOfElements(_, 4, 3)) =>
     }
   }
 

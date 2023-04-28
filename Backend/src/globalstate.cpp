@@ -16,30 +16,38 @@ GlobalState::GlobalState(AddressNumberer* addressNumberer_) :
     regionIdByKind(0, addressNumberer->makeHasher<Kind*>())
 {}
 
-std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionTypes(InterfaceKind* kind) {
+std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionTypesNonPointer(InterfaceKind* kind) {
   std::vector<LLVMTypeRef> interfaceFunctionsLT;
   if (auto maybeInterfaceDefM = program->getMaybeInterface(kind)) {
     auto interfaceDefM = *maybeInterfaceDefM;
     for (auto method : interfaceDefM->methods) {
       auto interfaceFunctionLT = translateInterfaceMethodToFunctionType(this, method);
-      interfaceFunctionsLT.push_back(LLVMPointerType(interfaceFunctionLT, 0));
+      interfaceFunctionsLT.push_back(interfaceFunctionLT);
     }
   }
   for (auto interfaceExtraMethod : interfaceExtraMethods[kind]) {
     auto interfaceFunctionLT =
         translateInterfaceMethodToFunctionType(this, interfaceExtraMethod);
-    interfaceFunctionsLT.push_back(LLVMPointerType(interfaceFunctionLT, 0));
+    interfaceFunctionsLT.push_back(interfaceFunctionLT);
   }
 
   return interfaceFunctionsLT;
 }
 
-std::vector<LLVMValueRef> GlobalState::getEdgeFunctions(Edge* edge) {
+std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionPointerTypes(InterfaceKind* kind) {
+  std::vector<LLVMTypeRef> interfaceFunctionsLT;
+  for (auto funcType : getInterfaceFunctionTypesNonPointer(kind)) {
+    interfaceFunctionsLT.push_back(LLVMPointerType(funcType, 0));
+  }
+  return interfaceFunctionsLT;
+}
+
+std::vector<FuncPtrLE> GlobalState::getEdgeFunctions(Edge* edge) {
   auto interfaceM = program->getInterface(edge->interfaceName);
 
   assert(edge->structPrototypesByInterfaceMethod.size() == interfaceM->methods.size());
 
-  std::vector<LLVMValueRef> edgeFunctionsL;
+  std::vector<FuncPtrLE> edgeFunctionsL;
 
   {
     auto overridesBySubstructI = overridesBySubstructByInterface.find(edge->interfaceName);
@@ -133,7 +141,7 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
   }
 }
 
-LLVMValueRef GlobalState::getFunction(Prototype* prototype) {
+FuncPtrLE GlobalState::getFunction(Prototype* prototype) {
   auto functionIter = functions.find(prototype->name->name);
   if (functionIter != functions.end()) {
     return functionIter->second;
@@ -152,6 +160,7 @@ LLVMValueRef GlobalState::getInterfaceTablePtr(Edge* edge) {
   assert(iter != interfaceTablePtrs.end());
   return iter->second;
 }
+
 LLVMValueRef GlobalState::getOrMakeStringConstant(const std::string& str) {
   auto iter = stringConstants.find(str);
   if (iter == stringConstants.end()) {

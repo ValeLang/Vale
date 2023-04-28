@@ -200,7 +200,7 @@ class BodyCompiler(
       // We don't want the user to accidentally just move it somewhere, they need to
       // promise it gets destroyed.
       val destructeeName = params2.head.name
-      if (!env.unstackifieds.exists(_.localName == destructeeName)) {
+      if (!env.unstackifieds.contains(destructeeName)) {
         throw CompileErrorExceptionT(RangedInternalErrorT(body1.range :: parentRanges, "Destructee wasn't moved/destroyed!"))
       }
     }
@@ -227,8 +227,8 @@ class BodyCompiler(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
-        if (!nenv.declaredLocals.exists(_.id.localName == nameTranslator.translateVarNameStep(name))) {
+      case ParameterS(AtomSP(_, Some(CaptureS(name, false)), _, _, _)) => {
+        if (!nenv.declaredLocals.exists(_.name == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

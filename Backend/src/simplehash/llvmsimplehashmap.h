@@ -35,8 +35,8 @@ public:
       LLVMTypeRef valueLT,
       LLVMTypeRef hasherLT,
       LLVMTypeRef equatorLT,
-      LLVMValueRef hasherLF,
-      LLVMValueRef equatorLF) {
+      FuncPtrLE hasherLF,
+      FuncPtrLE equatorLF) {
     auto int8LT = LLVMInt8TypeInContext(globalState->context);
     auto voidPtrLT = LLVMPointerType(int8LT, 0);
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
@@ -121,11 +121,11 @@ public:
         nodesGlobalLE, LLVMConstArray(nodeStructLT.getStructLT(), nodesElementsLE.data(), nodesElementsLE.size()));
 
     std::vector<LLVMValueRef> presencesIndices = {constI64LE(globalState->context, 0), constI64LE(globalState->context, 0) };
-    auto presencesFirstPtrLE = LLVMConstGEP(presencesGlobalLE, presencesIndices.data(), presencesIndices.size());
+    auto presencesFirstPtrLE = LLVMConstGEP2(LLVMArrayType(int8LT, cppMap.capacity), presencesGlobalLE, presencesIndices.data(), presencesIndices.size());
     assert(LLVMTypeOf(presencesFirstPtrLE) == int8PtrLT);
 
     std::vector<LLVMValueRef> nodesIndices = {constI64LE(globalState->context, 0), constI64LE(globalState->context, 0) };
-    auto nodesFirstPtrLE = LLVMConstGEP(nodesGlobalLE, nodesIndices.data(), nodesIndices.size());
+    auto nodesFirstPtrLE = LLVMConstGEP2(LLVMArrayType(nodeStructLT.getStructLT(), cppMap.capacity), nodesGlobalLE, nodesIndices.data(), nodesIndices.size());
 
     std::vector<LLVMValueRef> mapMembersLE = {
         constI64LE(globalState, cppMap.capacity),
@@ -142,7 +142,7 @@ public:
 
   // Returns -1 if not found.
   LLVMValueRef buildFindIndexOf(LLVMBuilderRef builder, LLVMValueRef mapPtrLE, LLVMValueRef keyLE) {
-    return buildSimpleCall(builder, findIndexOfLF, {mapPtrLE, keyLE});
+    return findIndexOfLF.call(builder, {mapPtrLE, keyLE}, "index");
   }
 
   // This does no checking on whether something's actually there, and could return garbage if
@@ -153,7 +153,7 @@ public:
       LLVMValueRef mapPtrLE,
       LLVMValueRef indexInTableLE) {
     auto entriesPtrLE = mapStructLT.getMember(builder, mapPtrLE, MapMember::ENTRIES);
-    auto entryLE = subscript(builder, entriesPtrLE, indexInTableLE, "entry");
+    auto entryLE = subscript(builder, nodeStructLT.getStructLT(), entriesPtrLE, indexInTableLE, "entry");
     assert(LLVMTypeOf(entryLE) == nodeStructLT.getStructLT());
     return entryLE;
   }
@@ -182,9 +182,9 @@ private:
       LLVMTypeRef equatorLT,
       StructLT<NodeNumMembers, NodeMember> nodeStructLT,
       StructLT<MapNumMembers, MapMember> mapStructLT,
-      LLVMValueRef hasherLF,
-      LLVMValueRef equatorLF,
-      LLVMValueRef findIndexOfLF) :
+      FuncPtrLE hasherLF,
+      FuncPtrLE equatorLF,
+      FuncPtrLE findIndexOfLF) :
     globalState(globalState),
     mapTypeName(mapTypeName),
     keyLT(keyLT),
@@ -201,12 +201,14 @@ private:
   }
 
   void defineFindIndexOf() {
+    auto voidLT = LLVMVoidTypeInContext(globalState->context);
     auto int1LT = LLVMInt1TypeInContext(globalState->context);
+    auto int8LT = LLVMInt8TypeInContext(globalState->context);
     auto int32LT = LLVMInt32TypeInContext(globalState->context);
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
     defineFunctionBody(
-        globalState->context, findIndexOfLF, int64LT, mapTypeName + "_findIndexOf",
-        [this, int1LT, int32LT, int64LT](FunctionState* functionState, LLVMBuilderRef builder){
+        globalState->context, findIndexOfLF.ptrLE, int64LT, mapTypeName + "_findIndexOf",
+        [this, int1LT, int8LT, int32LT, int64LT, voidLT](FunctionState* functionState, LLVMBuilderRef builder){
           auto mapPtrLE = LLVMGetParam(functionState->containingFuncL, 0);
           auto keyLE = LLVMGetParam(functionState->containingFuncL, 1);
           // if (!entries) {
@@ -224,20 +226,20 @@ private:
           auto hasherPtrLE = mapStructLT.getMemberPtr(builder, mapPtrLE, MapMember::HASHER);
           auto equatorPtrLE = mapStructLT.getMemberPtr(builder, mapPtrLE, MapMember::EQUATOR);
           auto presencesPtrLE = mapStructLT.getMember(builder, mapPtrLE, MapMember::PRESENCES);
-          auto hashLE = buildSimpleCall(builder, hasherLF, {hasherPtrLE, keyLE});
+          auto hashLE = hasherLF.call(builder, {hasherPtrLE, keyLE}, "hash");
           auto startIndexLE = LLVMBuildURem(builder, hashLE, capacityLE, "startIndex");
           // for (int64_t i = 0; i < capacity; i++) {
           auto capacityI32LE = LLVMBuildTrunc(builder, capacityLE, int32LT, "capacityI32");
           intRangeLoop(
               globalState, functionState, builder, capacityI32LE,
-              [this, functionState, int1LT, int64LT, startIndexLE, entriesPtrLE, capacityLE, equatorPtrLE, presencesPtrLE, keyLE](
+              [this, functionState, int1LT, int8LT, int64LT, startIndexLE, entriesPtrLE, capacityLE, equatorPtrLE, presencesPtrLE, keyLE](
                   LLVMValueRef indexI32LE, LLVMBuilderRef builder){
                 auto indexLE = LLVMBuildZExt(builder, indexI32LE, int64LT, "index");
                 // int64_t indexInTable = (startIndex + i) % capacity;
                 auto startIndexPlusILE = LLVMBuildAdd(builder, startIndexLE, indexLE, "");
                 auto indexInTableLE = LLVMBuildURem(builder, startIndexPlusILE, capacityLE, "indexInTable");
                 // if (!presences[indexInTable]) {
-                auto presenceI8LE = subscript(builder, presencesPtrLE, indexInTableLE, "presenceI8");
+                auto presenceI8LE = subscript(builder, int8LT, presencesPtrLE, indexInTableLE, "presenceI8");
                 auto presenceLE = LLVMBuildTrunc(builder, presenceI8LE, int1LT, "presence");
                 auto notPresent = LLVMBuildNot(builder, presenceLE, "notPresent");
                 buildIfReturn(
@@ -247,9 +249,9 @@ private:
                       return constI64LE(globalState, -1);
                     });
                 // if (equator(entries[indexInTable], key)) {
-                auto entryPtrLE = subscriptForPtr(builder, entriesPtrLE, indexInTableLE, "entry");
+                auto entryPtrLE = subscriptForPtr(builder, nodeStructLT.getStructLT(), entriesPtrLE, indexInTableLE, "entry");
                 auto entryKeyLE = nodeStructLT.getMember(builder, entryPtrLE, NodeMember::KEY, "entryKey");
-                auto equalI8LE = buildSimpleCall(builder, equatorLF, {equatorPtrLE, entryKeyLE, keyLE});
+                auto equalI8LE = equatorLF.call(builder, {equatorPtrLE, entryKeyLE, keyLE}, "equalI8");
                 auto equalLE = LLVMBuildTrunc(builder, equalI8LE, int1LT, "equal");
                 buildIfReturn(
                     globalState, functionState->containingFuncL, builder, equalLE,
@@ -258,9 +260,9 @@ private:
                       return indexInTableLE;
                     });
               });
-          buildPrint(globalState, builder, "Unreachable!\n");
+          buildPrintToStderr(globalState, builder, "Unreachable!\n");
           // exit(1); // We shouldnt get here, it would mean the table is full.
-          buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, -1)});
+          globalState->externs->exit.call(builder, {constI64LE(globalState, -1)}, "");
           LLVMBuildUnreachable(builder);
         });
   }
@@ -273,10 +275,10 @@ private:
   LLVMTypeRef equatorLT; // Equivalent to CppSimpleHashMap's E
   StructLT<NodeNumMembers, NodeMember> nodeStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMapNode<K, V>
   StructLT<MapNumMembers, MapMember> mapStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMap<K, V, H, E>
-  LLVMValueRef hasherLF;
-  LLVMValueRef equatorLF;
+  FuncPtrLE hasherLF;
+  FuncPtrLE equatorLF;
 
-  LLVMValueRef findIndexOfLF;
+  FuncPtrLE findIndexOfLF;
 };
 
 #endif //SIMPLEHASH_LLVMSIMPLEHASHMAP_H

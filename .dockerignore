@@ -1,0 +1,9 @@
+.*
+**/*.idea
+**/*.md
+**/*.bat
+**/.gitignore
+**/.git
+**/.DS_Store
+
+Backend/build

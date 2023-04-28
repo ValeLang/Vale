@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.{CodeLocationS, FileCoordinate, PackageCoordinate, finalast, vwat}
+import dev.vale.{CodeLocationS, FileCoordinate, PackageCoordinate, SourceCodeUtils, finalast, vwat}
 import dev.vale.finalast.IdH
 import dev.vale.typing.Hinputs
 import dev.vale.typing.names._
@@ -11,12 +11,11 @@ import dev.vale.typing.env.PackageEnvironment
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.CodeLocationS
 import dev.vale.von.{IVonData, VonArray, VonInt, VonMember, VonObject, VonStr}
 
 import scala.collection.immutable.List
 
-class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
+class NameHammer() {
   def getReadableName(namePart: INameT): String = {
     namePart match {
       case SelfNameT() => "self"
@@ -33,7 +32,7 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
       case CitizenNameT(templateName, templateArgs) => getReadableName(templateName)
       case StructTemplateNameT(humanName) => humanName.str
       case InterfaceTemplateNameT(humanName) => humanName.str
-      case ClosureParamNameT() => "closure"
+      case ClosureParamNameT(_) => "closure"
       case CodeVarNameT(name) => name.str
       case ConstructingMemberNameT(name) => name.str
 //      case ConstructorNameT(params) => "constructor"
@@ -71,17 +70,10 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
     hamuts: HamutsBox,
     fullName2: IdT[INameT]
   ): IdH = {
-    val IdT(packageCoord@PackageCoordinate(project, packageSteps), _, _) = fullName2
-    val newNameParts = fullName2.steps.map(step => translateName(hinputs, hamuts, step))
-    val readableName = getReadableName(fullName2.localName)
-
-    val id =
-      if (fullName2.localName.isInstanceOf[ExternFunctionNameT]) {
-        -1
-      } else {
-        hamuts.getNameId(readableName, packageCoord, newNameParts)
-      }
-    finalast.IdH(readableName, id, packageCoord, newNameParts)
+    val IdT(packageCoord, _, localNameT) = fullName2
+    val longName = CompilerErrorHumanizer.humanizeName(_.toString, fullName2)
+    val localName = CompilerErrorHumanizer.humanizeName(_.toString, localNameT)
+    finalast.IdH(localName, packageCoord, longName, longName)
   }
 
   // Adds a step to the name.
@@ -90,9 +82,8 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
     fullName: IdH,
     s: String):
   IdH = {
-    val newNameParts = fullName.parts :+ VonStr(s)
-    val id = hamuts.getNameId(s, fullName.packageCoordinate, newNameParts)
-    IdH(s, id, fullName.packageCoordinate, newNameParts)
+    val IdH(_, packageCoordinate, shortenedName, fullyQualifiedName) = fullName
+    IdH(s, packageCoordinate, shortenedName + "." + s, fullyQualifiedName + "." + s)
   }
 }
 

@@ -87,8 +87,6 @@ class FunctionCompilerClosureOrLightLayer(
       alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
       argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
-    vassert(function.isTemplate)
-
     val (variables, entries) = makeClosureVariablesAndEntries(coutputs, closureStructRef)
     val name = parentEnv.fullName.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
 //    coutputs.declareType(name)
@@ -379,7 +377,6 @@ class FunctionCompilerClosureOrLightLayer(
       argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     checkNotClosure(function)
-    vassert(function.isTemplate)
 
     val outerEnvFullName = parentEnv.fullName.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
     val outerEnv = makeEnvWithoutClosureStuff(parentEnv, function, outerEnvFullName, false)
@@ -396,7 +393,6 @@ class FunctionCompilerClosureOrLightLayer(
       alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
       argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
-    vassert(function.isTemplate)
     val outerEnvFullName = parentEnv.fullName.addStep(nameTranslator.translateGenericFunctionName(function.name))
     val outerEnv = makeEnvWithoutClosureStuff(parentEnv, function, outerEnvFullName, false)
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
@@ -440,15 +436,15 @@ class FunctionCompilerClosureOrLightLayer(
         InheritBoundsFromTypeItself)
     val variables =
       closureStructDef.members.map(member => {
-        val variableFullName = closureStructDef.instantiatedCitizen.fullName.addStep(member.name)
+        val varName = member.name
         member match {
           case NormalStructMemberT(name, variability, ReferenceMemberTypeT(reference)) => {
             ReferenceClosureVariableT(
-              variableFullName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
+              varName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
           }
           case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
             AddressibleClosureVariableT(
-              variableFullName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
+              varName, closureStructRef, variability, substituter.substituteForCoord(coutputs, reference))
           }
           case VariadicStructMemberT(name, tyype) => vimpl()
         }

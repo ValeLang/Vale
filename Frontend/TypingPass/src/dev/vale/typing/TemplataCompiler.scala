@@ -954,40 +954,41 @@ class TemplataCompiler(
         }
         case st@StructDefinitionTemplata(declaringEnv, structA) => {
           vcurious()
-          if (structA.isTemplate) {
-            vfail("Can't coerce " + structA.name + " to be a coord, is a template!")
-          }
-          val kind =
-            delegate.resolveStruct(coutputs, env, range, st, Vector.empty).expect().kind
-          val mutability = Compiler.getMutability(coutputs, kind)
-
-          // Default ownership is own for mutables, share for imms
-          val ownership =
-            mutability match {
-              case MutabilityTemplata(MutableT) => OwnT
-              case MutabilityTemplata(ImmutableT) => ShareT
-              case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
-            }
-          val coerced = CoordTemplata(CoordT(ownership, kind))
-          (coerced)
+//          if (structA.isTemplate) {
+//            vfail("Can't coerce " + structA.name + " to be a coord, is a template!")
+//          }
+//          val kind =
+//            delegate.resolveStruct(coutputs, env, range, st, Vector.empty).expect().kind
+//          val mutability = Compiler.getMutability(coutputs, kind)
+//
+//          // Default ownership is own for mutables, share for imms
+//          val ownership =
+//            mutability match {
+//              case MutabilityTemplata(MutableT) => OwnT
+//              case MutabilityTemplata(ImmutableT) => ShareT
+//              case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+//            }
+//          val coerced = CoordTemplata(CoordT(ownership, kind))
+//          (coerced)
         }
         case it@InterfaceDefinitionTemplata(declaringEnv, interfaceA) => {
-          if (interfaceA.isTemplate) {
-            vfail("Can't coerce " + interfaceA.name + " to be a coord, is a template!")
-          }
-          val kind =
-            delegate.resolveInterface(coutputs, env, range, it, Vector.empty).expect().kind
-          val mutability = Compiler.getMutability(coutputs, kind)
-          val coerced =
-            CoordTemplata(
-              CoordT(
-                mutability match {
-                  case MutabilityTemplata(MutableT) => OwnT
-                  case MutabilityTemplata(ImmutableT) => ShareT
-                  case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
-                },
-                kind))
-          (coerced)
+          vcurious()
+//          if (interfaceA.isTemplate) {
+//            vfail("Can't coerce " + interfaceA.name + " to be a coord, is a template!")
+//          }
+//          val kind =
+//            delegate.resolveInterface(coutputs, env, range, it, Vector.empty).expect().kind
+//          val mutability = Compiler.getMutability(coutputs, kind)
+//          val coerced =
+//            CoordTemplata(
+//              CoordT(
+//                mutability match {
+//                  case MutabilityTemplata(MutableT) => OwnT
+//                  case MutabilityTemplata(ImmutableT) => ShareT
+//                  case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+//                },
+//                kind))
+//          (coerced)
         }
         case _ => {
           vfail("Can't coerce a " + templata.tyype + " to be a coord!")

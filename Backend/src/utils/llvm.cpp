@@ -3,6 +3,8 @@
 //
 
 #include "llvm.h"
+#include <region/common/migration.h>
+#include <cassert>
 
 inline LLVMValueRef constI64LE(LLVMContextRef context, int64_t n) {
   return LLVMConstInt(LLVMInt64TypeInContext(context), n, false);
@@ -17,17 +19,21 @@ LLVMValueRef ptrIsNull(LLVMContextRef context, LLVMBuilderRef builder, LLVMValue
 
 LLVMValueRef subscriptForPtr(
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elementsPtrLE,
     LLVMValueRef indexLE,
     const std::string& name) {
   std::vector<LLVMValueRef> indices = { indexLE };
-  return LLVMBuildGEP(builder, elementsPtrLE, indices.data(), indices.size(), name.c_str());
+  auto resultLE = LLVMBuildInBoundsGEP2(builder, elementLT, elementsPtrLE, indices.data(), indices.size(), name.c_str());
+  assert(LLVMTypeOf(resultLE) == LLVMPointerType(elementLT, 0));
+  return resultLE;
 }
 
 LLVMValueRef subscript(
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elementsPtrLE,
     LLVMValueRef indexLE,
     const std::string& name) {
-  return LLVMBuildLoad(builder, subscriptForPtr(builder, elementsPtrLE, indexLE), name.c_str());
+  return LLVMBuildLoad2(builder, elementLT, subscriptForPtr(builder, elementLT, elementsPtrLE, indexLE), name.c_str());
 }

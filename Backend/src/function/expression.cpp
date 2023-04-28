@@ -68,17 +68,22 @@ Ref translateExpressionInner(
     auto resultLE =
         globalState->getRegion(globalState->metalCache->voidRef)
             ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->voidRef, resultRef);
-    auto loadedLE = makeConstExpr(functionState, builder, resultLE);
+    auto resultLT =
+        globalState->getRegion(globalState->metalCache->voidRef)
+            ->translateType(globalState->metalCache->voidRef);
+    auto loadedLE = makeConstExpr(functionState, builder, resultLT, resultLE);
     return wrap(globalState->getRegion(globalState->metalCache->voidRef), globalState->metalCache->voidRef, loadedLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
-
+    auto resultLT =
+        globalState->getRegion(globalState->metalCache->floatRef)
+            ->translateType(globalState->metalCache->floatRef);
     auto resultLE =
             makeConstExpr(
                 functionState,
                 builder,
-                LLVMConstReal(LLVMDoubleTypeInContext(globalState->context), constantFloat->value));
-    assert(LLVMTypeOf(resultLE) == LLVMDoubleTypeInContext(globalState->context));
+                resultLT,
+                LLVMConstReal(resultLT, constantFloat->value));
     return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, resultLE);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -139,11 +144,37 @@ Ref translateExpressionInner(
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
     return makeVoidRef(globalState);
+  } else if (auto restackify = dynamic_cast<Restackify*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    // The purpose of LocalStore is to put a swap value into a local, and give
+    // what was in it.
+    auto localAddr = blockState->getLocalAddr(restackify->local->id, false);
+
+    auto refToStore =
+        translateExpression(
+            globalState, functionState, blockState, builder, restackify->sourceExpr);
+
+    // This needs to be after translating sourceExpr because it might be unstackified then, and then
+    // we immediately restackify it after.
+    blockState->restackify(restackify->local->id);
+
+    // We need to load the old ref *after* we evaluate the source expression,
+    // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
+    // See mutswaplocals.vale for test case.
+    auto oldRef =
+        globalState->getRegion(restackify->local->type)
+            ->localStore(functionState, builder, restackify->local, localAddr, refToStore, restackify->knownLive);
+
+    auto toStoreLE =
+        globalState->getRegion(restackify->local->type)->checkValidReference(FL(),
+            functionState, builder, false, restackify->local->type, refToStore);
+    LLVMBuildStore(builder, toStoreLE, localAddr);
+    return makeVoidRef(globalState);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
     // what was in it.
-    auto localAddr = blockState->getLocalAddr(localStore->local->id);
+    auto localAddr = blockState->getLocalAddr(localStore->local->id, true);
 
     auto refToStore =
         translateExpression(
@@ -199,7 +230,7 @@ Ref translateExpressionInner(
     // The purpose of Unstackify is to destroy the local and give what was in
     // it, but in LLVM there's no instruction (or need) for destroying a local.
     // So, we just give what was in it. It's ironically identical to LocalLoad.
-    auto localAddr = blockState->getLocalAddr(unstackify->local->id);
+    auto localAddr = blockState->getLocalAddr(unstackify->local->id, true);
     blockState->markLocalUnstackified(unstackify->local->id);
     return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
@@ -390,7 +421,7 @@ Ref translateExpressionInner(
     auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
     buildIfV(
         globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
         });
 
     auto newcomerRef = translateExpression(globalState, functionState, blockState, builder, newcomerExpr);
@@ -441,7 +472,7 @@ Ref translateExpressionInner(
     auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
     buildIfV(
         globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
         });
 
     auto resultRef =
@@ -480,7 +511,7 @@ Ref translateExpressionInner(
     auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
     buildIfV(
         globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
-          buildPrint(globalState, bodyBuilder, "Error: Destroying non-empty array!");
+          buildPrintToStderr(globalState, bodyBuilder, "Error: Destroying non-empty array!");
         });
 
     if (arrayType->ownership == Ownership::OWN) {

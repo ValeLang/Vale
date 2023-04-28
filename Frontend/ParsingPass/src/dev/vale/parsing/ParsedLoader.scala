@@ -226,7 +226,7 @@ class ParsedLoader(interner: Interner) {
     ast.PatternPP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "preBorrow"), loadRange),
-      loadOptionalObject(getObjectField(jobj, "capture"), loadNameDeclaration),
+      loadOptionalObject(getObjectField(jobj, "capture"), loadDestinationLocal),
       loadOptionalObject(getObjectField(jobj, "templex"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "destructure"), loadDestructure),
       loadOptionalObject(getObjectField(jobj, "virtuality"), loadVirtuality))
@@ -236,6 +236,12 @@ class ParsedLoader(interner: Interner) {
     DestructureP(
       loadRange(getObjectField(jobj, "range")),
       getArrayField(jobj, "patterns").map(expectObject).map(loadPattern))
+  }
+
+  def loadDestinationLocal(jobj: JObject): DestinationLocalP = {
+    DestinationLocalP(
+      loadNameDeclaration(getObjectField(jobj, "name")),
+      loadOptionalObject(getObjectField(jobj, "mutate"), loadRange))
   }
 
   def loadNameDeclaration(jobj: JObject): INameDeclarationP = {
@@ -830,10 +836,10 @@ class ParsedLoader(interner: Interner) {
       loadOwnership(getObjectField(jobj, "ownership")))
   }
 
-  private def loadRegionRune(jobj: JObject) = {
+  private def loadRegionRune(jobj: JObject): RegionRunePT = {
     RegionRunePT(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(jobj, z => loadName(getObjectField(z, "name"))))
+      loadOptionalObject(getObjectField(jobj, "name"), loadName))
   }
 
   def loadIdentifyingRunes(jobj: JObject): GenericParametersP = {

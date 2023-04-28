@@ -257,8 +257,8 @@ case class ElementAddressV(arrayId: AllocationId, elementIndex: Long) {
 
 // Used in tracking reference counts/maps.
 case class CallId(callDepth: Int, function: PrototypeH) {
-  override def toString: String = "ƒ" + callDepth + "/" + (function.fullName.readableName + "_" + function.fullName.id)
-  override def hashCode(): Int = callDepth + function.fullName.id
+  override def toString: String = "ƒ" + callDepth + "/" + (function.fullName.shortenedName)
+  override def hashCode(): Int = callDepth + function.fullName.shortenedName.hashCode
 }
 //case class RegisterId(blockId: BlockId, lineInBlock: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;  }
 case class ArgumentId(callId: CallId, index: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;  }

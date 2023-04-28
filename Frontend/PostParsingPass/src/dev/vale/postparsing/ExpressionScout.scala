@@ -4,7 +4,7 @@ import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, IntLiteralSL, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout, VariabilityLiteralSL}
 import dev.vale.parsing.ast._
 import dev.vale.parsing.{ast, _}
-import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, postparsing, vassert, vcurious, vwat}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, postparsing, vassert, vassertSome, vcurious, vwat}
 import PostParser.{evalRange, noDeclarations, noVariableUses}
 import dev.vale
 import dev.vale.lexing.RangeL
@@ -490,9 +490,7 @@ class ExpressionScout(
           val result =
             size match {
               case RuntimeSizedP => {
-                if (initializingIndividualElements) {
-                  throw CompileErrorExceptionS(CantInitializeIndividualElementsOfRuntimeSizedArray(rangeS))
-                }
+                vassert(!initializingIndividualElements)
                 if (argsSE.isEmpty || argsSE.size > 2) {
                   throw CompileErrorExceptionS(InitializingRuntimeSizedArrayRequiresSizeAndCallable(rangeS))
                 }
@@ -532,11 +530,7 @@ class ExpressionScout(
                   if (argsSE.size != 1) {
                     throw CompileErrorExceptionS(InitializingStaticSizedArrayRequiresSizeAndCallable(rangeS))
                   }
-                  val sizeRuneS =
-                    maybeSizeRuneS match {
-                      case Some(s) => s
-                      case None => throw CompileErrorExceptionS(InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(rangeS))
-                    }
+                  val sizeRuneS = vassertSome(maybeSizeRuneS)
                   val Vector(callableSE) = argsSE
                   StaticArrayFromCallableSE(
                     rangeS, ruleBuilder.toVector, maybeTypeRuneS, mutabilityRuneS, variabilityRuneS, sizeRuneS, callableSE)

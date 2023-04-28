@@ -1,6 +1,6 @@
 package dev.vale.finalast
 
-import dev.vale.{PackageCoordinate, PackageCoordinateMap, StrI, vassert, vassertSome, vcurious, vfail, vimpl}
+import dev.vale.{PackageCoordinate, PackageCoordinateMap, StrI, vassert, vassertSome, vcurious, vfail, vimpl, vpass}
 import dev.vale.von.IVonData
 
 import scala.collection.immutable.ListMap
@@ -64,7 +64,7 @@ case class PackageH(
     val matches =
       (Vector.empty ++
         exportNameToFunction.find(_._1.str == readableName).map(_._2).toVector ++
-        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
+        functions.filter(_.prototype.fullName.localName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
@@ -74,7 +74,7 @@ case class PackageH(
   // Convenience function for the tests to look up a struct.
   // Struct must be at the top level of the program.
   def lookupStruct(humanName: String) = {
-    val matches = structs.filter(_.fullName.readableName == humanName)
+    val matches = structs.filter(_.fullName.localName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -82,7 +82,7 @@ case class PackageH(
   // Convenience function for the tests to look up an interface.
   // Interface must be at the top level of the program.
   def lookupInterface(humanName: String) = {
-    val matches = interfaces.filter(_.fullName.readableName == humanName)
+    val matches = interfaces.filter(_.fullName.shortenedName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -155,7 +155,12 @@ case class StructMemberH(
   // This isn't wired up to anything, feel free to ignore it.
   variability: Variability,
   // The type of the member.
-  tyype: CoordH[KindHT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+  tyype: CoordH[KindHT]) {
+
+  vpass()
+
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+}
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
@@ -235,26 +240,33 @@ case class PrototypeH(
 
 // A unique name for something in the program.
 case class IdH(
-    readableName: String,
-    // -1 means extern and we wont suffix the readableName with the ID.
-    id: Int,
-    packageCoordinate: PackageCoordinate,
-    parts: Vector[IVonData]) {
+  // This is at the beginning so toString puts it at the start, for easier debugging
+  localName: String, // Careful, has collisions.
+  packageCoordinate: PackageCoordinate,
+  // Should be the shortest possible string without collisions
+  shortenedName: String,
+  // Most precise name, without shortening.
+  fullyQualifiedName: String) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case IdH(thatReadableName, thatId, _, _) => {
-        readableName == thatReadableName && id == thatId
+      case IdH(_, thatPackageCoord, thatShortenedName, thatFullyQualifiedName) => {
+        if (shortenedName == thatShortenedName) {
+          // These makes sure that the shortening never has any false collisions.
+          vassert(fullyQualifiedName == thatFullyQualifiedName)
+          vassert(packageCoordinate == thatPackageCoord)
+          true
+        } else {
+          false
+        }
       }
-      case _ => false
     }
   }
-  def toFullString(): String = { IdH.namePartsToString(packageCoordinate, parts) }
 }
 
-object IdH {
-  def namePartsToString(packageCoordinate: PackageCoordinate, parts: Vector[IVonData]) = {
-    packageCoordinate.module.str + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
-  }
-}
+//object IdH {
+//  def namePartsToString(packageCoordinate: PackageCoordinate, parts: Vector[IVonData]) = {
+//    packageCoordinate.module.str + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
+//  }
+//}

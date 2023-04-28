@@ -50,59 +50,59 @@ object FunctionVivem {
 
   def getExternFunction(programH: ProgramH, ref: PrototypeH): (AdapterForExterns, Vector[ReferenceV]) => ReferenceV = {
 
-    ref.fullName.toFullString()
+    ref.fullName.fullyQualifiedName
       // The tests have a mode where they can interpret the builtins as separate packages, instead
       // of pulling it all in as one giant namespace. In that case, it prefixes things such as
       // v::builtins::arith. We can add other prefixes here too as needed.
       .replaceAllLiterally("v::builtins::arith", "") match {
-      case """::F("__vbi_addI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.addI32
-      case """::F("__vbi_addFloatFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.addFloatFloat
-      case """::F("__vbi_panic")""" => VivemExterns.panic
-      case """::F("__vbi_multiplyI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.multiplyI32
-      case """::F("__vbi_subtractFloatFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.subtractFloatFloat
-      case """::F("__vbi_divideI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.divideI32
-      case """::F("__vbi_multiplyFloatFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.multiplyFloatFloat
-      case """::F("__vbi_divideFloatFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.divideFloatFloat
-      case """::F("__vbi_subtractI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.subtractI32
-      case """::F("addStr",[],[R(@,>,s),R(@,<,i(32)),R(@,<,i(32)),R(@,>,s),R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.addStrStr
-      case """ioutils::F("__getch")""" => VivemExterns.getch
-      case """::F("__vbi_eqFloatFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.eqFloatFloat
-      case """math::F("sqrt",[],[R(@,<,f)])""" => VivemExterns.sqrt
-      case """::F("__vbi_lessThanI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.lessThanI32
-      case """::F("__vbi_lessThanFloat",[],[R(@,<,f),R(@,<,f)])""" => VivemExterns.lessThanFloat
-      case """::F("__vbi_greaterThanOrEqI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.greaterThanOrEqI32
-      case """::F("__vbi_greaterThanI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.greaterThanI32
-      case """::F("__vbi_eqI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.eqI32
-      case """::F("__vbi_eqBoolBool",[],[R(@,<,b),R(@,<,b)])""" => VivemExterns.eqBoolBool
-      case """::F("printstr",[],[R(@,>,s),R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.print
-      case """::F("__vbi_not",[],[R(@,<,b)])""" => VivemExterns.not
-      case """::F("castI32Str",[],[R(@,<,i(32))])""" => VivemExterns.castI32Str
-      case """::F("castI64Str",[],[R(@,<,i(64))])""" => VivemExterns.castI64Str
-      case """::F("castI32Float",[],[R(@,<,i(32))])""" => VivemExterns.castI32Float
-      case """::F("castFloatI32",[],[R(@,<,f)])""" => VivemExterns.castFloatI32
-      case """::F("__vbi_lessThanOrEqI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.lessThanOrEqI32
-      case """::F("__vbi_and",[],[R(@,<,b),R(@,<,b)])""" => VivemExterns.and
-      case """::F("__vbi_or",[],[R(@,<,b),R(@,<,b)])""" => VivemExterns.or
-      case """::F("__vbi_modI32",[],[R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.modI32
-      case """::F("__vbi_strLength",[],[R(@,>,s)])""" => VivemExterns.strLength
-      case """::F("castFloatStr",[],[R(@,<,f)])""" => VivemExterns.castFloatStr
-      case """::F("streq",[],[R(@,>,s),R(@,<,i(32)),R(@,<,i(32)),R(@,>,s),R(@,<,i(32)),R(@,<,i(32))])""" => VivemExterns.eqStrStr
-      case """::F("__vbi_negateFloat",[],[R(@,<,f)])""" => VivemExterns.negateFloat
-      case """::F("__vbi_addI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.addI64
-      case """::F("__vbi_multiplyI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.multiplyI64
-      case """::F("__vbi_divideI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.divideI64
-      case """::F("__vbi_subtractI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.subtractI64
-      case """::F("__vbi_lessThanI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.lessThanI64
-      case """::F("__vbi_greaterThanOrEqI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.greaterThanOrEqI64
-      case """::F("__vbi_eqI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.eqI64
-      case """::F("__vbi_castI64Str",[],[R(@,<,i(64))])""" => VivemExterns.castI64Str
-      case """::F("__vbi_castI64Float",[],[R(@,<,i(64))])""" => VivemExterns.castI64Float
-      case """::F("__vbi_castFloatI64",[],[R(@,<,f)])""" => VivemExterns.castFloatI64
-      case """::F("__vbi_lessThanOrEqI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.lessThanOrEqI64
-      case """::F("__vbi_modI64",[],[R(@,<,i(64)),R(@,<,i(64))])""" => VivemExterns.modI64
-      case """::F("TruncateI64ToI32",[],[R(@,<,i(64))])""" => VivemExterns.truncateI64ToI32
+      case """__vbi_addI32(i32, i32)""" => VivemExterns.addI32
+      case """__vbi_addFloatFloat(float, float)""" => VivemExterns.addFloatFloat
+      case """__vbi_panic""" => VivemExterns.panic
+      case """__vbi_multiplyI32(i32, i32)""" => VivemExterns.multiplyI32
+      case """__vbi_subtractFloatFloat(float, float)""" => VivemExterns.subtractFloatFloat
+      case """__vbi_divideI32(i32, i32)""" => VivemExterns.divideI32
+      case """__vbi_multiplyFloatFloat(float, float)""" => VivemExterns.multiplyFloatFloat
+      case """__vbi_divideFloatFloat(float, float)""" => VivemExterns.divideFloatFloat
+      case """__vbi_subtractI32(i32, i32)""" => VivemExterns.subtractI32
+      case """addStr(str, i32, i32, str, i32, i32)""" => VivemExterns.addStrStr
+      case """__getch""" => VivemExterns.getch
+      case """__vbi_eqFloatFloat(float, float)""" => VivemExterns.eqFloatFloat
+      case """sqrt(float)""" => VivemExterns.sqrt
+      case """__vbi_lessThanI32(i32, i32)""" => VivemExterns.lessThanI32
+      case """__vbi_lessThanFloat(float, float)""" => VivemExterns.lessThanFloat
+      case """__vbi_greaterThanOrEqI32(i32, i32)""" => VivemExterns.greaterThanOrEqI32
+      case """__vbi_greaterThanI32(i32, i32)""" => VivemExterns.greaterThanI32
+      case """__vbi_eqI32(i32, i32)""" => VivemExterns.eqI32
+      case """__vbi_eqBoolBool(bool, bool)""" => VivemExterns.eqBoolBool
+      case """printstr(str, i32, i32)""" => VivemExterns.print
+      case """__vbi_not(bool)""" => VivemExterns.not
+      case """castI32Str(i32)""" => VivemExterns.castI32Str
+      case """castI64Str(i64)""" => VivemExterns.castI64Str
+      case """castI32Float(i32)""" => VivemExterns.castI32Float
+      case """castFloatI32(float)""" => VivemExterns.castFloatI32
+      case """__vbi_lessThanOrEqI32(i32, i32)""" => VivemExterns.lessThanOrEqI32
+      case """__vbi_and(bool, bool)""" => VivemExterns.and
+      case """__vbi_or(bool, bool)""" => VivemExterns.or
+      case """__vbi_modI32(i32, i32)""" => VivemExterns.modI32
+      case """__vbi_strLength(str)""" => VivemExterns.strLength
+      case """castFloatStr(float)""" => VivemExterns.castFloatStr
+      case """streq(str, i32, i32, str, i32, i32)""" => VivemExterns.eqStrStr
+      case """__vbi_negateFloat(float)""" => VivemExterns.negateFloat
+      case """__vbi_addI64(i64, i64)""" => VivemExterns.addI64
+      case """__vbi_multiplyI64(i64, i64)""" => VivemExterns.multiplyI64
+      case """__vbi_divideI64(i64, i64)""" => VivemExterns.divideI64
+      case """__vbi_subtractI64(i64, i64)""" => VivemExterns.subtractI64
+      case """__vbi_lessThanI64(i64, i64)""" => VivemExterns.lessThanI64
+      case """__vbi_greaterThanOrEqI64(i64, i64)""" => VivemExterns.greaterThanOrEqI64
+      case """__vbi_eqI64(i64, i64)""" => VivemExterns.eqI64
+      case """__vbi_castI64Str(i64)""" => VivemExterns.castI64Str
+      case """__vbi_castI64Float(i64)""" => VivemExterns.castI64Float
+      case """__vbi_castFloatI64(float)""" => VivemExterns.castFloatI64
+      case """__vbi_lessThanOrEqI64(i64, i64)""" => VivemExterns.lessThanOrEqI64
+      case """__vbi_modI64(i64, i64)""" => VivemExterns.modI64
+      case """TruncateI64ToI32(i64)""" => VivemExterns.truncateI64ToI32
 
-      case _ => vimpl(ref.fullName.toFullString())
+      case _ => vimpl(ref.fullName.fullyQualifiedName)
     }
   }
 }

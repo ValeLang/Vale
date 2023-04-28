@@ -1,4 +1,5 @@
 #include <region/common/heap.h>
+#include <region/common/migration.h>
 #include "counters.h"
 
 LLVMValueRef adjustCounter(
@@ -7,8 +8,9 @@ LLVMValueRef adjustCounter(
     Int* innt,
     LLVMValueRef counterPtrLE,
     int adjustAmount) {
-  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-  auto adjustByLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), adjustAmount, true);
+  auto intLT = LLVMIntTypeInContext(globalState->context, innt->bits);
+  auto prevValLE = LLVMBuildLoad2(builder, intLT, counterPtrLE, "counterPrevVal");
+  auto adjustByLE = LLVMConstInt(intLT, adjustAmount, true);
   assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
   auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
   LLVMBuildStore(builder, newValLE, counterPtrLE);
@@ -22,8 +24,9 @@ LLVMValueRef adjustCounterReturnOld(
     Int* innt,
     LLVMValueRef counterPtrLE,
     int adjustAmount) {
-  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-  auto adjustByLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), adjustAmount, true);
+  auto intLT = LLVMIntTypeInContext(globalState->context, innt->bits);
+  auto prevValLE = LLVMBuildLoad2(builder, intLT, counterPtrLE, "counterPrevVal");
+  auto adjustByLE = LLVMConstInt(intLT, adjustAmount, true);
   assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
   auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
   LLVMBuildStore(builder, newValLE, counterPtrLE);

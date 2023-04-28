@@ -375,6 +375,21 @@ object ExpressionVivem {
 
         NodeContinue(heap.void)
       }
+      case RestackifyH(sourceExpr, localIndex, name) => {
+        val reference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
+            case NodeContinue(r) => r
+          }
+
+        val varAddr = heap.getVarAddress(expressionId.callId, localIndex)
+        heap.addLocal(varAddr, reference, sourceExpr.resultType)
+        heap.vivemDout.print(" v" + varAddr + "<-o" + reference.num)
+
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, reference)
+
+        NodeContinue(heap.void)
+      }
       case LocalStoreH(localIndex, sourceExpr, name) => {
         val reference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {

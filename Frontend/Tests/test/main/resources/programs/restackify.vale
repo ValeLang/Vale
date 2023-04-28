@@ -1,0 +1,12 @@
+import v.builtins.arith.*;
+struct Spaceship { fuel int; }
+func foo(ship Spaceship) Spaceship {
+  [oldFuel] = ship;
+  return Spaceship(oldFuel + 7);
+}
+exported func main() int {
+  ship = Spaceship(35);
+  set ship = foo(ship);
+  [x] = ship;
+  return x;
+}

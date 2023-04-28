@@ -60,7 +60,17 @@ class TypingPassCompilation(
   def expectCompilerOutputs(): Hinputs = {
     getCompilerOutputs() match {
       case Err(err) => {
-        vfail(CompilerErrorHumanizer.humanize(true, getCodeMap().getOrDie(), err))
+
+        val codeMap = getCodeMap().getOrDie()
+        val errorText =
+          CompilerErrorHumanizer.humanize(
+            true,
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            err)
+        vfail(errorText)
       }
       case Ok(x) => x
     }

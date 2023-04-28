@@ -25,16 +25,19 @@ case class LocalsBox(var inner: Locals) {
 
   def snapshot = inner
 
-  def typingPassLocals: Map[IdT[IVarNameT], VariableIdH] = inner.typingPassLocals
+  def typingPassLocals: Map[IVarNameT, VariableIdH] = inner.typingPassLocals
   def unstackifiedVars: Set[VariableIdH] = inner.unstackifiedVars
   def locals: Map[VariableIdH, Local] = inner.locals
   def nextLocalIdNumber: Int = inner.nextLocalIdNumber
 
-  def get(id: IdT[IVarNameT]) = inner.get(id)
+  def get(id: IVarNameT) = inner.get(id)
   def get(id: VariableIdH) = inner.get(id)
 
-  def markUnstackified(varId2: IdT[IVarNameT]): Unit = {
+  def markUnstackified(varId2: IVarNameT): Unit = {
     inner = inner.markUnstackified(varId2)
+  }
+  def markRestackified(varId2: IVarNameT): Unit = {
+    inner = inner.markRestackified(varId2)
   }
 
   def markUnstackified(varIdH: VariableIdH): Unit = {
@@ -54,7 +57,7 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addTypingPassLocal(
-    varId2: IdT[IVarNameT],
+    varId2: IVarNameT,
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -72,7 +75,7 @@ case class LocalsBox(var inner: Locals) {
 case class Locals(
      // This doesn't have all the locals that are in the locals list, this just
      // has any locals added by typingpass.
-     typingPassLocals: Map[IdT[IVarNameT], VariableIdH],
+     typingPassLocals: Map[IVarNameT, VariableIdH],
 
      unstackifiedVars: Set[VariableIdH],
 
@@ -83,7 +86,7 @@ case class Locals(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def addCompilerLocal(
-    varId2: IdT[IVarNameT],
+    varId2: IVarNameT,
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -94,9 +97,9 @@ case class Locals(
     val newLocalHeight = locals.size
     val newLocalIdNumber = nextLocalIdNumber
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, Some(varIdNameH))
-    // Temporary until catalyst fills in stuff here
-    val keepAlive = newLocalId.name.map(_.readableName).getOrElse("").endsWith("__tether");
-    val newLocal = Local(newLocalId, variability, tyype, keepAlive)
+//    // Temporary until catalyst fills in stuff here
+//    val keepAlive = newLocalId.name.map(_.readableName).getOrElse("").endsWith("__tether");
+    val newLocal = Local(newLocalId, variability, tyype)
     val newLocals =
       Locals(
         typingPassLocals + (varId2 -> newLocalId),
@@ -113,7 +116,7 @@ case class Locals(
     val newLocalHeight = locals.size
     val newLocalIdNumber = nextLocalIdNumber
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, None)
-    val newLocal = Local(newLocalId, variability, tyype, false)
+    val newLocal = Local(newLocalId, variability, tyype)
     val newLocals =
       Locals(
         typingPassLocals,
@@ -123,8 +126,12 @@ case class Locals(
     (newLocals, newLocal)
   }
 
-  def markUnstackified(varId2: IdT[IVarNameT]): Locals = {
+  def markUnstackified(varId2: IVarNameT): Locals = {
     markUnstackified(typingPassLocals(varId2))
+  }
+
+  def markRestackified(varId2: IVarNameT): Locals = {
+    markRestackified(typingPassLocals(varId2))
   }
 
   def markUnstackified(varIdH: VariableIdH): Locals = {
@@ -136,7 +143,16 @@ case class Locals(
     Locals(typingPassLocals, unstackifiedVars + varIdH, locals, nextLocalIdNumber)
   }
 
-  def get(varId: IdT[IVarNameT]): Option[Local] = {
+  def markRestackified(varIdH: VariableIdH): Locals = {
+    // Make sure it existed and was unstackified
+    vassert(locals.contains(varIdH))
+    if (!unstackifiedVars.contains(varIdH)) {
+      vfail("Already unstackified " + varIdH)
+    }
+    Locals(typingPassLocals, unstackifiedVars - varIdH, locals, nextLocalIdNumber)
+  }
+
+  def get(varId: IVarNameT): Option[Local] = {
     typingPassLocals.get(varId) match {
       case None => None
       case Some(index) => Some(locals(index))
@@ -149,10 +165,7 @@ case class Locals(
 }
 
 class Hammer(interner: Interner, keywords: Keywords) {
-  val nameHammer: NameHammer =
-    new NameHammer((hinputs, hamuts, step) => {
-      vonHammer.translateName(hinputs, hamuts, step)
-    })
+  val nameHammer: NameHammer = new NameHammer()
   val structHammer: StructHammer =
     new StructHammer(
       interner,

@@ -102,7 +102,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.only(main, {
       case LetNormalTE(
         ReferenceLocalVariableT(
-          IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),_,_), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,_),_,_)),ClosureParamNameT()),
+          ClosureParamNameT(_),
           FinalT,
           CoordT(ShareT, StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))),
         _) =>
@@ -117,7 +117,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.only(main, {
       case LetNormalTE(
         ReferenceLocalVariableT(
-          IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),_,_), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,_), _, _)),TypingPassBlockResultVarNameT(_)),
+          TypingPassBlockResultVarNameT(_),
           FinalT,
           CoordT(ShareT,IntT(32))),
         _) =>
@@ -150,7 +150,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
     Collector.only(lambda, {
-      case ReferenceMemberLookupTE(_,_, IdT(_, _, CodeVarNameT(StrI("x"))), _, _) =>
+      case ReferenceMemberLookupTE(_,_, CodeVarNameT(StrI("x")), _, _) =>
     })
 
     // Make sure there's a function that takes in the closured vars struct, and returns an int
@@ -177,7 +177,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.onlyOf(main, classOf[FunctionCallTE])
 
     Collector.only(lambda, {
-      case LocalLookupTE(_,ReferenceLocalVariableT(IdT(_, _,ClosureParamNameT()),FinalT,_)) =>
+      case LocalLookupTE(_,ReferenceLocalVariableT(ClosureParamNameT(_),FinalT,_)) =>
     })
 
     compile.evalForKind(Vector()) match { case VonInt(4) => }
@@ -205,7 +205,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = coutputs.lookupLambdaIn("main")
     Collector.only(lambda, {
       case MutateTE(
-        AddressMemberLookupTE(_,_,IdT(_, Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"), _),Vector(),Vector()), LambdaCitizenNameT(_)),CodeVarNameT(StrI("x"))),CoordT(ShareT,IntT.i32), _),
+        AddressMemberLookupTE(_,_,CodeVarNameT(StrI("x")),CoordT(ShareT,IntT.i32), _),
         _) =>
     })
 

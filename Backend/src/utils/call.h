@@ -4,7 +4,9 @@
 #include <globalstate.h>
 
 LLVMValueRef buildSimpleCall(
-    LLVMBuilderRef builder, LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef function,
+    LLVMTypeRef funcLT,
     std::vector<LLVMValueRef> args,
     const std::string& name = "");
 

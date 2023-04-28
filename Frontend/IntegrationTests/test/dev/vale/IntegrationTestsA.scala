@@ -2,7 +2,6 @@ package dev.vale
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
-import dev.vale.simplifying.VonHammer
 import dev.vale.finalast.{IdH, IntHT, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
@@ -316,7 +315,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val heap = new Heap(System.out)
     val ref =
       heap.add(OwnH, YonderH, StructInstanceV(
-        packageH.lookupStruct("SomeStruct"),
+        packageH.lookupStruct("SomeStruct<i32>"),
         Some(Vector())))
     compile.run(heap, Vector(ref))
   }
@@ -473,7 +472,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |exported func main() int {
-        |  v = Vec<3, int>(#[#][3, 4, 5]);
+        |  v = Vec<3, int>(#[#](3, 4, 5));
         |  return v.values.2;
         |}
       """.stripMargin)
@@ -849,11 +848,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get(interner.intern(StrI("sqrt")))) match {
-      case PrototypeH(IdH("sqrt",_,PackageCoordinate(StrI("math"),Vector()),_),_,_) =>
+      case PrototypeH(IdH("sqrt",PackageCoordinate(StrI("math"),Vector()),_,_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call
-    val externSqrt = packageH.lookupFunction("sqrt")
+    val externSqrt = packageH.lookupFunction("sqrt(float)")
     vassert(externSqrt.isExtern)
 
     compile.evalForKind(Vector()) match { case VonInt(4) => }
@@ -982,5 +981,27 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """.stripMargin)
 
     compile.evalForKind(Vector()) match { case VonInt(7) => }
+  }
+
+  test("Restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile = RunCompilation.test(Tests.loadExpected("programs/restackify.vale"))
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
+  test("Destructure restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile = RunCompilation.test(Tests.loadExpected("programs/destructure_restackify.vale"))
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
+  }
+
+  test("Loop restackify") {
+    // Allow set on variables that have been moved already, which is useful for linear style.
+    val compile = RunCompilation.test(Tests.loadExpected("programs/loop_restackify.vale"))
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 }

@@ -373,10 +373,7 @@ class AnonymousInterfaceMacro(
       interfaceA.mutabilityRune,
       interfaceA.maybePredictedMutability,
       TemplateTemplataType(
-        (interfaceA.tyype match {
-          case KindTemplataType() => Vector()
-          case TemplateTemplataType(paramTypes, KindTemplataType()) => paramTypes
-        }) ++ memberRunes.map(_ => CoordTemplataType()),
+        interfaceA.tyype.paramTypes ++ memberRunes.map(_ => CoordTemplataType()),
         KindTemplataType()),
       structGenericParams,
       runeToType.toMap,
@@ -470,7 +467,7 @@ class AnonymousInterfaceMacro(
           ParameterS(
             AtomSP(
               abstractParamRange,
-              Some(CaptureS(interner.intern(SelfNameS()))),
+              Some(CaptureS(interner.intern(SelfNameS()), false)),
               None,//Some(OverrideSP(abstractParamRange, RuneUsage(abstractParamCoordRune.range, AnonymousSubstructParentInterfaceTemplateRuneS()))),
               Some(RuneUsage(abstractParamCoordRune.range, selfCoordRune)),
               None))
@@ -499,10 +496,7 @@ class AnonymousInterfaceMacro(
       interner.intern(ForwarderFunctionDeclarationNameS(name, methodIndex)),
       attributes,
       TemplateTemplataType(
-        (methodOriginalType match {
-          case FunctionTemplataType() => Vector()
-          case TemplateTemplataType(paramTypes, FunctionTemplataType()) => paramTypes
-        }) ++ struct.genericParameters.map(_ => CoordTemplataType()),
+        methodOriginalType.paramTypes ++ struct.genericParameters.map(_ => CoordTemplataType()),
         FunctionTemplataType()),
       genericParams,
       runeToType.toMap,

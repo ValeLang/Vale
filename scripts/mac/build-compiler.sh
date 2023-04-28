@@ -10,7 +10,7 @@ then
 fi
 shift;
 
-LLVM_MAJOR_VER=14
+LLVM_MAJOR_VER=16
 
 WHICH_TESTS="$1"
 if [ "$WHICH_TESTS" == "--test=none" ]

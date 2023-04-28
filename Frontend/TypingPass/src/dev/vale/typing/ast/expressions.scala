@@ -257,6 +257,14 @@ case class MutateTE(
   override def result = ReferenceResultT(destinationExpr.result.coord)
 }
 
+case class RestackifyTE(
+  variable: ILocalVariableT,
+  sourceExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  override def result = ReferenceResultT(CoordT(ShareT, VoidT()))
+}
+
 
 case class ReturnTE(
   sourceExpr: ReferenceExpressionTE
@@ -492,7 +500,7 @@ case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpr
 case class ReferenceMemberLookupTE(
     range: RangeS,
     structExpr: ReferenceExpressionTE,
-    memberName: IdT[IVarNameT],
+    memberName: IVarNameT,
     memberReference: CoordT,
     // See RMLRMO for why we dont have a targetOwnership field here.
     variability: VariabilityT) extends AddressExpressionTE {
@@ -506,7 +514,7 @@ case class ReferenceMemberLookupTE(
 case class AddressMemberLookupTE(
     range: RangeS,
     structExpr: ReferenceExpressionTE,
-    memberName: IdT[IVarNameT],
+    memberName: IVarNameT,
     resultType2: CoordT,
     variability: VariabilityT) extends AddressExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()

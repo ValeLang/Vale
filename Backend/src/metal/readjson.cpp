@@ -77,16 +77,16 @@ PackageCoordinate* readPackageCoordinate(MetalCache* cache, const json& packageC
 Name* readName(MetalCache* cache, const json& name) {
   assert(name.is_object());
   auto packageCoord = readPackageCoordinate(cache, name["packageCoordinate"]);
-  auto readableName = readString(cache, name["readableName"]);
-  int id = name["id"];
-  auto parts = readArray(cache, name["parts"], readString);
+  auto shortenedName = readString(cache, name["shortenedName"]);
+//  int id = name["id"];
+//  auto parts = readArray(cache, name["parts"], readString);
 
-  std::stringstream nameStrBuilder;
-  nameStrBuilder << readableName;
-  if (id >= 0) {
-    nameStrBuilder << "_" << id;
-  }
-  return cache->getName(packageCoord, nameStrBuilder.str());
+//  std::stringstream nameStrBuilder;
+//  nameStrBuilder << readableName;
+//  if (id >= 0) {
+//    nameStrBuilder << "_" << id;
+//  }
+  return cache->getName(packageCoord, shortenedName);
 }
 
 StructKind* readStructKind(MetalCache* cache, const json& kind) {
@@ -274,7 +274,7 @@ Local* readLocal(MetalCache* cache, const json& local) {
   assert(local["__type"] == "Local");
   auto varId = readVariableId(cache, local["id"]);
   auto ref = readReference(cache, local["type"]);
-  bool keepAlive = local["keepAlive"];
+  bool keepAlive = false;//local["keepAlive"]; // DO NOT SUBMIT remove everywhere
 
   return makeIfNotPresent(
       &makeIfNotPresent(
@@ -308,6 +308,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new Break();
   } else if (type == "Stackify") {
     return new Stackify(
+        readExpression(cache, expression["sourceExpr"]),
+        readLocal(cache, expression["local"]),
+        expression["knownLive"],
+        "");
+  } else if (type == "Restackify") {
+    return new Restackify(
         readExpression(cache, expression["sourceExpr"]),
         readLocal(cache, expression["local"]),
         expression["knownLive"],

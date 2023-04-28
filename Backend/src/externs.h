@@ -3,46 +3,48 @@
 
 class Externs {
 public:
-  LLVMValueRef malloc = nullptr;
-  LLVMValueRef free = nullptr;
-  LLVMValueRef assert = nullptr;
-  LLVMValueRef exit = nullptr;
-  LLVMValueRef perror = nullptr;
-  LLVMValueRef assertI64Eq = nullptr;
-  LLVMValueRef printCStr = nullptr;
-  LLVMValueRef getch = nullptr;
-  LLVMValueRef printInt = nullptr;
-  LLVMValueRef strlen = nullptr;
-  LLVMValueRef memset = nullptr;
-  LLVMValueRef strncpy = nullptr;
-  LLVMValueRef strncmp = nullptr;
-  LLVMValueRef memcpy = nullptr;
+  FuncPtrLE malloc;
+  FuncPtrLE free;
+  FuncPtrLE assert;
+  FuncPtrLE exit;
+  FuncPtrLE perror;
+  FuncPtrLE assertI64Eq;
+  FuncPtrLE printCStr;
+  FuncPtrLE printCStrToStderr;
+  FuncPtrLE getch;
+  FuncPtrLE printInt;
+  FuncPtrLE printIntToStderr;
+  FuncPtrLE strlen;
+  FuncPtrLE memset;
+  FuncPtrLE strncpy;
+  FuncPtrLE strncmp;
+  FuncPtrLE memcpy;
 
 
-  LLVMValueRef fopen = nullptr;
-  LLVMValueRef fclose = nullptr;
-  LLVMValueRef fread = nullptr;
-  LLVMValueRef fwrite = nullptr;
+  FuncPtrLE fopen;
+  FuncPtrLE fclose;
+  FuncPtrLE fread;
+  FuncPtrLE fwrite;
 
-//  LLVMValueRef initTwinPages = nullptr;
-  LLVMValueRef censusContains = nullptr;
-  LLVMValueRef censusAdd = nullptr;
-  LLVMValueRef censusRemove = nullptr;
+//  FuncPtrLE initTwinPages;
+  FuncPtrLE censusContains;
+  FuncPtrLE censusAdd;
+  FuncPtrLE censusRemove;
 
   // https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
-  LLVMValueRef readRegisterI64Intrinsic = nullptr;
-  LLVMValueRef writeRegisterI64Intrinsinc = nullptr;
+  FuncPtrLE readRegisterI64Intrinsic;
+  FuncPtrLE writeRegisterI64Intrinsinc;
   //https://releases.llvm.org/8.0.0/docs/ExceptionHandling.html#llvm-eh-sjlj-setjmp
-  LLVMValueRef setjmpIntrinsic = nullptr;
-  LLVMValueRef longjmpIntrinsic = nullptr;
+  FuncPtrLE setjmpIntrinsic;
+  FuncPtrLE longjmpIntrinsic;
   // https://llvm.org/docs/LangRef.html#llvm-stacksave-intrinsic
-  LLVMValueRef stacksaveIntrinsic = nullptr;
-  LLVMValueRef stackrestoreIntrinsic = nullptr;
+  FuncPtrLE stacksaveIntrinsic;
+  FuncPtrLE stackrestoreIntrinsic;
 
-  LLVMValueRef strHasherCallLF = nullptr;
-  LLVMValueRef strEquatorCallLF = nullptr;
-  LLVMValueRef int256HasherCallLF = nullptr;
-  LLVMValueRef int256EquatorCallLF = nullptr;
+  FuncPtrLE strHasherCallLF;
+  FuncPtrLE strEquatorCallLF;
+  FuncPtrLE int256HasherCallLF;
+  FuncPtrLE int256EquatorCallLF;
 
   Externs(LLVMModuleRef mod, LLVMContextRef context);
 };

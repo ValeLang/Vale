@@ -51,7 +51,7 @@ case class CoordH[+T <: KindHT](
       vassert(location == YonderH)
     }
     case StructHT(name) => {
-      val isBox = name.toFullString.startsWith("::C(\"__Box\"")
+      val isBox = name.fullyQualifiedName.startsWith("__Box")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)

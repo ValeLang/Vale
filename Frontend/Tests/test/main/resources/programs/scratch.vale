@@ -830,11 +830,6 @@ struct AnonymousRunePT {
   range Range;
 }
 impl ITemplexPT for AnonymousRunePT;
-struct BorrowPT {
-  range Range;
-  inner ITemplexPT;
-}
-impl ITemplexPT for BorrowPT;
 struct NamePT {
   range Range;
   str NameP;

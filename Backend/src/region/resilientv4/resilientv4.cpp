@@ -774,7 +774,7 @@ void ResilientV4::deallocate(
   buildVoidIfElse(
       globalState, functionState, builder, tetheredLE,
       [this, functionState, sourceContentsPtrLE, refMT, ref, sourceWrapperPtrLE](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, "Tried to deallocate an object while borrowed!");
+        buildPrintToStderr(globalState, thenBuilder, "Tried to deallocate an object while borrowed!");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
         LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");

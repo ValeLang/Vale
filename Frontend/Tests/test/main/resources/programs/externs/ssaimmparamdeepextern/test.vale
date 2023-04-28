@@ -8,6 +8,6 @@ export [#3]<imm>Spaceship as ImmSpaceshipArray;
 extern func cSumFuel(arr [#3]<imm>Spaceship) int;
 
 exported func main() int {
-  a = #[#][Spaceship(13, 100), Spaceship(14, 100), Spaceship(15, 100)];
+  a = #[#](Spaceship(13, 100), Spaceship(14, 100), Spaceship(15, 100));
   return cSumFuel(a);
 }

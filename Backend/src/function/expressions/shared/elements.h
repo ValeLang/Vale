@@ -112,10 +112,12 @@ LLVMValueRef getRuntimeSizedArrayCapacityPtr(
 void decrementRSASize(
     GlobalState* globalState, FunctionState *functionState, KindStructs* kindStructs, LLVMBuilderRef builder, Reference *rsaRefMT, WrapperPtrLE rsaWrapperPtrLE);
 
+// Returns a ptr to the address it just wrote to
 void storeInnerArrayMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elemsPtrLE,
     LLVMValueRef indexLE,
     LLVMValueRef sourceLE);

@@ -3,6 +3,7 @@
 #include "../../function/expressions/shared/shared.h"
 #include "../../function/expressions/shared/string.h"
 #include "linearstructs.h"
+#include <region/common/migration.h>
 
 
 LinearStructs::LinearStructs(GlobalState* globalState_)
@@ -119,7 +120,7 @@ void LinearStructs::defineInterface(InterfaceKind *interface) {
 void LinearStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
-    std::vector<LLVMValueRef> functions) {
+    std::vector<FuncPtrLE> functions) {
 }
 
 void LinearStructs::defineRuntimeSizedArray(
@@ -167,12 +168,17 @@ LLVMValueRef LinearStructs::getStringBytesPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
-  auto charsArrayPtrLE = LLVMBuildStructGEP(builder, ptrLE, 1, "charsPtr");
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  auto int8ArrayLT = LLVMArrayType(int8LT, 0);
+  auto charsArrayPtrLE =
+      LLVMBuildStructGEP2(
+          builder, stringStructLT, ptrLE, 1, "charsPtr");
 
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), constI64LE(globalState, 0) };
   auto firstCharPtrLE =
-      LLVMBuildGEP(
-          builder, charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
+      LLVMBuildGEP2(
+          builder, int8ArrayLT, charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
   assert(LLVMTypeOf(firstCharPtrLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   return firstCharPtrLE;
 }
@@ -180,18 +186,22 @@ LLVMValueRef LinearStructs::getStringBytesPtr(
 LLVMValueRef LinearStructs::getRuntimeSizedArrayElementsPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    RuntimeSizedArrayT* rsaMT,
     LLVMValueRef ptrLE) {
-  return LLVMBuildStructGEP(builder, ptrLE, 1, "elementsPtr");
+  auto rsaStructLT = getRuntimeSizedArrayStruct(rsaMT);
+  return LLVMBuildStructGEP2(builder, rsaStructLT, ptrLE, 1, "elementsPtr");
 }
 
 LLVMValueRef LinearStructs::getStaticSizedArrayElementsPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    StaticSizedArrayT* ssaMT,
     LLVMValueRef ptrLE) {
-  return LLVMBuildStructGEP(builder, ptrLE, 0, "elementsPtr");
+  auto ssaStructLT = getStaticSizedArrayStruct(ssaMT);
+  return LLVMBuildStructGEP2(builder, ssaStructLT, ptrLE, 0, "elementsPtr");
 }
 
-LLVMValueRef LinearStructs::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
-  auto lenPtrLE = LLVMBuildStructGEP(builder, ptrLE, 0, "lenPtr");
-  return LLVMBuildLoad(builder, lenPtrLE, "len");
-}
+//LLVMValueRef LinearStructs::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
+//  auto lenPtrLE = unmigratedLLVMBuildStructGEP(builder, ptrLE, 0, "lenPtrB");
+//  return unmigratedLLVMBuildLoad(builder, lenPtrLE, "lenY");
+//}

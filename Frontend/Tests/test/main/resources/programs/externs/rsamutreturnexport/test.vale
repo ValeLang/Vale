@@ -2,7 +2,7 @@
 export []<mut>int as MutIntArray;
 
 exported func valeMakeRSA() []<mut>int {
-  ssa = #[#][5, 7, 9, 10, 11];
+  ssa = #[#](5, 7, 9, 10, 11);
   return Array<mut, int>(ssa.len(), { ssa[_] });
 }
 

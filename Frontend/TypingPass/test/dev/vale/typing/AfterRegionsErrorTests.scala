@@ -191,7 +191,17 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
 
     compile.getCompilerOutputs() match {
       case Err(BodyResultDoesntMatch(_, _, _, _)) =>
-      case Err(other) => vwat(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), other))
+      case Err(other) => {
+        val codeMap = compile.getCodeMap().getOrDie()
+        vwat(
+          CompilerErrorHumanizer.humanize(
+          true,
+          SourceCodeUtils.humanizePos(codeMap, _),
+          SourceCodeUtils.linesBetween(codeMap, _, _),
+          SourceCodeUtils.lineRangeContaining(codeMap, _),
+          SourceCodeUtils.lineContaining(codeMap, _),
+          other))
+      }
       case Ok(wat) => vwat(wat)
     }
   }

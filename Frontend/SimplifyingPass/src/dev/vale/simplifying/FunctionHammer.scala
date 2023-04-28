@@ -53,7 +53,7 @@ class FunctionHammer(
         val locals =
           LocalsBox(
             Locals(
-              Map[IdT[IVarNameT], VariableIdH](),
+              Map[IVarNameT, VariableIdH](),
               Set[VariableIdH](),
               Map[VariableIdH,Local](),
               1));

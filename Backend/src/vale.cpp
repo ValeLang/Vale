@@ -3,6 +3,7 @@
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/IRReader.h>
+#include "llvm/Passes/PassBuilder.h"
 
 #include <sys/stat.h>
 
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+
 
 #include "json.hpp"
 #include "function/expressions/shared/shared.h"
@@ -31,7 +33,6 @@
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
-#include "region/assist/assist.h"
 #include "region/resilientv3/resilientv3.h"
 #include "region/unsafe/unsafe.h"
 #include "function/expressions/shared/string.h"
@@ -40,7 +41,6 @@
 #include "function/expressions/shared/members.h"
 #include "function/expressions/expressions.h"
 #include "region/naiverc/naiverc.h"
-#include "region/resilientv4/resilientv4.h"
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -74,10 +74,10 @@ std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
 
-std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
+std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
 Prototype* makeValeMainFunction(
     GlobalState* globalState,
-    LLVMValueRef stringSetupFunctionL,
+    FuncPtrLE stringSetupFunctionL,
     Prototype* mainSetupFuncProto,
     Prototype* userMainFunctionPrototype,
     Prototype* mainCleanupFunctionPrototype);
@@ -86,7 +86,7 @@ LLVMValueRef makeEntryFunction(
     Prototype* valeMainPrototype);
 //LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState);
 
-LLVMValueRef declareFunction(
+FuncPtrLE declareFunction(
   GlobalState* globalState,
   Function* functionM);
 
@@ -662,9 +662,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   }
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      std::cout << "Region override: assist" << std::endl;
-      break;
+//    case RegionOverride::ASSIST:
+//      std::cout << "Region override: assist" << std::endl;
+//      break;
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
       break;
@@ -674,22 +674,22 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     case RegionOverride::RESILIENT_V3:
       std::cout << "Region override: resilient-v3" << std::endl;
       break;
-    case RegionOverride::RESILIENT_V4:
-      std::cout << "Region override: resilient-v4" << std::endl;
-      break;
+//    case RegionOverride::RESILIENT_V4:
+//      std::cout << "Region override: resilient-v4" << std::endl;
+//      break;
     default:
       assert(false);
       break;
   }
 
-  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-    if (!globalState->opt->census) {
-      std::cout << "Warning: not using census when in assist mode!" << std::endl;
-    }
-    if (globalState->opt->fastCrash) {
-      std::cout << "Warning: using fastCrash when in assist mode!" << std::endl;
-    }
-  } else {
+//  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+//    if (!globalState->opt->census) {
+//      std::cout << "Warning: not using census when in assist mode!" << std::endl;
+//    }
+//    if (globalState->opt->fastCrash) {
+//      std::cout << "Warning: using fastCrash when in assist mode!" << std::endl;
+//    }
+//  } else {
     if (globalState->opt->flares) {
       std::cout << "Warning: using flares outside of assist mode, will slow things down!" << std::endl;
     }
@@ -697,9 +697,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
     }
     if (!globalState->opt->fastCrash) {
-      std::cout << "Warning: not using fashCrash, will slow things down!" << std::endl;
+      std::cout << "Warning: not using fastCrash, will slow things down!" << std::endl;
     }
-  }
+//  }
 
 
 
@@ -740,7 +740,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     }
   }
 
-  LLVMValueRef stringSetupFunctionL = nullptr;
+  FuncPtrLE stringSetupFunctionL;
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;
@@ -826,9 +826,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      globalState->mutRegion = new Assist(globalState);
-      break;
     case RegionOverride::NAIVE_RC:
       globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->mutRegionId);
       break;
@@ -837,9 +834,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       break;
     case RegionOverride::RESILIENT_V3:
       globalState->mutRegion = new ResilientV3(globalState, globalState->metalCache->mutRegionId);
-      break;
-    case RegionOverride::RESILIENT_V4:
-      globalState->mutRegion = new ResilientV4(globalState, globalState->metalCache->mutRegionId);
       break;
     default:
       assert(false);
@@ -1332,21 +1326,54 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     }
   }
 
-  // Optimize the generated LLVM IR
-  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+  if (globalState->opt->release) {
+    if (globalState->opt->flares) {
+      std::cout << "Warning: Running release optimizations with flares enabled!" << std::endl;
+    }
+    std::cout << "Running release optimizations..." << std::endl;
 
-//  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
-////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
-//  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
-//  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
-//  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+    // Create the analysis managers.
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
 
-//  if (globalState->opt->release) {
-//    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
-//  }
+    // Create the new pass manager builder.
+    // Take a look at the PassBuilder constructor parameters for more
+    // customization, e.g. specifying a TargetMachine or various debugging
+    // options.
+    llvm::PassBuilder PB;
 
-  LLVMRunPassManager(passmgr, globalState->mod);
-  LLVMDisposePassManager(passmgr);
+    // Register all the basic analyses with the managers.
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    // Create the pass manager.
+    // This one corresponds to a typical -O3 optimization pipeline.
+    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+
+    // Optimize the IR!
+    MPM.run(*llvm::unwrap(globalState->mod), MAM);
+  }
+//
+//  // Optimize the generated LLVM IR
+//  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+//
+////  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
+//////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
+////  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
+////  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
+////  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+//
+////  if (globalState->opt->release) {
+////    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
+////  }
+//
+//  LLVMRunPassManager(passmgr, globalState->mod);
+//  LLVMDisposePassManager(passmgr);
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {

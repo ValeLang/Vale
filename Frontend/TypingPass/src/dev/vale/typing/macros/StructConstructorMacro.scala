@@ -57,7 +57,7 @@ class StructConstructorMacro(
     val retRune = RuneUsage(structA.name.range, ReturnRuneS())
     runeToType += (retRune.rune -> CoordTemplataType())
     val structNameRange = structA.name.range
-    if (structA.isTemplate) {
+//    if (structA.isTemplate) {
       val structGenericRune = StructNameRuneS(structA.name)
       runeToType += (structGenericRune -> structA.tyype)
       rules += LookupSR(structNameRange, RuneUsage(structNameRange, structGenericRune), structA.name.getImpreciseName(interner))
@@ -67,15 +67,15 @@ class StructConstructorMacro(
       rules += CallSR(structNameRange, structKindRune, RuneUsage(structNameRange, structGenericRune), structA.genericParameters.map(_.rune).toVector)
 
       rules += CoerceToCoordSR(structNameRange, retRune, structKindRune)
-    } else {
-      vcurious()
-      rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
-    }
+//    } else {
+//      vcurious()
+//      rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
+//    }
 
     val params =
       structA.members.zipWithIndex.flatMap({
         case (NormalStructMemberS(range, name, variability, typeRune), index) => {
-          val capture = CaptureS(interner.intern(CodeVarNameS(name)))
+          val capture = CaptureS(interner.intern(CodeVarNameS(name)), false)
           Vector(ParameterS(AtomSP(range, Some(capture), None, Some(typeRune), None)))
         }
         case (VariadicStructMemberS(range, variability, typeRune), index) => {
@@ -88,10 +88,7 @@ class StructConstructorMacro(
         structA.range,
         interner.intern(ConstructorNameS(structA.name)),
         Vector(),
-        structA.tyype match {
-          case KindTemplataType() => FunctionTemplataType()
-          case TemplateTemplataType(params, KindTemplataType()) => TemplateTemplataType(params, FunctionTemplataType())
-        },
+        TemplateTemplataType(structA.tyype.paramTypes, FunctionTemplataType()),
         structA.genericParameters,
         runeToType.toMap,
         params,

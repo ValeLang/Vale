@@ -216,6 +216,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
     def makeLoc(pos: Int) = CodeLocationS(FileCoordinate.test(interner), pos)
     def makeRange(begin: Int, end: Int) = RangeS(makeLoc(begin), makeLoc(end))
 
+    val humanizePos = (x: CodeLocationS) => SourceCodeUtils.humanizePos(filenamesAndSources, x)
+    val linesBetween = (x: CodeLocationS, y: CodeLocationS) => SourceCodeUtils.linesBetween(filenamesAndSources, x, y)
+    val lineRangeContaining = (x: CodeLocationS) => SourceCodeUtils.lineRangeContaining(filenamesAndSources, x)
+    val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(filenamesAndSources, x)
+
     val unsolvedRules =
       Vector(
         CoordComponentsSR(
@@ -228,7 +233,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7)))),
           RuneUsage(makeRange(43, 45), CodeRuneS(interner.intern(StrI("An"))))))
 
-    vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       TypingPassSolverError(
         tz,
         FailedCompilerSolve(
@@ -244,7 +249,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
       .nonEmpty)
 
     val errorText =
-      CompilerErrorHumanizer.humanize(false, filenamesAndSources,
+      CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
         TypingPassSolverError(
           tz,
           IncompleteCompilerSolve(
@@ -588,11 +593,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |func swap<T>(x [#2]T) [#2]T {
         |  [a, b] = x;
-        |  return [#][b, a];
+        |  return [#](b, a);
         |}
         |
         |exported func main() int {
-        |  return swap([#][5, 7]).0;
+        |  return swap([#](5, 7)).0;
         |}
         |""".stripMargin
     )

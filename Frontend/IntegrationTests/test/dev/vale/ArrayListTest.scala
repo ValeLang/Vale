@@ -153,7 +153,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
     Collector.only(main, {
-      case LetNormalTE(AddressibleLocalVariableT(IdT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => {
+      case LetNormalTE(AddressibleLocalVariableT(CodeVarNameT(StrI("m")), VaryingT, _), _) => {
         vpass()
       }
     })
@@ -178,7 +178,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
-    Collector.only(main, { case LetNormalTE(AddressibleLocalVariableT(IdT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => })
+    Collector.only(main, { case LetNormalTE(AddressibleLocalVariableT(CodeVarNameT(StrI("m")), VaryingT, _), _) => })
 
     compile.evalForKind(Vector()) match { case VonInt(6) => }
   }

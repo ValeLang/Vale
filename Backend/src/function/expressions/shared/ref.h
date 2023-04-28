@@ -9,24 +9,69 @@ class FunctionState;
 class GlobalState;
 class IRegion;
 
+// Perhaps we should switch to a structure that looks like this:
+// struct ArrayType : IType {
+//   Ref* refM;
+//   IType* elementType;
+//   LLVMTypeRef llvmType;
+// }
+// the LLVM type is no longer recursive since pointers are opaque.
+// Then we can have a PtrLE-like thing that contains that IType and an LLVMValueRef.
+// Perhaps we dont even need that IType* elementType? probably do. must think on it.
+
+struct FuncPtrLE {
+  LLVMValueRef ptrLE;
+  LLVMTypeRef funcLT;
+
+  FuncPtrLE() : funcLT(nullptr), ptrLE(nullptr) { }
+
+  FuncPtrLE(LLVMTypeRef funcLT_, LLVMValueRef ptrLE_)
+    : funcLT(funcLT_),
+      ptrLE(ptrLE_) {
+    assert(LLVMTypeOf(ptrLE) == LLVMPointerType(funcLT, 0));
+  }
+
+  LLVMValueRef call(LLVMBuilderRef builder, const std::vector<LLVMValueRef>& argsLE, const char* name) const {
+    return LLVMBuildCall2(
+        builder, funcLT, ptrLE, const_cast<LLVMValueRef*>(argsLE.data()), argsLE.size(), name);
+  }
+};
+
+//
+//struct PtrLE {
+//  LLVMTypeRef pointeeLT;
+//  LLVMValueRef ptrLE;
+//
+//  PtrLE(LLVMTypeRef pointeeLT_, LLVMValueRef ptrLE_)
+//      : pointeeLT(pointeeLT_), ptrLE(ptrLE_) {
+//    assert(LLVMTypeOf(ptrLE) == LLVMPointerType(pointeeLT, 0));
+//  }
+//};
+
 
 struct WrapperPtrLE {
   Reference* const refM;
+  LLVMTypeRef wrapperStructLT;
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_)
-      : refM(refM_), refLE(refLE_) { }
+  WrapperPtrLE(Reference* refM_, LLVMTypeRef wrapperStructLT_, LLVMValueRef refLE_)
+      : refM(refM_), wrapperStructLT(wrapperStructLT_), refLE(refLE_) {
+    assert(LLVMTypeOf(refLE) == LLVMPointerType(wrapperStructLT, 0));
+  }
 };
 
 
 struct ControlBlockPtrLE {
   Kind* const kindM;
+  LLVMTypeRef structLT;
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  ControlBlockPtrLE(Kind* refM_, LLVMValueRef refLE_)
-    : kindM(refM_), refLE(refLE_) { }
+  ControlBlockPtrLE(Kind* refM_, LLVMTypeRef structLT_, LLVMValueRef refLE_)
+    : kindM(refM_), structLT(structLT_), refLE(refLE_) {
+    assert(LLVMTypeOf(refLE) == LLVMPointerType(structLT, 0));
+  }
 };
 
 
@@ -71,10 +116,8 @@ private:
   friend std::tuple<Reference*, LLVMValueRef> lgtGetRefInnardsForChecking(Ref ref);
   friend std::tuple<Reference*, LLVMValueRef> wrcGetRefInnardsForChecking(Ref ref);
 
-  friend void buildPrint(
-      GlobalState* globalState,
-      LLVMBuilderRef builder,
-      Ref ref);
+  friend void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
+  friend void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 };
 
 Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);

@@ -9,7 +9,7 @@ import dev.vale.parsing.{ParseErrorHumanizer, ParserVonifier}
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.testvm.Vivem
-import dev.vale.{Builtins, Err, FileCoordinate, Interner, Keywords, Ok, PackageCoordinate, Result, SourceCodeUtils, StrI, passmanager, vassert, vassertOne, vcheck, vcurious, vfail}
+import dev.vale.{Builtins, CodeLocationS, Err, FileCoordinate, Interner, Keywords, Ok, PackageCoordinate, Result, SourceCodeUtils, StrI, passmanager, vassert, vassertOne, vcheck, vcurious, vfail}
 
 import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
@@ -233,6 +233,11 @@ object PassManager {
       }
     val valeCodeMap = compilation.getCodeMap().getOrDie()
 
+    val humanizePos = (x: CodeLocationS) => SourceCodeUtils.humanizePos(valeCodeMap, x)
+    val linesBetween = (x: CodeLocationS, y: CodeLocationS) => SourceCodeUtils.linesBetween(valeCodeMap, x, y)
+    val lineRangeContaining = (x: CodeLocationS) => SourceCodeUtils.lineRangeContaining(valeCodeMap, x)
+    val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(valeCodeMap, x)
+
     if (opts.outputVPST) {
       parseds.map({ case (FileCoordinate(_, filepath), (programP, commentRanges)) =>
         val von = ParserVonifier.vonifyFile(programP)
@@ -250,7 +255,7 @@ object PassManager {
 
     if (opts.outputVAST) {
       compilation.getScoutput() match {
-        case Err(e) => return Err(PostParserErrorHumanizer.humanize(valeCodeMap, e))
+        case Err(e) => return Err(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining, e))
         case Ok(p) => p
       }
 
@@ -260,7 +265,7 @@ object PassManager {
       }
 
       compilation.getAstrouts() match {
-        case Err(error) => return Err(HigherTypingErrorHumanizer.humanize(valeCodeMap, error))
+        case Err(error) => return Err(HigherTypingErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining, error))
         case Ok(result) => result
       }
 
@@ -270,7 +275,7 @@ object PassManager {
       }
 
       compilation.getCompilerOutputs() match {
-        case Err(error) => return Err(CompilerErrorHumanizer.humanize(opts.verboseErrors, valeCodeMap, error))
+        case Err(error) => return Err(CompilerErrorHumanizer.humanize(opts.verboseErrors, humanizePos, linesBetween, lineRangeContaining, lineContaining, error))
         case Ok(x) => x
       }
 

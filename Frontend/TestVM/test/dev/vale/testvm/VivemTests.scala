@@ -15,9 +15,10 @@ class VivemTests extends FunSuite with Matchers {
         PrototypeH(
           IdH(
             "main",
-            0,
             PackageCoordinate.TEST_TLD(interner, keywords),
-            Vector(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),Vector.empty,CoordH(ShareH,InlineH,IntHT.i32)),
+            "main",
+            "main"),
+          Vector.empty,CoordH(ShareH,InlineH,IntHT.i32)),
         true,
         false,
         Vector(UserFunctionH),
@@ -40,10 +41,10 @@ class VivemTests extends FunSuite with Matchers {
     val addPrototype =
       PrototypeH(
         IdH(
-          "__vbi_addI32",
-          0,
+          "__vbi_addI32(i32, i32)",
           PackageCoordinate.BUILTIN(interner, keywords),
-          Vector(VonObject("F",None,Vector(VonMember("humanName",VonStr("__vbi_addI32")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
+          "__vbi_addI32(i32, i32)",
+          "__vbi_addI32(i32, i32)"),
         Vector(CoordH(ShareH,InlineH,IntHT.i32), CoordH(ShareH,InlineH,IntHT.i32)),
         CoordH(ShareH,InlineH,IntHT.i32))
     val main =
@@ -51,9 +52,10 @@ class VivemTests extends FunSuite with Matchers {
         PrototypeH(
           IdH(
             "main",
-            0,
             PackageCoordinate.TEST_TLD(interner, keywords),
-            Vector(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),Vector.empty,CoordH(finalast.ShareH,InlineH,IntHT.i32)),
+            "main",
+            "main"),
+          Vector.empty,CoordH(finalast.ShareH,InlineH,IntHT.i32)),
         true,
         false,
         Vector(UserFunctionH),

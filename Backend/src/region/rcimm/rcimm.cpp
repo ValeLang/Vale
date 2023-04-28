@@ -276,7 +276,7 @@ void RCImm::declareInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 
 void RCImm::defineInterface(
     InterfaceDefinition* interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionPointerTypes(interfaceM->kind);
   kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
@@ -307,7 +307,7 @@ void RCImm::declareEdge(Edge* edge) {
 void RCImm::defineEdge(Edge* edge) {
   auto interfaceM = globalState->program->getInterface(edge->interfaceName);
 
-  auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
+  auto interfaceFunctionsLT = globalState->getInterfaceFunctionPointerTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 
@@ -788,7 +788,7 @@ void RCImm::discard(
 //                globalState->getRegion(sourceMT)->checkValidReference(FL(),
 //                    functionState, thenBuilder, true, sourceMT, sourceRef);
 //            std::vector<LLVMValueRef> argExprsL = {sourceLE};
-//            return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
+//            return unmigratedLLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
           });
     }
   } else {
@@ -991,20 +991,6 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
     auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
-  } else if (dynamic_cast<Str*>(hostRefMT->kind)) {
-    auto strLenLE = sourceRegion->getStringLen(functionState, builder, sourceRegionInstanceRef, sourceRef);
-    auto strLenBytesPtrLE = sourceRegion->getStringBytesPtr(functionState, builder, sourceRegionInstanceRef, sourceRef);
-
-    auto vstrRef =
-        mallocStr(
-            makeVoidRef(globalState), functionState, builder, strLenLE, strLenBytesPtrLE);
-
-    buildFlare(FL(), globalState, functionState, builder, "done storing");
-
-    sourceRegion->dealias(FL(), functionState, builder, hostRefMT, sourceRef);
-
-    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
-    return std::make_pair(vstrRef, globalState->constI32(0));
   } else if (dynamic_cast<Str*>(hostRefMT->kind) ||
              dynamic_cast<StructKind*>(hostRefMT->kind) ||
              dynamic_cast<InterfaceKind*>(hostRefMT->kind) ||
@@ -1414,14 +1400,14 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
       });
 }
 
-LLVMValueRef RCImm::getInterfaceMethodFunctionPtr(
+FuncPtrLE RCImm::getInterfaceMethodFunctionPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
-      globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef, indexInEdge);
 }
 
 LLVMValueRef RCImm::stackify(

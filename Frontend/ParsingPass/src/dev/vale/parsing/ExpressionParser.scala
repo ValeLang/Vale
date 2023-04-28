@@ -476,8 +476,8 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         case Err(e) => return Err(e)
       }
 
-    pattern.capture match {
-      case Some(LocalNameDeclarationP(name)) => vassert(name.str != keywords.set)
+    pattern.destination match {
+      case Some(DestinationLocalP(LocalNameDeclarationP(name), None)) => vassert(name.str != keywords.set)
       case _ =>
     }
 
@@ -1084,7 +1084,12 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       }
     }
 
-    if (iter.trySkipSymbol('.')) {
+    val isMapCall = iter.trySkipSymbols(Vector('*', '.'))
+    val isMethodCall =
+      if (isMapCall) { false }
+      else iter.trySkipSymbol('.')
+
+    if (isMethodCall || isMapCall) {
       val nameBegin = iter.getPos()
       val name =
         iter.peek() match {
@@ -1564,7 +1569,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           iter.advance()
           iter.advance()
           iter.advance()
-          val param = PatternPP(paramRange, None, Some(LocalNameDeclarationP(NameP(paramRange, paramName))), None, None, None)
+          val param = PatternPP(paramRange, None, Some(DestinationLocalP(LocalNameDeclarationP(NameP(paramRange, paramName)), None)), None, None, None)
           val params = ParamsP(paramRange, Vector(param))
           val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           val range = RangeL(begin, iter.getPrevEndPos())
@@ -1685,7 +1690,6 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val tyype =
       iter.peek() match {
-        case Some(SquaredLE(range, contents)) => None
         case Some(ParendLE(range, contents)) => None
         case _ => {
           templexParser.parseTemplex(iter) match {
@@ -1696,28 +1700,20 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         case _ => return Err(BadArraySpecifier(iter.getPos()))
       }
 
-    val (initializingByValues, args) =
-      iter.peek() match {
-        case Some(SquaredLE(_, _)) => {
-          val values =
-            parseSquarePack(iter) match {
-              case Ok(None) => vwat()
-              case Ok(Some(e)) => e
-              case Err(e) => return Err(e)
-            }
-          (true, values)
-        }
-        case Some(ParendLE(range, contents)) => {
-          val args =
-            parsePack(iter) match {
-              case Ok(None) => vwat()
-              case Ok(Some((range, e))) => e
-              case Err(e) => return Err(e)
-            }
-          (false, args)
-        }
-        case _ => return Err(BadArraySpecifier(iter.getPos()))
+    val args =
+      parsePack(iter) match {
+        case Ok(None) => return Err(BadArraySpecifier(iter.getPos()))
+        case Ok(Some((range, e))) => e
+        case Err(e) => return Err(e)
       }
+
+    val initializingByValues =
+      (size, args.size) match {
+        case (StaticSizedP(None), _) => true // e.g. [#](3, 4, 5)
+        case (StaticSizedP(Some(_)), _) => false // Anything else should take a function.
+        case (RuntimeSizedP, _) => false // Any runtime sized array should take a function.
+      }
+
     val arrayPE =
       ConstructArrayPE(
         RangeL(begin, iter.getPrevEndPos()),

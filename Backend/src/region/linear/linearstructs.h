@@ -28,7 +28,7 @@ public:
   void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
-      std::vector<LLVMValueRef> functions);
+      std::vector<FuncPtrLE> functions);
   void declareInterface(InterfaceKind* interface);
   void defineInterface(InterfaceKind* interface);
   void declareStaticSizedArray(
@@ -56,12 +56,14 @@ public:
   LLVMValueRef getRuntimeSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      RuntimeSizedArrayT* rsaMT,
       LLVMValueRef ptrLE);
   LLVMValueRef getStaticSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      StaticSizedArrayT* ssaMT,
       LLVMValueRef ptrLE);
-  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+//  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
   LLVMValueRef getVoidPtrFromInterfacePtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,

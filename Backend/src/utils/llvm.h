@@ -11,12 +11,14 @@ LLVMValueRef ptrIsNull(LLVMContextRef context, LLVMBuilderRef builder, LLVMValue
 
 LLVMValueRef subscript(
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elementsPtrLE,
     LLVMValueRef indexLE,
     const std::string& name = "element");
 
 LLVMValueRef subscriptForPtr(
     LLVMBuilderRef builder,
+    LLVMTypeRef elementLT,
     LLVMValueRef elementsPtrLE,
     LLVMValueRef indexLE,
     const std::string& name = "elementPtr");

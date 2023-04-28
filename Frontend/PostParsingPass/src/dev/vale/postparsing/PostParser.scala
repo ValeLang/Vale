@@ -4,7 +4,7 @@ package dev.vale.postparsing
 import dev.vale.options.GlobalOptions
 import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout}
-import dev.vale.{Accumulator, CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vassertOne, vcurious, vfail, vimpl, vpass, vwat}
+import dev.vale.{Accumulator, CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, SourceCodeUtils, postparsing, vassert, vassertOne, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
@@ -29,10 +29,8 @@ case class StatementAfterReturnS(range: RangeS) extends ICompileErrorS { overrid
 case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ExternHasBody(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class CantInitializeIndividualElementsOfRuntimeSizedArray(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class InitializingRuntimeSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class InitializingStaticSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -756,7 +754,15 @@ class ScoutCompilation(
   def expectScoutput(): FileCoordinateMap[ProgramS] = {
     getScoutput() match {
       case Ok(x) => x
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(getCodeMap().getOrDie(), e))
+      case Err(e) => {
+        val codeMap = getCodeMap().getOrDie()
+        vfail(PostParserErrorHumanizer.humanize(
+          SourceCodeUtils.humanizePos(codeMap, _),
+          SourceCodeUtils.linesBetween(codeMap, _, _),
+          SourceCodeUtils.lineRangeContaining(codeMap, _),
+          SourceCodeUtils.lineContaining(codeMap, _),
+          e))
+      }
     }
   }
 }

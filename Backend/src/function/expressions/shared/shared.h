@@ -89,10 +89,32 @@ void buildAssertIntEq(
     LLVMValueRef bLE,
     const std::string& failMessage);
 
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
+void buildPrintToStderr(GlobalState* globalState, LLVMBuilderRef builder, int num);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, int num);
+
+
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    const std::string& first);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Ref ref);
+void buildPrintToStderr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    int num);
 
 template<typename First, typename... Rest>
 inline void buildFlareInner(
@@ -100,7 +122,7 @@ inline void buildFlareInner(
     LLVMBuilderRef builder,
     First&& first,
     Rest&&... rest) {
-  buildPrint(globalState, builder, std::forward<First>(first));
+  buildPrintToStderr(globalState, builder, std::forward<First>(first));
   buildFlareInner(globalState, builder, std::forward<Rest>(rest)...);
 }
 
@@ -118,6 +140,19 @@ inline void buildPrintAreaAndFileAndLine(GlobalState* globalState, LLVMBuilderRe
   if (!from.area.empty()) {
     buildPrint(globalState, builder, getFileName(from.area));
     buildPrint(globalState, builder, ": ");
+  }
+}
+
+inline void buildPrintAreaAndFileAndLineToStderr(GlobalState* globalState, LLVMBuilderRef builder, AreaAndFileAndLine from) {
+  buildPrintToStderr(globalState, builder, "\033[0;34m");
+  buildPrintToStderr(globalState, builder, getFileName(from.file));
+  buildPrintToStderr(globalState, builder, ":");
+  buildPrintToStderr(globalState, builder, from.line);
+  buildPrintToStderr(globalState, builder, "\033[0m");
+  buildPrintToStderr(globalState, builder, " ");
+  if (!from.area.empty()) {
+    buildPrintToStderr(globalState, builder, getFileName(from.area));
+    buildPrintToStderr(globalState, builder, ": ");
   }
 }
 
@@ -143,10 +178,10 @@ inline void buildFlare(
     for (int i = 0; i < functionState->instructionDepthInAst; i++)
       indentStr += " ";
 
-    buildPrint(globalState, builder, indentStr);
-    buildPrintAreaAndFileAndLine(globalState, builder, from);
+    buildPrintToStderr(globalState, builder, indentStr);
+    buildPrintAreaAndFileAndLineToStderr(globalState, builder, from);
     buildFlareInner(globalState, builder, std::forward<T>(rest)...);
-    buildPrint(globalState, builder, "\n");
+    buildPrintToStderr(globalState, builder, "\n");
   }
 }
 
@@ -161,7 +196,7 @@ Ref buildInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    LLVMValueRef methodFunctionPtrLE,
+    FuncPtrLE methodFunctionPtrLE,
     std::vector<Ref> argRefs,
     int virtualParamIndex);
 
@@ -169,7 +204,7 @@ Ref buildInterfaceCall(
 LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int64_t value);
 
 LLVMValueRef makeConstExpr(
-    FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
+    FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef constExpr);
 
 inline LLVMValueRef constI8LE(GlobalState* globalState, int n) {
   return LLVMConstInt(LLVMInt8TypeInContext(globalState->context), n, false);
@@ -221,11 +256,10 @@ Ref buildCallV(
 LLVMValueRef buildMaybeNeverCall(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef functionLE,
+    FuncPtrLE functionLE,
     std::vector<LLVMValueRef> argsLE);
 
-
-LLVMValueRef addExtern(
+FuncPtrLE addExtern(
     LLVMModuleRef mod,
     const std::string& name,
     LLVMTypeRef retType,
@@ -242,10 +276,9 @@ inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder,
 // A side call is a call using different stack memory
 LLVMValueRef buildSideCall(
     GlobalState* globalState,
-    LLVMTypeRef calleeFuncLT,
     LLVMBuilderRef entryBuilder,
     LLVMValueRef sideStackStartPtrAsI8PtrLE,
-    LLVMValueRef calleeFuncLE,
+    FuncPtrLE calleeFuncLE,
     const std::vector<LLVMValueRef>& userArgsLE);
 
 #endif

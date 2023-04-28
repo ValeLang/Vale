@@ -99,7 +99,7 @@ class StructDropMacro(
           ParameterS(
             AtomSP(
               range(-1340),
-              Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)))),
+              Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)), false)),
               None,
               Some(use(-64002, selfCoordRune)), None))),
         Some(use(-64002, voidCoordRune)),
@@ -120,7 +120,7 @@ class StructDropMacro(
       structRange,
       dropOrFreeFunctionNameS,
       Vector(),
-      FunctionTemplataType(),
+      TemplateTemplataType(Vector(), FunctionTemplataType()),
       Vector(),
       Map(
         CodeRuneS(keywords.DropP1) -> CoordTemplataType(),
@@ -128,7 +128,7 @@ class StructDropMacro(
         CodeRuneS(keywords.DropVK) -> KindTemplataType(),
         CodeRuneS(keywords.DropV) -> CoordTemplataType()),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)))), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
+        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)), false)), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
       Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV))),
       Vector(
         LookupSR(
@@ -189,7 +189,7 @@ class StructDropMacro(
                           // We received an instance of this type, so we can use the bounds from it.
                           InheritBoundsFromTypeItself)
                       val reference = substituter.substituteForCoord(coutputs, unsubstitutedReference)
-                      Vector(ReferenceLocalVariableT(env.fullName.addStep(name), FinalT, reference))
+                      Vector(ReferenceLocalVariableT(name, FinalT, reference))
                     }
                     case NormalStructMemberT(_, _, AddressMemberTypeT(_)) => {
                       // See Destructure2 and its handling of addressible members for why

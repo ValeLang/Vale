@@ -69,7 +69,7 @@ cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }
 cd ../Coordinator
 
 echo Compiling Coordinator...
-./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Coordinator build failed.' ; exit 1; }
+./build.sh $BOOTSTRAPPING_VALEC_DIR
 
 cd ../scripts
 
@@ -101,7 +101,7 @@ then
   unzip ../release-ubuntu/Vale-Ubuntu-0.zip -d ./BuiltValeCompiler
 
   echo Compiling Tester...
-  ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
+  ./build.sh $BOOTSTRAPPING_VALEC_DIR
 
   echo Running Tester...
   ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend  --stdlib_dir ./BuiltValeCompiler/stdlib --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }

@@ -22,13 +22,29 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: install prereqs
-        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\llvm-project-llvmorg-14.0.6 C:\BootstrappingValeCompiler'
+        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\LLVM16 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
-        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\llvm-project-llvmorg-14.0.6 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
+        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\LLVM16 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Windows-0.zip
           path: .\release-windows\Vale-Windows-0.zip
+
+  build_and_test_docker:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build docker image
+        run: docker build -t valec --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
+      - name: Create image
+        run: docker create --name bork -i valec
+      - name: Retrieve built compiler
+        run: docker cp bork:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Vale-Ubuntu-0-From-Docker.zip
+          path: Vale-Ubuntu-0.zip
 
   build_and_test_ubuntu:
     runs-on: ubuntu-20.04
@@ -43,7 +59,7 @@ jobs:
       - name: install prereqs
         run: ./scripts/ubuntu/install-compiler-prereqs.sh -d -j -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
       - name: build compiler 
-        run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-14.0.0-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
+        run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-16.0.0-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
       - name: gimme files 
         run: find . -print
       - uses: actions/upload-artifact@v2
@@ -52,7 +68,7 @@ jobs:
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
-    runs-on: macOS-11
+    runs-on: macOS-latest
     steps: 
       - name: Checkout
         uses: actions/checkout@v2
@@ -69,4 +85,3 @@ jobs:
         with:
           name: Vale-Mac-0.zip
           path: ./release-mac/Vale-Mac-0.zip
-

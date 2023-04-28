@@ -32,7 +32,7 @@ class LocalHelper(
     life: LocationInFunctionEnvironment,
     coord: CoordT):
   ReferenceLocalVariableT = {
-    val varId = nenv.functionEnvironment.fullName.addStep(interner.intern(TypingPassTemporaryVarNameT(life)))
+    val varId = interner.intern(TypingPassTemporaryVarNameT(life))
     val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
     nenv.addVariable(rlv)
     rlv
@@ -67,7 +67,7 @@ class LocalHelper(
 
   def unletLocalWithoutDropping(nenv: NodeEnvironmentBox, localVar: ILocalVariableT):
   (UnletTE) = {
-    nenv.markLocalUnstackified(localVar.id)
+    nenv.markLocalUnstackified(localVar.name)
     UnletTE(localVar)
   }
 
@@ -117,12 +117,11 @@ class LocalHelper(
     val mutable = Compiler.getMutability(coutputs, referenceType2.kind)
     val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
 
-    val fullVarName = nenv.fullName.addStep(varId)
     val localVar =
       if (addressible) {
-        AddressibleLocalVariableT(fullVarName, variability, referenceType2)
+        AddressibleLocalVariableT(varId, variability, referenceType2)
       } else {
-        env.ReferenceLocalVariableT(fullVarName, variability, referenceType2)
+        env.ReferenceLocalVariableT(varId, variability, referenceType2)
       }
     nenv.addVariable(localVar)
     localVar
@@ -153,7 +152,7 @@ class LocalHelper(
           case UseP => {
             a match {
               case LocalLookupTE(_, lv) => {
-                nenv.markLocalUnstackified(lv.id)
+                nenv.markLocalUnstackified(lv.name)
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
@@ -166,14 +165,14 @@ class LocalHelper(
           case MoveP => {
             a match {
               case LocalLookupTE(_, lv) => {
-                nenv.markLocalUnstackified(lv.id)
+                nenv.markLocalUnstackified(lv.name)
                 UnletTE(lv)
               }
               case ReferenceMemberLookupTE(_,_, name, _, _) => {
-                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.localName))
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name))
               }
               case AddressMemberLookupTE(_, _, name, _, _) => {
-                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.localName))
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name))
               }
             }
           }

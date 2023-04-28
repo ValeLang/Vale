@@ -12,7 +12,16 @@ class AfterRegionsErrorTests extends FunSuite with Matchers with Collector {
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
     val compile = PostParserTestCompilation.test(code, interner)
     compile.getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+      case Err(e) => {
+        val codeMap = compile.getCodeMap().getOrDie()
+        vfail(
+          PostParserErrorHumanizer.humanize(
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            e))
+      }
       case Ok(t) => t.expectOne()
     }
   }

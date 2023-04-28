@@ -33,7 +33,6 @@ import dev.vale.typing.templata._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import dev.vale.typing.macros.citizen.StructDropMacro
-import dev.vale.typing.macros.rsa.RSALenMacro
 import dev.vale.typing.macros.ssa.SSALenMacro
 
 import scala.collection.immutable.{List, ListMap, Map, Set}

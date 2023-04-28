@@ -19,7 +19,6 @@ case class IdT[+T <: INameT](
   initSteps: Vector[INameT],
   localName: T
 )  {
-
   this match {
     case IdT(_,Vector(),ImplNameT(ImplTemplateNameT(_),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),StructTT(IdT(_,Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("Bipedal"))),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))))))) => {
       vpass()
@@ -78,6 +77,14 @@ case class IdT[+T <: INameT](
     }
   }
 
+  def initNonPackageFullName(): Option[IdT[INameT]] = {
+    if (initSteps.isEmpty) {
+      None
+    } else {
+      Some(IdT(packageCoord, initSteps.init, initSteps.last))
+    }
+  }
+
   def steps: Vector[INameT] = {
     localName match {
       case PackageTopLevelNameT() => initSteps
@@ -87,8 +94,6 @@ case class IdT[+T <: INameT](
   def addStep[Y <: INameT](newLast: Y): IdT[Y] = {
     IdT[Y](packageCoord, steps, newLast)
   }
-
-
 }
 
 sealed trait INameT extends IInterning
@@ -277,7 +282,7 @@ case class TypingPassPatternMemberNameT(life: LocationInFunctionEnvironment) ext
 case class TypingIgnoredParamNameT(num: Int) extends IVarNameT
 case class TypingPassPatternDestructureeNameT(life: LocationInFunctionEnvironment) extends IVarNameT
 case class UnnamedLocalNameT(codeLocation: CodeLocationS) extends IVarNameT
-case class ClosureParamNameT() extends IVarNameT
+case class ClosureParamNameT(codeLocation: CodeLocationS) extends IVarNameT
 case class ConstructingMemberNameT(name: StrI) extends IVarNameT
 case class WhileCondResultNameT(range: RangeS) extends IVarNameT
 case class IterableNameT(range: RangeS) extends IVarNameT {  }

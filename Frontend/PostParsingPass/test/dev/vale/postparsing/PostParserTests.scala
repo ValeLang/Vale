@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, SourceCodeUtils, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FinalP, LoadAsBorrowP, MutableP, UseP}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -18,7 +18,16 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
     val compile = PostParserTestCompilation.test(code, interner)
     compile.getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+      case Err(e) => {
+        val codeMap = compile.getCodeMap().getOrDie()
+        vfail(
+          PostParserErrorHumanizer.humanize(
+            SourceCodeUtils.humanizePos(codeMap, _),
+            SourceCodeUtils.linesBetween(codeMap, _, _),
+            SourceCodeUtils.lineRangeContaining(codeMap, _),
+            SourceCodeUtils.lineContaining(codeMap, _),
+            e))
+      }
       case Ok(t) => t.expectOne()
     }
   }
@@ -26,7 +35,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   private def compileForError(code: String): ICompileErrorS = {
     PostParserTestCompilation.test(code).getScoutput() match {
       case Err(e) => e
-      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
+      case Ok(t) => vfail("Accidentally compiled!\n")
     }
   }
 
@@ -184,10 +193,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val BlockSE(_, _, ConsecutorSE(things)) = block
     val lambdas = Collector.all(things, { case f @ FunctionSE(_) => f }).toList
     lambdas.head.function.params match {
-      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(MagicParamNameS(_))), None, Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
+      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(MagicParamNameS(_), false)), None, Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
     }
     lambdas.last.function.params match {
-      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")))), None, Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
+      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")), false)), None, Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
     }
   }
 
@@ -211,13 +220,13 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     Collector.only(exprs, {
       case LetSE(_,
       _,
-      AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")))), None, _, None),
+      AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), None, _, None),
       ConstantIntSE(_, 4, _)) =>
     })
     Collector.only(exprs, {
       case LetSE(_,
         _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")))), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), None, _, None),
         ConstantBoolSE(_, true)) =>
     })
     Collector.only(exprs, {
@@ -237,17 +246,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
     error match {
       case CantUseThatLocalName(_, "set") =>
-    }
-  }
-
-  test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
-    val error = compileForError(
-      """func MyStruct() {
-        |  ship = [][4, 5, 6];
-        |}
-        |""".stripMargin)
-    error match {
-      case CantInitializeIndividualElementsOfRuntimeSizedArray(_) =>
     }
   }
 
@@ -292,17 +290,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
     error match {
       case InitializingStaticSizedArrayRequiresSizeAndCallable(_) =>
-    }
-  }
-
-  test("InitializingStaticSizedArrayFromCallableNeedsSizeTemplex") {
-    val error = compileForError(
-      """func MyStruct() {
-        |  ship = [#]({_});
-        |}
-        |""".stripMargin)
-    error match {
-      case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(_) =>
     }
   }
 
@@ -351,12 +338,12 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     Collector.only(block, {
       case LetSE(_, _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")))), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), None, _, None),
         ConstantIntSE(_, 4, _)) =>
     })
     Collector.only(block, {
       case LetSE(_, _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")))), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), None, _, None),
         LocalLoadSE(_, ConstructingMemberNameS(StrI("x")), LoadAsBorrowP)) =>
     })
     Collector.only(block, {
@@ -391,12 +378,12 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IterableNameS(_))),None,None,None),
+        AtomSP(_,Some(CaptureS(IterableNameS(_), false)),None,None,None),
         OutsideLoadSE(_,_,CodeNameS(StrI("myList")),None,UseP)) =>
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IteratorNameS(_))),None,None,None),
+        AtomSP(_,Some(CaptureS(IteratorNameS(_), false)),None,None,None),
         FunctionCallSE(_,
           OutsideLoadSE(_,_,CodeNameS(StrI("begin")),None,LoadAsBorrowP),
           Vector(LocalLoadSE(_,IterableNameS(_),LoadAsBorrowP)))) =>
@@ -406,7 +393,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IterationOptionNameS(_))),None,None,None),
+        AtomSP(_,Some(CaptureS(IterationOptionNameS(_), false)),None,None,None),
         FunctionCallSE(_,
           OutsideLoadSE(_,_,CodeNameS(StrI("next")),None,LoadAsBorrowP),
           Vector(
@@ -423,7 +410,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(CodeVarNameS(StrI("i")))),None,None,None),
+        AtomSP(_,Some(CaptureS(CodeVarNameS(StrI("i")), false)),None,None,None),
         FunctionCallSE(_,
           OutsideLoadSE(_,_,CodeNameS(StrI("get")),None,LoadAsBorrowP),
           Vector(LocalLoadSE(_,IterationOptionNameS(_),UseP)))) =>

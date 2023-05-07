@@ -81,7 +81,7 @@ struct ParsedFlagList {
 /// flag would be `vale build` vs `--verbose`.
 /// 
 /// ... Maybe one day we can get a self-hosted CLI like that... A Valer can but dream.
-struct CommandList<N> { commands [#N]Command; }
+struct CommandList<N Int> { commands [#N]Command; }
 
 /// As described in @CommandList, a `Command` takes no arguments. It is simply
 /// a subcommand within the main command, such as `vale build`, where `build` is
@@ -144,7 +144,7 @@ impl FlagType for FlagAnyList;
 ///
 /// # returns:
 ///   1. Whether the string is a valid @Command
-func verify<N>(command_list &CommandList<N>, command_str str) bool {
+func verify<N Int>(command_list &CommandList<N>, command_str str) bool {
   valid = false;
 
   command_list.commands.each(&(cmd) => {
@@ -170,7 +170,7 @@ func verify<N>(command_list &CommandList<N>, command_str str) bool {
 /// 
 /// # returns:
 ///   1. A list of parsed and invalid flags.
-func parse_all_flags<N, M, V>(flag_list &[#N]<M, V>Flag, args []<imm>str) ParsedFlagList {
+func parse_all_flags<N Int, M Mutability, V Variability>(flag_list &[#N]<M, V>Flag, args []<imm>str) ParsedFlagList {
   parsed_flag_list = ParsedFlagList(List<ParsedFlag>(), List<str>());
 
   i = 1;
@@ -275,7 +275,7 @@ func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
 /// # params:
 ///   * flag_list The set of possible flags, given to @parse_all_flags.
 ///   * flag_name The name of the flag that we're looking for.
-func explain_flag<N>(
+func explain_flag<N Int>(
     flag_list &[#N]Flag,
     flag_name str) {
   needle_flag_name = flag_name;
@@ -374,7 +374,7 @@ func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str, default st
 ///
 /// # returns:
 ///   1. The value given by the user for the flag with the given name.
-func expect_string_flag<N>(
+func expect_string_flag<N Int>(
   parsed_flag_list &ParsedFlagList,
   flag_list &[#N]Flag,
   flag_name str)
@@ -450,7 +450,7 @@ func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str, default bool
 ///
 /// # returns:
 ///   1. The value given by the user for the flag with the given name.
-func expect_bool_flag<N>(
+func expect_bool_flag<N Int>(
   parsed_flag_list &ParsedFlagList,
   flag_list &[#N]Flag,
   flag_name str)
@@ -526,7 +526,7 @@ func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str, default int) 
 ///
 /// # returns:
 ///   1. The value given by the user for the flag with the given name.
-func expect_int_flag<N>(
+func expect_int_flag<N Int>(
   parsed_flag_list &ParsedFlagList,
   flag_list &[#N]Flag,
   flag_name str)

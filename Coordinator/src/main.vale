@@ -9,7 +9,7 @@ exported func main() {
   i = 0;
   while (i < numMainArgs()) {
     all_args_list.add(getMainArg(i));
-    mut i = i + 1;
+    set i = i + 1;
   }
   all_args = all_args_list.toImmArray();
 

@@ -133,22 +133,33 @@ case class Hamuts(
 
   def addStructOriginatingFromTypingPass(structTT: StructTT, structDefH: StructDefinitionH): Hamuts = {
     vassert(structTToStructH.contains(structTT))
-    vassert(!structTToStructDefH.contains(structTT))
-    Hamuts(
-      humanNameToFullNameToId,
-      structTToStructH,
-      structTToStructDefH + (structTT -> structDefH),
-      structDefs :+ structDefH,
-      staticSizedArrays,
-      runtimeSizedArrays,
-      interfaceTToInterfaceH,
-      interfaceTToInterfaceDefH,
-      functionRefs,
-      functionDefs,
-      packageCoordToExportNameToFunction,
-      packageCoordToExportNameToKind,
-      packageCoordToExternNameToFunction,
-      packageCoordToExternNameToKind)
+    structTToStructDefH.get(structTT) match {
+      case Some(existingDef) => {
+        // Added all this to help VmdSiteGen. Apparently it calls this method twice with the same structs sometimes?
+        vassert(existingDef.fullName == structDefH.fullName)
+        vassert(existingDef.members.map(_.name) == structDefH.members.map(_.name))
+        vassert(existingDef.members.map(_.tyype) == structDefH.members.map(_.tyype))
+        vassert(structDefs.exists(_.fullName == structDefH.fullName))
+        this
+      }
+      case None => {
+        Hamuts(
+          humanNameToFullNameToId,
+          structTToStructH,
+          structTToStructDefH + (structTT -> structDefH),
+          structDefs :+ structDefH,
+          staticSizedArrays,
+          runtimeSizedArrays,
+          interfaceTToInterfaceH,
+          interfaceTToInterfaceDefH,
+          functionRefs,
+          functionDefs,
+          packageCoordToExportNameToFunction,
+          packageCoordToExportNameToKind,
+          packageCoordToExternNameToFunction,
+          packageCoordToExternNameToKind)
+      }
+    }
   }
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {

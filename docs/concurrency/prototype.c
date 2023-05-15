@@ -2,11 +2,11 @@
 // objdump -ds main.o
 
 #include <stdint.h>
-//#include <pthread.h>
-//#include <stdlib.h>
-//#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-// stack size: 768 (95 locals + another int maybe the param)
+// stack size: 768 (95 locals + another int maybe the param?) on thumbv7m-none-eabi
 uint64_t bar(uint64_t x) {
 	// Cause some register spilling
 	uint64_t a = x;
@@ -110,41 +110,42 @@ uint64_t bar(uint64_t x) {
 		a4 + b4 + c4 + d4 + e4 + f4 + g4 + h4 + i4 + j4 + k4 + l4 + m4 + n4 + o4 + p4 + q4 + r4 + s4 +
 		a5 + b5 + c5 + d5 + e5 + f5 + g5 + h5 + i5 + j5 + k5 + l5 + m5 + n5 + o5 + p5 + q5 + r5 + s5;
 }
-// Stack size 32. 2 params plus 2 more? perhaps its spilling that a into a register?
+
+// Stack size 32 on thumbv7m-none-eabi. ...not sure why.
 uint64_t foo(uint64_t a, uint64_t b) {
 	return a + bar(b);
 }
 
-// Stack size 8?
+// Stack size 8 on thumbv7m-none-eabi.
 void* threadmain(void*) {
 	return (void*)foo(3, 7);
 }
 
-// total: 808
+// total 808 on a thumbv7m-none-eabi.
 
 
 int main() {
-	threadmain(0);
-   //pthread_attr_t attr;
-   //int rc = pthread_attr_init(&attr);
-   //if (rc == -1) {
-   //   perror("error in pthread_attr_init");
-   //   exit(1);
-   //}
-   //int s1 = 808;
-   //rc = pthread_attr_setstacksize(&attr, s1);
-   //if (rc == -1) {
-   //   perror("error in pthread_attr_setstacksize");
-   //   exit(2);
-   //}
-   //pthread_t thid;
-   //rc = pthread_create(&thid, &attr, threadmain, NULL);
-   //if (rc == -1) {
-   //   perror("error in pthread_create");
-   //   exit(3);
-   //}
-   //void* stat;
-   //rc = pthread_join(thid, &stat);
+	//threadmain(0);
+   pthread_attr_t attr;
+   int rc = pthread_attr_init(&attr);
+   if (rc == -1) {
+      perror("error in pthread_attr_init");
+      exit(1);
+   }
+   int s1 = SOMETHING HERE;
+   rc = pthread_attr_setstacksize(&attr, s1);
+   if (rc == -1) {
+      perror("error in pthread_attr_setstacksize");
+      exit(2);
+   }
+   pthread_t thid;
+   rc = pthread_create(&thid, &attr, threadmain, NULL);
+   if (rc == -1) {
+      perror("error in pthread_create");
+      exit(3);
+   }
+   void* stat;
+   rc = pthread_join(thid, &stat);
 
    return 0;
 }

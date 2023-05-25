@@ -133,22 +133,32 @@ case class Hamuts(
 
   def addStructOriginatingFromTypingPass(structTT: StructTT, structDefH: StructDefinitionH): Hamuts = {
     vassert(structRefsByRef2.contains(structTT))
-    vassert(!structDefsByRef2.contains(structTT))
-    Hamuts(
-      humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2 + (structTT -> structDefH),
-      structDefs :+ structDefH,
-      staticSizedArrays,
-      runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
-      functionRefs,
-      functionDefs,
-      packageCoordToExportNameToFunction,
-      packageCoordToExportNameToKind,
-      packageCoordToExternNameToFunction,
-      packageCoordToExternNameToKind)
+    structDefsByRef2.get(structTT) match {
+      case Some(existingDef) => {
+        vassert(existingDef.fullName == structDefH.fullName)
+        vassert(existingDef.members.map(_.name) == structDefH.members.map(_.name))
+        vassert(existingDef.members.map(_.tyype) == structDefH.members.map(_.tyype))
+        vassert(structDefs.exists(_.fullName == structDefH.fullName))
+        this
+      }
+      case None => {
+        Hamuts(
+          humanNameToFullNameToId,
+          structRefsByRef2,
+          structDefsByRef2 + (structTT -> structDefH),
+          structDefs :+ structDefH,
+          staticSizedArrays,
+          runtimeSizedArrays,
+          interfaceRefs,
+          interfaceDefs,
+          functionRefs,
+          functionDefs,
+          packageCoordToExportNameToFunction,
+          packageCoordToExportNameToKind,
+          packageCoordToExternNameToFunction,
+          packageCoordToExternNameToKind)
+      }
+    }
   }
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {

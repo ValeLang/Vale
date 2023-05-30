@@ -14,6 +14,7 @@ exported func main() {
   all_args = all_args_list.toImmArray();
 
 
+  // TODO: perhaps use FindProgramInPath if resolve can't find this
   passmanager_path = Path(all_args_list.get(0))&.resolve();
   if (not passmanager_path.exists()) {
     panic("Path {passmanager_path.str()} does not exist!");

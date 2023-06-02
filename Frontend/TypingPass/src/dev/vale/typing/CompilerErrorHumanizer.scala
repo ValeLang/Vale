@@ -43,6 +43,9 @@ object CompilerErrorHumanizer {
         case CantUseReadonlyReferenceAsReadwrite(range) => {
           "Can't make readonly reference into a readwrite one!"
         }
+        case CouldntFindOverrideT(range, fff) => {
+          "Couldn't find override: " + humanizeFindFunctionFailure(verbose, codeMap, range, fff)
+        }
         case CantReconcileBranchesResults(range, thenResult, elseResult) => {
           "If branches return different types: " + humanizeTemplata(codeMap, CoordTemplata(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplata(elseResult))
         }

@@ -516,6 +516,7 @@ WrapperPtrLE mallocStr(
       builder,
       lenI32LE,
       kindStructs->getStringLenPtr(functionState, builder, newStrWrapperPtrLE));
+  buildFlare(FL(), globalState, functionState, builder, "Mallocd a string, length ", lenI32LE);
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
   auto charsBeginPtr =

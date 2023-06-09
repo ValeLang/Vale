@@ -39,7 +39,6 @@ LLVMTypeRef translatePrototypeToFunctionType(
 LLVMTypeRef translateInterfaceMethodToFunctionType(
     GlobalState* globalState,
     InterfaceMethod* method) {
-  auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
   auto returnMT = method->prototype->returnType;
   auto paramsMT = method->prototype->params;
   auto returnLT = globalState->getRegion(returnMT)->translateType(returnMT);
@@ -47,8 +46,5 @@ LLVMTypeRef translateInterfaceMethodToFunctionType(
   paramsLT[method->virtualParamIndex] =
       globalState->getRegion(paramsMT[method->virtualParamIndex])
           ->getInterfaceMethodVirtualParamAnyType(paramsMT[method->virtualParamIndex]);
-  // For the unique generation number first param.
-  // Eventually this might be a region instance pointer, who knows.
-  paramsLT.insert(paramsLT.begin(), LLVMPointerType(genLT, 0));
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

@@ -17,6 +17,14 @@ enum class RegionOverride {
   FAST
 };
 
+enum class ValeOptimizationLevel {
+    O0,
+    O1,
+    O2,
+    O2i,
+    O3
+};
+
 
 // Compiler options
 struct ValeOptions {
@@ -30,7 +38,7 @@ struct ValeOptions {
 
     // Boolean flags
     bool wasm = false;        // 1=WebAssembly
-    int optLevel = 0;   // O0-O3
+    ValeOptimizationLevel optLevel = ValeOptimizationLevel::O2i;   // O0-O3
     bool library = false;    // 1=generate a C-API compatible static library
     bool pic = false;        // Compile using position independent code
     bool verify = false;        // Verify LLVM IR
@@ -40,10 +48,10 @@ struct ValeOptions {
     bool docs = false;            // Generate code documentation
     bool census = false;    // Enable census checking
     bool flares = false;    // Enable flare output
-    bool fastCrash = true;    // Enable single-instruction crash, a bit faster
+    bool fastCrash = false;    // Enable single-instruction crash, a bit faster
     int generationSize = 32;    // Size of generation integer, in bits.
-    bool elideChecksForKnownLive = false;    // Elide checks for static-analysis-known live
-    bool elideChecksForRegions = false;    // Elide checks for immutable regions
+    bool elideChecksForKnownLive = true;    // Elide checks for static-analysis-known live
+    bool elideChecksForRegions = true;    // Elide checks for immutable regions
     bool includeBoundsChecks = true;
     bool useAtomicRc = false;
     bool overrideKnownLiveTrue = false;    // Enables generational heap

@@ -71,7 +71,10 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
           builder,
           structs->getControlBlock(kindM)->getStruct(),
           controlBlockPtr.refLE,
-          structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B),
+          structs->getControlBlock(kindM)->getMemberIndex(
+              globalState->opt->generationSize == 64 ?
+              ControlBlockMember::GENERATION_64B :
+              ControlBlockMember::GENERATION_32B),
           "genPtr");
   return LLVMBuildLoad2(builder, int32LT, genPtrLE, "genB");
 }
@@ -476,7 +479,10 @@ LLVMValueRef HybridGenerationalMemory::fillWeakableControlBlock(
           globalState, builder, globalState->metalCache->i32, nextGenGlobalI32LE, 1);
 
   int genMemberIndex =
-      kindStructs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B);
+      kindStructs->getControlBlock(kindM)->getMemberIndex(
+          globalState->opt->generationSize == 64 ?
+          ControlBlockMember::GENERATION_64B :
+          ControlBlockMember::GENERATION_32B);
   auto newControlBlockLE =
       LLVMBuildInsertValue(builder, controlBlockLE, newGenLE, genMemberIndex, "newControlBlock");
 
@@ -783,7 +789,10 @@ void HybridGenerationalMemory::deallocate(
       kindStructs->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceRefMT, sourceWrapperPtr);
   int genMemberIndex =
-      kindStructs->getControlBlock(sourceRefMT->kind)->getMemberIndex(ControlBlockMember::GENERATION_32B);
+      kindStructs->getControlBlock(sourceRefMT->kind)->getMemberIndex(
+          globalState->opt->generationSize == 64 ?
+          ControlBlockMember::GENERATION_64B :
+          ControlBlockMember::GENERATION_32B);
   auto genPtrLE =
       LLVMBuildStructGEP2(
           builder,

@@ -391,6 +391,13 @@ public:
       StaticSizedArrayT* kindM,
       Ref dryRunBoolRef);
 
+  LLVMValueRef getStringLenPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref regionInstanceRef,
+      LiveRef ref);
+
   LLVMValueRef getStringLen(
       FunctionState* functionState,
       LLVMBuilderRef builder,

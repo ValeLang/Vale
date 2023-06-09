@@ -162,8 +162,8 @@ void buildPrintToStderr(
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
-//  auto s = LLVMBuildGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
-  auto s = LLVMBuildLoad2(builder, int8PtrLT, globalState->getOrMakeStringConstant(first), "");
+  auto s = LLVMBuildInBoundsGEP2(builder, int8LT, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+//  auto s = LLVMBuildLoad2(builder, int8PtrLT, globalState->getOrMakeStringConstant(first), "");
   assert(LLVMTypeOf(s) == LLVMPointerType(int8LT, 0));
   globalState->externs->printCStrToStderr.call(builder, {s}, "");
 }

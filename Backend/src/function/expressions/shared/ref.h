@@ -143,7 +143,7 @@ struct Ref {
     assert(refM->ownership == ownership);
   }
 
-//private: DO NOT SUBMIT
+private:
   // This is private to keep us from just grabbing this to hand in to checkValidReference.
   // We should instead always pipe through the code the actual expected type.
   Reference* refM;

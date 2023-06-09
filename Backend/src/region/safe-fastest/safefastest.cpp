@@ -60,7 +60,11 @@ static LLVMValueRef getGenerationPtrFromControlBlockPtr(
           builder,
           controlBlockPtr.structLT,
           controlBlockPtr.refLE,
-          structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B),
+          structs->getControlBlock(kindM)->getMemberIndex(
+              globalState->opt->generationSize == 64 ?
+              ControlBlockMember::GENERATION_64B :
+              ControlBlockMember::GENERATION_32B
+              ),
           "genPtr");
   return genPtrLE;
 }
@@ -362,14 +366,20 @@ static Ref assembleWeakRef(
 
 static ControlBlock makeSafeNonWeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::GENERATION_32B);
+  controlBlock.addMember(
+      globalState->opt->generationSize == 64 ?
+      ControlBlockMember::GENERATION_64B :
+      ControlBlockMember::GENERATION_32B);
   controlBlock.build();
   return controlBlock;
 }
 
 static ControlBlock makeSafeWeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::GENERATION_32B);
+  controlBlock.addMember(
+      globalState->opt->generationSize == 64 ?
+      ControlBlockMember::GENERATION_64B :
+      ControlBlockMember::GENERATION_32B);
   // controlBlock.addMember(ControlBlockMember::WEAK_SOMETHING); impl weaks
   controlBlock.build();
   return controlBlock;
@@ -1169,7 +1179,10 @@ LLVMValueRef SafeFastest::fillControlBlockGeneration(
 
 
   int genMemberIndex =
-      kindStructs.getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B);
+      kindStructs.getControlBlock(kindM)->getMemberIndex(
+          globalState->opt->generationSize == 64 ?
+          ControlBlockMember::GENERATION_64B :
+          ControlBlockMember::GENERATION_32B);
   auto newControlBlockLE =
       LLVMBuildInsertValue(builder, controlBlockLE, newGenLE, genMemberIndex, "newControlBlock");
 

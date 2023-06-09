@@ -171,6 +171,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "",
           "Makes it so replays will still call this extern function, instead of skipping it and returning the original recorded value."),
         Flag(
+          "--opt_level",
+          FLAG_STR(),
+          "How much to optimize the resulting binary.",
+          "",
+          "How much to optimize the resulting binary. Valid values: O0, O1, O2, O2i, O3"),
+        Flag(
           "--enable_side_calling",
           FLAG_BOOL(),
           "Whether to enable fearless FFI and green threads.",
@@ -273,6 +279,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   no_std = parsed_flags.get_bool_flag("--no_std", false);
 
   maybe_region_override = parsed_flags.get_string_flag("--region_override");
+  maybe_opt_level = parsed_flags.get_string_flag("--opt_level");
   maybe_cpu = parsed_flags.get_string_flag("--cpu");
   executable_name = parsed_flags.get_string_flag("-o", "main");
   flares = parsed_flags.get_bool_flag("--flares", false);
@@ -418,6 +425,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           &vast_files,
           &output_dir,
           &maybe_region_override,
+          &maybe_opt_level,
           &maybe_cpu,
           executable_name,
           flares,

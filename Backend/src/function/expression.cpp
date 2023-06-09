@@ -71,8 +71,6 @@ Ref translateExpressionInner(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Expression* expr) {
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-
   if (auto constantInt = dynamic_cast<ConstantInt*>(expr)) {
     // See ULTMCIE for why we load and store here.
     auto resultLE = makeConstIntExpr(functionState, builder, LLVMIntTypeInContext(globalState->context, constantInt->bits), constantInt->value);
@@ -713,13 +711,14 @@ Ref translateExpressionInner(
             ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
 
     auto indexLE =
-        globalState->getRegion(globalState->metalCache->i32Ref)
+        globalState->getRegion(resultType)
             ->checkValidReference(
-                FL(), functionState, builder, false, globalState->metalCache->i32Ref, indexRef);
+                FL(), functionState, builder, false, staticSizedArrayLoad->resultType, indexRef);
 
+    auto intMT = globalState->metalCache->i32Ref;
     auto indexInBoundsLE =
         checkIndexInBounds(
-            globalState, functionState, builder, globalState->metalCache->i32Ref, sizeLE, indexLE,
+            globalState, functionState, builder, intMT, sizeLE, indexLE,
             "Error: Array index out of bounds!");
 
     auto loadResult =
@@ -967,7 +966,7 @@ Ref translateExpressionInner(
     auto memberName = memberStore->memberName;
     auto structType = memberStore->structType;
     auto memberType = structDefM->members[memberIndex]->type;
-    bool structKnownLive = memberStore->structKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool structKnownLive = exprResultKnownLive(globalState, memberStore->structExpr);
 
     auto sourceExpr =
         translateExpression(

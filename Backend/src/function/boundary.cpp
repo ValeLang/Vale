@@ -76,6 +76,7 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHostAndDealias(
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(
                 functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeRefMT, hostRefMT, valeRef);
+    buildFlare(FL(), globalState, functionState, builder, "sendValeObjectIntoHostAndDealias dealiasing!");
     globalState->getRegion(valeRefMT)
         ->dealias(FL(), functionState, builder, valeRefMT, valeRef);
     auto hostArgLE =

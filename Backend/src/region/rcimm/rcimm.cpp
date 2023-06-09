@@ -770,14 +770,14 @@ void RCImm::discard(
         auto rcLE =
             adjustStrongRc(
                 from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-        buildFlare(FL(), globalState, functionState, builder, rcLE);
+        buildFlare(FL(), globalState, functionState, builder, "Ref count: ", rcLE);
         buildIfV(
             globalState, functionState,
             builder,
             isZeroLE(builder, rcLE),
             [this, from, globalState, functionState, sourceRef, sourceMT](
                 LLVMBuilderRef thenBuilder) {
-              buildFlare(FL(), globalState, functionState, thenBuilder);
+              buildFlare(FL(), globalState, functionState, thenBuilder, "Discard is freeing!");
               auto regionInstanceRef = makeRegionInstance(thenBuilder);
               callFree(functionState, thenBuilder, regionInstanceRef, sourceMT->kind, sourceRef);
               //  auto immDestructor = getFreePrototype(sourceMT->kind);
@@ -1011,9 +1011,7 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
         assert(false);
       }
     } else {
-      auto resultRef =
-          topLevelUnserialize(
-              functionState, builder, targetRegionInstanceRef, sourceRegionInstanceRef, valeRefMT->kind, valeRefMT, sourceRef);
+      auto resultRef = topLevelUnserialize(functionState, builder, targetRegionInstanceRef, sourceRegionInstanceRef, valeRefMT->kind, sourceRef);
       // Vale doesn't care about the size, only extern (linear) does, so just return zero.
       return std::make_pair(resultRef, globalState->constI32(0));
     }
@@ -1077,30 +1075,24 @@ Weakability RCImm::getKindWeakability(Kind* kind) {
 }
 
 void RCImm::declareExtraFunctions() {
-  auto valeMutStrMT = globalState->metalCache->mutStrRef;
-  auto valeImmStrMT = globalState->metalCache->immStrRef;
-  auto hostMutStrMT =
+  auto valeStrMT = globalState->metalCache->mutStrRef;
+  auto hostStrMT =
       globalState->metalCache->getReference(
           Ownership::MUTABLE_SHARE,
-          Location::YONDER,
-          globalState->metalCache->getStr(globalState->metalCache->linearRegionId));
-  auto hostImmStrMT =
-      globalState->metalCache->getReference(
-          Ownership::IMMUTABLE_SHARE,
           Location::YONDER,
           globalState->metalCache->getStr(globalState->metalCache->linearRegionId));
 
   auto unserializePrototype =
       globalState->metalCache->getPrototype(
-          globalState->unserializeName, valeMutStrMT,
-          {getRegionRefType(), globalState->linearRegion->getRegionRefType(), hostImmStrMT});
+          globalState->unserializeName, valeStrMT,
+          {getRegionRefType(), globalState->linearRegion->getRegionRefType(), hostStrMT});
   auto unserializeNameL = globalState->unserializeName->name + "__str";
   declareExtraFunction(globalState, unserializePrototype, unserializeNameL);
 
   auto freePrototype =
       globalState->metalCache->getPrototype(
           globalState->freeName, globalState->metalCache->voidRef,
-          {getRegionRefType(), valeMutStrMT});
+          {getRegionRefType(), valeStrMT});
   auto freeNameL = globalState->freeName->name + "__str";
   declareExtraFunction(globalState, freePrototype, freeNameL);
 }
@@ -1164,27 +1156,8 @@ Ref RCImm::topLevelUnserialize(
     Ref regionInstanceRef,
     Ref sourceRegionInstanceRef,
     Kind* valeKind,
-    Reference* readonlyValeRefMT,
-    Ref readonlyHostRef) {
-
-
-  auto readonlyHostRefMT = globalState->linearRegion->linearizeReference(readonlyValeRefMT, true);
-  auto immHostRefMT =
-      (readonlyHostRefMT->ownership == Ownership::MUTABLE_SHARE && readonlyHostRefMT->location == Location::YONDER) ?
-      globalState->metalCache->getReference(
-          Ownership::IMMUTABLE_SHARE,
-          readonlyHostRefMT->location,
-          readonlyHostRefMT->kind) :
-      readonlyHostRefMT;
-  Ref immHostRef =
-      readonlyHostRefMT->ownership == Ownership::IMMUTABLE_SHARE ?
-      readonlyHostRef :
-      wrap(
-          globalState, immHostRefMT,
-          globalState->getRegion(readonlyHostRefMT)->immutabilify(
-              FL(), functionState, builder, sourceRegionInstanceRef, readonlyHostRefMT, readonlyHostRef, immHostRefMT));
-
-  return callUnserialize(functionState, builder, regionInstanceRef, sourceRegionInstanceRef, valeKind, immHostRefMT, immHostRef);
+    Ref ref) {
+  return callUnserialize(functionState, builder, regionInstanceRef, sourceRegionInstanceRef, valeKind, ref);
 }
 
 InterfaceMethod* RCImm::getUnserializeInterfaceMethod(Kind* valeKind) {
@@ -1198,7 +1171,6 @@ Ref RCImm::callUnserialize(
     Ref regionInstanceRef,
     Ref sourceRegionInstanceRef,
     Kind* valeKind,
-    Reference* objectRefMT,
     Ref objectRef) {
   auto prototype = getUnserializePrototype(valeKind);
   if (auto valeInterfaceMT = dynamic_cast<InterfaceKind*>(valeKind)) {
@@ -1222,7 +1194,7 @@ Prototype* RCImm::getUnserializePrototype(Kind* valeKind) {
   auto valeRefMT =
       globalState->metalCache->getReference(
           Ownership::MUTABLE_SHARE, Location::YONDER, valeKind);
-  auto hostRefMT = globalState->linearRegion->linearizeReference(valeRefMT, false);
+  auto hostRefMT = globalState->linearRegion->linearizeReference(valeRefMT, true);
   auto hostRegionRefMT = globalState->linearRegion->getRegionRefType();
   return globalState->metalCache->getPrototype(
       globalState->unserializeName, valeRefMT, {regionRefMT, hostRegionRefMT, hostRefMT});
@@ -1261,9 +1233,9 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           LLVMBuilderRef builder,
           Ref regionInstanceRef,
           Ref hostRegionInstanceRef,
-          Reference* valeMemberRefMT,
           Reference* hostMemberRefMT,
           Ref hostMemberRef) {
+        auto valeMemberRefMT = globalState->linearRegion->unlinearizeReference(hostMemberRefMT, true);
         auto hostMemberLE =
             globalState->getRegion(hostMemberRefMT)->checkValidReference(
                 FL(), functionState, builder, true, hostMemberRefMT, hostMemberRef);
@@ -1281,12 +1253,12 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
             dynamic_cast<RuntimeSizedArrayT*>(hostMemberRefMT->kind)) {
           auto destinationMemberRef =
               callUnserialize(
-                  functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT->kind, valeMemberRefMT, hostMemberRef);
+                  functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT->kind, hostMemberRef);
           return destinationMemberRef;
         } else if (dynamic_cast<InterfaceKind*>(hostMemberRefMT->kind)) {
           auto destinationMemberRef =
               callUnserialize(
-                  functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT->kind, valeMemberRefMT, hostMemberRef);
+                  functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT->kind, hostMemberRef);
           return destinationMemberRef;
         } else assert(false);
       };
@@ -1317,21 +1289,13 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
             auto valeMemberM = valeStructDefM->members[i];
             auto valeMemberRefMT = valeMemberM->type;
             auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT, true);
-
-            auto hostMemberTargetRefMT =
-                (hostMemberRefMT->ownership == Ownership::MUTABLE_SHARE && hostMemberRefMT->location == Location::YONDER) ?
-                globalState->metalCache->getReference(
-                    Ownership::IMMUTABLE_SHARE,
-                    hostMemberRefMT->location,
-                    hostMemberRefMT->kind) :
-                hostMemberRefMT;
             auto hostMemberRef =
                 globalState->getRegion(hostObjectRefMT)->loadMember(
                     functionState, builder, hostRegionInstanceRef, hostObjectRefMT, hostObjectRef,
-                    i, hostMemberRefMT, hostMemberTargetRefMT, valeMemberM->name);
+                    i, hostMemberRefMT, hostMemberRefMT, valeMemberM->name);
             memberRefs.push_back(
                 unserializeMemberOrElement(
-                    functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT, hostMemberTargetRefMT, hostMemberRef));
+                    functionState, builder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT, hostMemberRef));
           }
 
           auto resultRef = allocate(makeVoidRef(globalState), FL(), functionState, builder, valeObjectRefMT, memberRefs);
@@ -1376,18 +1340,10 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT, true);
 
-          auto hostMemberTargetRefMT =
-              (hostMemberRefMT->ownership == Ownership::MUTABLE_SHARE && hostMemberRefMT->location == Location::YONDER) ?
-              globalState->metalCache->getReference(
-                  Ownership::IMMUTABLE_SHARE,
-                  hostMemberRefMT->location,
-                  hostMemberRefMT->kind) :
-              hostMemberRefMT;
-
           intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32Ref, lengthRef,
 
-              [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeRsaRef, hostMemberRefMT, hostMemberTargetRefMT, valeObjectRefMT, hostRsaMT, valeRsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
+              [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeRsaRef, hostMemberRefMT, valeObjectRefMT, hostRsaMT, valeRsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
                   Ref indexRef, LLVMBuilderRef bodyBuilder) {
                 auto indexLE =
                     globalState->getRegion(globalState->metalCache->i32)
@@ -1396,16 +1352,14 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
                 auto indexInBoundsLE = InBoundsLE{indexLE};
 
                 auto hostMemberRef =
-                    globalState->getRegion(hostObjectRefMT)->upgradeLoadResultToRefWithTargetOwnership(
-                        functionState, bodyBuilder, hostRegionInstanceRef, hostMemberRefMT, hostMemberTargetRefMT,
-                        globalState->getRegion(hostObjectRefMT)
-                            ->loadElementFromRSA(
-                                functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT,
-                                hostObjectRef, indexInBoundsLE),
-                        true);
+                    globalState->getRegion(hostObjectRefMT)
+                        ->loadElementFromRSA(
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT,
+                            hostObjectRef, indexInBoundsLE)
+                        .move();
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT, hostMemberTargetRefMT,
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
                         hostMemberRef);
                 pushRuntimeSizedArrayNoBoundsCheck(
                     functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeRsaRef,
@@ -1427,18 +1381,9 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           int length = valeSsaDefM->size;
           auto valeMemberRefMT = valeSsaDefM->elementType;
 
-          auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT, true);
-          auto hostMemberTargetRefMT =
-              (hostMemberRefMT->ownership == Ownership::MUTABLE_SHARE && hostMemberRefMT->location == Location::YONDER) ?
-              globalState->metalCache->getReference(
-                  Ownership::IMMUTABLE_SHARE,
-                  hostMemberRefMT->location,
-                  hostMemberRefMT->kind) :
-              hostMemberRefMT;
-
           intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32Ref, globalState->constI32(length),
-              [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeSsaRef, valeObjectRefMT, hostMemberRefMT, hostMemberTargetRefMT, hostSsaMT, valeSsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
+              [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeSsaRef, valeObjectRefMT, hostSsaMT, valeSsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
                   Ref indexRef, LLVMBuilderRef bodyBuilder) {
                 auto indexLE =
                     globalState->getRegion(globalState->metalCache->i32Ref)
@@ -1447,18 +1392,16 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
                 auto indexInBoundsLE = InBoundsLE{indexLE};
 
                 auto hostMemberRef =
-                    globalState->getRegion(hostObjectRefMT)->upgradeLoadResultToRefWithTargetOwnership(
-                        functionState, bodyBuilder, hostRegionInstanceRef, hostMemberRefMT, hostMemberTargetRefMT,
-                        globalState->getRegion(hostObjectRefMT)
-                            ->loadElementFromSSA(
-                                functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT,
-                                hostSsaMT,
-                                hostObjectRef, indexInBoundsLE),
-                    true);
-
+                    globalState->getRegion(hostObjectRefMT)
+                        ->loadElementFromSSA(
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT,
+                            hostSsaMT,
+                            hostObjectRef, indexInBoundsLE)
+                        .move();
+                auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT, true);
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT, hostMemberTargetRefMT,
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
                         hostMemberRef);
                 initializeElementInSSA(
                     functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeSsaRef,
@@ -1785,7 +1728,6 @@ LiveRef RCImm::immutabilify(
     Reference* refMT,
     Ref ref,
     Reference* targetRefMT) {
-  assert(refMT->ownership == Ownership::MUTABLE_SHARE);
   // Imm and mut refs in RC are the same, so we can just do a transmute.
   auto transmutedRef =
       transmutePtr(globalState, functionState, builder, true, refMT, targetRefMT, ref);

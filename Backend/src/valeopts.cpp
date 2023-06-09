@@ -192,25 +192,14 @@ static opt_arg_t args[] =
 //}
 
 int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
-    opt_state_t s;
-    int ok = 1;
-    int i;
+  opt_state_t s;
+  int ok = 1;
+  int i;
 
-    // options->limit = PASS_ALL;
-    // options->check.errors = errors_alloc();
+  // options->limit = PASS_ALL;
+  // options->check.errors = errors_alloc();
 
-    optInit(args, &s, argc, argv);
-    opt->optLevel = 0;
-    opt->flares = false;
-    opt->fastCrash = false;
-    opt->generationSize = 32;
-    opt->elideChecksForKnownLive = true;
-    opt->elideChecksForRegions = true;
-    opt->includeBoundsChecks = true;
-    opt->useAtomicRc = false;
-    opt->overrideKnownLiveTrue = false;
-    opt->census = false;
-
+  optInit(args, &s, argc, argv);
 
   for (int id = 0; (id = optNext(&s)) != -1; ) {
     switch (id) {
@@ -304,13 +293,15 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
 
           case OPT_OPT_LEVEL: {
             if (s.arg_val == std::string("O0")) {
-              opt->optLevel = 0;
+              opt->optLevel = ValeOptimizationLevel::O0;
             } else if (s.arg_val == std::string("O1")) {
-              opt->optLevel = 1;
+              opt->optLevel = ValeOptimizationLevel::O1;
             } else if (s.arg_val == std::string("O2")) {
-              opt->optLevel = 2;
+              opt->optLevel = ValeOptimizationLevel::O2;
+            } else if (s.arg_val == std::string("O2i")) {
+              opt->optLevel = ValeOptimizationLevel::O2i;
             } else if (s.arg_val == std::string("O3")) {
-              opt->optLevel = 3;
+              opt->optLevel = ValeOptimizationLevel::O3;
             } else assert(false);
             break;
           }

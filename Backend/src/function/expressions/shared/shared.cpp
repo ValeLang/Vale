@@ -331,6 +331,10 @@ Ref buildInterfaceCall(
 
 
 
+  assert(
+      LLVMTypeOf(newVirtualArgLE) ==
+      globalState->getRegion(virtualParamMT)
+          ->getInterfaceMethodVirtualParamAnyType(virtualParamMT));
   auto resultLE = methodFunctionPtrLE.call(builder, functionState->nextGenPtrLE.value(), argsLE, "");
   assert(LLVMTypeOf(resultLE) == LLVMGetReturnType(methodFunctionPtrLE.inner.funcLT));
   buildFlare(FL(), globalState, functionState, builder);

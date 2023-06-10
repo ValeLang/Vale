@@ -539,7 +539,13 @@ static WrapperPtrLE lockGenFatPtr(
             globalState, functionState, builder, kindStructs, refM, weakFatPtrLE, knownLive);
     buildIfV(
         globalState, functionState, builder, isZeroLE(builder, isAliveLE),
-        [globalState, from](LLVMBuilderRef thenBuilder) {
+        [globalState, from, knownLive](LLVMBuilderRef thenBuilder) {
+          if (knownLive) {
+            // See MPESC for status codes
+            buildPrintToStderr(globalState, thenBuilder, "knownLive is true, but object is dead, exiting!\n");
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 116, false);
+            globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
+          }
           fastPanic(globalState, from, thenBuilder);
         });
   }

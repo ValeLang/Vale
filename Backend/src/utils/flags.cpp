@@ -39,7 +39,7 @@ LLVMValueRef processFlag(
           LLVMBuilderRef builder) {
         buildFlare(FL(), globalState, functionState, builder);
 
-        buildFlare(FL(), globalState, functionState, builder, "args: ", globalState->getOrMakeStringConstant(flagName), ", ", firstArgLE, ", ", constI64LE(globalState, flagName.size()));
+        buildFlare(FL(), globalState, functionState, builder, "arg ", globalState->getOrMakeStringConstant(flagName), ": ", firstArgLE, ", ", constI64LE(globalState, flagName.size()));
         auto stringsDifferentI8LE =
             buildMaybeNeverCall(
                 globalState, builder, globalState->externs->strncmp, {

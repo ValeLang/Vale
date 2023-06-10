@@ -16,7 +16,12 @@
 
 // DO NOT SUBMIT do something more like catalyst instead
 bool exprResultKnownLive(GlobalState* globalState, Expression* expr) {
-  if (globalState->opt->overrideKnownLiveTrue) {
+  // This pretends that everything is knownLive, including things that definitely are bad.
+  // When paired with elide_checks_for_known_live=false, which makes us do generation checks anyway.
+  // Any valid dereference will be fine; knownLive will be true and the check will pass, so no bad.
+  // But any invalid dereference will explode; knownLive will be true and the check failed, so it
+  // will report that it caught a bug.
+  if (globalState->opt->forceAllKnownLive) {
     return true;
   }
   if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
@@ -680,7 +685,7 @@ Ref translateExpressionInner(
     auto resultType =
         globalState->metalCache->getReference(
             targetOwnership, targetLocation, elementType->kind);
-    bool arrayKnownLive = staticSizedArrayLoad->arrayKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool arrayKnownLive = staticSizedArrayLoad->arrayKnownLive;
     int arraySize = staticSizedArrayLoad->arraySize;
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
@@ -710,12 +715,12 @@ Ref translateExpressionInner(
         globalState->getRegion(arrayType)
             ->checkRefLive(FL(), functionState, builder, arrayRegionInstanceRef, arrayType, arrayRef, arrayKnownLive);
 
-    auto indexLE =
-        globalState->getRegion(resultType)
-            ->checkValidReference(
-                FL(), functionState, builder, false, staticSizedArrayLoad->resultType, indexRef);
-
     auto intMT = globalState->metalCache->i32Ref;
+    auto indexLE =
+        globalState->getRegion(intMT)
+            ->checkValidReference(
+                FL(), functionState, builder, false, intMT, indexRef);
+
     auto indexInBoundsLE =
         checkIndexInBounds(
             globalState, functionState, builder, intMT, sizeLE, indexLE,
@@ -747,7 +752,7 @@ Ref translateExpressionInner(
     auto targetOwnership = runtimeSizedArrayLoad->targetOwnership;
     auto targetLocation = targetOwnership == Ownership::MUTABLE_SHARE ? elementType->location : Location::YONDER;
     auto resultType = globalState->metalCache->getReference(targetOwnership, targetLocation, elementType->kind);
-    bool arrayKnownLive = runtimeSizedArrayLoad->arrayKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool arrayKnownLive = runtimeSizedArrayLoad->arrayKnownLive;
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
@@ -874,7 +879,7 @@ Ref translateExpressionInner(
     auto arrayType = arrayLength->sourceType;
     auto arrayExpr = arrayLength->sourceExpr;
     // DO NOT SUBMIT get actual knownLive from catalyst
-    bool arrayKnownLive = true;//arrayLength->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool arrayKnownLive = true;//arrayLength->sourceKnownLive;
 //    auto indexExpr = arrayLength->indexExpr;
 
     auto arrayRegionInstanceRef =
@@ -902,7 +907,7 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = arrayCapacity->sourceType;
     auto arrayExpr = arrayCapacity->sourceExpr;
-    bool arrayKnownLive = arrayCapacity->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool arrayKnownLive = arrayCapacity->sourceKnownLive;
 //    auto indexExpr = arrayLength->indexExpr;
 
     auto arrayRegionInstanceRef =
@@ -1044,7 +1049,7 @@ Ref translateExpressionInner(
             structToInterfaceUpcast->targetInterfaceType,
             structToInterfaceUpcast->targetInterfaceKind);
   } else if (auto lockWeak = dynamic_cast<LockWeak*>(expr)) {
-    bool sourceKnownLive = lockWeak->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool sourceKnownLive = lockWeak->sourceKnownLive;
 
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
@@ -1127,7 +1132,7 @@ Ref translateExpressionInner(
 
     return resultOptLE;
   } else if (auto asSubtype = dynamic_cast<AsSubtype*>(expr)) {
-    bool sourceKnownLive = asSubtype->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+    bool sourceKnownLive = asSubtype->sourceKnownLive;
 
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 

@@ -216,8 +216,6 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
-  } else if (ownership["__type"].get<std::string>() == "Weak") {
-    return Ownership::WEAK;
   } else if (ownership["__type"].get<std::string>() == "Borrow") { // To work with old frontend
     return Ownership::MUTABLE_BORROW;
   } else if (ownership["__type"].get<std::string>() == "Share") { // To work with old frontend

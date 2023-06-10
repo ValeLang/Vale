@@ -54,7 +54,7 @@ struct ValeOptions {
     bool elideChecksForRegions = true;    // Elide checks for immutable regions
     bool includeBoundsChecks = true;
     bool useAtomicRc = false;
-    bool overrideKnownLiveTrue = false;    // Enables generational heap
+    bool forceAllKnownLive = false;    // Enables generational heap
     bool printMemOverhead = false;    // Enables generational heap
     bool enableReplaying = false;    // Enables deterministic replaying
     bool enableSideCalling = false;    // Enables side calling, used for fearless FFI

@@ -291,8 +291,15 @@ LiveRef HybridGenerationalMemory::lockGenFatPtr(
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, weakFatPtrLE, knownLive);
     buildIfV(
         globalState, functionState, builder, LLVMBuildNot(builder, isAliveLE, "notAlive"),
-        [this, from](LLVMBuilderRef thenBuilder) {
-          fastPanic(globalState, from, thenBuilder);
+        [this, from, knownLive](LLVMBuilderRef thenBuilder) {
+          if (knownLive) {
+            // See MPESC for status codes
+            buildPrintToStderr(globalState, thenBuilder, "knownLive is true, but object is dead, exiting!\n");
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 116, false);
+            globalState->externs->exit.call(thenBuilder, {exitCodeIntLE}, "");
+          } else {
+            fastPanic(globalState, from, thenBuilder);
+          }
         });
 //  }
   auto refLE =
@@ -404,7 +411,7 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE,
     bool knownLive) {
-  buildFlare(FL(), globalState, functionState, builder, "In getIsAliveFromWeakFatPtr ", knownLive, elideChecksForKnownLive);
+  buildFlare(FL(), globalState, functionState, builder, "In getIsAliveFromWeakFatPtr knownLive ", knownLive, " ecfkl ", elideChecksForKnownLive);
 
   if (false) {
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);

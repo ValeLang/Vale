@@ -206,7 +206,7 @@ case class StaticSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
     val mutability = expectMutability(templateArgs(1))
     val variability = expectVariability(templateArgs(2))
     val elementType = expectCoordTemplata(templateArgs(3)).coord
-    interner.intern(StaticSizedArrayNameT(this, size, variability, RawArrayNameT(mutability, elementType)))
+    interner.intern(StaticSizedArrayNameT(this, size, variability, interner.intern(RawArrayNameT(mutability, elementType))))
   }
 }
 case class StaticSizedArrayNameT(
@@ -224,7 +224,7 @@ case class RuntimeSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
     vassert(templateArgs.size == 2)
     val mutability = expectMutability(templateArgs(0))
     val elementType = expectCoordTemplata(templateArgs(1)).coord
-    interner.intern(RuntimeSizedArrayNameT(this, RawArrayNameT(mutability, elementType)))
+    interner.intern(RuntimeSizedArrayNameT(this, interner.intern(RawArrayNameT(mutability, elementType))))
   }
 }
 

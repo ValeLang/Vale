@@ -516,7 +516,6 @@ WrapperPtrLE mallocStr(
       builder,
       lenI32LE,
       kindStructs->getStringLenPtr(functionState, builder, newStrWrapperPtrLE));
-  buildFlare(FL(), globalState, functionState, builder, "Mallocd a string, length ", lenI32LE);
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
   auto charsBeginPtr =
@@ -1292,6 +1291,8 @@ LiveRef constructRuntimeSizedArray(
   auto capacityLE =
       globalState->getRegion(globalState->metalCache->i32Ref)->checkValidReference(FL(),
           functionState, builder, true, globalState->metalCache->i32Ref, capacityRef);
+  buildFlare(FL(), globalState, functionState, builder, "RSA capacity: ", capacityLE);
+
   auto ptrLE = mallocRuntimeSizedArray(globalState, builder, rsaWrapperPtrLT, rsaElementLT, capacityLE);
   auto rsaWrapperPtrLE =
       kindStructs->makeWrapperPtr(FL(), functionState, builder, rsaMT, ptrLE);

@@ -18,7 +18,7 @@ func invoke_backend(
   pic bool,
   print_mem_overhead bool,
   elide_checks_for_known_live bool,
-  override_known_live_true bool)
+  force_all_known_live bool)
 Subprocess {
   //backend_program_name = if (IsWindows()) { "backend.exe" } else { "backend" };
   //backend_program_path = backend_path./(backend_program_name);
@@ -74,11 +74,11 @@ Subprocess {
   if print_mem_overhead {
     command_line_args.add("--print_mem_overhead=true");
   }
-  if elide_checks_for_known_live {
-    command_line_args.add("--elide_checks_for_known_live");
+  if not elide_checks_for_known_live {
+    command_line_args.add("--elide_checks_for_known_live=false");
   }
-  if override_known_live_true {
-    command_line_args.add("--override_known_live_true");
+  if force_all_known_live {
+    command_line_args.add("--force_all_known_live");
   }
 
   vast_files.each((vast_file) => {

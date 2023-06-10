@@ -649,11 +649,15 @@ void RCImm::pushRuntimeSizedArrayNoBoundsCheck(
 
   auto arrayWrapperPtrLE = toWrapperPtr(functionState, builder, &kindStructs, rsaRefMT, rsaRef);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, false, arrayWrapperPtrLE);
-  auto incrementedSize =
-      incrementRSASize(globalState, functionState, builder, rsaRefMT, arrayWrapperPtrLE);
+  // We don't increment the size because it's populated when we first create the array.
+//  auto incrementedSize =
+//      incrementRSASize(globalState, functionState, builder, rsaRefMT, arrayWrapperPtrLE);
+
   ::initializeElementWithoutIncrementSize(
       globalState, functionState, builder, rsaRefMT->location,
-      elementType, arrayElementsPtrLE, indexInBoundsLE, elementRef, incrementedSize);
+      elementType, arrayElementsPtrLE, indexInBoundsLE, elementRef,
+      // We dont need to increment the size, so manually create this reminder object
+      IncrementedSize{});
 }
 
 void RCImm::deallocate(
@@ -686,7 +690,11 @@ LiveRef RCImm::constructRuntimeSizedArray(
   auto resultRef =
       ::constructRuntimeSizedArray(
           globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->elementType, runtimeSizedArrayT,
-          rsaWrapperPtrLT, rsaElementLT, capacityRef, capacityRef, false, typeName,
+          rsaWrapperPtrLT, rsaElementLT,
+          // Note we're handing in capacity for the size ref. Because of this, we dont later increment the size
+          // when we push elements.
+          capacityRef, capacityRef,
+          false, typeName,
           [this, functionState, runtimeSizedArrayT, rsaMT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
@@ -770,14 +778,14 @@ void RCImm::discard(
         auto rcLE =
             adjustStrongRc(
                 from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-        buildFlare(FL(), globalState, functionState, builder, "Ref count: ", rcLE);
+        buildFlare(FL(), globalState, functionState, builder, rcLE);
         buildIfV(
             globalState, functionState,
             builder,
             isZeroLE(builder, rcLE),
             [this, from, globalState, functionState, sourceRef, sourceMT](
                 LLVMBuilderRef thenBuilder) {
-              buildFlare(FL(), globalState, functionState, thenBuilder, "Discard is freeing!");
+              buildFlare(FL(), globalState, functionState, thenBuilder);
               auto regionInstanceRef = makeRegionInstance(thenBuilder);
               callFree(functionState, thenBuilder, regionInstanceRef, sourceMT->kind, sourceRef);
               //  auto immDestructor = getFreePrototype(sourceMT->kind);
@@ -1332,6 +1340,11 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
               globalState->getRegion(hostObjectRefMT)
                   ->getRuntimeSizedArrayLength(
                       functionState, builder, hostRegionInstanceRef, hostObjectRefMT, hostObjectRef);
+
+          auto lengthLE =
+              globalState->getRegion(globalState->metalCache->i32Ref)
+                  ->checkValidReference(FL(), functionState, builder, false, globalState->metalCache->i32Ref, lengthRef);
+          buildFlare(FL(), globalState, functionState, builder, "Unserialized RSA length ", lengthLE);
 
           auto valeRsaRef =
               constructRuntimeSizedArray(

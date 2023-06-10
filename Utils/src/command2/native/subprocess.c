@@ -4,18 +4,26 @@
 #include <string.h>
 #include "ValeBuiltins.h"
 #include "valecutils/StrArray.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 long read_into_buffer(char* buffer, ValeInt bytes, FILE* stream){
+  //printf("read_into_buffer start\n");
   long i = 0;
   for(i = 0; i < bytes; i++){
+    //printf("read_into_buffer a\n");
     // feof comes after fgetc but before its result is used, taken from example at
     // https://www.tutorialspoint.com/c_standard_library/c_function_fgetc.htm
     int c = fgetc(stream);
+    //printf("read_into_buffer b\n");
     if(feof(stream)) {
+      //printf("read_into_buffer c\n");
       break;
     }
+    //printf("read_into_buffer d\n");
     buffer[i] = c;
   }
+    //printf("read_into_buffer end\n");
   return i;
 }
 
@@ -61,12 +69,18 @@ int64_t valecutils_launch_command(valecutils_StrArray* chain, ValeStr* cwd_str) 
 }
 
 ValeStr* valecutils_read_stdout(int64_t cmd, long bytes) {
+  //printf("valecutils_read_stdout start\n");
   ValeStr* out = ValeStrNew(bytes+1); 
+  //printf("valecutils_read_stdout a\n");
   FILE* stdout_handle = subprocess_stdout((struct subprocess_s*)cmd); 
+
+  //printf("valecutils_read_stdout b\n");
   long read_len = read_into_buffer(out->chars, bytes, stdout_handle);
+  //printf("valecutils_read_stdout c\n");
   out->chars[bytes] = '\0'; 
   out->length = read_len;
   //fclose(stdout_handle);
+  //printf("valecutils_read_stdout end\n");
   return out;
 }
 
@@ -102,12 +116,14 @@ void valecutils_close_stdin(int64_t handle){
 }
 
 long valecutils_join(int64_t handle){
+  //printf("valecutils_join start\n");
   int result = 0;
   int success = subprocess_join((struct subprocess_s*)handle, &result);
   if (success != 0) {
     fprintf(stderr, "Couldn't join subprocess, error {success}\n");
     exit(1);
   }
+  //printf("valecutils_join end\n");
   return result;  
 }
 

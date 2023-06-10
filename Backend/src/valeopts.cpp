@@ -48,7 +48,7 @@ enum
     OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
     OPT_ELIDE_CHECKS_FOR_REGIONS,
     OPT_INCLUDE_BOUNDS_CHECKS,
-    OPT_OVERRIDE_KNOWN_LIVE_TRUE,
+    OPT_FORCE_ALL_KNOWN_LIVE,
     OPT_USE_ATOMIC_RC,
     OPT_PRINT_MEM_OVERHEAD,
     OPT_ENABLE_REPLAYING,
@@ -100,7 +100,7 @@ static opt_arg_t args[] =
     { "elide_checks_for_regions", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_REGIONS },
     { "include_bounds_checks", '\0', OPT_ARG_OPTIONAL, OPT_INCLUDE_BOUNDS_CHECKS },
     { "use_atomic_rc", '\0', OPT_ARG_OPTIONAL, OPT_USE_ATOMIC_RC },
-    { "override_known_live_true", '\0', OPT_ARG_NONE, OPT_OVERRIDE_KNOWN_LIVE_TRUE },
+    { "force_all_known_live", '\0', OPT_ARG_NONE, OPT_FORCE_ALL_KNOWN_LIVE },
     { "print_mem_overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "enable_replaying", '\0', OPT_ARG_OPTIONAL, OPT_ENABLE_REPLAYING },
     { "replay_whitelist_extern", '\0', OPT_ARG_REQUIRED, OPT_REPLAY_WHITELIST_EXTERN },
@@ -270,9 +270,9 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
       case OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE: {
         if (!s.arg_val) {
           opt->elideChecksForKnownLive = true;
-        } else if (s.arg_val == std::string("on")) {
+        } else if (s.arg_val == std::string("true")) {
           opt->elideChecksForKnownLive = true;
-        } else if (s.arg_val == std::string("off")) {
+        } else if (s.arg_val == std::string("false")) {
           opt->elideChecksForKnownLive = false;
         } else
           assert(false);
@@ -349,8 +349,14 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             break;
           }
 
-          case OPT_OVERRIDE_KNOWN_LIVE_TRUE: {
-            opt->overrideKnownLiveTrue = true;
+          case OPT_FORCE_ALL_KNOWN_LIVE: {
+            if (!s.arg_val) {
+              opt->forceAllKnownLive = true;
+            } else if (s.arg_val == std::string("true")) {
+              opt->forceAllKnownLive = true;
+            } else if (s.arg_val == std::string("false")) {
+              opt->forceAllKnownLive = false;
+            } else assert(false);
             break;
           }
 

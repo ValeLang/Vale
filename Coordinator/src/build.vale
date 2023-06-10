@@ -219,6 +219,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "Whether to skip generation checks when it's statically known to pass."),
         Flag(
+          "--print_mem_overhead",
+          FLAG_BOOL(),
+          "Whether to print memory overhead at program end.",
+          "false",
+          "Whether to print number of RC incr/decrs and generation checks."),
+        Flag(
           "-o",
           FLAG_STR(),
           "Resulting executablen name",

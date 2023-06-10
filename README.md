@@ -44,6 +44,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 # Thank you to all of our sponsors!
 
  * [Arthur Weagel](https://github.com/aweagel)
+ * [Kiril Mihaylov](https://github.com/KirilMihaylov)
  * [Radek Miček](https://github.com/radekm)
  * [Geomitron](https://github.com/Geomitron)
  * [Chiuzon](https://github.com/chiuzon)
@@ -59,6 +60,8 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Sergey Davidoff](https://github.com/Shnatsel)
  * [Ian (linuxy)](https://github.com/linuxy)
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/)
+ * [Pierre Curto](https://github.com/pierrec)
+ * [Love Jesus](https://github.com/loveJesus)
 
 
 # Notes

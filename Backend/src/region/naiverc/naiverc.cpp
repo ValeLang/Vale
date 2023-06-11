@@ -315,7 +315,7 @@ Ref NaiveRC::upcastWeak(
       wrcWeaks.weakStructPtrToWrciWeakInterfacePtr(
           globalState, functionState, builder, sourceRefLE, sourceStructKindM,
           sourceStructTypeM, targetInterfaceKindM, targetInterfaceTypeM);
-  return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
+  return toRef(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
 }
 
 void NaiveRC::declareStaticSizedArray(
@@ -390,7 +390,7 @@ void NaiveRC::discardOwningRef(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     LiveRef sourceRef) {
-  auto ref = wrap(globalState, sourceMT, sourceRef);
+  auto ref = toRef(globalState, sourceMT, sourceRef);
   auto rcLE =
       adjustStrongRc(
           AFL("Destroy decrementing the owning ref"),
@@ -1055,7 +1055,7 @@ Ref NaiveRC::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilder
   auto regionLT = kindStructs.getStructInnerStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
-  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  auto regionInstanceRef = toRef(this, regionRefMT, regionInstancePtrLE);
 
   return regionInstanceRef;
 }

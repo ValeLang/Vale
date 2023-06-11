@@ -190,7 +190,7 @@ public:
       LLVMBuilderRef builder,
       Reference* refM,
       LiveRef liveRef) {
-    auto ref = wrap(this, refM, liveRef.refLE);
+    auto ref = toRef(this, refM, liveRef.refLE);
     return checkValidReference(checkerAFL, functionState, builder, true, refM, ref);
   }
 

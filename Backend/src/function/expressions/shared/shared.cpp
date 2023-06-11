@@ -35,7 +35,7 @@ LLVMValueRef makeEmptyStruct(GlobalState* globalState) {
 Ref makeVoidRef(GlobalState* globalState) {
   auto voidLE = makeVoid(globalState);
   auto refMT = globalState->metalCache->voidRef;
-  return wrap(globalState->rcImm, refMT, voidLE);
+  return toRef(globalState->rcImm, refMT, voidLE);
 }
 
 LLVMValueRef makeBackendLocal(
@@ -338,7 +338,7 @@ Ref buildInterfaceCall(
   auto resultLE = methodFunctionPtrLE.call(builder, functionState->nextGenPtrLE.value(), argsLE, "");
   assert(LLVMTypeOf(resultLE) == LLVMGetReturnType(methodFunctionPtrLE.inner.funcLT));
   buildFlare(FL(), globalState, functionState, builder);
-  return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
+  return toRef(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
 }
 
 LLVMValueRef makeConstExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef constExpr) {
@@ -416,7 +416,7 @@ Ref buildCallV(
 
   buildFlare(FL(), globalState, functionState, builder, "Done with call");
 
-  auto resultRef = wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
+  auto resultRef = toRef(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
   globalState->getRegion(prototype->returnType)
       ->checkValidReference(FL(), functionState, builder, false, prototype->returnType, resultRef);
 
@@ -424,7 +424,7 @@ Ref buildCallV(
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
+    return toRef(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);

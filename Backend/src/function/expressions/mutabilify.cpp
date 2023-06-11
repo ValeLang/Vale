@@ -49,5 +49,5 @@ Ref translateImmutabilify(
   auto liveRef =
       globalState->getRegion(sourceResultType)->immutabilify(
       FL(), functionState, builder, regionInstanceRef, sourceResultType, sourceRef, resultType);
-  return wrap(globalState, resultType, liveRef);
+  return toRef(globalState, resultType, liveRef);
 }

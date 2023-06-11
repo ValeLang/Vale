@@ -59,6 +59,6 @@ Ref translateNewArrayFromValues(
         staticSizedArrayMT,
         resultRef,
         elementsLE);
-    return wrap(globalState, newArrayFromValues->arrayRefType, resultRef);
+    return toRef(globalState, newArrayFromValues->arrayRefType, resultRef);
   }
 }

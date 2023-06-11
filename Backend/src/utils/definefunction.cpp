@@ -53,11 +53,42 @@ void defineRawFunctionBody(
 
   auto localsBlockName = std::string("localsBlock");
   auto localsBuilder = LLVMCreateBuilderInContext(context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(context, functionL, localsBlockName.c_str());
+  LLVMBasicBlockRef localsBlockL =
+      LLVMAppendBasicBlockInContext(context, functionL, localsBlockName.c_str());
   LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
 
+  // There are other builders made elsewhere for various blocks in the function,
+  // but this is the one for the top level.
+  // It's not always pointed at firstBlockL, it can be re-pointed to other
+  // blocks at the top level.
+  //
+  // For example, in:
+  //   fn main() {
+  //     x! = 5;
+  //     if (true && true) {
+  //       mut x = 7;
+  //     } else {
+  //       mut x = 8;
+  //     }
+  //     println(x);
+  //   }
+  // There are four blocks:
+  // - 1: contains `x! = 5` and `true && true`
+  // - 2: contains `mut x = 7;`
+  // - 3: contains `mut x = 8;`
+  // - 4: contains `println(x)`
+  //
+  // When it's done making block 1, we'll make block 4 and `bodyTopLevelBuilder`
+  // will point at that.
+  //
+  // The point is, this builder can change to point at other blocks on the same
+  // level.
+  //
+  // All builders work like this, at whatever level theyre on.
+
   auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(context, functionL, firstBlockName.c_str());
+  LLVMBasicBlockRef firstBlockL =
+      LLVMAppendBasicBlockInContext(context, functionL, firstBlockName.c_str());
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(context);
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
@@ -79,31 +110,11 @@ void defineValeFunctionBody(
     LLVMTypeRef returnTypeL,
     const std::string& name,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
-  auto functionL = funcPtr.inner.ptrLE;
-
-  // DO NOT SUBMIT try calling defineRawFunctionBody from in here instead of repeating
-
-  auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilderInContext(context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(context, functionL, localsBlockName.c_str());
-  LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
-
-  auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(context, functionL, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(context);
-  LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
-
-  FunctionState functionState(
-      name, functionL, returnTypeL, localsBuilder,
-      // The 0th parameter of every vale function is the restrict next gen ptr.
-      LLVMGetParam(functionL, 0));
-
-  definer(&functionState, bodyTopLevelBuilder);
-
-  // Now that we've added all the locals we need, lets make the locals block jump to the first
-  // code block.
-  LLVMBuildBr(localsBuilder, firstBlockL);
-
-  LLVMDisposeBuilder(bodyTopLevelBuilder);
-  LLVMDisposeBuilder(localsBuilder);
+  defineRawFunctionBody(
+      context, funcPtr.inner.ptrLE, returnTypeL, name,
+      [definer](FunctionState* functionState, LLVMBuilderRef builder) {
+        functionState->nextGenPtrLE =
+            std::make_optional(LLVMGetParam(functionState->containingFuncL, 0));
+        definer(functionState, builder);
+      });
 }

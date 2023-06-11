@@ -31,7 +31,7 @@ Ref receiveHostObjectIntoVale(
   if (hostRefMT->ownership == Ownership::MUTABLE_SHARE || hostRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
     buildFlare(FL(), globalState, functionState, builder);
     auto hostRef =
-        wrap(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
+        toRef(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
     auto objRefAndSizeRef =
         globalState->getRegion(valeRefMT)
             ->receiveUnencryptedAlienReference(

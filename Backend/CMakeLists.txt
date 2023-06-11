@@ -121,7 +121,8 @@ add_executable(backend
 		src/region/safe-fastest/safefastest.cpp
 		src/region/common/migration.h
 		src/region/common/migration.cpp
-		src/region/iregion.cpp)
+		src/region/iregion.cpp
+		src/utils/randomgeneration.cpp)
 
 target_link_libraries(backend ${llvm_libs})
 

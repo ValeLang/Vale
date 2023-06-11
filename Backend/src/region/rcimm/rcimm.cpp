@@ -11,6 +11,29 @@
 #include "../../translatetype.h"
 #include "../linear/linear.h"
 
+enum UnserializeFunctionParameter {
+  UNSERIALIZE_LLVM_PARAM_NEXT_GEN_PTR = 0,
+
+  UNSERIALIZE_VALE_PARAM_VALE_REGION_INSTANCE_REF = 0,
+  UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF = 1,
+
+  UNSERIALIZE_VALE_PARAM_HOST_REGION_INSTANCE_REF = 1,
+  UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF = 2,
+
+  UNSERIALIZE_VALE_PARAM_HOST_OBJECT_REF = 2,
+  UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF = 3,
+};
+
+enum FreeFunctionParameter {
+  FREE_LLVM_PARAM_NEXT_GEN_PTR = 0,
+
+  FREE_VALE_PARAM_REGION_INSTANCE_REF = 0,
+  FREE_LLVM_PARAM_REGION_INSTANCE_REF = 1,
+
+  FREE_VALE_PARAM_OBJECT_REF = 1,
+  FREE_LLVM_PARAM_OBJECT_REF = 2,
+};
+
 void fillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
@@ -69,7 +92,7 @@ RegionId* RCImm::getRegionId() {
 }
 
 Ref RCImm::makeRegionInstance(LLVMBuilderRef builder) {
-  return wrap(this, regionRefMT, LLVMConstNull(translateType(regionRefMT)));
+  return toRef(this, regionRefMT, LLVMConstNull(translateType(regionRefMT)));
 }
 
 void RCImm::alias(
@@ -714,7 +737,7 @@ Ref RCImm::mallocStr(
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE) {
   auto resultRef =
-      wrap(this, globalState->metalCache->mutStrRef, ::mallocStr(
+      toRef(this, globalState->metalCache->mutStrRef, ::mallocStr(
           globalState, functionState, builder, lengthLE, sourceCharsPtrLE, &kindStructs,
           [this, functionState](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
 //            fillControlBlock(
@@ -892,13 +915,13 @@ LoadResult RCImm::loadMember2(
     Reference* targetType,
     const std::string& memberName) {
   if (structRefMT->location == Location::INLINE) {
-    auto structRef = wrap(globalState, structRefMT, structLiveRef);
+    auto structRef = toRef(globalState, structRefMT, structLiveRef);
     auto innerStructLE =
         globalState->getRegion(structRefMT)->checkValidReference(
             FL(), functionState, builder, false, structRefMT, structRef);
     auto memberLE =
         LLVMBuildExtractValue(builder, innerStructLE, memberIndex, memberName.c_str());
-    return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
+    return LoadResult{toRef(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
     return regularLoadStrongMember(globalState, functionState, builder, &kindStructs, structRefMT, structLiveRef, memberIndex, expectedMemberType, targetType, memberName);
   }
@@ -984,22 +1007,22 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
   auto sourceRefLE = sourceRegion->checkValidReference(FL(), functionState, builder, true, hostRefMT, sourceRef);
 
   if (dynamic_cast<Void*>(hostRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(valeRefMT), valeRefMT, makeVoid(globalState));
+    auto resultRef = toRef(globalState->getRegion(valeRefMT), valeRefMT, makeVoid(globalState));
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Int*>(hostRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    auto resultRef = toRef(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Bool*>(hostRefMT->kind)) {
     auto asI1LE =
         LLVMBuildTrunc(
             builder, sourceRefLE, LLVMInt1TypeInContext(globalState->context), "boolAsI1");
-    auto resultRef = wrap(this, valeRefMT, asI1LE);
+    auto resultRef = toRef(this, valeRefMT, asI1LE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Float*>(hostRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    auto resultRef = toRef(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Str*>(hostRefMT->kind) ||
@@ -1012,7 +1035,7 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
       if (hostRefMT == globalState->metalCache->voidRef) {
         auto emptyTupleRefMT =
             globalState->linearRegion->unlinearizeReference(globalState->metalCache->voidRef, true);
-        auto resultRef = wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
+        auto resultRef = toRef(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
         // Vale doesn't care about the size, only extern (linear) does, so just return zero.
         return std::make_pair(resultRef, globalState->constI32(0));
       } else {
@@ -1125,11 +1148,11 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
         auto hostRegion = globalState->getRegion(hostObjectRefMT);
 
         auto regionInstanceRef =
-            wrap(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, 0 + 1)); // DO NOT SUBMIT
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
         auto hostRegionInstanceRef =
-            wrap(hostRegion, hostRegion->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, 1 + 1)); // DO NOT SUBMIT
+            toRef(hostRegion, hostRegion->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
         auto hostObjectRef =
-            wrap(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, 2 + 1)); // DO NOT SUBMIT
+            toRef(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF));
 
         auto valeStructRef =
             buildCallV(
@@ -1248,12 +1271,12 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
             globalState->getRegion(hostMemberRefMT)->checkValidReference(
                 FL(), functionState, builder, true, hostMemberRefMT, hostMemberRef);
         if (dynamic_cast<Int*>(hostMemberRefMT->kind)) {
-          return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
+          return toRef(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
         } else if (dynamic_cast<Bool*>(hostMemberRefMT->kind)) {
           auto resultLE = LLVMBuildTrunc(builder, hostMemberLE, LLVMInt1TypeInContext(globalState->context), "boolAsI1");
-          return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, resultLE);
+          return toRef(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, resultLE);
         } else if (dynamic_cast<Float*>(hostMemberRefMT->kind)) {
-          return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
+          return toRef(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
         } else if (
             dynamic_cast<Str*>(hostMemberRefMT->kind) ||
             dynamic_cast<StructKind*>(hostMemberRefMT->kind) ||
@@ -1278,13 +1301,13 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
         auto valeObjectRefMT = prototype->returnType;
 
         auto regionInstanceRef =
-            wrap(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, 0 + 1)); // DO NOT SUBMIT
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
         auto hostRegionRefMT =
             globalState->linearRegion->getRegionRefType();
         auto hostRegionInstanceRef =
-            wrap(globalState->linearRegion, hostRegionRefMT, LLVMGetParam(functionState->containingFuncL, 1 + 1)); // DO NOT SUBMIT
+            toRef(globalState->linearRegion, hostRegionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
         auto hostObjectRef =
-            toLiveRef(FL(), globalState, functionState, builder, hostRegionInstanceRef, hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, 2 + 1)); // DO NOT SUBMIT
+            toLiveRef(FL(), globalState, functionState, builder, hostRegionInstanceRef, hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF));
 
         if (auto valeStructKind = dynamic_cast<StructKind *>(valeObjectRefMT->kind)) {
           auto hostStructKind = dynamic_cast<StructKind *>(hostObjectRefMT->kind);
@@ -1478,7 +1501,7 @@ Ref RCImm::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRe
   auto regionLT = kindStructs.getStructInnerStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
-  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  auto regionInstanceRef = toRef(this, regionRefMT, regionInstancePtrLE);
 
   return regionInstanceRef;
 }
@@ -1505,10 +1528,10 @@ void RCImm::defineConcreteFreeFunction(Kind* valeKind) {
         auto objectRef =
             checkRefLive(
                 FL(), functionState, builder, regionInstanceRef, objectRefMT,
-                wrap(
+                toRef(
                     globalState->getRegion(objectRefMT),
                     objectRefMT,
-                    LLVMGetParam(functionState->containingFuncL, 1 + 1)), // DO NOT SUBMIT
+                    LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_OBJECT_REF)),
                     false);
 
         if (auto structKind = dynamic_cast<StructKind *>(objectRefMT->kind)) {
@@ -1652,9 +1675,9 @@ void RCImm::defineEdgeFreeFunction(Edge* edge) {
         auto objectRefMT = structPrototype->params[1];
 
         auto regionInstanceRef =
-            wrap(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, 0 + 1)); // DO NOT SUBMIT
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_REGION_INSTANCE_REF));
         auto objectRef =
-            wrap(globalState->getRegion(objectRefMT), objectRefMT, LLVMGetParam(functionState->containingFuncL, 1 + 1)); // DO NOT SUBMIT
+            toRef(globalState->getRegion(objectRefMT), objectRefMT, LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_OBJECT_REF));
 
         buildCallV(
             globalState, functionState, builder, structPrototype,

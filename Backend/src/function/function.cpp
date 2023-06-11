@@ -8,6 +8,7 @@
 #include "function.h"
 #include "expression.h"
 #include "boundary.h"
+#include "utils/randomgeneration.h"
 #include <region/common/migration.h>
 #include <utils/counters.h>
 
@@ -116,11 +117,13 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   // Exported functions cant have their nextGen pointer passed in from the outside, so we need to
   // grab it from the global. We add a prime to the global too, so that we get different generations
   // each call.
-  // DO NOT SUBMIT we might want to add to the restrict pointer when we return from extern calls
-  // too, to help with security perhaps.
   auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
   auto newGenLE =
-      adjustCounterReturnOld(builder, genLT, globalState->nextGenThreadGlobalIntLE, GEN_PRIME_INCREMENT);
+      adjustCounterReturnOld(
+          builder,
+          genLT,
+          globalState->nextGenThreadGlobalIntLE,
+          getRandomGenerationAddend(globalState->nextGenerationAddend++));
   auto nextGenLocalPtrLE = LLVMBuildAlloca(localsBuilder, genLT, "nextGenLocalPtr");
   LLVMBuildStore(builder, newGenLE, nextGenLocalPtrLE);
 
@@ -142,7 +145,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
     // below if-statement.
     auto hostParamRefLT = globalState->getRegion(valeParamRefMT)->getExternalType(valeParamRefMT);
 
-    auto cArgLE = LLVMGetParam(exportFunctionL, cParamIndex); // DO NOT SUBMIT find a way to not rely on LLVMGetParam directly
+    // TODO: find a way to not rely on LLVMGetParam directly
+    auto cArgLE = LLVMGetParam(exportFunctionL, cParamIndex);
     LLVMValueRef hostArgRefLE = nullptr;
     if (typeNeedsPointerParameter(globalState, valeParamRefMT)) {
       hostArgRefLE = LLVMBuildLoad2(builder, hostParamRefLT, cArgLE, "arg");
@@ -256,81 +260,25 @@ void translateFunction(
     Function* functionM) {
 
   auto functionL = globalState->getFunction(functionM->prototype);
-  auto returnTypeL = globalState->getRegion(functionM->prototype->returnType)->translateType(functionM->prototype->returnType);
+  auto returnTypeL =
+      globalState->getRegion(functionM->prototype->returnType)->translateType(functionM->prototype->returnType);
 
-  auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef localsBlockL =
-      LLVMAppendBasicBlockInContext(globalState->context, functionL.inner.ptrLE, localsBlockName.c_str());
-  LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
-
-  auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL =
-      LLVMAppendBasicBlockInContext(globalState->context, functionL.inner.ptrLE, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
-
-  FunctionState functionState(
-      functionM->prototype->name->name,
-      functionL.inner.ptrLE,
+  defineValeFunctionBody(
+      globalState->context,
+      functionL,
       returnTypeL,
-      localsBuilder,
-      LLVMGetParam(functionL.inner.ptrLE, 0)); // DO NOT SUBMIT see if we can always pull from argument zero. i think next gen locals can always live in an export wrapper's local.
+      functionM->prototype->name->name,
+      [globalState, functionM](FunctionState* functionState, LLVMBuilderRef builder) {
+        BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
 
-  // There are other builders made elsewhere for various blocks in the function,
-  // but this is the one for the top level.
-  // It's not always pointed at firstBlockL, it can be re-pointed to other
-  // blocks at the top level.
-  //
-  // For example, in:
-  //   fn main() {
-  //     x! = 5;
-  //     if (true && true) {
-  //       mut x = 7;
-  //     } else {
-  //       mut x = 8;
-  //     }
-  //     println(x);
-  //   }
-  // There are four blocks:
-  // - 1: contains `x! = 5` and `true && true`
-  // - 2: contains `mut x = 7;`
-  // - 3: contains `mut x = 8;`
-  // - 4: contains `println(x)`
-  //
-  // When it's done making block 1, we'll make block 4 and `bodyTopLevelBuilder`
-  // will point at that.
-  //
-  // The point is, this builder can change to point at other blocks on the same
-  // level.
-  //
-  // All builders work like this, at whatever level theyre on.
+        // Translate the body of the function. Can ignore the result because it's a
+        // Never, because Valestrom guarantees we end function bodies in a ret.
+        auto resultLE =
+            translateExpression(
+                globalState, functionState, &initialBlockState, builder, functionM->block);
 
-  BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
-
-  buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Inside function ", functionM->prototype->name->name);
-
-  // Translate the body of the function. Can ignore the result because it's a
-  // Never, because Valestrom guarantees we end function bodies in a ret.
-  auto resultLE =
-      translateExpression(
-          globalState, &functionState, &initialBlockState, bodyTopLevelBuilder, functionM->block);
-
-  initialBlockState.checkAllIntroducedLocalsWereUnstackified();
-
-  // Now that we've added all the locals we need, lets make the locals block jump to the first
-  // code block.
-  LLVMBuildBr(localsBuilder, firstBlockL);
-
-//  // This is a total hack, to try and appease LLVM to say that yes, we're sure
-//  // we'll never reach this statement.
-//  // In .ll we can call a noreturn function and then put an unreachable block,
-//  // but I can't figure out how to specify noreturn with the LLVM C API.
-//  if (dynamic_cast<Never*>(functionM->prototype->returnType->kind)) {
-//    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(functionM->prototype->returnType)));
-//  }
-
-  LLVMDisposeBuilder(bodyTopLevelBuilder);
+        initialBlockState.checkAllIntroducedLocalsWereUnstackified();
+      });
 }
 
 void declareExtraFunction(

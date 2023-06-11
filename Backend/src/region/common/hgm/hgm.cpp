@@ -339,7 +339,7 @@ LiveRef HybridGenerationalMemory::preCheckFatPtr(
     auto resultRef =
         buildIfElseV(
             globalState, functionState, builder,
-            wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isZeroLE(builder, isAliveLE)),
+            toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isZeroLE(builder, isAliveLE)),
             refM, refM,
             [this, from, functionState, refM, weakFatPtrLE](LLVMBuilderRef thenBuilder) -> Ref {
               return crashifyReference(functionState, thenBuilder, refM, weakFatPtrLE);
@@ -455,7 +455,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
   if (false || (knownLive && elideChecksForKnownLive)) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   } else {
     assert(
         weakRefM->ownership == Ownership::MUTABLE_BORROW ||
@@ -469,7 +469,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
                 ->checkValidReference(
                     FL(), functionState, builder, false, weakRefM, weakRef));
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   }
 }
 
@@ -577,28 +577,28 @@ Ref HybridGenerationalMemory::assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceInterfaceFatPtrLE = kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 
@@ -624,7 +624,7 @@ Ref HybridGenerationalMemory::crashifyReference(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, refMT, structKind, genLE, newStructWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(refMT->kind)) {
     auto oldInterfaceFatPtrLE =
         kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, refMT, innerLE);
@@ -643,7 +643,7 @@ Ref HybridGenerationalMemory::crashifyReference(
     auto newInterfaceWeakFatPtrLE =
         assembleInterfaceWeakRef(
             functionState, builder, refMT, interfaceKindM, genLE, newInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, newInterfaceWeakFatPtrLE);
+    return toRef(globalState->getRegion(refMT), refMT, newInterfaceWeakFatPtrLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
     auto oldSsaPtrLE = innerLE;
     auto newSsaPtrLE =
@@ -653,7 +653,7 @@ Ref HybridGenerationalMemory::crashifyReference(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, refMT, staticSizedArray, genLE, newSsaWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
     auto oldRsaPtrLE = innerLE;
     auto newRsaPtrLE =
@@ -663,7 +663,7 @@ Ref HybridGenerationalMemory::crashifyReference(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, refMT, runtimeSizedArray, genLE, newRsaWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else assert(false);
 }
 

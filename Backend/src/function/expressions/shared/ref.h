@@ -191,12 +191,11 @@ struct LiveRef {
   : refM(refM_), refLE(refLE_) { }
 };
 
-// DO NOT SUBMIT rename to toRef
-Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);
-Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
-Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
-Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
-Ref wrap(GlobalState* globalState, Reference* refM, LiveRef exprLE);
+Ref toRef(IRegion* region, Reference* refM, LLVMValueRef exprLE);
+Ref toRef(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
+Ref toRef(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
+Ref toRef(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
+Ref toRef(GlobalState* globalState, Reference* refM, LiveRef exprLE);
 
 
 WrapperPtrLE toWrapperPtr(FunctionState* functionState, LLVMBuilderRef builder, KindStructs* kindStructs, Reference* refMT, LiveRef liveRef);

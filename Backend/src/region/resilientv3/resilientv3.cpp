@@ -326,7 +326,7 @@ Ref ResilientV3::upcastWeak(
       hgmWeaks.weakStructPtrToGenWeakInterfacePtr(
           globalState, functionState, builder, sourceRefLE, sourceStructKindM,
           sourceStructTypeM, targetInterfaceKindM, targetInterfaceTypeM);
-  return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
+  return toRef(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
 }
 
 void ResilientV3::declareStaticSizedArray(
@@ -696,7 +696,7 @@ Ref ResilientV3::upgradeLoadResultToRefWithTargetOwnership(
 //      auto prechecked =
 //          hgmWeaks.preCheckFatPtr(
 //              FL(), functionState, builder, sourceType, sourceRef, resultKnownLive);
-//      return wrap(globalState, targetType, prechecked);
+//      return toRef(globalState, targetType, prechecked);
 //    } else {
       assert(
 //          targetOwnership == Ownership::IMMUTABLE_BORROW ||
@@ -889,7 +889,7 @@ Ref ResilientV3::loadMember(
     assert(false);
   } else {
     if (structRefMT->location == Location::INLINE) {
-      return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
+      return toRef(globalState->getRegion(expectedMemberType), expectedMemberType,
           LLVMBuildExtractValue(
               builder, structLiveRef.refLE, memberIndex, memberName.c_str()));
     } else {
@@ -1133,7 +1133,7 @@ Ref ResilientV3::createRegionInstanceLocal(FunctionState* functionState, LLVMBui
   auto regionLT = kindStructs.getStructInnerStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
-  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  auto regionInstanceRef = toRef(this, regionRefMT, regionInstancePtrLE);
   return regionInstanceRef;
 }
 
@@ -1150,7 +1150,7 @@ WrapperPtrLE ResilientV3::getWrapperPtrLive(
       assert(false); // curious
     case Ownership::IMMUTABLE_BORROW:
     case Ownership::OWN: {
-      auto ref = wrap(globalState, refM, liveRef);
+      auto ref = toRef(globalState, refM, liveRef);
       auto weakFatPtrLE =
           checkValidReference(FL(), functionState, builder, false, refM, ref);
       return kindStructs.makeWrapperPtr(FL(), functionState, builder, refM, weakFatPtrLE);

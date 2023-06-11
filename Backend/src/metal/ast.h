@@ -482,15 +482,12 @@ class Local {
 public:
   VariableId* id;
   Reference* type;
-  bool keepAlive;
 
   Local(
       VariableId* id_,
-      Reference* type_,
-      bool keepAlive_) :
+      Reference* type_) :
       id(id_),
-      type(type_),
-      keepAlive(keepAlive_) {}
+      type(type_) {}
 };
 
 #endif

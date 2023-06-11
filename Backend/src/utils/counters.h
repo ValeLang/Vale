@@ -33,7 +33,7 @@ LLVMValueRef adjustCounterReturnOld(
     LLVMBuilderRef builder,
     LLVMTypeRef type,
     LLVMValueRef counterPtrLE,
-    int adjustAmount);
+    int64_t adjustAmount);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);

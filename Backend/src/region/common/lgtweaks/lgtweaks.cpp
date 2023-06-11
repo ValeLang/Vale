@@ -477,7 +477,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
   if (knownLive && elideChecksForKnownLive) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   } else {
     auto weakFatPtrLE =
         weakRefStructsSource->makeWeakFatPtr(
@@ -485,7 +485,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
             globalState->getRegion(weakRefM)
                 ->checkValidReference(FL(), functionState, builder, false, weakRefM, weakRef));
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   }
 }
 
@@ -587,7 +587,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -596,7 +596,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -605,7 +605,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -614,7 +614,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 

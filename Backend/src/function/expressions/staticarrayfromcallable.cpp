@@ -50,7 +50,7 @@ Ref translateStaticArrayFromCallable(
             builder,
             staticArrayFromCallable->arrayRefType,
             staticSizedArrayMT);
-    auto ssaRef = wrap(globalState, arrayRefType, ssaLiveRef);
+    auto ssaRef = toRef(globalState, arrayRefType, ssaLiveRef);
 
     buildFlare(FL(), globalState, functionState, builder);
     fillStaticSizedArrayFromCallable(

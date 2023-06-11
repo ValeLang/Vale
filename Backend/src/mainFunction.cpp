@@ -8,6 +8,7 @@
 #include "translatetype.h"
 #include <region/common/migration.h>
 #include <utils/counters.h>
+#include <utils/randomgeneration.h>
 
 #define STACK_SIZE (8 * 1024 * 1024)
 
@@ -269,7 +270,9 @@ LLVMValueRef makeEntryFunction(
 
   auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
   auto newGenLE =
-      adjustCounterReturnOld(entryBuilder, genLT, globalState->nextGenThreadGlobalIntLE, GEN_PRIME_INCREMENT);
+      adjustCounterReturnOld(
+          entryBuilder, genLT, globalState->nextGenThreadGlobalIntLE,
+          getRandomGenerationAddend(globalState->nextGenerationAddend++));
   auto nextGenLocalPtrLE = LLVMBuildAlloca(entryBuilder, genLT, "nextGenLocalPtr");
   LLVMBuildStore(entryBuilder, newGenLE, nextGenLocalPtrLE);
 

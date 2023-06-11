@@ -528,7 +528,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
           globalState->getRegion(weakRefM)
               ->checkValidReference(FL(), functionState, builder, false, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
-  return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+  return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
 }
 
 LLVMValueRef WrcWeaks::fillWeakableControlBlock(
@@ -631,7 +631,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -640,7 +640,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -649,7 +649,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -658,7 +658,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 

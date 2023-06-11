@@ -37,7 +37,7 @@ Ref translateNewMutRuntimeSizedArray(
           runtimeSizedArrayMT,
           capacityRef,
           runtimeSizedArrayMT->name->name);
-  auto rsaRef = wrap(globalState, arrayRefType, rsaLiveRef);
+  auto rsaRef = toRef(globalState, arrayRefType, rsaLiveRef);
   buildFlare(FL(), globalState, functionState, builder);
   globalState->getRegion(arrayRefType)
       ->checkValidReference(FL(), functionState, builder, true, arrayRefType, rsaRef);

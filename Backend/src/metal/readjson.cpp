@@ -282,18 +282,14 @@ Local* readLocal(MetalCache* cache, const json& local) {
   assert(local["__type"] == "Local");
   auto varId = readVariableId(cache, local["id"]);
   auto ref = readReference(cache, local["type"]);
-  bool keepAlive = false;//local["keepAlive"]; // DO NOT SUBMIT remove everywhere
 
   return makeIfNotPresent(
       &makeIfNotPresent(
-          &makeIfNotPresent(
-              &cache->locals,
-              varId,
-              [&](){ return MetalCache::LocalByKeepAliveByReferenceMap (0, cache->addressNumberer->makeHasher<Reference*>()); }),
-          ref,
-          [&](){ return MetalCache::LocalByKeepAliveMap(); }),
-      keepAlive,
-      [&](){ return new Local(varId, ref, keepAlive); });
+          &cache->locals,
+          varId,
+          [&](){ return MetalCache::LocalByReferenceMap (0, cache->addressNumberer->makeHasher<Reference*>()); }),
+      ref,
+      [&](){ return new Local(varId, ref); });
 }
 
 Expression* readExpression(MetalCache* cache, const json& expression) {

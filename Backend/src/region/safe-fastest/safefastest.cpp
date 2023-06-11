@@ -339,28 +339,28 @@ static Ref assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             globalState, functionState, builder, kindStructs, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceInterfaceFatPtrLE = kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             globalState, functionState, builder, kindStructs, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             globalState, functionState, builder, kindStructs, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             globalState, functionState, builder, kindStructs, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 
@@ -423,7 +423,7 @@ static Ref crashifyReference(
     auto resultLE =
         assembleStructWeakRef(
             globalState, functionState, builder, kindStructs, refMT, structKind, genLE, newStructWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(refMT->kind)) {
     auto oldInterfaceFatPtrLE =
         kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, refMT, innerLE);
@@ -442,7 +442,7 @@ static Ref crashifyReference(
     auto newInterfaceWeakFatPtrLE =
         assembleInterfaceWeakRef(
             globalState, functionState, builder, kindStructs, refMT, interfaceKindM, genLE, newInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, newInterfaceWeakFatPtrLE);
+    return toRef(globalState->getRegion(refMT), refMT, newInterfaceWeakFatPtrLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
     auto oldSsaPtrLE = innerLE;
     auto newSsaPtrLE =
@@ -452,7 +452,7 @@ static Ref crashifyReference(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             globalState, functionState, builder, kindStructs, refMT, staticSizedArray, genLE, newSsaWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
     auto oldRsaPtrLE = innerLE;
     auto newRsaPtrLE =
@@ -462,7 +462,7 @@ static Ref crashifyReference(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             globalState, functionState, builder, kindStructs, refMT, runtimeSizedArray, genLE, newRsaWrapperPtrLE);
-    return wrap(globalState->getRegion(refMT), refMT, resultLE);
+    return toRef(globalState->getRegion(refMT), refMT, resultLE);
   } else assert(false);
 }
 
@@ -492,7 +492,7 @@ static LiveRef preCheckFatPtr(
     auto resultRef =
         buildIfElseV(
             globalState, functionState, builder,
-            wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isZeroLE(builder, isAliveLE)),
+            toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isZeroLE(builder, isAliveLE)),
             refM, refM,
             [globalState, kindStructs, from, functionState, refM, weakFatPtrLE](LLVMBuilderRef thenBuilder) -> Ref {
               return crashifyReference(globalState, functionState, thenBuilder, kindStructs, refM, weakFatPtrLE);
@@ -823,7 +823,7 @@ Ref SafeFastest::upcastWeak(
 //      wrcWeaks.weakStructPtrToWrciWeakInterfacePtr(
 //          globalState, functionState, builder, sourceRefLE, sourceStructKindM,
 //          sourceStructTypeM, targetInterfaceKindM, targetInterfaceTypeM);
-//  return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
+//  return toRef(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
 }
 
 void SafeFastest::declareStaticSizedArray(
@@ -1107,7 +1107,7 @@ Ref SafeFastest::upgradeLoadResultToRefWithTargetOwnership(
       auto prechecked =
           preCheckFatPtr(
               FL(), globalState, functionState, builder, regionInstanceRef, &kindStructs, sourceType, sourceRef, resultKnownLive);
-      return wrap(globalState, regionRefMT, prechecked);
+      return toRef(globalState, regionRefMT, prechecked);
     } else {
       assert(
           targetOwnership == Ownership::MUTABLE_BORROW ||
@@ -1292,7 +1292,7 @@ void SafeFastest::deallocate(
   auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
   // The generation was already set when we allocated it, but we need to change it now so that
   // nobody can access this object after we free it now.
-  auto ref = wrap(globalState, refMT, liveRef);
+  auto ref = toRef(globalState, refMT, liveRef);
   auto controlBlockPtrLE =
       kindStructs.getControlBlockPtr(from, functionState, builder, ref, refMT);
   auto genPtrLE =
@@ -1348,12 +1348,12 @@ Ref SafeFastest::loadMember(
   auto innerStructLT = kindStructs.getStructInnerStruct(structMT);
 
   if (structRefMT->location == Location::INLINE) {
-    auto structRef = wrap(globalState, structRefMT, structLiveRef);
+    auto structRef = toRef(globalState, structRefMT, structLiveRef);
     auto structRefLE =
         globalState->getRegion(structRefMT)
             ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
     LoadResult unupgradedMemberLE = LoadResult{
-        wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
+        toRef(globalState->getRegion(expectedMemberType), expectedMemberType,
             LLVMBuildExtractValue(
                 builder, structRefLE, memberIndex, memberName.c_str()))};
     return upgradeLoadResultToRefWithTargetOwnership(
@@ -1619,7 +1619,7 @@ Ref SafeFastest::createRegionInstanceLocal(FunctionState* functionState, LLVMBui
   auto regionLT = kindStructs.getStructInnerStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
-  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  auto regionInstanceRef = toRef(this, regionRefMT, regionInstancePtrLE);
   return regionInstanceRef;
 }
 

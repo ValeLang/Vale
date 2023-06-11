@@ -292,7 +292,7 @@ Ref Unsafe::upcastWeak(
 //      wrcWeaks.weakStructPtrToWrciWeakInterfacePtr(
 //          globalState, functionState, builder, sourceRefLE, sourceStructKindM,
 //          sourceStructTypeM, targetInterfaceKindM, targetInterfaceTypeM);
-//  return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
+//  return toRef(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
 }
 
 void Unsafe::declareStaticSizedArray(
@@ -1027,7 +1027,7 @@ Ref Unsafe::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderR
   auto regionLT = kindStructs.getStructInnerStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
-  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  auto regionInstanceRef = toRef(this, regionRefMT, regionInstancePtrLE);
   return regionInstanceRef;
 }
 

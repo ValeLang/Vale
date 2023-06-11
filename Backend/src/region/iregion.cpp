@@ -20,7 +20,7 @@ LLVMValueRef checkValidReference(
     bool expectLive,
     Reference* refM,
     LiveRef liveRef) {
-  auto ref = wrap(globalState, refM, liveRef);
+  auto ref = toRef(globalState, refM, liveRef);
   return checkValidReference(
       checkerAFL, globalState, functionState, builder, expectLive, refM, ref);
 }

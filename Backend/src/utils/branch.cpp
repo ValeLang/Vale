@@ -375,7 +375,7 @@ Ref buildIfElseV(
   if (thenResultMT == globalState->metalCache->neverRef && elseResultMT == globalState->metalCache->neverRef) {
     // Bail early, even though builder is still pointing at the preceding block. Nobody should use
     // it, since nothing can happen after a never.
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
+    return toRef(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
 //    assert(false); // impl
   }
 
@@ -418,7 +418,7 @@ Ref buildIfElseV(
     // We re-pointed the `builder` to point at the "afterward" block, and
     // subsequent instructions after the if will keep adding to that.
 
-    return wrap(globalState->getRegion(thenResultMT), thenResultMT, phi);
+    return toRef(globalState->getRegion(thenResultMT), thenResultMT, phi);
   }
 }
 

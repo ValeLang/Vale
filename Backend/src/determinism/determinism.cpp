@@ -952,15 +952,15 @@ Ref Determinism::buildReadValueFromFile(
   buildFlare(FL(), globalState, functionState, builder);
   if (auto innt = dynamic_cast<Int*>(targetRefMT->kind)) {
     auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), LLVMIntTypeInContext(globalState->context, innt->bits), "intFromRecording");
-    return wrap(globalState->getRegion(targetRefMT), targetRefMT, intLE);
+    return toRef(globalState->getRegion(targetRefMT), targetRefMT, intLE);
   } else if (dynamic_cast<Void*>(targetRefMT->kind)) {
     return makeVoidRef(globalState);
   } else if (dynamic_cast<Bool*>(targetRefMT->kind)) {
     auto boolLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int1LT, "boolFromRecording");
-    return wrap(globalState->getRegion(targetRefMT), targetRefMT, boolLE);
+    return toRef(globalState->getRegion(targetRefMT), targetRefMT, boolLE);
   } else if (dynamic_cast<Float*>(targetRefMT->kind)) {
     auto floatLE = LLVMBuildBitCast(builder, readI64FromFile(functionState, builder), floatLT, "floatFromRecording");
-    return wrap(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
+    return toRef(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
   } else if (dynamic_cast<StructKind*>(targetRefMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(targetRefMT->kind) ||
       dynamic_cast<Str*>(targetRefMT->kind) ||
@@ -1025,7 +1025,7 @@ Ref Determinism::buildReadValueFromFile(
 Ref Determinism::buildMapRefFromRecordingFile(LLVMBuilderRef builder, Reference* refMT) {
   assert(mapRefFromRecordingFileLF.ptrLE);
   auto refLE = mapRefFromRecordingFileLF.call(builder, {}, "");
-  return wrap(globalState->getRegion(refMT), refMT, refLE);
+  return toRef(globalState->getRegion(refMT), refMT, refLE);
 }
 
 LLVMValueRef Determinism::buildGetMaybeReplayedFuncForNextExportCall(LLVMBuilderRef builder) {
@@ -1049,7 +1049,7 @@ Ref Determinism::i256ToRef(
   assert(LLVMABISizeOfType(globalState->dataLayout, refLT) <= 32);
   assert(LLVMGetTypeKind(refLT) != LLVMPointerTypeKind);
   auto refFrom256LE = LLVMBuildBitCast(builder, refLE, refLT, "refFrom256");
-  return wrap(globalState->getRegion(refMT), refMT, refFrom256LE);
+  return toRef(globalState->getRegion(refMT), refMT, refFrom256LE);
 }
 
 LLVMValueRef Determinism::refToI256(

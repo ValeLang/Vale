@@ -73,5 +73,5 @@ Ref translateNewImmRuntimeSizedArray(
   globalState->getRegion(sizeType)->dealias(AFL("ConstructRSA"), functionState, builder, sizeType, capacityRef);
   globalState->getRegion(generatorType)->dealias(AFL("ConstructRSA"), functionState, builder, generatorType, generatorRef);
 
-  return wrap(globalState, elementType, rsaRef);
+  return toRef(globalState, elementType, rsaRef);
 }

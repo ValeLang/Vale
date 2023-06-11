@@ -113,7 +113,7 @@ LoadResult loadInnerInnerStructMember(
 
   auto memberLT = globalState->getRegion(expectedType)->translateType(expectedType);
   auto resultLE = LLVMBuildLoad2(builder, memberLT, ptrToMemberLE, memberName.c_str());
-  return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, resultLE)};
+  return LoadResult{toRef(globalState->getRegion(expectedType), expectedType, resultLE)};
 }
 
 void storeInnerInnerStructMember(
@@ -295,7 +295,7 @@ void innerDeallocateYonder(
     LiveRef liveRef) {
   buildFlare(FL(), globalState, functionState, builder);
 
-  auto ref = wrap(globalState, refMT, liveRef);
+  auto ref = toRef(globalState, refMT, liveRef);
   if (globalState->opt->census) {
     auto ptrLE =
         globalState->getRegion(refMT)
@@ -631,7 +631,7 @@ Ref constructWrappedStruct(
       structContentsPtrLT,
       structContentsPtrLE);
 
-  auto refLE = wrap(globalState->getRegion(structTypeM), structTypeM, newStructWrapperPtrLE.refLE);
+  auto refLE = toRef(globalState->getRegion(structTypeM), structTypeM, newStructWrapperPtrLE.refLE);
 
   if (globalState->opt->census) {
     auto objIdLE =
@@ -703,7 +703,7 @@ Ref innerAllocate(
         auto innerStructLE =
             constructInnerStruct(
                 globalState, functionState, builder, structM, valStructL, memberRefs);
-        return wrap(globalState->getRegion(desiredReference), desiredReference, innerStructLE);
+        return toRef(globalState->getRegion(desiredReference), desiredReference, innerStructLE);
       } else {
         auto countedStructL =
             kindStructs->getStructWrapperStruct(structKind);
@@ -735,7 +735,7 @@ Ref transmuteWeakRef(
               FL(), functionState, builder, false, sourceWeakRefMT, sourceWeakRef));
   auto sourceWeakFatPtrRawLE = sourceWeakFatPtrLE.refLE;
   auto targetWeakFatPtrLE = weakRefStructs->makeWeakFatPtr(targetWeakRefMT, sourceWeakFatPtrRawLE);
-  auto targetWeakRef = wrap(globalState->getRegion(targetWeakRefMT), targetWeakRefMT, targetWeakFatPtrLE);
+  auto targetWeakRef = toRef(globalState->getRegion(targetWeakRefMT), targetWeakRefMT, targetWeakFatPtrLE);
   return targetWeakRef;
 }
 
@@ -791,7 +791,7 @@ Ref transmutePtr(
   auto sourcePtrRawLE =
       globalState->getRegion(sourceRefMT)
           ->checkValidReference(FL(), functionState, builder, expectLive, sourceRefMT, sourceRef);
-  auto targetWeakRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourcePtrRawLE);
+  auto targetWeakRef = toRef(globalState->getRegion(targetRefMT), targetRefMT, sourcePtrRawLE);
   return targetWeakRef;
 }
 
@@ -818,7 +818,7 @@ Ref getRuntimeSizedArrayCapacity(
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto capacityPtrLE = getRuntimeSizedArrayCapacityPtr(globalState, builder, arrayRefLE);
   auto intLE = LLVMBuildLoad2(builder, int32LT, capacityPtrLE, "rsaCapacity");
-  return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
+  return toRef(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
 
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
@@ -963,7 +963,7 @@ Ref interfaceRefIsForEdge(
   auto itablePtrDiffLE = LLVMBuildPtrDiff2(builder, itableLT, itablePtrLE, edgePtrLE, "ptrDiff");
   auto itablePtrsMatchLE = LLVMBuildICmp(builder, LLVMIntEQ, itablePtrDiffLE, constI64LE(globalState, 0), "ptrsMatch");
   auto itablePtrsMatchRef =
-      wrap(globalState->getRegion(globalState->metalCache->boolRef),
+      toRef(globalState->getRegion(globalState->metalCache->boolRef),
           globalState->metalCache->boolRef,
           itablePtrsMatchLE);
   return itablePtrsMatchRef;
@@ -1005,7 +1005,7 @@ Ref regularDowncast(
   auto itablePtrDiffLE = LLVMBuildPtrDiff2(builder, itableLT, itablePtrLE, edgePtrLE, "ptrDiff");
   auto itablePtrsMatchLE = LLVMBuildICmp(builder, LLVMIntEQ, itablePtrDiffLE, constI64LE(globalState, 0), "ptrsMatch");
   auto itablePtrsMatchRef =
-      wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, itablePtrsMatchLE);
+      toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, itablePtrsMatchLE);
 
   auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
 
@@ -1021,7 +1021,7 @@ Ref regularDowncast(
                 sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetKind);
         auto resultStructRefLE =
             structs->downcastPtr(thenBuilder, resultStructRefMT, newVirtualArgLE);
-        auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+        auto resultStructRef = toRef(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
         return buildThen(thenBuilder, resultStructRef);
       },
       buildElse);
@@ -1074,7 +1074,7 @@ Ref resilientDowncast(
           case Ownership::OWN: {
             auto resultStructRefLE = structs->downcastPtr(thenBuilder, resultStructRefMT, possibilityPtrLE);
             auto
-                resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+                resultStructRef = toRef(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
             return buildThen(thenBuilder, resultStructRef);
           }
           case Ownership::MUTABLE_BORROW:
@@ -1083,7 +1083,7 @@ Ref resilientDowncast(
             auto resultStructRefLE =
                 weakRefStructs->downcastWeakFatPtr(
                     thenBuilder, targetStructKind, resultStructRefMT, possibilityPtrLE);
-            auto targetWeakRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+            auto targetWeakRef = toRef(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
             return buildThen(thenBuilder, targetWeakRef);
           }
           default:
@@ -1114,7 +1114,7 @@ Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLV
   // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
   // See mutswaplocals.vale for test case.
   auto oldRefLE = LLVMBuildLoad2(builder, localLT, localAddr, local->id->maybeName.c_str());
-  auto oldRef = wrap(region, local->type, oldRefLE);
+  auto oldRef = toRef(region, local->type, oldRefLE);
   region->checkValidReference(FL(), functionState, builder, false, local->type, oldRef);
   auto toStoreLE = region->checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   LLVMBuildStore(builder, toStoreLE, localAddr);
@@ -1307,7 +1307,7 @@ LiveRef constructRuntimeSizedArray(
     LLVMBuildStore(builder, capacityLE, getRuntimeSizedArrayCapacityPtr(globalState, builder, rsaWrapperPtrLE));
   }
   auto rsaLiveRef = toLiveRef(rsaWrapperPtrLE);
-  auto rsaRef = wrap(globalState, rsaMT, rsaLiveRef);
+  auto rsaRef = toRef(globalState, rsaMT, rsaLiveRef);
 
   if (globalState->opt->census) {
     auto objIdLE =
@@ -1335,12 +1335,12 @@ LoadResult regularLoadMember(
     const std::string& memberName) {
 
   if (structRefMT->location == Location::INLINE) {
-    auto structRef = wrap(globalState, structRefMT, structLiveRef);
+    auto structRef = toRef(globalState, structRefMT, structLiveRef);
     auto structRefLE =
         globalState->getRegion(structRefMT)
             ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
     return LoadResult{
-      wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
+      toRef(globalState->getRegion(expectedMemberType), expectedMemberType,
         LLVMBuildExtractValue(
             builder, structRefLE, memberIndex, memberName.c_str()))};
   } else {
@@ -1407,7 +1407,7 @@ Ref upcastStrong(
           globalState, functionState, kindStructs, builder, sourceStructMT,
           sourceStructKindM,
           sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceKindM);
-  return wrap(globalState->getRegion(targetInterfaceTypeM), targetInterfaceTypeM, resultInterfaceFatPtrLE);
+  return toRef(globalState->getRegion(targetInterfaceTypeM), targetInterfaceTypeM, resultInterfaceFatPtrLE);
 }
 
 Ref upcastWeak(
@@ -1657,7 +1657,7 @@ Ref regularWeakAlias(
             FL(), functionState, builder, sourceRefMT,
             globalState->getRegion(sourceRefMT)
                 ->checkValidReference(FL(), functionState, builder, false, sourceRefMT, sourceRef));
-    return wrap(
+    return toRef(
         globalState->getRegion(targetRefMT),
         targetRefMT,
         wrcWeaks->assembleStructWeakRef(
@@ -1669,7 +1669,7 @@ Ref regularWeakAlias(
             FL(), functionState, builder, sourceRefMT,
             globalState->getRegion(sourceRefMT)
                 ->checkValidReference(FL(), functionState, builder, false, sourceRefMT, sourceRef));
-    return wrap(
+    return toRef(
         globalState->getRegion(targetRefMT),
         targetRefMT,
         wrcWeaks->assembleInterfaceWeakRef(
@@ -1713,7 +1713,7 @@ Ref regularInnerLockWeak(
                 sourceWeakRefMT,
                 weakFatPtrLE);
         auto constraintRef =
-            wrap(globalState->getRegion(constraintRefM), constraintRefM, constraintRefLE);
+            toRef(globalState->getRegion(constraintRefM), constraintRefM, constraintRefLE);
         return buildThen(thenBuilder, constraintRef);
       },
       buildElse);
@@ -1799,7 +1799,7 @@ Ref normalLocalLoad(GlobalState* globalState, FunctionState* functionState, LLVM
   auto region = globalState->getRegion(local->type);
   auto localLT = globalState->getRegion(local->type)->translateType(local->type);
   auto sourceLE = LLVMBuildLoad2(builder, localLT, localAddr, local->id->maybeName.c_str());
-  auto sourceRef = wrap(region, local->type, sourceLE);
+  auto sourceRef = toRef(region, local->type, sourceLE);
   region->checkValidReference(FL(), functionState, builder, false, local->type, sourceRef);
   return sourceRef;
 }
@@ -1825,7 +1825,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
     auto membersLE = urefStructLT->explodeForRegularConcrete(globalState, functionState, builder, sourceRefLE);
     auto objPtrLE = LLVMBuildIntToPtr(builder, membersLE.objPtrI64LE, refLT, "refA");
 
-    auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, objPtrLE);
+    auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, objPtrLE);
     globalState->getRegion(sourceRefMT)
         ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 
@@ -1851,7 +1851,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     auto interfaceFatPtrLE = kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, sourceRefMT, interfaceFatPtrRawLE);
 
-    auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, interfaceFatPtrLE);
+    auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, interfaceFatPtrLE);
     globalState->getRegion(sourceRefMT)
         ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 
@@ -1938,7 +1938,7 @@ Ref resilientReceiveAndDecryptFamiliarReference(
                 LLVMBuildIntToPtr(builder, urefMembersLE.objPtrI64LE, wrapperStructPtrLT, "refD"));
 
         auto weakFatPtrLE = hgm->assembleStructWeakRef(functionState, builder, sourceRefMT, kindStruct, urefMembersLE.objGenI32LE, wrapperPtrLE);
-        auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
+        auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
         globalState->getRegion(sourceRefMT)->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 
         // Alias when receiving from the outside world, see DEPAR.
@@ -1960,7 +1960,7 @@ Ref resilientReceiveAndDecryptFamiliarReference(
         auto weakFatPtrLE =
             hgm->assembleRuntimeSizedArrayWeakRef(
                 functionState, builder, sourceRefMT, rsaMT, urefMembersLE.objGenI32LE, wrapperPtrLE);
-        auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
+        auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
         globalState->getRegion(sourceRefMT)->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 
         // Alias when receiving from the outside world, see DEPAR.
@@ -1980,7 +1980,7 @@ Ref resilientReceiveAndDecryptFamiliarReference(
                 LLVMBuildIntToPtr(builder, urefMembersLE.objPtrI64LE, wrapperStructPtrLT, "refD"));
 
         auto weakFatPtrLE = hgm->assembleStaticSizedArrayWeakRef(functionState, builder, sourceRefMT, ssaMT, urefMembersLE.objGenI32LE, wrapperPtrLE);
-        auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
+        auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
         globalState->getRegion(sourceRefMT)
             ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 
@@ -2005,7 +2005,7 @@ Ref resilientReceiveAndDecryptFamiliarReference(
         auto interfaceFatPtrLE = weakableKindStructs->makeInterfaceFatPtr(FL(), functionState, builder, sourceRefMT, interfaceFatPtrRawLE);
         auto weakFatPtrLE = hgm->assembleInterfaceWeakRef(functionState, builder, sourceRefMT, interfaceMT, urefMembersLE.objGenI32LE, interfaceFatPtrLE);
 
-        auto ref = wrap(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
+        auto ref = toRef(globalState->getRegion(sourceRefMT), sourceRefMT, weakFatPtrLE);
         globalState->getRegion(sourceRefMT)
             ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, ref);
 

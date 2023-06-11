@@ -158,7 +158,7 @@ Ref getRuntimeSizedArrayLength(
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto lengthPtrLE = getRuntimeSizedArrayLengthPtr(globalState, builder, arrayRefLE);
   auto intLE = LLVMBuildLoad2(builder, int32LT, lengthPtrLE, "rsaLen");
-  return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
+  return toRef(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
 
 void regularInitializeElementInSSA(
@@ -280,7 +280,7 @@ LoadResult loadElement(
       LLVMBuildInBoundsGEP2(builder, LLVMArrayType(elementLT, 0), elemsPtrLE, indices, 2, "indexPtr");
   auto fromArrayLE = LLVMBuildLoad2(builder, elementLT, elementPtrLE, "index");
 
-  auto sourceRef = wrap(globalState->getRegion(elementRefM), elementRefM, fromArrayLE);
+  auto sourceRef = toRef(globalState->getRegion(elementRefM), elementRefM, fromArrayLE);
   globalState->getRegion(elementRefM)
       ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
   return LoadResult{sourceRef};
@@ -382,7 +382,7 @@ void intRangeLoopV(
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
       [globalState, iterationBuilder](LLVMValueRef iterationIndexLE, LLVMBuilderRef builder) {
-        auto iterationIndexRef = wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, iterationIndexLE);
+        auto iterationIndexRef = toRef(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, iterationIndexLE);
         iterationBuilder(iterationIndexRef, builder);
       });
 }
@@ -470,7 +470,7 @@ void intRangeLoopReverseV(
   intRangeLoopReverse(
       globalState, functionState, builder, intRefMT, sizeLE,
       [globalState, iterationBuilder, intRefMT](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
-        auto indexRef = wrap(globalState->getRegion(intRefMT), intRefMT, indexLE);
+        auto indexRef = toRef(globalState->getRegion(intRefMT), intRefMT, indexLE);
         iterationBuilder(indexRef, bodyBuilder);
       });
 }

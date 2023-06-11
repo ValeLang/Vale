@@ -14,7 +14,7 @@
 #include "expressions/shared/members.h"
 #include "expression.h"
 
-// DO NOT SUBMIT do something more like catalyst instead
+// TODO: more advanced static analysis, like what catalyst does.
 bool exprResultKnownLive(GlobalState* globalState, Expression* expr) {
   // This pretends that everything is knownLive, including things that definitely are bad.
   // When paired with elide_checks_for_known_live=false, which makes us do generation checks anyway.
@@ -84,7 +84,7 @@ Ref translateExpressionInner(
             Ownership::MUTABLE_SHARE,
             Location::INLINE,
             globalState->metalCache->getInt(globalState->metalCache->rcImmRegionId, constantInt->bits));
-    return wrap(globalState->getRegion(intRef), intRef, resultLE);
+    return toRef(globalState->getRegion(intRef), intRef, resultLE);
   } else if (auto constantVoid = dynamic_cast<ConstantVoid*>(expr)) {
     // See ULTMCIE for why we load and store here.
     auto resultRef = makeVoidRef(globalState);
@@ -95,7 +95,7 @@ Ref translateExpressionInner(
         globalState->getRegion(globalState->metalCache->voidRef)
             ->translateType(globalState->metalCache->voidRef);
     auto loadedLE = makeConstExpr(functionState, builder, resultLT, resultLE);
-    return wrap(globalState->getRegion(globalState->metalCache->voidRef), globalState->metalCache->voidRef, loadedLE);
+    return toRef(globalState->getRegion(globalState->metalCache->voidRef), globalState->metalCache->voidRef, loadedLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
     auto resultLT =
@@ -107,12 +107,12 @@ Ref translateExpressionInner(
                 builder,
                 resultLT,
                 LLVMConstReal(resultLT, constantFloat->value));
-    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, resultLE);
+    return toRef(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, resultLE);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // See ULTMCIE for why this is an add.
     auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt1TypeInContext(globalState->context), constantBool->value);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, resultLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, resultLE);
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     Ref result = translateDiscard(globalState, functionState, blockState, builder, discardM);
@@ -151,7 +151,7 @@ Ref translateExpressionInner(
           globalState->getRegion(ret->sourceType)
               ->checkValidReference(FL(), functionState, builder, false, ret->sourceType, sourceRef);
       LLVMBuildRet(builder, toReturnLE);
-      return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
+      return toRef(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
     }
   } else if (auto breeak = dynamic_cast<Break*>(expr)) {
     if (auto nearestLoopBlockStateAndEnd = blockState->getNearestLoopEnd()) {
@@ -159,7 +159,7 @@ Ref translateExpressionInner(
 
       LLVMBuildBr(builder, nearestLoopEnd);
 
-      return wrap(
+      return toRef(
         globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
         globalState->neverPtrLE);
 
@@ -172,7 +172,7 @@ Ref translateExpressionInner(
 //            globalState->getRegion(ret->sourceType)
 //                ->checkValidReference(FL(), functionState, builder, ret->sourceType, sourceRef);
 //        LLVMBuildRet(builder, toReturnLE);
-//        return wrap(
+//        return toRef(
 //            globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
 //            globalState->neverPtrLE);
 //      }
@@ -281,8 +281,9 @@ Ref translateExpressionInner(
     return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " arg ", argument->argumentIndex);
-    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex + 1); // DO NOT SUBMIT
-    auto resultRef = wrap(globalState->getRegion(argument->resultType), argument->resultType, resultLE);
+    // This +1 is because the 0th argument is always the next gen ptr.
+    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex + 1);
+    auto resultRef = toRef(globalState->getRegion(argument->resultType), argument->resultType, resultLE);
     auto resultLT = globalState->getRegion(argument->resultType)->translateType(argument->resultType);
     globalState->getRegion(argument->resultType)
         ->checkValidReference(FL(), functionState, builder, false, argument->resultType, resultRef);
@@ -383,7 +384,7 @@ Ref translateExpressionInner(
 
     auto sizeLE = LLVMConstInt(LLVMInt32TypeInContext(globalState->context), arraySize, false);
     auto sizeRef =
-        wrap(
+        toRef(
             globalState->getRegion(globalState->metalCache->i32Ref),
             globalState->metalCache->i32Ref,
             sizeLE);
@@ -452,7 +453,8 @@ Ref translateExpressionInner(
     auto arrayType = pushRuntimeSizedArray->arrayType;
     auto arrayMT = dynamic_cast<RuntimeSizedArrayT*>(arrayType->kind);
     assert(arrayMT);
-    bool arrayKnownLive = true; // DO NOT SUBMIT get this from catalyst
+    // This is true because this instruction only appears in the push func which takes in a pre&.
+    bool arrayKnownLive = true;
     auto newcomerExpr = pushRuntimeSizedArray->newcomerExpr;
     auto newcomerType = pushRuntimeSizedArray->newcomerType;
     bool newcomerKnownLive = false;
@@ -504,7 +506,8 @@ Ref translateExpressionInner(
     auto rsaRefMT = popRuntimeSizedArray->arrayType;
     auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(rsaRefMT->kind);
     assert(rsaMT);
-    bool arrayKnownLive = true; // DO NOT SUBMIT get this from catalyst
+    // This is true because this instruction only appears in the pop function which takes in a pre&.
+    bool arrayKnownLive = true;
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, rsaME);
     globalState->getRegion(rsaRefMT)
@@ -530,7 +533,7 @@ Ref translateExpressionInner(
 
     auto indexLE = LLVMBuildSub(builder, arrayLenLE, constI32LE(globalState, 1), "index");
     auto indexRef =
-        wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
+        toRef(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
 
     auto indexInBoundsLE =
         checkLastElementExists(
@@ -695,7 +698,7 @@ Ref translateExpressionInner(
     globalState->getRegion(arrayType)
         ->checkValidReference(FL(), functionState, builder, true, arrayType, arrayRef);
     auto sizeLE =
-        wrap(
+        toRef(
             globalState->getRegion(globalState->metalCache->i32Ref),
             globalState->metalCache->i32Ref,
             constI32LE(globalState, arraySize));
@@ -878,9 +881,8 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = arrayLength->sourceType;
     auto arrayExpr = arrayLength->sourceExpr;
-    // DO NOT SUBMIT get actual knownLive from catalyst
-    bool arrayKnownLive = true;//arrayLength->sourceKnownLive;
-//    auto indexExpr = arrayLength->indexExpr;
+    // This is true because this instruction only appears in the len function which takes in a pre&.
+    bool arrayKnownLive = true;
 
     auto arrayRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?

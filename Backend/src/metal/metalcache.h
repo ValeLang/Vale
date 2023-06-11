@@ -265,10 +265,9 @@ public:
   std::unordered_map<Prototype*, std::unordered_map<int, InterfaceMethod*>, AddressHasher<Prototype*>> interfaceMethods;
 
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  using LocalByKeepAliveMap = std::unordered_map<bool, Local*>;
-  using LocalByKeepAliveByReferenceMap = std::unordered_map<Reference*, LocalByKeepAliveMap, AddressHasher<Reference*>>;
-  using LocalByKeepAliveByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByKeepAliveByReferenceMap, AddressHasher<VariableId*>>;
-  LocalByKeepAliveByReferenceByVariableIdMap locals;
+  using LocalByReferenceMap = std::unordered_map<Reference*, Local*, AddressHasher<Reference*>>;
+  using LocalByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByReferenceMap, AddressHasher<VariableId*>>;
+  LocalByReferenceByVariableIdMap locals;
 
   RegionId* rcImmRegionId = nullptr;
   RegionId* linearRegionId = nullptr;

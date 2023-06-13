@@ -49,7 +49,7 @@ LLVMValueRef upcastThinPtr(
       break;
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
   ControlBlockPtrLE controlBlockPtrLE =
       kindStructsSource->getConcreteControlBlockPtr(
@@ -78,7 +78,7 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, KindStructs* stru
     return interfaceRefStructL;
   } else {
     std::cerr << "Unimplemented type: " << typeid(*kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   }
 }
@@ -93,7 +93,7 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, KindStructs* weakRe
   } else if (auto interfaceKind = dynamic_cast<InterfaceKind *>(kind)) {
     return weakRefStructs->getInterfaceWeakRefStruct(interfaceKind);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -349,7 +349,7 @@ void innerDeallocate(
     }
   } else {
     if (refMT->location == Location::INLINE) {
-      assert(false); // implement
+      { assert(false); throw 1337; } // implement
     } else {
       return innerDeallocateYonder(from, globalState, functionState, kindStrutsSource, builder, refMT, ref);
     }
@@ -557,7 +557,7 @@ LLVMValueRef mallocKnownSize(
         LLVMBuildBitCast(
             builder, newStructLE, LLVMPointerType(kindLT, 0), "newstruct");
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   }
 
@@ -713,9 +713,9 @@ Ref innerAllocate(
       }
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 // Transmutes a weak ref of one ownership (such as borrow) to another ownership (such as weak).
@@ -1087,7 +1087,7 @@ Ref resilientDowncast(
             return buildThen(thenBuilder, targetWeakRef);
           }
           default:
-            assert(false);
+            { assert(false); throw 1337; }
         }
       },
       buildElse);
@@ -1210,7 +1210,7 @@ void regularCheckValidReference(
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
         controlBlockPtrLE.refLE);
   } else
-    assert(false);
+    { assert(false); throw 1337; }
 }
 
 //LoadResult resilientLoadElementFromRSAWithoutUpgrade(
@@ -1265,9 +1265,9 @@ void regularCheckValidReference(
 ////          sizeRef, indexRef);
 ////    }
 //    case Ownership::WEAK:
-//      assert(false); // VIR never loads from a weak ref
+//      { assert(false); throw 1337; } // VIR never loads from a weak ref
 //    default:
-//      assert(false);
+//      { assert(false); throw 1337; }
 //  }
 //}
 
@@ -1354,10 +1354,10 @@ LoadResult regularLoadMember(
             globalState, functionState, builder, kindStructs, structRefMT, structLiveRef, memberIndex, expectedMemberType, targetType, memberName);
       }
       case Ownership::WEAK:
-        assert(false); // we arent supposed to force in naive/fast
+        { assert(false); throw 1337; } // we arent supposed to force in naive/fast
         break;
       default:
-        assert(false);
+        { assert(false); throw 1337; }
     }
   }
 }
@@ -1471,9 +1471,9 @@ LoadResult resilientloadElementFromSSA(
 //      return loadElementFromSSAInner(globalState, functionState, builder, ssaRefMT, ssaMT, size, elementType, indexRef, arrayElementsPtrLE);
 //    }
     case Ownership::WEAK:
-      assert(false); // VIR never loads from a weak ref
+      { assert(false); throw 1337; } // VIR never loads from a weak ref
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -1675,7 +1675,7 @@ Ref regularWeakAlias(
         wrcWeaks->assembleInterfaceWeakRef(
             functionState, builder,
             sourceRefMT, targetRefMT, interfaceKind, objPtrLE));
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 }
 
 Ref regularInnerLockWeak(
@@ -1749,7 +1749,7 @@ void storeMemberWeak(
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newValueLE) {
-  assert(false); // we dont really do weak anymore
+  { assert(false); throw 1337; } // we dont really do weak anymore
 //  LLVMValueRef innerStructPtrLE = nullptr;
 //  auto wrapperPtrLE =
 //      globalState->getRegion(structRefMT)->lockWeakRef(
@@ -1861,9 +1861,9 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     return ref;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMValueRef regularEncryptAndSendFamiliarReference(
@@ -1904,9 +1904,9 @@ LLVMValueRef regularEncryptAndSendFamiliarReference(
             itablePtrI64LE, objPtrI64LE);
     return urefLE;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 Ref resilientReceiveAndDecryptFamiliarReference(
@@ -2015,14 +2015,14 @@ Ref resilientReceiveAndDecryptFamiliarReference(
 
         return ref;
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
       break;
 
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMValueRef resilientEncryptAndSendFamiliarReference(
@@ -2063,14 +2063,14 @@ LLVMValueRef resilientEncryptAndSendFamiliarReference(
 //        auto itablePtrIntLE = LLVMBuildPtrToInt(builder, itablePtrLE, LLVMInt64TypeInContext(globalState->context), "itablePtrInt");
         return hgm->implodeInterfaceHandle(functionState, builder, sourceRefMT, sourceRef);
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
       break;
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 std::string generateUniversalRefStructDefC(Package* currentPackage, const std::string& name) {

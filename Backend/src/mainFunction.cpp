@@ -153,7 +153,7 @@ Prototype* makeValeMainFunction(
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else {
-          assert(false);
+          { assert(false); throw 1337; }
         }
 
         return userMainResultLE;

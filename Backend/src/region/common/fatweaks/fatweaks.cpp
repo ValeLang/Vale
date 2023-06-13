@@ -27,7 +27,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
       assert(weakRefM->ownership == Ownership::WEAK);
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -57,7 +57,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
       assert(weakRefM->ownership == Ownership::WEAK);
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 

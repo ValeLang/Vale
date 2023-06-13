@@ -453,7 +453,7 @@ LLVMValueRef Determinism::openFile(FunctionState* functionState, LLVMBuilderRef 
       modeStrLE = globalState->getOrMakeStringConstant("wb");
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
   buildFlare(FL(), globalState, functionState, builder, "Opening: ", pathI8PtrLE, " with ", modeStrLE);
   auto fileLE = globalState->externs->fopen.call(builder, {pathI8PtrLE, modeStrLE}, "");
@@ -879,7 +879,7 @@ void Determinism::buildWriteValueToFile(
 
     buildFlare(FL(), globalState, functionState, builder, "Leaving buildWriteValueToFile for struct");
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -1018,7 +1018,7 @@ Ref Determinism::buildReadValueFromFile(
     buildFlare(FL(), globalState, functionState, builder, "Leaving buildReadValueFromFile for struct");
     return valeRef;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 

@@ -108,6 +108,6 @@ LLVMValueRef roundUp(
         constI64LE(globalState, 1), "subd2");
   } else {
     // implement
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }

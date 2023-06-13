@@ -45,7 +45,7 @@ public:
     if (maybeParentBlockState) {
       return maybeParentBlockState->getLocalAddr(varId, expectValid);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   }
 
@@ -107,7 +107,7 @@ public:
       if (unstackifiedLocalIds.count(localId) == 0) {
         std::cerr << "Un-unstackified local: " << localId->height
             << localId->maybeName << std::endl;
-        assert(false);
+        { assert(false); throw 1337; }
       }
     }
   }

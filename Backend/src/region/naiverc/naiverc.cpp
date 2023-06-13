@@ -85,7 +85,7 @@ Ref NaiveRC::mallocStr(
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -152,11 +152,11 @@ void NaiveRC::alias(
         adjustStrongRc(from, globalState, functionState, &kindStructs, builder, expr, sourceRef, 1);
       }
     } else
-      assert(false);
+      { assert(false); throw 1337; }
   } else {
     std::cerr << "Unimplemented type in acquireReference: "
               << typeid(*sourceRef->kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -169,10 +169,10 @@ void NaiveRC::dealias(
   auto sourceRnd = sourceMT->kind;
 
   if (sourceMT->ownership == Ownership::MUTABLE_SHARE || sourceMT->ownership == Ownership::IMMUTABLE_SHARE) {
-    assert(false);
+    { assert(false); throw 1337; }
   } else if (sourceMT->ownership == Ownership::OWN) {
     // We can't discard owns, they must be destructured.
-    assert(false); // impl
+    { assert(false); throw 1337; } // impl
   } else if (sourceMT->ownership == Ownership::IMMUTABLE_BORROW) {
     if (globalState->opt->elideChecksForRegions) {
       // Don't need to do anything for an immutable region
@@ -201,7 +201,7 @@ void NaiveRC::dealias(
         });
   } else if (sourceMT->ownership == Ownership::WEAK) {
     discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 }
 
 Ref NaiveRC::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
@@ -223,7 +223,7 @@ WrapperPtrLE NaiveRC::lockWeakRef(
     case Ownership::IMMUTABLE_SHARE:
     case Ownership::MUTABLE_BORROW:
     case Ownership::IMMUTABLE_BORROW:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     case Ownership::WEAK: {
       auto weakFatPtrLE =
@@ -235,7 +235,7 @@ WrapperPtrLE NaiveRC::lockWeakRef(
           wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 }
@@ -289,7 +289,7 @@ LLVMTypeRef NaiveRC::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::IMMUTABLE_SHARE:
     case Ownership::MUTABLE_SHARE:
-      assert(false);
+      { assert(false); throw 1337; }
     case Ownership::OWN:
     case Ownership::MUTABLE_BORROW:
     case Ownership::IMMUTABLE_BORROW:
@@ -299,7 +299,7 @@ LLVMTypeRef NaiveRC::translateType(Reference* referenceM) {
       assert(referenceM->location != Location::INLINE);
       return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -436,7 +436,7 @@ void NaiveRC::storeMember(
   switch (structRefMT->ownership) {
     case Ownership::IMMUTABLE_SHARE:
     case Ownership::IMMUTABLE_BORROW:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     case Ownership::OWN:
     case Ownership::MUTABLE_SHARE:
@@ -459,7 +459,7 @@ void NaiveRC::storeMember(
       break;
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -489,7 +489,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> NaiveRC::explodeInterfaceRef(
           });
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -529,7 +529,7 @@ LLVMValueRef NaiveRC::checkValidReference(
     if (refM->ownership == Ownership::OWN) {
       regularCheckValidReference(checkerAFL, globalState, functionState, builder, &kindStructs, refM, refLE);
     } else if (refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE) {
-      assert(false);
+      { assert(false); throw 1337; }
     } else {
       if (refM->ownership == Ownership::IMMUTABLE_BORROW || refM->ownership == Ownership::MUTABLE_BORROW) {
         regularCheckValidReference(checkerAFL, globalState, functionState, builder,
@@ -537,7 +537,7 @@ LLVMValueRef NaiveRC::checkValidReference(
       } else if (refM->ownership == Ownership::WEAK) {
         wrcWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
       } else
-        assert(false);
+        { assert(false); throw 1337; }
     }
     return refLE;
   } else {
@@ -590,13 +590,13 @@ Ref NaiveRC::upgradeLoadResultToRefWithTargetOwnership(
     } else if (targetOwnership == Ownership::WEAK) {
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   } else if (sourceOwnership == Ownership::MUTABLE_BORROW || sourceOwnership == Ownership::IMMUTABLE_BORROW) {
     buildFlare(FL(), globalState, functionState, builder);
 
     if (targetOwnership == Ownership::OWN) {
-      assert(false); // Cant load an owning reference from a constraint ref local.
+      { assert(false); throw 1337; } // Cant load an owning reference from a constraint ref local.
     } else if (targetOwnership == Ownership::MUTABLE_BORROW || targetOwnership == Ownership::IMMUTABLE_BORROW) {
       return sourceRef;
     } else if (targetOwnership == Ownership::WEAK) {
@@ -604,13 +604,13 @@ Ref NaiveRC::upgradeLoadResultToRefWithTargetOwnership(
       assert(dynamic_cast<StructKind*>(sourceType->kind) || dynamic_cast<InterfaceKind*>(sourceType->kind));
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   } else if (sourceOwnership == Ownership::WEAK) {
     assert(targetOwnership == Ownership::WEAK);
     return sourceRef;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -731,7 +731,7 @@ Ref NaiveRC::upcast(
       return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -783,7 +783,7 @@ Ref NaiveRC::loadMember(
     Reference* targetType,
     const std::string& memberName) {
   if (structRefMT->ownership == Ownership::MUTABLE_SHARE || structRefMT->ownership == Ownership::IMMUTABLE_SHARE) {
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     auto unupgradedMemberLE =
         regularLoadMember(
@@ -808,7 +808,7 @@ void NaiveRC::checkInlineStructType(
 
 //std::string NaiveRC::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
 //  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
+//    { assert(false); throw 1337; }
 //  } else if (auto structRefMT = dynamic_cast<StructKind*>(refMT->kind)) {
 //    auto structMT = globalState->program->getStruct(structRefMT);
 //    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
@@ -829,7 +829,7 @@ void NaiveRC::checkInlineStructType(
 //  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
 //    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
 //  } else {
-//    assert(false);
+//    { assert(false); throw 1337; }
 //  }
 //}
 
@@ -838,7 +838,7 @@ std::string NaiveRC::generateRuntimeSizedArrayDefsC(
 
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   if (rsaDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
@@ -848,26 +848,26 @@ std::string NaiveRC::generateRuntimeSizedArrayDefsC(
 std::string NaiveRC::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
 std::string NaiveRC::generateStructDefsC(
     Package* currentPackage,
      StructDefinition* structDefM) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
 std::string NaiveRC::generateInterfaceDefsC(
     Package* currentPackage,
      InterfaceDefinition* interfaceDefM) {
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
   return "";
 }
 
 LLVMTypeRef NaiveRC::getExternalType(Reference* refMT) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 //  return refMT;
 }
@@ -878,7 +878,7 @@ Ref NaiveRC::receiveAndDecryptFamiliarReference(
     Reference* sourceRefMT,
     LLVMValueRef sourceRefLE) {
   // Naive shouldnt do exports, its just for benchmarking
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -893,7 +893,7 @@ LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference)
     case Ownership::WEAK:
       return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 
@@ -905,7 +905,7 @@ std::pair<Ref, Ref> NaiveRC::receiveUnencryptedAlienReference(
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -915,7 +915,7 @@ LLVMValueRef NaiveRC::encryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef) {
 //  return sourceRef;
-  assert(false); // naive shouldnt be externing
+  { assert(false); throw 1337; } // naive shouldnt be externing
   exit(1);
 }
 
@@ -997,7 +997,7 @@ Ref NaiveRC::deinitializeElementFromSSA(
     StaticSizedArrayT* ssaMT,
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1106,7 +1106,7 @@ Ref NaiveRC::mutabilify(
     Ref ref,
     Reference* targetRefMT) {
   assert(refMT->ownership == Ownership::MUTABLE_BORROW);
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }
 
 LiveRef NaiveRC::immutabilify(
@@ -1118,5 +1118,5 @@ LiveRef NaiveRC::immutabilify(
     Ref ref,
     Reference* targetRefMT) {
   assert(refMT->ownership == Ownership::MUTABLE_BORROW);
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }

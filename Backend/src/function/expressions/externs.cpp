@@ -309,7 +309,7 @@ Ref replayReturnOrCallAndOrRecord(
                               ->checkValidReference(FL(), functionState, builder, false, valeArgRefMT, args[i]);
                       auto recordedRefLE =
                           globalState->determinism->buildMapRefFromRecordingFile(builder, valeArgRefMT);
-                      assert(false);
+                      { assert(false); throw 1337; }
                     }
                   }
                 }
@@ -587,7 +587,7 @@ Ref buildExternCall(
           return buildCallOrSideCall(globalState, functionState, builderWhenNotReplaying, prototype, args);
         });
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 Ref translateExternCall(

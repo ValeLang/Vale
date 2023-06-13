@@ -40,7 +40,7 @@ Ref translateNewArrayFromValues(
 //            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     // If we get here, arrayLT is a pointer to our counted struct.
     auto resultRef =

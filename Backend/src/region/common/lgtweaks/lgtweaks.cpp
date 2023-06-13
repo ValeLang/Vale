@@ -39,10 +39,10 @@ void LgtWeaks::buildCheckLgti(
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
       // These dont have LGT
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
   std::vector<LLVMValueRef> args = { lgtTablePtrLE, lgtiLE };
@@ -107,7 +107,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
 
   if (refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE) {
     // Shares never have weak refs
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   } else {
     auto lgtiPtrLE =
@@ -187,10 +187,10 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     case RegionOverride::NAIVE_RC:
     case RegionOverride::RESILIENT_V3:
     case RegionOverride::SAFE:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -278,7 +278,7 @@ WeakFatPtrLE LgtWeaks::assembleStaticSizedArrayWeakRef(
     Reference* targetSSAWeakRefMT,
     WrapperPtrLE objPtrLE) {
   // impl
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -615,7 +615,7 @@ Ref LgtWeaks::assembleWeakRef(
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
     return toRef(globalState->getRegion(targetType), targetType, resultLE);
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 }
 
 

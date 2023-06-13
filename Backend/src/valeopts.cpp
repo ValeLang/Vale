@@ -251,7 +251,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         } else if (s.arg_val == std::string("off")) {
           opt->flares = false;
         } else
-          assert(false);
+          { assert(false); throw 1337; }
         break;
       }
 
@@ -263,7 +263,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         } else if (s.arg_val == std::string("off")) {
           opt->fastCrash = false;
         } else
-          assert(false);
+          { assert(false); throw 1337; }
         break;
       }
 
@@ -275,7 +275,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         } else if (s.arg_val == std::string("false")) {
           opt->elideChecksForKnownLive = false;
         } else
-          assert(false);
+          { assert(false); throw 1337; }
         break;
       }
 
@@ -287,7 +287,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         } else if (s.arg_val == std::string("false")) {
           opt->printMemOverhead = false;
         } else
-          assert(false);
+          { assert(false); throw 1337; }
         break;
       }
 
@@ -302,7 +302,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->optLevel = ValeOptimizationLevel::O2i;
             } else if (s.arg_val == std::string("O3")) {
               opt->optLevel = ValeOptimizationLevel::O3;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -312,7 +312,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->generationSize = 32;
             } else if (s.arg_val == std::string("64")) {
               opt->generationSize = 64;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -323,7 +323,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->elideChecksForRegions = true;
             } else if (s.arg_val == std::string("false")) {
               opt->elideChecksForRegions = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -334,7 +334,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->includeBoundsChecks = true;
             } else if (s.arg_val == std::string("off") || s.arg_val == std::string("no") || s.arg_val == std::string("false")) {
               opt->includeBoundsChecks = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -345,7 +345,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->useAtomicRc = true;
             } else if (s.arg_val == std::string("off") || s.arg_val == std::string("no") || s.arg_val == std::string("false")) {
               opt->useAtomicRc = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -356,7 +356,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->forceAllKnownLive = true;
             } else if (s.arg_val == std::string("false")) {
               opt->forceAllKnownLive = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -367,7 +367,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->enableReplaying = true;
             } else if (s.arg_val == std::string("false")) {
               opt->enableReplaying = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -378,7 +378,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->enableSideCalling = true;
             } else if (s.arg_val == std::string("false")) {
               opt->enableSideCalling = false;
-            } else assert(false);
+            } else { assert(false); throw 1337; }
             break;
           }
 
@@ -389,7 +389,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             opt->census = true;
           } else if (s.arg_val == std::string("off")) {
             opt->census = false;
-          } else assert(false);
+          } else { assert(false); throw 1337; }
           break;
         }
 
@@ -417,7 +417,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
           } else {
             std::cerr << "Unknown region: " << s.arg_val << std::endl;
             exit(1);
-            assert(false);
+            { assert(false); throw 1337; }
           }
           break;
         }

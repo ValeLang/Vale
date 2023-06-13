@@ -63,7 +63,7 @@ Ref translateDestructure(
         AFL("Destroy freeing"), functionState, builder,
         destructureM->structType, structLiveRef);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   buildFlare(FL(), globalState, functionState, builder);
@@ -129,7 +129,7 @@ Ref translateDestroySSAIntoLocals(
         AFL("Destroy freeing"), functionState, builder,
         destroySSAIntoLocalsM->arrayType, structLiveRef);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   buildFlare(FL(), globalState, functionState, builder);

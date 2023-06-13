@@ -137,7 +137,7 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
 //  } else if (regionId == metalCache->resilientV4RegionId) {
 //    return resilientV4Region;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -152,7 +152,7 @@ ValeFuncPtrLE GlobalState::getFunction(Prototype* prototype) {
     return extraFunctionIter->second;
   }
 
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMValueRef GlobalState::getInterfaceTablePtr(Edge* edge) {
@@ -217,7 +217,7 @@ Name* GlobalState::getKindName(Kind* kind) {
     return ssaMT->name;
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     return rsaMT->name;
-  } else assert(false);
+  } else { assert(false); throw 1337; }
   return nullptr;
 }
 

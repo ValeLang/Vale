@@ -205,7 +205,7 @@ public:
       }
     }
     std::cerr << "Couldn't find method " << prototype->name->name << " in interface " << interfaceKindM->fullName->name << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   Weakability getKindWeakability(Kind* kind);

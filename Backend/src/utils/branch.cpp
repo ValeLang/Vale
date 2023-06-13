@@ -376,7 +376,7 @@ Ref buildIfElseV(
     // Bail early, even though builder is still pointing at the preceding block. Nobody should use
     // it, since nothing can happen after a never.
     return toRef(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
-//    assert(false); // impl
+//    { assert(false); throw 1337; } // impl
   }
 
   LLVMBasicBlockRef afterwardBlockL =

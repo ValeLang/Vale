@@ -109,13 +109,13 @@ void RCImm::alias(
       } else if (sourceRef->ownership == Ownership::MUTABLE_SHARE) {
         adjustStrongRc(from, globalState, functionState, &kindStructs, builder, ref, sourceRef, 1);
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
     }
   } else {
     std::cerr << "Unimplemented type in acquireReference: "
               << typeid(*sourceRef->kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -142,7 +142,7 @@ Ref RCImm::lockWeak(
     bool weakRefKnownLive,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -197,7 +197,7 @@ Ref RCImm::upcastWeak(
     Reference* sourceStructTypeM,
     InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -334,7 +334,7 @@ void RCImm::defineEdge(Edge* edge) {
 
 Ref RCImm::weakAlias(
     FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -345,7 +345,7 @@ void RCImm::discardOwningRef(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     LiveRef sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 
@@ -387,7 +387,7 @@ void RCImm::storeMember(
     const std::string& memberName,
     Reference* newMemberRefMT,
     Ref newMemberRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 std::tuple<LLVMValueRef, LLVMValueRef> RCImm::explodeInterfaceRef(
@@ -406,7 +406,7 @@ void RCImm::aliasWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefMT,
     Ref weakRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 void RCImm::discardWeakRef(
@@ -415,7 +415,7 @@ void RCImm::discardWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefMT,
     Ref weakRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 Ref RCImm::getIsAliveFromWeakRef(
@@ -424,7 +424,7 @@ Ref RCImm::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef,
     bool knownLive) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -481,7 +481,7 @@ WrapperPtrLE RCImm::lockWeakRef(
     Reference* refM,
     Ref weakRefLE,
     bool weakRefKnownLive) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -642,7 +642,7 @@ Ref RCImm::storeElementInRSA(
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE,
     Ref elementRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -678,7 +678,7 @@ void RCImm::deallocate(
     Reference* refMT,
     LiveRef ref) {
   buildFlare(FL(), globalState, functionState, builder);
-  assert(false); // Outside shouldnt be able to deallocate anything of ours.
+  { assert(false); throw 1337; } // Outside shouldnt be able to deallocate anything of ours.
   // We deallocate things ourselves when we discard references, via discard.
   // We call innerDeallocate directly.
 }
@@ -810,13 +810,13 @@ void RCImm::discard(
               //  return unmigratedLLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
             });
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
     }
   } else {
     std::cerr << "Unimplemented type in discard: "
         << typeid(*sourceMT->kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
   buildFlare(FL(), globalState, functionState, builder);
 }
@@ -864,7 +864,7 @@ LLVMTypeRef RCImm::translateType(Reference* referenceM) {
       return result;
     } else {
       std::cerr << "Unimplemented type: " << typeid(*referenceM->kind).name() << std::endl;
-      assert(false);
+      { assert(false); throw 1337; }
       return nullptr;
     }
   }
@@ -886,7 +886,7 @@ LLVMTypeRef RCImm::translateType(Reference* referenceM) {
 //    assert(rsaDef->mutability == Mutability::IMMUTABLE);
 //  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
 //  } else {
-//    assert(false);
+//    { assert(false); throw 1337; }
 //  }
 //  return kindStructs.getControlBlockStruct();
 //}
@@ -930,7 +930,7 @@ void RCImm::checkValidReference(
 }
 
 //std::string RCImm::getMemberArbitraryRefNameCSeeMMEDT(Reference* sourceMT) {
-//  assert(false);
+//  { assert(false); throw 1337; }
 //  exit(1);
 //}
 
@@ -938,13 +938,13 @@ std::string RCImm::generateStructDefsC(
     Package* currentPackage,
 
     StructDefinition* structDefM) {
-  assert(false);
+  { assert(false); throw 1337; }
   return "";
 }
 
 std::string RCImm::generateInterfaceDefsC(
     Package* currentPackage, InterfaceDefinition* interfaceDefM) {
-  assert(false);
+  { assert(false); throw 1337; }
   return "";
 }
 
@@ -952,7 +952,7 @@ std::string RCImm::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   if (rsaDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
@@ -963,7 +963,7 @@ std::string RCImm::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
   if (ssaDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
@@ -1027,16 +1027,16 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
         // Vale doesn't care about the size, only extern (linear) does, so just return zero.
         return std::make_pair(resultRef, globalState->constI32(0));
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
     } else {
       auto resultRef = topLevelUnserialize(functionState, builder, targetRegionInstanceRef, sourceRegionInstanceRef, valeRefMT->kind, sourceRef);
       // Vale doesn't care about the size, only extern (linear) does, so just return zero.
       return std::make_pair(resultRef, globalState->constI32(0));
     }
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMTypeRef RCImm::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -1048,7 +1048,7 @@ Ref RCImm::receiveAndDecryptFamiliarReference(
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     LLVMValueRef sourceRefLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1057,7 +1057,7 @@ LLVMValueRef RCImm::encryptAndSendFamiliarReference(
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     Ref sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1085,7 +1085,7 @@ Ref RCImm::deinitializeElementFromSSA(
     StaticSizedArrayT* ssaMT,
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1279,7 +1279,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
               callUnserialize(
                   functionState, builder, regionInstanceRef, hostRegionInstanceRef, valeMemberRefMT->kind, hostMemberRef);
           return destinationMemberRef;
-        } else assert(false);
+        } else { assert(false); throw 1337; }
       };
 
   defineFunctionBodyV(
@@ -1435,7 +1435,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, valeSsaRefMT, valeSsaRef));
         } else
-          assert(false);
+          { assert(false); throw 1337; }
       });
 }
 
@@ -1603,7 +1603,7 @@ void RCImm::defineConcreteFreeFunction(Kind* valeKind) {
 
           LLVMBuildRet(builder, makeVoid(globalState));
         } else
-          assert(false);
+          { assert(false); throw 1337; }
       });
 }
 
@@ -1741,7 +1741,7 @@ Ref RCImm::mutabilify(
     Reference* refMT,
     Ref ref,
     Reference* targetRefMT) {
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }
 
 LiveRef RCImm::immutabilify(

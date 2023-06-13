@@ -24,7 +24,7 @@ Mutability ownershipToMutability(Ownership ownership) {
     case Ownership::WEAK:
       return Mutability::MUTABLE;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 }
 

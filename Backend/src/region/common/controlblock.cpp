@@ -53,7 +53,7 @@ void ControlBlock::build() {
         membersL.push_back(int8PtrLT);
         break;
       default:
-        assert(false);
+        { assert(false); throw 1337; }
     }
   }
 

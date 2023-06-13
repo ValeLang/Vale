@@ -113,7 +113,7 @@ void Linear::alias(
     LLVMBuilderRef builder,
     Reference* sourceRef,
     Ref ref) {
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }
 
 void Linear::dealias(
@@ -148,7 +148,7 @@ Ref Linear::lockWeak(
     bool weakRefKnownLive,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -162,7 +162,7 @@ Ref Linear::asSubtype(
     Kind* targetKind,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -217,7 +217,7 @@ LLVMTypeRef Linear::translateType(Reference* referenceM) {
     return LLVMVoidTypeInContext(globalState->context);
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   }
 }
@@ -239,7 +239,7 @@ Ref Linear::upcastWeak(
     Reference* sourceStructTypeM,
     InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -447,7 +447,7 @@ void Linear::defineInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 
 Ref Linear::weakAlias(
     FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -458,7 +458,7 @@ void Linear::discardOwningRef(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     LiveRef sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 
@@ -508,7 +508,7 @@ void Linear::storeMember(
     Ref newMemberRef) {
   // storeMember is called when we want to overwrite something, but we don't allow that in linear.
   // To initialize something, use initializeMember instead.
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 
@@ -560,7 +560,7 @@ void Linear::aliasWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefMT,
     Ref weakRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 void Linear::discardWeakRef(
@@ -569,7 +569,7 @@ void Linear::discardWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefMT,
     Ref weakRef) {
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 Ref Linear::getIsAliveFromWeakRef(
@@ -578,7 +578,7 @@ Ref Linear::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef,
     bool knownLive) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -607,7 +607,7 @@ Ref Linear::allocate(
   // Its API isn't good for us, it assumes we already have references to the members...
   // but Linear needs to allocate memory for the struct before it can serialize its members,
   // see MAPOWM.
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -693,7 +693,7 @@ WrapperPtrLE Linear::lockWeakRef(
     Reference* refM,
     Ref weakRefLE,
     bool weakRefKnownLive) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -842,7 +842,7 @@ Ref Linear::storeElementInRSA(
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE,
     Ref elementRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1111,7 +1111,7 @@ LoadResult Linear::loadMember2(
   auto structRefLE = checkValidReference(FL(), functionState, builder, structRefMT, structRef);
   if (structRefMT->location == Location::INLINE) {
     auto memberLE = LLVMBuildExtractValue(builder, structRefLE, memberIndex, memberName.c_str());
-    assert(false); // impl. should inline structs have their pointers adjusted already?
+    { assert(false); throw 1337; } // impl. should inline structs have their pointers adjusted already?
     return LoadResult{toRef(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
     auto unadjustedStructPtrLE = structRefLE;
@@ -1211,7 +1211,7 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT,
   } else {
     std::cerr << "Unimplemented type in immutables' getExportName: "
               << typeid(*hostRefMT->kind).name() << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -1296,7 +1296,7 @@ std::string Linear::generateStaticSizedArrayDefsC(
 }
 
 LLVMTypeRef Linear::getExternalType(Reference* refMT) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 //  return refMT;
 }
@@ -1452,7 +1452,7 @@ std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
         auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
         return std::make_pair(resultRef, sizeRef);
       } else {
-        assert(false);
+        { assert(false); throw 1337; }
       }
     } else {
       auto [liveRef, size] =
@@ -1461,9 +1461,9 @@ std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
       auto ref = toRef(globalState, targetRefMT, liveRef);
       return std::make_pair(ref, size);
     }
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMTypeRef Linear::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -1520,7 +1520,7 @@ LLVMValueRef Linear::predictShallowSize(FunctionState* functionState, LLVMBuilde
     auto elementsSizeLE = LLVMBuildMul(builder, constI64LE(globalState, sizePerElement), lenI64LE, "elementsSize");
 
     return LLVMBuildAdd(builder, headerBytesLE, elementsSizeLE, "sum");
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 }
 
 Ref Linear::receiveAndDecryptFamiliarReference(
@@ -1528,7 +1528,7 @@ Ref Linear::receiveAndDecryptFamiliarReference(
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     LLVMValueRef sourceRefLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1537,7 +1537,7 @@ LLVMValueRef Linear::encryptAndSendFamiliarReference(
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     Ref sourceRef) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -1666,7 +1666,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
               callSerialize(
                   functionState, builder, sourceMemberRefMT->kind, regionInstanceRef, sourceRegionInstanceRef, sourceMemberRef, dryRunBoolRef);
           return destinationMemberRef;
-        } else assert(false);
+        } else { assert(false); throw 1337; }
       };
 
   defineFunctionBodyV(
@@ -1940,7 +1940,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
           auto hostSsaPtrLE =
               checkValidReference(FL(), functionState, builder, hostSsaRefMT, hostSsaRef);
           LLVMBuildRet(builder, hostSsaPtrLE);
-        } else assert(false);
+        } else { assert(false); throw 1337; }
       });
 }
 
@@ -1997,7 +1997,7 @@ LLVMValueRef Linear::translateBetweenBufferAddressAndPointer(
     auto adjustedRef = assembleInterfaceRef(builder, hostRefMT, objPtrLE, edgeNumLE);
     return checkValidReference(FL(), functionState, builder, true, hostRefMT, adjustedRef);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -2120,7 +2120,7 @@ Ref Linear::popRuntimeSizedArrayNoBoundsCheck(
     RuntimeSizedArrayT* rsaMT,
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -2180,7 +2180,7 @@ Ref Linear::deinitializeElementFromSSA(
     StaticSizedArrayT* ssaMT,
     LiveRef arrayRef,
     InBoundsLE indexInBoundsLE) {
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -2277,7 +2277,7 @@ Ref Linear::localStore(FunctionState* functionState, LLVMBuilderRef builder, Loc
 Ref Linear::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
   // This is the method called via IRegion when we want to make a function-bound region.
   // Linear isn't used for that though, linear's used for serializing to/from C and files.
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -2538,7 +2538,7 @@ Ref Linear::mutabilify(
     Ref ref,
     Reference* targetRefMT) {
   assert(refMT->ownership == Ownership::MUTABLE_BORROW);
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }
 
 LiveRef Linear::immutabilify(
@@ -2550,5 +2550,5 @@ LiveRef Linear::immutabilify(
     Ref ref,
     Reference* targetRefMT) {
   assert(refMT->ownership == Ownership::MUTABLE_BORROW);
-  assert(false); // impl
+  { assert(false); throw 1337; } // impl
 }

@@ -41,7 +41,7 @@ public:
         return i;
       }
     }
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   void addMember(ControlBlockMember member) {

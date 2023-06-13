@@ -85,7 +85,7 @@ LLVMValueRef adjustStrongRc(
       // Shouldnt increment IMMUTABLE_SHARE's RC
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 
   auto controlBlockPtrLE =
@@ -136,7 +136,7 @@ void buildPrint(
     // It's a pointer, so interpret it as a char* and print it as a string.
     globalState->externs->printCStr.call(builder, {exprLE}, "");
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -187,7 +187,7 @@ void buildPrintToStderr(
     // It's a pointer, so interpret it as a char* and print it as a string.
     globalState->externs->printCStrToStderr.call(builder, {exprLE}, "");
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 

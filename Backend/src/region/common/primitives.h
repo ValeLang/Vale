@@ -38,7 +38,7 @@ public:
     } else if (dynamic_cast<Never*>(referenceM->kind) != nullptr) {
       return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   }
 };

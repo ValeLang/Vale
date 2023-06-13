@@ -439,7 +439,7 @@ Ref translateExpressionInner(
           ->deallocate(
               AFL("DestroySSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
 
     globalState->getRegion(consumerType)
@@ -587,7 +587,7 @@ Ref translateExpressionInner(
           ->deallocate(
               AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
 
     return makeVoidRef(globalState);
@@ -667,7 +667,7 @@ Ref translateExpressionInner(
           ->deallocate(
               AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayLiveRef);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
 
     globalState->getRegion(consumerType)
@@ -1064,7 +1064,7 @@ Ref translateExpressionInner(
 
     // The below MUTABLE_BORROW used to be BORROW, just put MUTABLE_BORROW in temporarily until we
     // figure out weaks.
-    assert(false);
+    { assert(false); throw 1337; }
     auto sourceTypeAsConstraintRefM =
         globalState->metalCache->getReference(
             Ownership::MUTABLE_BORROW,
@@ -1206,7 +1206,7 @@ Ref translateExpressionInner(
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }

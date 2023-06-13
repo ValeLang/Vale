@@ -321,3 +321,12 @@ void declareAndDefineExtraFunction(
   declareExtraFunction(globalState, prototype, llvmName);
   defineFunctionBodyV(globalState, prototype, definer);
 }
+
+
+LLVMValueRef FunctionState::getParam(UserArgIndex userArgIndex) {
+  if (nextGenPtrLE.has_value()) {
+    return LLVMGetParam(containingFuncL, userArgIndex.userArgIndex + 1);
+  } else {
+    return LLVMGetParam(containingFuncL, userArgIndex.userArgIndex);
+  }
+}

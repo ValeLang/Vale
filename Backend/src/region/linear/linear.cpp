@@ -13,19 +13,10 @@
 #include <region/common/migration.h>
 
 enum SerializeFunctionParameter {
-  SERIALIZE_LLVM_PARAM_NEXT_GEN_PTR = 0,
-
-  SERIALIZE_VALE_PARAM_VALE_REGION_INSTANCE_REF = 0,
-  SERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF = 1,
-
-  SERIALIZE_VALE_PARAM_HOST_REGION_INSTANCE_REF = 1,
-  SERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF = 2,
-
-  SERIALIZE_VALE_PARAM_VALE_OBJECT_REF = 2,
-  SERIALIZE_LLVM_PARAM_VALE_OBJECT_REF = 3,
-
-  SERIALIZE_VALE_PARAM_DRY_RUN_BOOL = 3,
-  SERIALIZE_LLVM_PARAM_DRY_RUN_BOOL = 4,
+  SERIALIZE_PARAM_VALE_REGION_INSTANCE_REF = 0,
+  SERIALIZE_PARAM_HOST_REGION_INSTANCE_REF = 1,
+  SERIALIZE_PARAM_VALE_OBJECT_REF = 2,
+  SERIALIZE_PARAM_DRY_RUN_BOOL = 3,
 };
 
 Ref unsafeCast(
@@ -389,13 +380,16 @@ void Linear::defineEdgeSerializeFunction(Edge* edge) {
         auto valeObjectRefMT = structPrototype->params[2];
 
         auto regionInstanceRef =
-            toRef(globalState->getRegion(regionRefMT), regionRefMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
+            toRef(
+                globalState->getRegion(regionRefMT),
+                regionRefMT,
+                functionState->getParam(UserArgIndex{SERIALIZE_PARAM_VALE_REGION_INSTANCE_REF}));
         auto sourceRegionInstanceRef =
-            toRef(globalState->getRegion(valeObjectRefMT), globalState->getRegion(valeObjectRefMT)->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
+            toRef(globalState->getRegion(valeObjectRefMT), globalState->getRegion(valeObjectRefMT)->getRegionRefType(), functionState->getParam(UserArgIndex{SERIALIZE_PARAM_HOST_REGION_INSTANCE_REF}));
         auto valeObjectRef =
-            toRef(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_VALE_OBJECT_REF));
+            toRef(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, functionState->getParam(UserArgIndex{SERIALIZE_PARAM_VALE_OBJECT_REF}));
         auto dryRunBoolRef =
-            toRef(globalState->getRegion(boolMT), boolMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_DRY_RUN_BOOL));
+            toRef(globalState->getRegion(boolMT), boolMT, functionState->getParam(UserArgIndex{SERIALIZE_PARAM_DRY_RUN_BOOL}));
 
         auto structRef =
             buildCallV(
@@ -1682,14 +1676,14 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
         auto hostObjectRefMT = prototype->returnType;
 
         auto hostRegionInstanceRef =
-            toRef(globalState->getRegion(regionRefMT), regionRefMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
+            toRef(globalState->getRegion(regionRefMT), regionRefMT, functionState->getParam(UserArgIndex{SERIALIZE_PARAM_VALE_REGION_INSTANCE_REF}));
         auto sourceRegionInstanceRef =
             toRef(globalState->getRegion(valeKind),
-            globalState->getRegion(valeKind)->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
-        auto valeObjectRef = toRef(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_VALE_OBJECT_REF));
+            globalState->getRegion(valeKind)->getRegionRefType(), functionState->getParam(UserArgIndex{SERIALIZE_PARAM_HOST_REGION_INSTANCE_REF}));
+        auto valeObjectRef = toRef(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, functionState->getParam(UserArgIndex{SERIALIZE_PARAM_VALE_OBJECT_REF}));
         auto valeObjectLiveRef =
             globalState->getRegion(valeObjectRefMT)->checkRefLive(FL(), functionState, builder, sourceRegionInstanceRef, valeObjectRefMT, valeObjectRef, false);
-        auto dryRunBoolRef = toRef(globalState->getRegion(boolMT), boolMT, LLVMGetParam(functionState->containingFuncL, SERIALIZE_LLVM_PARAM_DRY_RUN_BOOL));
+        auto dryRunBoolRef = toRef(globalState->getRegion(boolMT), boolMT, functionState->getParam(UserArgIndex{SERIALIZE_PARAM_DRY_RUN_BOOL}));
 
         if (auto valeStructKind = dynamic_cast<StructKind *>(valeObjectRefMT->kind)) {
           auto hostKind = hostKindByValeKind.find(valeStructKind)->second;

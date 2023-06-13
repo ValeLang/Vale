@@ -281,8 +281,8 @@ Ref translateExpressionInner(
     return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " arg ", argument->argumentIndex);
-    // This +1 is because the 0th argument is always the next gen ptr.
-    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex + 1);
+    // This +1 is because the 0th argument is always the next gen ptr, see RPPFNG.
+    auto resultLE = functionState->getParam(UserArgIndex{argument->argumentIndex});
     auto resultRef = toRef(globalState->getRegion(argument->resultType), argument->resultType, resultLE);
     auto resultLT = globalState->getRegion(argument->resultType)->translateType(argument->resultType);
     globalState->getRegion(argument->resultType)

@@ -52,8 +52,6 @@ LiveRef toLiveRef(
       checkerAFL, functionState, builder, regionInstanceRef, refM, refLE);
 }
 
-// TODO: We might want to get rid of KindStructs here. Only some regions will be using a wrapper
-// struct; linear doesn't.
 LiveRef toLiveRef(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,

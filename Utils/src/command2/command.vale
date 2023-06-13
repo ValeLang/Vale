@@ -1,5 +1,4 @@
 import stdlib.stringutils.*;
-import stdlib.printutils.*;
 import stdlib.path.*;
 import stdlib.collections.hashmap.*;
 import stdlib.os.*;
@@ -156,33 +155,24 @@ func consume_and_join<StdoutConsumer, StderrConsumer>(
   stdout_consumer StdoutConsumer,
   stderr_consumer StderrConsumer)
 int {
-  //println("consume_and_join start");
   close_stdin(self.handle);
 
-  //println("consume_and_join a");
 
   running = true;
   while running {
-    //println("consume_and_join b");
 
     stdout_consumed_anything = false;
     stdout_consuming = true;
     while stdout_consuming {
-      //println("consume_and_join b2");
       s = self.read_stdout(1000);
-      //println("consume_and_join b3");
       if s.len() > 0 {
-        //println("consume_and_join b4");
         (&stdout_consumer)(s);
         set stdout_consumed_anything = true;
       } else {
-        //println("consume_and_join b5");
         set stdout_consuming = false;
       }
-      //println("consume_and_join b6");
     }
 
-    //println("consume_and_join c");
 
     stderr_consumed_anything = false;
     stderr_consuming = true;
@@ -196,23 +186,18 @@ int {
       }
     }
 
-    //println("consume_and_join d");
 
     if not stdout_consumed_anything and not stderr_consumed_anything and not self.alive() {
       set running = false;
     }
 
-    //println("consume_and_join e");
   }
 
-  //println("consume_and_join join");
   x = join(self);
-  //println("consume_and_join end");
   return x;
 }
 
 func print_and_join(self Subprocess) int {
-  //println("consume_and_join join");
   x = consume_and_join(
     self,
     &(stdout_chunk) => {
@@ -252,10 +237,8 @@ func capture_and_join(self Subprocess) ExecResult {
 }
 
 func join(self Subprocess) int {
-  //println("join start");
   status = join(self.handle);
   destroy(self.handle);
-  //println("join end");
   return status;
 }
 

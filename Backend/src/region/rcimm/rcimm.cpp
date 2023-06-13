@@ -12,26 +12,14 @@
 #include "../linear/linear.h"
 
 enum UnserializeFunctionParameter {
-  UNSERIALIZE_LLVM_PARAM_NEXT_GEN_PTR = 0,
-
-  UNSERIALIZE_VALE_PARAM_VALE_REGION_INSTANCE_REF = 0,
-  UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF = 1,
-
-  UNSERIALIZE_VALE_PARAM_HOST_REGION_INSTANCE_REF = 1,
-  UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF = 2,
-
-  UNSERIALIZE_VALE_PARAM_HOST_OBJECT_REF = 2,
-  UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF = 3,
+  UNSERIALIZE_PARAM_VALE_REGION_INSTANCE_REF = 0,
+  UNSERIALIZE_PARAM_HOST_REGION_INSTANCE_REF = 1,
+  UNSERIALIZE_PARAM_HOST_OBJECT_REF = 2,
 };
 
 enum FreeFunctionParameter {
-  FREE_LLVM_PARAM_NEXT_GEN_PTR = 0,
-
-  FREE_VALE_PARAM_REGION_INSTANCE_REF = 0,
-  FREE_LLVM_PARAM_REGION_INSTANCE_REF = 1,
-
-  FREE_VALE_PARAM_OBJECT_REF = 1,
-  FREE_LLVM_PARAM_OBJECT_REF = 2,
+  FREE_PARAM_REGION_INSTANCE_REF = 0,
+  FREE_PARAM_OBJECT_REF = 1,
 };
 
 void fillControlBlock(
@@ -1148,11 +1136,11 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
         auto hostRegion = globalState->getRegion(hostObjectRefMT);
 
         auto regionInstanceRef =
-            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_VALE_REGION_INSTANCE_REF));
         auto hostRegionInstanceRef =
-            toRef(hostRegion, hostRegion->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
+            toRef(hostRegion, hostRegion->getRegionRefType(), LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_HOST_REGION_INSTANCE_REF));
         auto hostObjectRef =
-            toRef(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF));
+            toRef(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_HOST_OBJECT_REF));
 
         auto valeStructRef =
             buildCallV(
@@ -1301,13 +1289,13 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
         auto valeObjectRefMT = prototype->returnType;
 
         auto regionInstanceRef =
-            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_VALE_REGION_INSTANCE_REF));
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_VALE_REGION_INSTANCE_REF));
         auto hostRegionRefMT =
             globalState->linearRegion->getRegionRefType();
         auto hostRegionInstanceRef =
-            toRef(globalState->linearRegion, hostRegionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_REGION_INSTANCE_REF));
+            toRef(globalState->linearRegion, hostRegionRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_HOST_REGION_INSTANCE_REF));
         auto hostObjectRef =
-            toLiveRef(FL(), globalState, functionState, builder, hostRegionInstanceRef, hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_LLVM_PARAM_HOST_OBJECT_REF));
+            toLiveRef(FL(), globalState, functionState, builder, hostRegionInstanceRef, hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, UNSERIALIZE_PARAM_HOST_OBJECT_REF));
 
         if (auto valeStructKind = dynamic_cast<StructKind *>(valeObjectRefMT->kind)) {
           auto hostStructKind = dynamic_cast<StructKind *>(hostObjectRefMT->kind);
@@ -1531,7 +1519,7 @@ void RCImm::defineConcreteFreeFunction(Kind* valeKind) {
                 toRef(
                     globalState->getRegion(objectRefMT),
                     objectRefMT,
-                    LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_OBJECT_REF)),
+                    LLVMGetParam(functionState->containingFuncL, FREE_PARAM_OBJECT_REF)),
                     false);
 
         if (auto structKind = dynamic_cast<StructKind *>(objectRefMT->kind)) {
@@ -1675,9 +1663,9 @@ void RCImm::defineEdgeFreeFunction(Edge* edge) {
         auto objectRefMT = structPrototype->params[1];
 
         auto regionInstanceRef =
-            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_REGION_INSTANCE_REF));
+            toRef(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, FREE_PARAM_REGION_INSTANCE_REF));
         auto objectRef =
-            toRef(globalState->getRegion(objectRefMT), objectRefMT, LLVMGetParam(functionState->containingFuncL, FREE_LLVM_PARAM_OBJECT_REF));
+            toRef(globalState->getRegion(objectRefMT), objectRefMT, LLVMGetParam(functionState->containingFuncL, FREE_PARAM_OBJECT_REF));
 
         buildCallV(
             globalState, functionState, builder, structPrototype,

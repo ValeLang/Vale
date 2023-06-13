@@ -141,6 +141,12 @@ public:
   }
 };
 
+// Alias for an integer, to keep straight the difference between an LLVM arg and a user arg.
+struct UserArgIndex { int userArgIndex; };
+
+//// Alias for an integer, to keep straight the difference between an LLVM arg and a user arg.
+//struct LlvmArgIndex { int llvmArgIndex; };
+
 class FunctionState {
 public:
   std::string containingFuncName;
@@ -151,6 +157,7 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
+  // Ptr to the "next generation number", see RPPFNG.
   std::optional<LLVMValueRef> nextGenPtrLE;
 
   FunctionState(
@@ -168,6 +175,8 @@ public:
   std::string nextBlockName() {
     return std::string("block") + std::to_string(nextBlockNumber++);
   }
+
+  LLVMValueRef getParam(UserArgIndex userArgIndex);
 };
 
 void translateFunction(

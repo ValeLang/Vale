@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdio.h>
 #include "vtest/getAStr.h"
 
 // We use incrementIntFile to get some side effects to test replayability, see AASETR.
@@ -13,7 +12,6 @@ ValeStr* vtest_runExtCommand() {
 
   ValeStr* str = vtest_getAStr();
 
-  printf("str length: %d\n", str->length);
   assert(str->length == 6);
   int diff = strncmp(str->chars, "hello!", 6);
   assert(diff == 0);

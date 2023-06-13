@@ -28,7 +28,8 @@ ValeFuncPtrLE addValeFunction(
 
   auto functionLF = LLVMAddFunction(globalState->mod, name.c_str(), functionLT);
 
-  // Now lets add the restrict/noalias attribute for that pointer.
+  // Now lets add the restrict/noalias attribute for the pointer to the next generation number.
+  // See RPPFNG.
   auto noaliasAttribute =
       LLVMCreateEnumAttribute(globalState->context, llvm::Attribute::NoAlias, 0);
   assert(noaliasAttribute);

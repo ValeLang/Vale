@@ -59,6 +59,7 @@
 // This is 0x27100000 in hex.
 // This number was chosen because it ends in zeroes either way, so it should be a bit more
 // recognizable.
+// TODO(#598): Use a random starting value.
 constexpr int FIRST_GEN = 655360000;
 
 // for convenience
@@ -1381,6 +1382,7 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     std::cout << "Running release optimizations..." << std::endl;
 
 
+    // TODO(#599): Perhaps take one of these out.
     optimize(globalState);
     optimize(globalState);
   }

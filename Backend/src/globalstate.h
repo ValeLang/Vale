@@ -51,22 +51,25 @@ public:
 
   Program* program = nullptr;
 
-  LLVMValueRef numMainArgs = nullptr;
-  LLVMValueRef mainArgs = nullptr;
+  LLVMValueRef numMainArgsLE = nullptr;
+  LLVMValueRef mainArgsLE = nullptr;
 
-  LLVMValueRef objIdCounter = nullptr;
-  LLVMValueRef liveHeapObjCounter = nullptr;
-  LLVMValueRef derefCounter = nullptr;
-  LLVMValueRef mutRcAdjustCounter = nullptr;
-  LLVMValueRef livenessCheckCounter = nullptr;
-  LLVMValueRef writeOnlyGlobal = nullptr;
-  LLVMValueRef crashGlobal = nullptr;
+  LLVMValueRef objIdCounterLE = nullptr;
+  LLVMValueRef liveHeapObjCounterLE = nullptr;
+  LLVMValueRef derefCounterLE = nullptr;
+  LLVMValueRef mutRcAdjustCounterLE = nullptr;
+  LLVMValueRef livenessCheckCounterLE = nullptr;
+  LLVMValueRef livenessPreCheckCounterLE = nullptr;
+  LLVMValueRef writeOnlyGlobalLE = nullptr;
+  LLVMValueRef crashGlobalLE = nullptr;
+  LLVMValueRef nextGenThreadGlobalIntLE = nullptr;
+//  LLVMValueRef nullLE = nullptr;
 
   LLVMTypeRef wrcTableStructLT = nullptr;
-  FuncPtrLE expandWrcTable, checkWrci, getNumWrcs;
+  RawFuncPtrLE expandWrcTable, checkWrci, getNumWrcs;
 
   LLVMTypeRef lgtTableStructLT = nullptr, lgtEntryStructLT = nullptr; // contains generation and next free
-  FuncPtrLE expandLgt, checkLgti, getNumLiveLgtEntries;
+  RawFuncPtrLE expandLgt, checkLgti, getNumLiveLgtEntries;
 
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
@@ -80,13 +83,13 @@ public:
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
-  LLVMValueRef neverPtr = nullptr;
+  LLVMValueRef neverPtrLE = nullptr;
 
 //  LLVMValueRef coroutineEntryFunc = nullptr;
 
   // These should eventually be moved into thread local storage when we do multithreading.
   // Initialized at the beginning of main, used for C FFI.
-  LLVMValueRef sideStack = nullptr;
+  LLVMValueRef sideStackLE = nullptr;
   // Used for passing arguments to wrapper functions across stack switches.
   // At some point we should just pass a pointer to a struct containing all of these.
   // We should make sure that these don't get destroyed before the coroutine wants them.
@@ -99,8 +102,8 @@ public:
 
   std::unordered_map<Edge*, LLVMValueRef, AddressHasher<Edge*>> interfaceTablePtrs;
 
-  std::unordered_map<std::string, FuncPtrLE> functions;
-  std::unordered_map<std::string, FuncPtrLE> externFunctions;
+  std::unordered_map<std::string, ValeFuncPtrLE> functions;
+  std::unordered_map<std::string, RawFuncPtrLE> externFunctions;
 
   // This is temporary, Valestrom should soon embed mutability and region into the kind for us
   // so we won't have to do this.
@@ -109,7 +112,7 @@ public:
   // These contain the extra interface methods that Backend adds to particular interfaces.
   // For example, for every immutable, Backend needs to add a serialize() method that
   // adds it to an outgoing linear buffer.
-  std::unordered_map<Prototype*, FuncPtrLE, AddressHasher<Prototype*>> extraFunctions;
+  std::unordered_map<Prototype*, ValeFuncPtrLE, AddressHasher<Prototype*>> extraFunctions;
   std::unordered_map<
       InterfaceKind*,
       std::vector<InterfaceMethod*>,
@@ -128,6 +131,8 @@ public:
   OverridesBySubstructByInterfaceMap overridesBySubstructByInterface;
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
+
+  uint64_t nextGenerationAddend = 0;
 
   UniversalRefStructLT* getUniversalRefStructLT() { return universalRefStructLT.get(); }
 
@@ -170,7 +175,7 @@ public:
     return program->getInterface(interfaceMT);
   }
 
-  FuncPtrLE lookupFunction(Prototype* prototype) {
+  ValeFuncPtrLE lookupFunction(Prototype* prototype) {
     auto iter = extraFunctions.find(prototype);
     if (iter != extraFunctions.end()) {
       return iter->second;
@@ -200,7 +205,7 @@ public:
       }
     }
     std::cerr << "Couldn't find method " << prototype->name->name << " in interface " << interfaceKindM->fullName->name << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   Weakability getKindWeakability(Kind* kind);
@@ -238,7 +243,7 @@ public:
   std::unordered_map<RegionId*, IRegion*, AddressHasher<RegionId*>> regions;
 
 
-  std::vector<FuncPtrLE> getEdgeFunctions(Edge* edge);
+  std::vector<ValeFuncPtrLE> getEdgeFunctions(Edge* edge);
 
   // Note that this returns a vector of function types, not pointers.
   // The caller may have to make them pointers.
@@ -249,7 +254,7 @@ public:
   IRegion* getRegion(Reference* referenceM);
   IRegion* getRegion(Kind* kindM);
   IRegion* getRegion(RegionId* regionId);
-  FuncPtrLE getFunction(Prototype* proto);
+  ValeFuncPtrLE getFunction(Prototype* proto);
   LLVMValueRef getInterfaceTablePtr(Edge* edge);
   LLVMValueRef getOrMakeStringConstant(const std::string& str);
 };

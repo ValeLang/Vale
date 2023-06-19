@@ -24,16 +24,40 @@
 //    Ref indexLE,
 //    Reference* resultRefM);
 
-void initializeElementAndIncrementSize(
+InBoundsLE checkIndexInBounds(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Location location,
-    Reference* elementRefM,
-    LLVMValueRef sizePtrLE,
-    LLVMValueRef elemsPtrLE,
-    Ref indexRef,
-    Ref sourceRef);
+    Reference* intRefMT,
+    Ref sizeRef,
+    LLVMValueRef indexLE,
+    const char* failMessage);
+
+InBoundsLE checkLastElementExists(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref sizeRef,
+    const char* failMessage);
+
+void checkArrayEmpty(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref sizeRef,
+    const char* failMessage);
+
+//void initializeElementAndIncrementSize(
+//    GlobalState* globalState,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Location location,
+//    Reference* elementRefM,
+//    LLVMValueRef sizePtrLE,
+//    LLVMValueRef elemsPtrLE,
+//    Ref sourceRef);
+
+struct IncrementedSize {};
 
 void initializeElementWithoutIncrementSize(
     GlobalState* globalState,
@@ -41,10 +65,10 @@ void initializeElementWithoutIncrementSize(
     LLVMBuilderRef builder,
     Location location,
     Reference* elementRefM,
-    Ref sizeRef,
     LLVMValueRef elemsPtrLE,
-    Ref indexRef,
-    Ref sourceRef);
+    InBoundsLE indexRef,
+    Ref sourceRef,
+    IncrementedSize incrementedSize);
 
 Ref swapElement(
     GlobalState* globalState,
@@ -52,12 +76,9 @@ Ref swapElement(
     LLVMBuilderRef builder,
     Location location,
     Reference* elementRefM,
-    Ref sizeLE,
     LLVMValueRef arrayPtrLE,
-    Ref indexLE,
+    InBoundsLE indexLE,
     Ref sourceLE);
-
-
 
 LoadResult loadElement(
     GlobalState* globalState,
@@ -65,8 +86,7 @@ LoadResult loadElement(
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
     Reference* elementRefM,
-    Ref sizeRef,
-    Ref indexRef);
+    InBoundsLE indexLE);
 
 void intRangeLoop(
     GlobalState* globalState,
@@ -82,11 +102,19 @@ void intRangeLoopV(
     Ref sizeRef,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 
+void intRangeLoopReverse(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* intRefMT,
+    LLVMValueRef sizeLE,
+    std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder);
+
 void intRangeLoopReverseV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Int* innt,
+    Reference* intRefMT,
     Ref sizeRef,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 
@@ -119,7 +147,72 @@ void storeInnerArrayMember(
     LLVMBuilderRef builder,
     LLVMTypeRef elementLT,
     LLVMValueRef elemsPtrLE,
-    LLVMValueRef indexLE,
+    InBoundsLE indexLE,
     LLVMValueRef sourceLE);
+
+LoadResult loadElementFromSSAInner(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* elementType,
+    InBoundsLE indexLE,
+    LLVMValueRef arrayElementsPtrLE);
+
+Ref getRuntimeSizedArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayRefLE);
+
+void regularInitializeElementInSSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    KindStructs* kindStructs,
+    Reference* ssaRefMT,
+    Reference* elementType,
+    LiveRef arrayRef,
+    InBoundsLE indexLE,
+    Ref elementRef);
+
+LoadResult regularloadElementFromSSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ssaRefMT,
+    Reference* elementType,
+    LiveRef arrayRef,
+    InBoundsLE indexLE,
+    KindStructs* kindStructs);
+
+IncrementedSize incrementRSASize(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* rsaRefMT,
+    WrapperPtrLE rsaWPtrLE);
+
+void initializeElementInRSAWithoutIncrementSize(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool capacityExists,
+    RuntimeSizedArrayT* rsaMT,
+    Reference* rsaRefMT,
+    WrapperPtrLE rsaWPtrLE,
+    InBoundsLE indexLE,
+    Ref elementRef,
+    IncrementedSize);
+
+LoadResult regularLoadElementFromRSAWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    KindStructs* kindStructs,
+    bool capacityExists,
+    Reference* rsaRefMT,
+    Reference* elementType,
+    LiveRef arrayRef,
+    InBoundsLE indexRef);
 
 #endif

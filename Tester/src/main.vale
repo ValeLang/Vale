@@ -7,6 +7,7 @@ import stdlib.flagger.*;
 struct TestSuite {
   cwd Path;
   verbose bool;
+  flares bool;
   valec_path Path;
   common_build_args List<str>;
   test_filters List<str>;
@@ -115,7 +116,13 @@ exported func main() int {
           FLAG_BOOL(),
           "Print more progress details.",
           "true",
-          "Print more progress details.")];
+          "Print more progress details."),
+        Flag(
+          "--flares",
+          FLAG_BOOL(),
+          "Add flare output to stderr.",
+          "false",
+          "Add flare output to stderr.")];
   parsed_flags = flags.parse_all_flags(all_args);
 
 
@@ -127,6 +134,7 @@ exported func main() int {
   if verbose {
     println("Tester processing flags");
   }
+  flares = parsed_flags.get_bool_flag("--flares", false);
 
   max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
 
@@ -189,6 +197,7 @@ exported func main() int {
       TestSuite(
           cwd,
           verbose,
+          flares,
           valec_path,
           common_build_args,
           test_filters,
@@ -267,7 +276,7 @@ exported func main() int {
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
-    suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region, false, None<str>());
+    suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--force_all_known_live", "true", "--elide_checks_for_known_live", "false"]), region, false, None<str>());
   }
 
   //if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -509,8 +518,12 @@ Subprocess {
   build_args.add(region);
   build_args.add("--llvm_ir");
   build_args.add("true");
-  //build_args.add("--flares");
-  //build_args.add("true");
+  build_args.add("--opt_level");
+  build_args.add("O0");
+  if suite.flares {
+    build_args.add("--flares");
+    build_args.add("true");
+  }
   //build_args.add("--asan");
   //build_args.add("true");
   //build_args.add("--census");

@@ -24,21 +24,21 @@ public:
 
   LLVMTypeRef translatePrimitive(GlobalState* globalState, Reference* referenceM) {
     if (auto innt = dynamic_cast<Int*>(referenceM->kind)) {
-      assert(referenceM->ownership == Ownership::SHARE);
+      assert(referenceM->ownership == Ownership::MUTABLE_SHARE);
       return LLVMIntTypeInContext(globalState->context, innt->bits);
     } else if (auto vooid = dynamic_cast<Void*>(referenceM->kind)) {
-      assert(referenceM->ownership == Ownership::SHARE);
+      assert(referenceM->ownership == Ownership::MUTABLE_SHARE);
       return LLVMIntTypeInContext(globalState->context, VOID_INT_BITS);
     } else if (dynamic_cast<Bool*>(referenceM->kind) != nullptr) {
-      assert(referenceM->ownership == Ownership::SHARE);
+      assert(referenceM->ownership == Ownership::MUTABLE_SHARE);
       return LLVMInt1TypeInContext(globalState->context);
     } else if (dynamic_cast<Float*>(referenceM->kind) != nullptr) {
-      assert(referenceM->ownership == Ownership::SHARE);
+      assert(referenceM->ownership == Ownership::MUTABLE_SHARE);
       return LLVMDoubleTypeInContext(globalState->context);
     } else if (dynamic_cast<Never*>(referenceM->kind) != nullptr) {
       return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   }
 };

@@ -62,7 +62,7 @@ int64_t readI64(MetalCache* cache, const json& name) {
     return l;
   } else {
     std::cerr << "Couldn't read number in json!" << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
     exit(1);
   }
 }
@@ -170,7 +170,7 @@ Kind* readKind(MetalCache* cache, const json& kind) {
     return readInterfaceKind(cache, kind);
   } else {
     std::cerr << "Unrecognized kind: " << kind["__type"] << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -196,7 +196,7 @@ Mutability readMutability(const json& mutability) {
   } else if (mutability["__type"].get<std::string>() == "Immutable") {
     return Mutability::IMMUTABLE;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -207,7 +207,7 @@ Variability readVariability(const json& variability) {
   } else if (variability["__type"].get<std::string>() == "Final") {
     return Variability::FINAL;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -216,16 +216,24 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
-  } else if (ownership["__type"].get<std::string>() == "Pointer") {
-    return Ownership::BORROW;
-  } else if (ownership["__type"].get<std::string>() == "Borrow") {
-    return Ownership::BORROW;
+  } else if (ownership["__type"].get<std::string>() == "Borrow") { // To work with old frontend
+    return Ownership::MUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "Share") { // To work with old frontend
+    return Ownership::MUTABLE_SHARE;
+  } else if (ownership["__type"].get<std::string>() == "ImmutableBorrow") {
+    return Ownership::IMMUTABLE_BORROW;
+//    return Ownership::MUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "MutableBorrow") {
+    return Ownership::MUTABLE_BORROW;
+  } else if (ownership["__type"].get<std::string>() == "ImmutableShare") {
+    return Ownership::IMMUTABLE_SHARE;
+//    return Ownership::MUTABLE_SHARE;
+  } else if (ownership["__type"].get<std::string>() == "MutableShare") {
+    return Ownership::MUTABLE_SHARE;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
     return Ownership::WEAK;
-  } else if (ownership["__type"].get<std::string>() == "Share") {
-    return Ownership::SHARE;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -237,7 +245,7 @@ Location readLocation(MetalCache* cache, const json& location) {
   } else if (location["__type"].get<std::string>() == "Yonder") {
     return Location::YONDER;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -274,18 +282,14 @@ Local* readLocal(MetalCache* cache, const json& local) {
   assert(local["__type"] == "Local");
   auto varId = readVariableId(cache, local["id"]);
   auto ref = readReference(cache, local["type"]);
-  bool keepAlive = false;//local["keepAlive"]; // DO NOT SUBMIT remove everywhere
 
   return makeIfNotPresent(
       &makeIfNotPresent(
-          &makeIfNotPresent(
-              &cache->locals,
-              varId,
-              [&](){ return MetalCache::LocalByKeepAliveByReferenceMap (0, cache->addressNumberer->makeHasher<Reference*>()); }),
-          ref,
-          [&](){ return MetalCache::LocalByKeepAliveMap(); }),
-      keepAlive,
-      [&](){ return new Local(varId, ref, keepAlive); });
+          &cache->locals,
+          varId,
+          [&](){ return MetalCache::LocalByReferenceMap (0, cache->addressNumberer->makeHasher<Reference*>()); }),
+      ref,
+      [&](){ return new Local(varId, ref); });
 }
 
 Expression* readExpression(MetalCache* cache, const json& expression) {
@@ -334,7 +338,21 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["resultType"]),
         readName(cache, expression["memberName"])->name);
   } else if (type == "Discard") {
-    return new Discard(
+      return new Discard(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceResultType"]));
+  } else if (type == "Mutabilify") {
+      return new Mutabilify(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceType"]),
+              readReference(cache, expression["resultType"]));
+  } else if (type == "Immutabilify") {
+      return new Immutabilify(
+              readExpression(cache, expression["sourceExpr"]),
+              readReference(cache, expression["sourceType"]),
+              readReference(cache, expression["resultType"]));
+  } else if (type == "PreCheckBorrow") {
+    return new PreCheckBorrow(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceResultType"]));
   } else if (type == "Argument") {
@@ -404,6 +422,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readArray(cache, expression["localTypes"], readReference),
         readArray(cache, expression["localIndices"], readLocal),
         readArray(cache, expression["localsKnownLives"], [](MetalCache*, const json& j) -> bool { return j; }));
+  } else if (type == "DestroyStaticSizedArrayIntoLocals") {
+      return new DestroyStaticSizedArrayIntoLocals(
+          readExpression(cache, expression["arrayExpr"]),
+          readReference(cache, expression["arrayType"]),
+          readArray(cache, expression["localTypes"], readReference),
+          readArray(cache, expression["localIndices"], readLocal));
   } else if (type == "MemberLoad") {
     return new MemberLoad(
         readExpression(cache, expression["structExpr"]),
@@ -580,7 +604,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readInterfaceKind(cache, expression["resultResultKind"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 

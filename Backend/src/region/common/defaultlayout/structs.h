@@ -30,7 +30,7 @@ public:
   void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
-      std::vector<FuncPtrLE> functions);
+      std::vector<ValeFuncPtrLE> functions);
   void declareInterface(InterfaceKind* interface, Weakability weakable);
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL);
   void declareStaticSizedArray(StaticSizedArrayT* staticSizedArrayMT, Weakability weakable);
@@ -158,12 +158,12 @@ public:
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr);
 
-  // See CRCISFAORC for why we don't take in a mutability.
-  // Strong means owning or borrow or shared; things that control the lifetime.
-  LLVMValueRef getStrongRcFromControlBlockPtr(
-      LLVMBuilderRef builder,
-      Reference* refM,
-      ControlBlockPtrLE controlBlockPtr);
+//  // See CRCISFAORC for why we don't take in a mutability.
+//  // Strong means owning or borrow or shared; things that control the lifetime.
+//  LLVMValueRef getStrongRcFromControlBlockPtr(
+//      LLVMBuilderRef builder,
+//      Reference* refM,
+//      ControlBlockPtrLE controlBlockPtr);
 
   LLVMValueRef downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE);
 
@@ -185,6 +185,10 @@ public:
     return stringWrapperStructL;
   }
 
+  WrapperPtrLE makeWrapperPtrWithoutChecking(
+      Reference* referenceM,
+      LLVMValueRef ptrLE);
+
 private:
   ControlBlockPtrLE makeControlBlockPtr(
       AreaAndFileAndLine checkerAFL,
@@ -199,13 +203,6 @@ private:
       LLVMBuilderRef builder,
       Kind* kindM,
       LLVMValueRef controlBlockPtrLE);
-
-  WrapperPtrLE makeWrapperPtrWithoutChecking(
-      AreaAndFileAndLine checkerAFL,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* referenceM,
-      LLVMValueRef ptrLE);
 
   ControlBlockPtrLE getConcreteControlBlockPtrWithoutChecking(
       AreaAndFileAndLine from,

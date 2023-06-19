@@ -21,13 +21,13 @@ LLVMValueRef processFlag(
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
 
   auto zerothArgIndexLE = constI64LE(globalState, 0);
-  auto zerothArgPtrLE = LLVMBuildGEP2(builder, int8PtrPtrLT, mainArgsLE, &zerothArgIndexLE, 1, "zerothArgPtr");
+  auto zerothArgPtrLE = LLVMBuildInBoundsGEP2(builder, int8PtrPtrLT, mainArgsLE, &zerothArgIndexLE, 1, "zerothArgPtr");
   auto zerothArgLE = LLVMBuildLoad2(builder, int8PtrLT, zerothArgPtrLE, "zerothArg");
   auto firstArgIndexLE = constI64LE(globalState, 1);
-  auto firstArgPtrLE = LLVMBuildGEP2(builder, int8PtrPtrLT, mainArgsLE, &firstArgIndexLE, 1, "firstArgPtr");
+  auto firstArgPtrLE = LLVMBuildInBoundsGEP2(builder, int8PtrPtrLT, mainArgsLE, &firstArgIndexLE, 1, "firstArgPtr");
   auto firstArgLE = LLVMBuildLoad2(builder, int8PtrLT, firstArgPtrLE, "firstArg");
   auto secondArgIndexLE = constI64LE(globalState, 2);
-  auto ptrToSecondMainArgLE = LLVMBuildGEP2(builder, int8PtrPtrLT, mainArgsLE, &secondArgIndexLE, 1, "");
+  auto ptrToSecondMainArgLE = LLVMBuildInBoundsGEP2(builder, int8PtrPtrLT, mainArgsLE, &secondArgIndexLE, 1, "");
   auto secondMainArgLE = LLVMBuildLoad2(builder, int8PtrLT, ptrToSecondMainArgLE, "");
   assert(LLVMTypeOf(secondMainArgLE) == int8PtrLT);
 
@@ -39,7 +39,7 @@ LLVMValueRef processFlag(
           LLVMBuilderRef builder) {
         buildFlare(FL(), globalState, functionState, builder);
 
-        buildFlare(FL(), globalState, functionState, builder, "args: ", globalState->getOrMakeStringConstant(flagName), ", ", firstArgLE, ", ", constI64LE(globalState, flagName.size()));
+        buildFlare(FL(), globalState, functionState, builder, "arg ", globalState->getOrMakeStringConstant(flagName), ": ", firstArgLE, ", ", constI64LE(globalState, flagName.size()));
         auto stringsDifferentI8LE =
             buildMaybeNeverCall(
                 globalState, builder, globalState->externs->strncmp, {

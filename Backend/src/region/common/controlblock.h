@@ -10,12 +10,12 @@
 class GlobalState;
 class FunctionState;
 
-constexpr int GENERATION_NUM_BITS = 32;
-
 enum class ControlBlockMember {
   UNUSED_32B,
   LGTI_32B,
+  GENERATION,
   GENERATION_32B,
+  GENERATION_64B,
   WRCI_32B,
   STRONG_RC_32B,
   CENSUS_TYPE_STR,
@@ -41,7 +41,7 @@ public:
         return i;
       }
     }
-    assert(false);
+    { assert(false); throw 1337; }
   }
 
   void addMember(ControlBlockMember member) {

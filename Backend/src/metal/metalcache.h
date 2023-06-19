@@ -90,19 +90,20 @@ public:
     mutRegionId = getRegionId(builtinPackageCoord, "mut");
 
     i32 = getInt(rcImmRegionId, 32);
-    i32Ref = getReference(Ownership::SHARE, Location::INLINE, i32);
+    i32Ref = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, i32);
     i64 = getInt(rcImmRegionId, 64);
-    i64Ref = getReference(Ownership::SHARE, Location::INLINE, i64);
+    i64Ref = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, i64);
     boool = getBool(rcImmRegionId);
-    boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
+    boolRef = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, boool);
     flooat = getFloat(rcImmRegionId);
-    floatRef = getReference(Ownership::SHARE, Location::INLINE, flooat);
+    floatRef = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, flooat);
     str = getStr(rcImmRegionId);
-    strRef = getReference(Ownership::SHARE, Location::YONDER, str);
+    mutStrRef = getReference(Ownership::MUTABLE_SHARE, Location::YONDER, str);
+    immStrRef = getReference(Ownership::IMMUTABLE_SHARE, Location::YONDER, str);
     never = getNever(rcImmRegionId);
-    neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
+    neverRef = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, never);
     vooid = getVoid(rcImmRegionId);
-    voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
+    voidRef = getReference(Ownership::MUTABLE_SHARE, Location::INLINE, vooid);
 //    regionKind = getStructKind(getName("__Region"));
   }
 
@@ -264,10 +265,9 @@ public:
   std::unordered_map<Prototype*, std::unordered_map<int, InterfaceMethod*>, AddressHasher<Prototype*>> interfaceMethods;
 
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  using LocalByKeepAliveMap = std::unordered_map<bool, Local*>;
-  using LocalByKeepAliveByReferenceMap = std::unordered_map<Reference*, LocalByKeepAliveMap, AddressHasher<Reference*>>;
-  using LocalByKeepAliveByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByKeepAliveByReferenceMap, AddressHasher<VariableId*>>;
-  LocalByKeepAliveByReferenceByVariableIdMap locals;
+  using LocalByReferenceMap = std::unordered_map<Reference*, Local*, AddressHasher<Reference*>>;
+  using LocalByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByReferenceMap, AddressHasher<VariableId*>>;
+  LocalByReferenceByVariableIdMap locals;
 
   RegionId* rcImmRegionId = nullptr;
   RegionId* linearRegionId = nullptr;
@@ -285,7 +285,8 @@ public:
   Float* flooat = nullptr;
   Reference* floatRef = nullptr;
   Str* str = nullptr;
-  Reference* strRef = nullptr;
+  Reference* immStrRef = nullptr;
+  Reference* mutStrRef = nullptr;
   Never* never = nullptr;
   Reference* neverRef = nullptr;
   Void* vooid = nullptr;

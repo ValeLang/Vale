@@ -63,6 +63,7 @@ int64_t valecutils_launch_command(valecutils_StrArray* chain, ValeStr* cwd_str) 
 ValeStr* valecutils_read_stdout(int64_t cmd, long bytes) {
   ValeStr* out = ValeStrNew(bytes+1); 
   FILE* stdout_handle = subprocess_stdout((struct subprocess_s*)cmd); 
+
   long read_len = read_into_buffer(out->chars, bytes, stdout_handle);
   out->chars[bytes] = '\0'; 
   out->length = read_len;

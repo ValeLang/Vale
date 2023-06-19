@@ -40,16 +40,17 @@ Ref translateStaticArrayFromCallable(
 //            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     // If we get here, arrayLT is a pointer to our counted struct.
-    auto ssaRef =
+    auto ssaLiveRef =
         globalState->getRegion(staticArrayFromCallable->arrayRefType)->constructStaticSizedArray(
             makeVoidRef(globalState),
             functionState,
             builder,
             staticArrayFromCallable->arrayRefType,
             staticSizedArrayMT);
+    auto ssaRef = toRef(globalState, arrayRefType, ssaLiveRef);
 
     buildFlare(FL(), globalState, functionState, builder);
     fillStaticSizedArrayFromCallable(
@@ -64,7 +65,7 @@ Ref translateStaticArrayFromCallable(
         staticArrayFromCallable->generatorMethod,
         generatorRef,
         sizeRef,
-        ssaRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
+        ssaLiveRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
     buildFlare(FL(), globalState, functionState, builder);
 
     globalState->getRegion(staticArrayFromCallable->arrayRefType)

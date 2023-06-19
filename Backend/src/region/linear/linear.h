@@ -12,6 +12,8 @@
 
 class Linear : public IRegion {
 public:
+  using IRegion::checkValidReference;
+
   Linear(GlobalState* globalState_);
 
 
@@ -104,7 +106,7 @@ public:
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* sourceMT,
-      Ref sourceRef) override;
+      LiveRef sourceRef) override;
 
 
   void noteWeakableDestroyed(
@@ -118,8 +120,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
-      Ref structRef,
-      bool structKnownLive,
+      LiveRef structRef,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetMemberType,
@@ -130,8 +131,7 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
-      Ref structRef,
-      bool structKnownLive,
+      LiveRef structRef,
       int memberIndex,
       const std::string& memberName,
       Reference* newMemberRefMT,
@@ -168,8 +168,9 @@ public:
   LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Reference* refMT,
       Ref regionInstanceRef,
-      Ref ref) override;
+      LiveRef ref) override;
 
   Ref allocate(
       Ref regionInstanceRef,
@@ -198,9 +199,35 @@ public:
       Ref weakRefLE,
       bool weakRefKnownLive) override;
 
+  LiveRef checkRefLive(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      bool refKnownLive) override;
+
+    LiveRef wrapToLiveRef(
+        AreaAndFileAndLine checkerAFL,
+        FunctionState* functionState,
+        LLVMBuilderRef builder,
+        Ref regionInstanceRef,
+        Reference* refMT,
+        LLVMValueRef ref) override;
+
+  LiveRef preCheckBorrow(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refMT,
+      Ref ref,
+      bool refKnownLive) override;
+
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  Ref constructStaticSizedArray(
+  LiveRef constructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -220,16 +247,14 @@ public:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* rsaRefMT,
-      Ref arrayRef,
-      bool arrayKnownLive) override;
+      LiveRef arrayRef) override;
 
   Ref getRuntimeSizedArrayCapacity(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* rsaRefMT,
-      Ref arrayRef,
-      bool arrayKnownLive) override;
+      LiveRef arrayRef) override;
 
   LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
@@ -249,9 +274,11 @@ public:
   Ref upgradeLoadResultToRefWithTargetOwnership(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* sourceType,
       Reference* targetType,
-      LoadResult sourceRef) override;
+      LoadResult sourceRef,
+      bool resultKnownLive) override;
 
   void checkInlineStructType(
       FunctionState* functionState,
@@ -265,18 +292,16 @@ public:
       Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayKnownLive,
-      Ref indexRef) override;
+      LiveRef arrayRef,
+      InBoundsLE indexLE) override;
   LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayKnownLive,
-      Ref indexRef) override;
+      LiveRef arrayRef,
+      InBoundsLE indexLE) override;
 
 
   Ref storeElementInRSA(
@@ -284,9 +309,8 @@ public:
       LLVMBuilderRef builder,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayKnownLive,
-      Ref indexRef,
+      LiveRef arrayRef,
+      InBoundsLE indexLE,
       Ref elementRef) override;
 
 
@@ -295,10 +319,10 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refMT,
-      Ref ref) override;
+      LiveRef ref) override;
 
 
-  Ref constructRuntimeSizedArray(
+  LiveRef constructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -313,9 +337,8 @@ public:
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef,
+      LiveRef arrayRef,
+      InBoundsLE sizeLE,
       Ref elementRef) override;
 
   Ref popRuntimeSizedArrayNoBoundsCheck(
@@ -324,9 +347,8 @@ public:
       Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) override;
+      LiveRef arrayRef,
+      InBoundsLE indexLE) override;
 
   void initializeElementInSSA(
       FunctionState* functionState,
@@ -334,9 +356,8 @@ public:
       Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef,
+      LiveRef arrayRef,
+      InBoundsLE indexLE,
       Ref elementRef) override;
 
   Ref deinitializeElementFromSSA(
@@ -344,9 +365,8 @@ public:
       LLVMBuilderRef builder,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) override;
+      LiveRef arrayRef,
+      InBoundsLE indexLE) override;
 
   Ref mallocStr(
       Ref regionInstanceRef,
@@ -363,7 +383,7 @@ public:
       LLVMValueRef sourceCharsPtrLE,
       Ref dryRunBoolRef);
 
-  Ref innerConstructStaticSizedArray(
+  LiveRef innerConstructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -374,8 +394,9 @@ public:
   LLVMValueRef getStringLen(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Reference* refMT,
       Ref regionInstanceRef,
-      Ref ref) override;
+      LiveRef ref) override;
 
   std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
 
@@ -417,13 +438,13 @@ public:
       Reference* sourceRefMT,
       Ref sourceRef) override;
 
-  LoadResult loadMember(
+  LoadResult loadMember2(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Reference* structRefMT,
       LLVMTypeRef structInnerLT,
-      Ref structRef,
+      LiveRef structRef,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetType,
@@ -452,12 +473,12 @@ public:
   InterfaceKind* unlinearizeInterfaceKind(InterfaceKind* kindMT);
   StructKind* linearizeStructKind(StructKind* kindMT);
   InterfaceKind* linearizeInterfaceKind(InterfaceKind* kindMT);
-  Reference* linearizeReference(Reference* immRcRefMT);
-  Reference* unlinearizeReference(Reference* hostRefMT);
+  Reference* linearizeReference(Reference* immRcRefMT, bool mut);
+  Reference* unlinearizeReference(Reference* hostRefMT, bool mut);
 
   Weakability getKindWeakability(Kind* kind) override;
 
-  FuncPtrLE getInterfaceMethodFunctionPtr(
+  ValeFuncPtrLE getInterfaceMethodFunctionPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* virtualParamMT,
@@ -493,6 +514,24 @@ public:
       LLVMValueRef useOffsetsLE,
       LLVMValueRef bufferBeginOffsetLE);
 
+    Ref mutabilify(
+        AreaAndFileAndLine checkerAFL,
+        FunctionState* functionState,
+        LLVMBuilderRef builder,
+        Ref regionInstanceRef,
+        Reference* refMT,
+        Ref ref,
+        Reference* targetRefMT) override;
+
+    LiveRef immutabilify(
+        AreaAndFileAndLine checkerAFL,
+        FunctionState* functionState,
+        LLVMBuilderRef builder,
+        Ref regionInstanceRef,
+        Reference* refMT,
+        Ref ref,
+        Reference* targetRefMT) override;
+
 private:
   void declareConcreteSerializeFunction(Kind* valeKindM);
   void defineConcreteSerializeFunction(Kind* valeKindM);
@@ -517,7 +556,7 @@ private:
       LLVMValueRef structRefLE,
       LLVMValueRef edgeNumberLE);
 
-  Ref innerConstructRuntimeSizedArray(
+  LiveRef innerConstructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -539,7 +578,7 @@ private:
       // If it's an array, this will be the number of elements.
       LLVMValueRef lenIntLE);
 
-  Ref innerAllocate(
+  LiveRef innerAllocate(
       Ref regionInstanceRef,
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -548,7 +587,7 @@ private:
 
   InterfaceMethod* getSerializeInterfaceMethod(Kind* valeKind);
 
-  Ref callSerialize(
+  LiveRef callSerialize(
       FunctionState *functionState,
       LLVMBuilderRef builder,
       Kind* valeKind,
@@ -560,13 +599,14 @@ private:
   // Does the entire serialization process: measuring the length, allocating a buffer, and
   // serializing into it.
   // Returns the pointer to it and the size.
-  std::pair<Ref, Ref> topLevelSerialize(
+  std::pair<LiveRef, Ref> topLevelSerialize(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       Ref sourceRegionInstanceRef,
       Kind* valeKind,
-      Ref ref);
+      Reference* readonlyRefMT,
+      Ref readonlyRef);
 
 public:
   LLVMValueRef getRegionInstanceDestinationBufferStartPtr(
@@ -629,7 +669,7 @@ private:
       LLVMBuilderRef builder,
       Ref regionInstanceRef);
 
-  Ref getDestinationRef(
+  LiveRef getDestinationRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
@@ -682,7 +722,8 @@ private:
 //  Reference* rootMetadataRefMT = nullptr;
 
   Str* linearStr = nullptr;
-  Reference* linearStrRefMT = nullptr;
+  Reference* mutLinearStrRefMT = nullptr;
+  Reference* immLinearStrRefMT = nullptr;
 };
 
 #endif

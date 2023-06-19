@@ -157,8 +157,10 @@ func consume_and_join<StdoutConsumer, StderrConsumer>(
 int {
   close_stdin(self.handle);
 
+
   running = true;
   while running {
+
     stdout_consumed_anything = false;
     stdout_consuming = true;
     while stdout_consuming {
@@ -170,6 +172,7 @@ int {
         set stdout_consuming = false;
       }
     }
+
 
     stderr_consumed_anything = false;
     stderr_consuming = true;
@@ -183,12 +186,15 @@ int {
       }
     }
 
+
     if not stdout_consumed_anything and not stderr_consumed_anything and not self.alive() {
       set running = false;
     }
+
   }
 
-  return join(self);
+  x = join(self);
+  return x;
 }
 
 func print_and_join(self Subprocess) int {

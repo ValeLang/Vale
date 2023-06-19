@@ -68,7 +68,7 @@ Ref translateIf(
       branchUnstackifiedParentLocalIds = thenUnstackifiedParentLocalIds;
     } else if (elseContinues) {
       branchUnstackifiedParentLocalIds = elseUnstackifiedParentLocalIds;
-    } else assert(false);
+    } else { assert(false); throw 1337; }
   }
 
   for (auto childUnstackifiedParentLocalId : branchUnstackifiedParentLocalIds) {

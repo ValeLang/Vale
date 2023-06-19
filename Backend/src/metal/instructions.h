@@ -697,7 +697,19 @@ public:
 class DestroyStaticSizedArrayIntoLocals : public Expression {
 public:
   Expression* arrayExpr;
-  Expression* consumerExpr;
+  Reference* arrayType;
+  std::vector<Reference*> localTypes;
+  std::vector<Local*> localIndices;
+
+  DestroyStaticSizedArrayIntoLocals(
+    Expression* arrayExpr_,
+    Reference* arrayType_,
+    std::vector<Reference*> localTypes_,
+    std::vector<Local*> localIndices_) :
+      arrayExpr(arrayExpr_),
+      arrayType(arrayType_),
+      localTypes(localTypes_),
+      localIndices(localIndices_) {}
 };
 
 class DestroyImmRuntimeSizedArray : public Expression {
@@ -841,6 +853,35 @@ public:
   Reference* sourceResultType;
 
   Discard(Expression* sourceExpr_, Reference* sourceResultType_) :
+      sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
+};
+
+class Mutabilify : public Expression {
+public:
+    Expression* sourceExpr;
+    Reference* sourceType;
+    Reference* resultType;
+
+    Mutabilify(Expression* sourceExpr_, Reference* sourceType_, Reference* resultType_) :
+        sourceExpr(sourceExpr_), sourceType(sourceType_), resultType(resultType_) {}
+};
+
+class Immutabilify : public Expression {
+public:
+    Expression* sourceExpr;
+    Reference* sourceType;
+    Reference* resultType;
+
+    Immutabilify(Expression* sourceExpr_, Reference* sourceType_, Reference* resultType_) :
+            sourceExpr(sourceExpr_), sourceType(sourceType_), resultType(resultType_) {}
+};
+
+class PreCheckBorrow : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* sourceResultType;
+
+  PreCheckBorrow(Expression* sourceExpr_, Reference* sourceResultType_) :
       sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
 };
 

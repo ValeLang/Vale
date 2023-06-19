@@ -42,12 +42,12 @@ std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionPointerTypes(Interface
   return interfaceFunctionsLT;
 }
 
-std::vector<FuncPtrLE> GlobalState::getEdgeFunctions(Edge* edge) {
+std::vector<ValeFuncPtrLE> GlobalState::getEdgeFunctions(Edge* edge) {
   auto interfaceM = program->getInterface(edge->interfaceName);
 
   assert(edge->structPrototypesByInterfaceMethod.size() == interfaceM->methods.size());
 
-  std::vector<FuncPtrLE> edgeFunctionsL;
+  std::vector<ValeFuncPtrLE> edgeFunctionsL;
 
   {
     auto overridesBySubstructI = overridesBySubstructByInterface.find(edge->interfaceName);
@@ -137,11 +137,11 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
 //  } else if (regionId == metalCache->resilientV4RegionId) {
 //    return resilientV4Region;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
-FuncPtrLE GlobalState::getFunction(Prototype* prototype) {
+ValeFuncPtrLE GlobalState::getFunction(Prototype* prototype) {
   auto functionIter = functions.find(prototype->name->name);
   if (functionIter != functions.end()) {
     return functionIter->second;
@@ -152,7 +152,7 @@ FuncPtrLE GlobalState::getFunction(Prototype* prototype) {
     return extraFunctionIter->second;
   }
 
-  assert(false);
+  { assert(false); throw 1337; }
 }
 
 LLVMValueRef GlobalState::getInterfaceTablePtr(Edge* edge) {
@@ -178,13 +178,13 @@ LLVMValueRef GlobalState::getOrMakeStringConstant(const std::string& str) {
 }
 
 Ref GlobalState::constI64(int64_t x) {
-  return wrap(getRegion(metalCache->i64Ref), metalCache->i64Ref, constI64LE(this, x));
+  return toRef(getRegion(metalCache->i64Ref), metalCache->i64Ref, constI64LE(this, x));
 }
 Ref GlobalState::constI32(int32_t x) {
-  return wrap(getRegion(metalCache->i32Ref), metalCache->i32Ref, constI32LE(this, x));
+  return toRef(getRegion(metalCache->i32Ref), metalCache->i32Ref, constI32LE(this, x));
 }
 Ref GlobalState::constI1(bool b) {
-  return wrap(getRegion(metalCache->boolRef), metalCache->boolRef, constI1LE(this, b));
+  return toRef(getRegion(metalCache->boolRef), metalCache->boolRef, constI1LE(this, b));
 }
 Ref GlobalState::buildAdd(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
   auto intMT = metalCache->i32Ref;
@@ -217,7 +217,7 @@ Name* GlobalState::getKindName(Kind* kind) {
     return ssaMT->name;
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     return rsaMT->name;
-  } else assert(false);
+  } else { assert(false); throw 1337; }
   return nullptr;
 }
 

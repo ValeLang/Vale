@@ -6,19 +6,34 @@
 #include "../globalstate.h"
 #include "../function/function.h"
 
+LLVMValueRef adjustCounterV(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Int* innt,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount,
+    bool atomic);
+
 LLVMValueRef adjustCounter(
+    LLVMBuilderRef builder,
+    LLVMTypeRef type,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount,
+    bool atomic);
+
+LLVMValueRef adjustCounterVReturnOld(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Int* innt,
     LLVMValueRef counterPtrLE,
     int adjustAmount);
 
+
 LLVMValueRef adjustCounterReturnOld(
-    GlobalState* globalState,
     LLVMBuilderRef builder,
-    Int* innt,
+    LLVMTypeRef type,
     LLVMValueRef counterPtrLE,
-    int adjustAmount);
+    int64_t adjustAmount);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);

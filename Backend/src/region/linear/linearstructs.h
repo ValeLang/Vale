@@ -28,7 +28,7 @@ public:
   void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
-      std::vector<FuncPtrLE> functions);
+      std::vector<ValeFuncPtrLE> functions);
   void declareInterface(InterfaceKind* interface);
   void defineInterface(InterfaceKind* interface);
   void declareStaticSizedArray(

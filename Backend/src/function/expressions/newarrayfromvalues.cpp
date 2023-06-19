@@ -16,6 +16,8 @@ Ref translateNewArrayFromValues(
     BlockState* blockState,
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues) {
+  auto arrayType = newArrayFromValues->arrayRefType;
+
 
   auto elementsLE =
       translateExpressions(
@@ -38,10 +40,10 @@ Ref translateNewArrayFromValues(
 //            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
-    assert(false);
+    { assert(false); throw 1337; }
   } else {
     // If we get here, arrayLT is a pointer to our counted struct.
-    auto resultLE =
+    auto resultRef =
         globalState->getRegion(newArrayFromValues->arrayRefType)->constructStaticSizedArray(
             makeVoidRef(globalState),
             functionState,
@@ -55,10 +57,8 @@ Ref translateNewArrayFromValues(
         arrayRegionInstanceRef,
         newArrayFromValues->arrayRefType,
         staticSizedArrayMT,
-        resultLE,
+        resultRef,
         elementsLE);
-    globalState->getRegion(newArrayFromValues->arrayRefType)
-        ->checkValidReference(FL(), functionState, builder, true, newArrayFromValues->arrayRefType, resultLE);
-    return resultLE;
+    return toRef(globalState, newArrayFromValues->arrayRefType, resultRef);
   }
 }

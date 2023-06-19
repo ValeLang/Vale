@@ -45,7 +45,7 @@ public:
     if (maybeParentBlockState) {
       return maybeParentBlockState->getLocalAddr(varId, expectValid);
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   }
 
@@ -107,7 +107,7 @@ public:
       if (unstackifiedLocalIds.count(localId) == 0) {
         std::cerr << "Un-unstackified local: " << localId->height
             << localId->maybeName << std::endl;
-        assert(false);
+        { assert(false); throw 1337; }
       }
     }
   }
@@ -141,6 +141,12 @@ public:
   }
 };
 
+// Alias for an integer, to keep straight the difference between an LLVM arg and a user arg.
+struct UserArgIndex { int userArgIndex; };
+
+//// Alias for an integer, to keep straight the difference between an LLVM arg and a user arg.
+//struct LlvmArgIndex { int llvmArgIndex; };
+
 class FunctionState {
 public:
   std::string containingFuncName;
@@ -151,33 +157,39 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
+  // Ptr to the "next generation number", see RPPFNG.
+  std::optional<LLVMValueRef> nextGenPtrLE;
 
   FunctionState(
       std::string containingFuncName_,
       LLVMValueRef containingFuncL_,
       LLVMTypeRef returnTypeL_,
-      LLVMBuilderRef localsBuilder_) :
+      LLVMBuilderRef localsBuilder_,
+      std::optional<LLVMValueRef> nextGenPtrLE_) :
     containingFuncName(containingFuncName_),
     containingFuncL(containingFuncL_),
     returnTypeL(returnTypeL_),
-    localsBuilder(localsBuilder_) {}
+    localsBuilder(localsBuilder_),
+    nextGenPtrLE(nextGenPtrLE_) {}
 
   std::string nextBlockName() {
     return std::string("block") + std::to_string(nextBlockNumber++);
   }
+
+  LLVMValueRef getParam(UserArgIndex userArgIndex);
 };
 
 void translateFunction(
     GlobalState* globalState,
     Function* functionM);
 
-FuncPtrLE declareFunction(
+ValeFuncPtrLE declareFunction(
     GlobalState* globalState,
     Function* functionM);
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
-FuncPtrLE declareExternFunction(
+RawFuncPtrLE declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM);

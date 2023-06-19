@@ -44,8 +44,8 @@ Ref translateNewImmRuntimeSizedArray(
           capacityRef,
           runtimeSizedArrayMT->name->name);
   buildFlare(FL(), globalState, functionState, builder);
-  globalState->getRegion(arrayRefType)
-      ->checkValidReference(FL(), functionState, builder, true, arrayRefType, rsaRef);
+//  globalState->getRegion(arrayRefType)
+//      ->checkValidReference(FL(), functionState, builder, true, arrayRefType, rsaRef.inner);
 
   auto arrayRegionInstanceRef =
       // At some point, look up the actual region instance, perhaps from the FunctionState?
@@ -65,10 +65,13 @@ Ref translateNewImmRuntimeSizedArray(
       generatorRef,
       capacityRef,
       rsaRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
-  buildFlare(FL(), globalState, functionState, builder);
+
+  auto lenRef = globalState->getRegion(arrayRefType)->getRuntimeSizedArrayLength(functionState, builder, arrayRegionInstanceRef, arrayRefType, rsaRef);
+  auto lenLE = globalState->getRegion(globalState->metalCache->i32)->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, lenRef);
+  buildFlare(FL(), globalState, functionState, builder, "Made RSA! len: ", lenLE);
 
   globalState->getRegion(sizeType)->dealias(AFL("ConstructRSA"), functionState, builder, sizeType, capacityRef);
   globalState->getRegion(generatorType)->dealias(AFL("ConstructRSA"), functionState, builder, generatorType, generatorRef);
 
-  return rsaRef;
+  return toRef(globalState, elementType, rsaRef);
 }

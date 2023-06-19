@@ -3,6 +3,7 @@ project(backend)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -fvisibility=hidden")
 
+
 if (MSVC)
 	# Set the stack size to 4mb instead of the default 1mb for visual studio
 	# because for some reason 1mb is too small for the backend on Windows.
@@ -15,7 +16,6 @@ include_directories(
 	${LLVM_INCLUDE_DIRS}
 	"${CMAKE_SOURCE_DIR}/src/"
 )
-
 
 message(STATUS "LLVM VERSION : ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -63,9 +63,11 @@ add_executable(backend
 		src/function/expressions/destructure.cpp
 		src/function/expressions/block.cpp
 		src/function/expressions/discard.cpp
+		src/function/expressions/mutabilify.cpp
 		src/function/expressions/externs.cpp
 		src/function/expressions/if.cpp
 		src/function/expressions/constantstr.cpp
+		src/function/expressions/precheckborrow.cpp
 		src/function/expressions/localload.cpp
 		src/function/expressions/while.cpp
 		src/function/expressions/newimmruntimesizearray.cpp
@@ -115,8 +117,12 @@ add_executable(backend
 		src/utils/llvm.cpp
 		src/utils/llvm.h
 		src/utils/structlt.h
+		src/region/safe/safe.cpp
+		src/region/safe-fastest/safefastest.cpp
 		src/region/common/migration.h
-		src/region/common/migration.cpp)
+		src/region/common/migration.cpp
+		src/region/iregion.cpp
+		src/utils/randomgeneration.cpp)
 
 target_link_libraries(backend ${llvm_libs})
 

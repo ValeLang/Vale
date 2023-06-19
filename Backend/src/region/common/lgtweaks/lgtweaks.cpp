@@ -17,7 +17,8 @@ LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     KindStructs* weakRefStructsSource,
     Kind* kind,
     WeakFatPtrLE weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+         globalState->opt->regionOverride == RegionOverride::SAFE);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
   assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(kind));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
@@ -38,10 +39,10 @@ void LgtWeaks::buildCheckLgti(
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
       // These dont have LGT
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
   std::vector<LLVMValueRef> args = { lgtTablePtrLE, lgtiLE };
@@ -69,7 +70,7 @@ LLVMValueRef LgtWeaks::getLGTEntryGenPtr(
   auto genEntriesPtrLE =
       LLVMBuildLoad2(builder, globalState->lgtTableStructLT, getLgtEntriesArrayPtr(builder), "lgtEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP2(builder, globalState->lgtEntryStructLT, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
+      LLVMBuildInBoundsGEP2(builder, globalState->lgtEntryStructLT, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
       LLVMBuildStructGEP2(builder, globalState->lgtEntryStructLT, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_GEN, "ptrToLGTEntryGen");
   return ptrToLGTEntryGenLE;
@@ -81,7 +82,7 @@ LLVMValueRef LgtWeaks::getLGTEntryNextFreePtr(
   auto genEntriesPtrLE =
       LLVMBuildLoad2(builder, globalState->lgtTableStructLT, getLgtEntriesArrayPtr(builder), "lgtEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP2(builder, globalState->lgtEntryStructLT, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
+      LLVMBuildInBoundsGEP2(builder, globalState->lgtEntryStructLT, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
       LLVMBuildStructGEP2(builder, globalState->lgtEntryStructLT, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE, "ptrToLGTEntryNextFree");
   return ptrToLGTEntryGenLE;
@@ -104,9 +105,9 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
-  if (refM->ownership == Ownership::SHARE) {
+  if (refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE) {
     // Shares never have weak refs
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   } else {
     auto lgtiPtrLE =
@@ -185,10 +186,11 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::RESILIENT_V3:
-      assert(false);
+    case RegionOverride::SAFE:
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -224,7 +226,7 @@ WeakFatPtrLE LgtWeaks::assembleInterfaceWeakRef(
     Reference* targetType,
     InterfaceKind* interfaceKindM,
     InterfaceFatPtrLE sourceInterfaceFatPtrLE) {
-  assert(sourceType->ownership == Ownership::OWN || sourceType->ownership == Ownership::SHARE);
+  assert(sourceType->ownership == Ownership::OWN || sourceType->ownership == Ownership::MUTABLE_SHARE || sourceType->ownership == Ownership::IMMUTABLE_SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE =
@@ -249,7 +251,10 @@ WeakFatPtrLE LgtWeaks::assembleStructWeakRef(
     Reference* targetTypeM,
     StructKind* structKindM,
     WrapperPtrLE objPtrLE) {
-  assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
+  assert(
+      structTypeM->ownership == Ownership::OWN ||
+      structTypeM->ownership == Ownership::MUTABLE_SHARE ||
+      structTypeM->ownership == Ownership::IMMUTABLE_SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE =
@@ -273,7 +278,7 @@ WeakFatPtrLE LgtWeaks::assembleStaticSizedArrayWeakRef(
     Reference* targetSSAWeakRefMT,
     WrapperPtrLE objPtrLE) {
   // impl
-  assert(false);
+  { assert(false); throw 1337; }
   exit(1);
 }
 
@@ -333,9 +338,10 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
           //        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
           //        unmigratedLLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
 
+
           auto ptrToWriteToLE =
               LLVMBuildLoad2(
-                  thenBuilder, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), globalState->crashGlobal, "crashGlobal");
+                  thenBuilder, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), globalState->crashGlobalLE, "crashGlobal");
           LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
         });
   }
@@ -392,7 +398,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
   auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, concreteRefM,
       controlBlockPtrLE);
   auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-  adjustCounter(globalState, builder, globalState->metalCache->i64, ptrToActualGenLE, 1);
+  adjustCounterV(globalState, builder, globalState->metalCache->i64, ptrToActualGenLE, 1, false);
   auto ptrToLgtEntryNextFreeLE = getLGTEntryNextFreePtr(builder, lgtiLE);
 
   // __lgt_entries[lgti] = __lgt_firstFree;
@@ -446,7 +452,7 @@ LLVMValueRef LgtWeaks::getIsAliveFromWeakFatPtr(
       buildCheckLgti(builder, lgtiLE);
     }
     auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-    auto actualGenLE = LLVMBuildLoad2(builder, int32LT, ptrToActualGenLE, "gen");
+    auto actualGenLE = LLVMBuildLoad2(builder, int32LT, ptrToActualGenLE, "genE");
 
     return LLVMBuildICmp(
         builder,
@@ -464,13 +470,14 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
     Ref weakRef,
     bool knownLive) {
   assert(
-      weakRefM->ownership == Ownership::BORROW ||
+      weakRefM->ownership == Ownership::MUTABLE_BORROW ||
+          weakRefM->ownership == Ownership::IMMUTABLE_BORROW ||
           weakRefM->ownership == Ownership::WEAK);
 
   if (knownLive && elideChecksForKnownLive) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   } else {
     auto weakFatPtrLE =
         weakRefStructsSource->makeWeakFatPtr(
@@ -478,7 +485,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
             globalState->getRegion(weakRefM)
                 ->checkValidReference(FL(), functionState, builder, false, weakRefM, weakRef));
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+    return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   }
 }
 
@@ -580,7 +587,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -589,7 +596,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -598,7 +605,7 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -607,8 +614,8 @@ Ref LgtWeaks::assembleWeakRef(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else assert(false);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
+  } else { assert(false); throw 1337; }
 }
 
 

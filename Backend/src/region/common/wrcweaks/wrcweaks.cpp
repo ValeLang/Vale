@@ -32,11 +32,12 @@ void WrcWeaks::buildCheckWrc(
       // fine, proceed
       break;
     case RegionOverride::RESILIENT_V3:
+      case RegionOverride::SAFE:
       // These dont have WRCs
-      assert(false);
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
   std::vector<LLVMValueRef> checkWrcsArgs = {
@@ -86,9 +87,9 @@ static LLVMValueRef getWrciFromControlBlockPtr(
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
 //  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
 
-  if (refM->ownership == Ownership::SHARE) {
+  if (refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE) {
     // Shares never have weak refs
-    assert(false);
+    { assert(false); throw 1337; }
     return nullptr;
   } else {
     auto wrciPtrLE =
@@ -110,7 +111,7 @@ LLVMValueRef WrcWeaks::getWrcPtr(
   auto wrcEntriesPtrLE =
       LLVMBuildLoad2(builder, int32PtrLT, getWrcEntriesArrayPtr(builder), "wrcEntriesArrayPtr");
   auto ptrToWrcLE =
-      LLVMBuildGEP2(builder, int32LT, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
+      LLVMBuildInBoundsGEP2(builder, int32LT, wrcEntriesPtrLE, &wrciLE, 1, "ptrToWrc");
   return ptrToWrcLE;
 }
 
@@ -187,10 +188,11 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
       // continue
       break;
     case RegionOverride::RESILIENT_V3:
-      assert(false);
+    case RegionOverride::SAFE:
+      { assert(false); throw 1337; }
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -232,7 +234,7 @@ WeakFatPtrLE WrcWeaks::assembleInterfaceWeakRef(
     InterfaceFatPtrLE sourceInterfaceFatPtrLE) {
 //  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
 //    if (sourceType->ownership == Ownership::BORROW) {
-//      assert(false); // curiosity, wouldnt we just return sourceRefLE?
+//      { assert(false); throw 1337; } // curiosity, wouldnt we just return sourceRefLE?
 //    }
 //    assert(sourceType->ownership == Ownership::SHARE || sourceType->ownership == Ownership::OWN);
 //  }
@@ -265,8 +267,13 @@ WeakFatPtrLE WrcWeaks::assembleStructWeakRef(
     if (
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
-    assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE || structTypeM->ownership == Ownership::BORROW);
-  } else assert(false);
+    assert(
+        structTypeM->ownership == Ownership::OWN ||
+        structTypeM->ownership == Ownership::MUTABLE_SHARE ||
+        structTypeM->ownership == Ownership::IMMUTABLE_SHARE ||
+        structTypeM->ownership == Ownership::MUTABLE_BORROW ||
+        structTypeM->ownership == Ownership::IMMUTABLE_BORROW);
+  } else { assert(false); throw 1337; }
 
   auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
   auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, kindStructsSource, structTypeM, controlBlockPtrLE);
@@ -440,7 +447,7 @@ void WrcWeaks::aliasWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, 1);
+  adjustCounterV(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, 1, false);
 }
 
 void WrcWeaks::discardWeakRef(
@@ -460,7 +467,7 @@ void WrcWeaks::discardWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, -1);
+  auto wrcLE = adjustCounterV(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, -1, false);
 
   buildFlare(FL(), globalState, functionState, builder, "decrementing ", wrciLE, " to ", wrcLE);
 
@@ -500,16 +507,18 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
     Ref weakRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V3:
+    case RegionOverride::SAFE:
       assert(
-          weakRefM->ownership == Ownership::BORROW ||
-              weakRefM->ownership == Ownership::WEAK);
+          weakRefM->ownership == Ownership::IMMUTABLE_BORROW ||
+          weakRefM->ownership == Ownership::MUTABLE_BORROW ||
+          weakRefM->ownership == Ownership::WEAK);
       break;
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
       assert(weakRefM->ownership == Ownership::WEAK);
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -519,7 +528,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
           globalState->getRegion(weakRefM)
               ->checkValidReference(FL(), functionState, builder, false, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
-  return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
+  return toRef(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
 }
 
 LLVMValueRef WrcWeaks::fillWeakableControlBlock(
@@ -622,7 +631,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -631,7 +640,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -640,7 +649,7 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE =
         globalState->getRegion(sourceType)
@@ -649,8 +658,8 @@ Ref WrcWeaks::assembleWeakRef(
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
-    return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else assert(false);
+    return toRef(globalState->getRegion(targetType), targetType, resultLE);
+  } else { assert(false); throw 1337; }
 }
 
 LLVMTypeRef WrcWeaks::makeWeakRefHeaderStruct(GlobalState* globalState) {

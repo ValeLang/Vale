@@ -2,39 +2,62 @@
 #include <region/common/migration.h>
 #include "counters.h"
 
-LLVMValueRef adjustCounter(
+LLVMValueRef adjustCounterV(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Int* innt,
     LLVMValueRef counterPtrLE,
-    int adjustAmount) {
+    int adjustAmount,
+    bool atomic) {
   auto intLT = LLVMIntTypeInContext(globalState->context, innt->bits);
-  auto prevValLE = LLVMBuildLoad2(builder, intLT, counterPtrLE, "counterPrevVal");
-  auto adjustByLE = LLVMConstInt(intLT, adjustAmount, true);
-  assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
-  auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
-  LLVMBuildStore(builder, newValLE, counterPtrLE);
+  return adjustCounter(builder, intLT, counterPtrLE, adjustAmount, atomic);
+}
 
-  return newValLE;
+LLVMValueRef adjustCounter(
+    LLVMBuilderRef builder,
+    LLVMTypeRef type,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount,
+    bool atomic) {
+  auto adjustByLE = LLVMConstInt(type, adjustAmount, true);
+  assert(LLVMTypeOf(adjustByLE) == type);
+  if (atomic) {
+    return LLVMBuildAtomicRMW(builder, LLVMAtomicRMWBinOpAdd, counterPtrLE, adjustByLE, LLVMAtomicOrderingMonotonic, !atomic);
+  } else {
+    auto prevValLE = LLVMBuildLoad2(builder, type, counterPtrLE, "counterPrevVal");
+    assert(LLVMTypeOf(prevValLE) == type);
+    auto newValLE = LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
+    LLVMBuildStore(builder, newValLE, counterPtrLE);
+    return newValLE;
+  }
 }
 
 LLVMValueRef adjustCounterReturnOld(
-    GlobalState* globalState,
     LLVMBuilderRef builder,
-    Int* innt,
+    LLVMTypeRef type,
     LLVMValueRef counterPtrLE,
-    int adjustAmount) {
-  auto intLT = LLVMIntTypeInContext(globalState->context, innt->bits);
-  auto prevValLE = LLVMBuildLoad2(builder, intLT, counterPtrLE, "counterPrevVal");
-  auto adjustByLE = LLVMConstInt(intLT, adjustAmount, true);
+    int64_t adjustAmount) {
+  auto prevValLE = LLVMBuildLoad2(builder, type, counterPtrLE, "counterPrevVal");
+  auto adjustByLE = LLVMConstInt(type, adjustAmount, true);
   assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
-  auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
+  auto newValLE = LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
   LLVMBuildStore(builder, newValLE, counterPtrLE);
 
   return prevValLE;
 }
 
+LLVMValueRef adjustCounterVReturnOld(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Int* innt,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount) {
+  auto intLT = LLVMIntTypeInContext(globalState->context, innt->bits);
+  return adjustCounterReturnOld(builder, intLT, counterPtrLE, adjustAmount);
+}
+
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
+  assert(LLVMGetTypeKind(LLVMTypeOf(intLE)) == LLVMIntegerTypeKind);
   return LLVMBuildICmp(
       builder,
       LLVMIntEQ,
@@ -85,6 +108,6 @@ LLVMValueRef roundUp(
         constI64LE(globalState, 1), "subd2");
   } else {
     // implement
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }

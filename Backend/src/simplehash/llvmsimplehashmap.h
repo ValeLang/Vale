@@ -35,8 +35,8 @@ public:
       LLVMTypeRef valueLT,
       LLVMTypeRef hasherLT,
       LLVMTypeRef equatorLT,
-      FuncPtrLE hasherLF,
-      FuncPtrLE equatorLF) {
+      RawFuncPtrLE hasherLF,
+      RawFuncPtrLE equatorLF) {
     auto int8LT = LLVMInt8TypeInContext(globalState->context);
     auto voidPtrLT = LLVMPointerType(int8LT, 0);
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
@@ -59,7 +59,7 @@ public:
             globalState->context, mapTypeName, mapStructMembersLT);
 
     auto findIndexOfLF =
-        addFunction(
+        addRawFunction(
             globalState->mod, mapTypeName + "_findIndexOf", int64LT,
             {LLVMPointerType(mapStructLT.getStructLT(), 0), keyLT});
 
@@ -182,9 +182,9 @@ private:
       LLVMTypeRef equatorLT,
       StructLT<NodeNumMembers, NodeMember> nodeStructLT,
       StructLT<MapNumMembers, MapMember> mapStructLT,
-      FuncPtrLE hasherLF,
-      FuncPtrLE equatorLF,
-      FuncPtrLE findIndexOfLF) :
+      RawFuncPtrLE hasherLF,
+      RawFuncPtrLE equatorLF,
+      RawFuncPtrLE findIndexOfLF) :
     globalState(globalState),
     mapTypeName(mapTypeName),
     keyLT(keyLT),
@@ -206,7 +206,7 @@ private:
     auto int8LT = LLVMInt8TypeInContext(globalState->context);
     auto int32LT = LLVMInt32TypeInContext(globalState->context);
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
-    defineFunctionBody(
+    defineRawFunctionBody(
         globalState->context, findIndexOfLF.ptrLE, int64LT, mapTypeName + "_findIndexOf",
         [this, int1LT, int8LT, int32LT, int64LT, voidLT](FunctionState* functionState, LLVMBuilderRef builder){
           auto mapPtrLE = LLVMGetParam(functionState->containingFuncL, 0);
@@ -275,10 +275,10 @@ private:
   LLVMTypeRef equatorLT; // Equivalent to CppSimpleHashMap's E
   StructLT<NodeNumMembers, NodeMember> nodeStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMapNode<K, V>
   StructLT<MapNumMembers, MapMember> mapStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMap<K, V, H, E>
-  FuncPtrLE hasherLF;
-  FuncPtrLE equatorLF;
+  RawFuncPtrLE hasherLF;
+  RawFuncPtrLE equatorLF;
 
-  FuncPtrLE findIndexOfLF;
+  RawFuncPtrLE findIndexOfLF;
 };
 
 #endif //SIMPLEHASH_LLVMSIMPLEHASHMAP_H

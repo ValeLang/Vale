@@ -43,7 +43,7 @@ LLVMValueRef getCharsPtrFromWrapperPtr(
 
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), constI64LE(globalState, 0) };
   auto firstCharPtrLE =
-      LLVMBuildGEP2(
+      LLVMBuildInBoundsGEP2(
           builder, LLVMArrayType(int8LT, 0), charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
   assert(LLVMGetTypeKind(LLVMTypeOf(firstCharPtrLE)) == LLVMPointerTypeKind);
   return firstCharPtrLE;
@@ -68,7 +68,7 @@ Ref buildConstantVStr(
   auto lengthLE = constI32LE(globalState, contents.length());
 
   auto strRef =
-      globalState->getRegion(globalState->metalCache->strRef)
+      globalState->getRegion(globalState->metalCache->mutStrRef)
           ->mallocStr(
               makeVoidRef(globalState),
               functionState, builder, lengthLE,

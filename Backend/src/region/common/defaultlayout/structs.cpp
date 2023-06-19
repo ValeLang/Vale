@@ -78,7 +78,7 @@ ControlBlock* KindStructs::getControlBlock(Kind* kind) {
   } else if (auto strMT = dynamic_cast<Str*>(kind)) {
     return &nonWeakableControlBlock;
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 LLVMTypeRef KindStructs::getStructInnerStruct(StructKind* structKind) {
@@ -95,9 +95,9 @@ LLVMTypeRef KindStructs::getWrapperStruct(Kind* kind) {
     return getStaticSizedArrayWrapperStruct(ssaMT);
   } else {
     // Remember, interfaces dont have wrapper structs
-    assert(false);
+    { assert(false); throw 1337; }
   }
-  assert(false);
+  { assert(false); throw 1337; }
 }
 LLVMTypeRef KindStructs::getStructWrapperStruct(StructKind* structKind) {
   auto structIter = structWrapperStructs.find(structKind->fullName->name);
@@ -243,13 +243,13 @@ void KindStructs::declareEdge(
 void KindStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
-    std::vector<FuncPtrLE> functions) {
+    std::vector<ValeFuncPtrLE> functions) {
   auto interfaceTableStructL =
       getInterfaceTableStruct(edge->interfaceName);
   auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
-    auto entryLE = LLVMConstBitCast(functions[i].ptrLE, interfaceFunctionsLT[i]);
+    auto entryLE = LLVMConstBitCast(functions[i].inner.ptrLE, interfaceFunctionsLT[i]);
     itableLE = LLVMBuildInsertValue(builder, itableLE, entryLE, i, std::to_string(i).c_str());
   }
   LLVMDisposeBuilder(builder);
@@ -424,7 +424,7 @@ WeakFatPtrLE KindStructs::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef pt
   } else if (auto rsaT = dynamic_cast<RuntimeSizedArrayT*>(referenceM_->kind)) {
     assert(LLVMTypeOf(ptrLE) == getRuntimeSizedArrayWeakRefStruct(rsaT));
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
   return WeakFatPtrLE(referenceM_, ptrLE);
 }
@@ -495,14 +495,14 @@ WrapperPtrLE KindStructs::makeWrapperPtr(
   assert(ptrLE != nullptr);
   Kind* kind = referenceM->kind;
 
-  WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
+  WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(referenceM, ptrLE);
 
   if (dynamic_cast<StructKind*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
   } else if (dynamic_cast<InterfaceKind*>(kind)) {
     // can we even get a wrapper struct for an interface?
-    assert(false);
+    { assert(false); throw 1337; }
   } else if (dynamic_cast<StaticSizedArrayT*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
@@ -512,7 +512,7 @@ WrapperPtrLE KindStructs::makeWrapperPtr(
   } else if (dynamic_cast<Str*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-  } else assert(false);
+  } else { assert(false); throw 1337; }
 
   return wrapperPtrLE;
 }
@@ -664,7 +664,7 @@ ControlBlockPtrLE KindStructs::getControlBlockPtr(
                 ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -692,7 +692,7 @@ ControlBlockPtrLE KindStructs::getControlBlockPtr(
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -708,19 +708,19 @@ ControlBlockPtrLE KindStructs::getControlBlockPtrWithoutChecking(
     auto referenceLE = makeInterfaceFatPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getControlBlockPtrWithoutChecking(from, functionState, builder, kindM, referenceLE);
   } else if (dynamic_cast<StructKind*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(kindM)) {
-    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    auto referenceLE = makeWrapperPtrWithoutChecking(referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else {
-    assert(false);
+    { assert(false); throw 1337; }
   }
 }
 
@@ -774,29 +774,6 @@ LLVMValueRef KindStructs::downcastPtr(LLVMBuilderRef builder, Reference* resultS
   return resultStructRefLE;
 }
 
-LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE structExpr) {
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-
-  switch (globalState->opt->regionOverride) {
-//    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-      break;
-    case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
-      break;
-    default:
-      assert(false);
-  }
-
-  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(builder, refM, structExpr);
-  return LLVMBuildLoad2(builder, int32LT, rcPtrLE, "rc");
-}
 
 // See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
@@ -807,13 +784,15 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
     case RegionOverride::NAIVE_RC:
       break;
     case RegionOverride::FAST:
-      assert(refM->ownership == Ownership::SHARE);
+      assert(refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE);
       break;
     case RegionOverride::RESILIENT_V3:
-      assert(refM->ownership == Ownership::SHARE);
+    case RegionOverride::SAFE:
+    case RegionOverride::SAFE_FASTEST:
+      assert(refM->ownership == Ownership::MUTABLE_SHARE || refM->ownership == Ownership::IMMUTABLE_SHARE);
       break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
   }
 
   return LLVMBuildStructGEP2(
@@ -825,9 +804,6 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
 }
 
 WrapperPtrLE KindStructs::makeWrapperPtrWithoutChecking(
-    AreaAndFileAndLine checkerAFL,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
     Reference* referenceM,
     LLVMValueRef ptrLE) {
   assert(ptrLE != nullptr);
@@ -837,14 +813,14 @@ WrapperPtrLE KindStructs::makeWrapperPtrWithoutChecking(
   if (auto structKind = dynamic_cast<StructKind*>(kind)) {
     wrapperStructLT = getStructWrapperStruct(structKind);
   } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
-    assert(false); // can we even get a wrapper struct for an interface?
+    { assert(false); throw 1337; } // can we even get a wrapper struct for an interface?
   } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
     wrapperStructLT = getStaticSizedArrayWrapperStruct(ssaMT);
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     wrapperStructLT = getRuntimeSizedArrayWrapperStruct(rsaMT);
   } else if (auto strMT = dynamic_cast<Str*>(kind)) {
     wrapperStructLT = stringWrapperStructL;
-  } else assert(false);
+  } else { assert(false); throw 1337; }
   assert(LLVMTypeOf(ptrLE) == LLVMPointerType(wrapperStructLT, 0));
 
   WrapperPtrLE wrapperPtrLE(referenceM, wrapperStructLT, ptrLE);

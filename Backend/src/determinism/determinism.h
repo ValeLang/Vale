@@ -73,7 +73,7 @@ private:
   void makeFuncToStartReplaying();
   void makeFuncToStartRecording();
   void makeFuncToGetReplayerFuncForExportName();
-  FuncPtrLE makeFuncToReplayExportCall(Prototype* prototype);
+  RawFuncPtrLE makeFuncToReplayExportCall(Prototype* prototype);
 
   enum class FileOpenMode {
     READ,
@@ -109,16 +109,16 @@ private:
   LLVMValueRef recordedRefToReplayedRefMapGlobalLE;
 
 
-  FuncPtrLE maybeStartDeterministicModeLF;
-  FuncPtrLE startReplayingLF;
-  FuncPtrLE startRecordingLF;
-  FuncPtrLE writeCallBeginToFileLF;
-  FuncPtrLE writeRefToFileLF;
-  FuncPtrLE recordCallEndLF;
-  FuncPtrLE matchCallFromRecordingFileLF;
-  FuncPtrLE mapRefFromRecordingFileLF;
-  FuncPtrLE readLimitedStringFromFileLF;
-  FuncPtrLE getMaybeReplayerFuncForNextExportNameLF;
+  RawFuncPtrLE maybeStartDeterministicModeLF;
+  RawFuncPtrLE startReplayingLF;
+  RawFuncPtrLE startRecordingLF;
+  RawFuncPtrLE writeCallBeginToFileLF;
+  RawFuncPtrLE writeRefToFileLF;
+  RawFuncPtrLE recordCallEndLF;
+  RawFuncPtrLE matchCallFromRecordingFileLF;
+  RawFuncPtrLE mapRefFromRecordingFileLF;
+  RawFuncPtrLE readLimitedStringFromFileLF;
+  RawFuncPtrLE getMaybeReplayerFuncForNextExportNameLF;
 
   LLVMValueRef fileHandleGlobalLE = nullptr;
   LLVMValueRef fileOffsetGlobalLE = nullptr;

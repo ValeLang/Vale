@@ -64,7 +64,7 @@ Ref translateInterfaceCall(
       ->checkValidReference(FL(), functionState, builder, false, call->functionType->returnType, resultLE);
 
   if (call->functionType->returnType->kind == globalState->metalCache->never) {
-    return wrap(
+    return toRef(
         globalState->getRegion(globalState->metalCache->neverRef),
         globalState->metalCache->neverRef,
         LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL)));

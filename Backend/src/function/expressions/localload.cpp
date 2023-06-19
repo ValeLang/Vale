@@ -19,10 +19,14 @@ Ref translateLocalLoad(
   auto localName = localLoad->localName;
   auto localType = local->type;
   auto targetOwnership = localLoad->targetOwnership;
-  auto targetLocation = targetOwnership == Ownership::SHARE ? localType->location : Location::YONDER;
+  auto targetLocation = targetOwnership == Ownership::MUTABLE_SHARE ? localType->location : Location::YONDER;
   auto resultType =
       globalState->metalCache->getReference(
           targetOwnership, targetLocation, localType->kind);
+
+  auto regionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(localType)->createRegionInstanceLocal(functionState, builder);
 
   buildFlare(FL(), globalState, functionState, builder);
 
@@ -32,7 +36,7 @@ Ref translateLocalLoad(
 
   auto resultRef =
       globalState->getRegion(localType)->upgradeLoadResultToRefWithTargetOwnership(
-          functionState, builder, localType, resultType, LoadResult{sourceRef});
+          functionState, builder, regionInstanceRef, localType, resultType, LoadResult{sourceRef}, false);
   globalState->getRegion(resultType)->alias(FL(), functionState, builder, resultType, resultRef);
 
   return resultRef;

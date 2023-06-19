@@ -375,8 +375,8 @@ Ref buildIfElseV(
   if (thenResultMT == globalState->metalCache->neverRef && elseResultMT == globalState->metalCache->neverRef) {
     // Bail early, even though builder is still pointing at the preceding block. Nobody should use
     // it, since nothing can happen after a never.
-    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
-//    assert(false); // impl
+    return toRef(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtrLE);
+//    { assert(false); throw 1337; } // impl
   }
 
   LLVMBasicBlockRef afterwardBlockL =
@@ -418,7 +418,7 @@ Ref buildIfElseV(
     // We re-pointed the `builder` to point at the "afterward" block, and
     // subsequent instructions after the if will keep adding to that.
 
-    return wrap(globalState->getRegion(thenResultMT), thenResultMT, phi);
+    return toRef(globalState->getRegion(thenResultMT), thenResultMT, phi);
   }
 }
 
@@ -529,36 +529,56 @@ void buildWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    std::function<Ref(LLVMBuilderRef)> buildCondition,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildCondition,
     std::function<void(LLVMBuilderRef)> buildBody) {
-  buildBoolyWhileV(
+  buildBoolyWhile(
       globalState,
-      functionState,
+      functionState->containingFuncL,
       builder,
-      [globalState, functionState, buildCondition, buildBody](LLVMBuilderRef bodyBuilder) -> Ref {
+      [globalState, functionState, buildCondition, buildBody](LLVMBuilderRef bodyBuilder) -> LLVMValueRef {
         auto conditionLE = buildCondition(bodyBuilder);
-        return buildIfElseV(
+        return buildIfElse(
             globalState,
             functionState,
             bodyBuilder,
+            LLVMInt1TypeInContext(globalState->context),
             conditionLE,
-//            LLVMInt1TypeInContext(globalState->context),
-            globalState->metalCache->boolRef,
-            globalState->metalCache->boolRef,
+//            globalState->metalCache->boolRef,
+//            globalState->metalCache->boolRef,
             [globalState, functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {
               buildBody(thenBlockBuilder);
               // Return true, so the while loop will keep executing.
-              return wrap(
-                  globalState->getRegion(globalState->metalCache->boolRef),
-                  globalState->metalCache->boolRef,
-                  makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1TypeInContext(globalState->context), 1));
+              return makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1TypeInContext(globalState->context), 1);
             },
-            [globalState, functionState](LLVMBuilderRef elseBlockBuilder) -> Ref {
+            [globalState, functionState](LLVMBuilderRef elseBlockBuilder) -> LLVMValueRef {
               // Return false, so the while loop will stop executing.
-              return wrap(
-                  globalState->getRegion(globalState->metalCache->boolRef),
-                  globalState->metalCache->boolRef,
-                  makeConstIntExpr(functionState, elseBlockBuilder, LLVMInt1TypeInContext(globalState->context), 0));
+              return makeConstIntExpr(
+                  functionState, elseBlockBuilder, LLVMInt1TypeInContext(globalState->context), 0);
             });
       });
+}
+
+void buildWhileV(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<Ref(LLVMBuilderRef)> buildCondition,
+    std::function<void(LLVMBuilderRef)> buildBody) {
+  buildWhile(
+      globalState,
+      functionState,
+      builder,
+      [globalState, functionState, buildCondition](LLVMBuilderRef conditionBuilder) -> LLVMValueRef {
+        auto resultRef = buildCondition(conditionBuilder);
+        return globalState
+            ->getRegion(globalState->metalCache->boolRef)
+            ->checkValidReference(
+                FL(),
+                functionState,
+                conditionBuilder,
+                false,
+                globalState->metalCache->boolRef,
+                resultRef);
+      },
+      buildBody);
 }

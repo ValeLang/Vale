@@ -214,7 +214,7 @@ public:
     } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT *>(kind)) {
       return rsaMT->name->name;
     } else {
-      assert(false);
+      { assert(false); throw 1337; }
     }
   }
   std::string getFunctionExportName(Prototype* kind) const {
@@ -240,7 +240,7 @@ public:
 //    auto exportedNameI = fullNameToExportName.find(name);
 //    if (exportedNameI == fullNameToExportName.end()) {
 //      std::cerr << "No exported name for " << name->name << std::endl;
-//      assert(false);
+//      { assert(false); throw 1337; }
 //    }
 //    return exportedNameI->second;
 //  }
@@ -308,7 +308,7 @@ public:
 //    auto exportedNameI = fullNameToExportedNames.find(name);
 //    if (exportedNameI == fullNameToExportedNames.end()) {
 //      std::cerr << "No exported name for " << name->name << std::endl;
-//      assert(false);
+//      { assert(false); throw 1337; }
 //    }
 //    return exportedNameI->second;
 //  }
@@ -377,7 +377,7 @@ public:
         if (e->interfaceName == interfaceMT)
           return e;
       }
-      assert(false);
+      { assert(false); throw 1337; }
       return nullptr;
     }
 };
@@ -482,15 +482,12 @@ class Local {
 public:
   VariableId* id;
   Reference* type;
-  bool keepAlive;
 
   Local(
       VariableId* id_,
-      Reference* type_,
-      bool keepAlive_) :
+      Reference* type_) :
       id(id_),
-      type(type_),
-      keepAlive(keepAlive_) {}
+      type(type_) {}
 };
 
 #endif

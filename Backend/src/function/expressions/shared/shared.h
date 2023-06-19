@@ -47,16 +47,16 @@ LLVMValueRef adjustStrongRc(
     FunctionState* functionState,
     KindStructs* kindStructsSource,
     LLVMBuilderRef builder,
-    Ref exprLE,
+    Ref ref,
     Reference* refM,
     int amount);
 
-LLVMValueRef strongRcIsZero(
-    GlobalState* globalState,
-    KindStructs* structs,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE exprLE);
+//LLVMValueRef strongRcIsZero(
+//    GlobalState* globalState,
+//    KindStructs* structs,
+//    LLVMBuilderRef builder,
+//    Reference* refM,
+//    ControlBlockPtrLE exprLE);
 
 
 void buildAssertV(
@@ -196,7 +196,7 @@ Ref buildInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    FuncPtrLE methodFunctionPtrLE,
+    ValeFuncPtrLE methodFunctionPtrLE,
     std::vector<Ref> argRefs,
     int virtualParamIndex);
 
@@ -256,10 +256,17 @@ Ref buildCallV(
 LLVMValueRef buildMaybeNeverCall(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    FuncPtrLE functionLE,
+    RawFuncPtrLE functionLE,
     std::vector<LLVMValueRef> argsLE);
 
-FuncPtrLE addExtern(
+LLVMValueRef buildMaybeNeverCallV(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    ValeFuncPtrLE functionLE,
+    LLVMValueRef nextGenPtrLE,
+    std::vector<LLVMValueRef> argsLE);
+
+RawFuncPtrLE addExtern(
     LLVMModuleRef mod,
     const std::string& name,
     LLVMTypeRef retType,
@@ -278,7 +285,7 @@ LLVMValueRef buildSideCall(
     GlobalState* globalState,
     LLVMBuilderRef entryBuilder,
     LLVMValueRef sideStackStartPtrAsI8PtrLE,
-    FuncPtrLE calleeFuncLE,
+    RawFuncPtrLE calleeFuncLE,
     const std::vector<LLVMValueRef>& userArgsLE);
 
 #endif

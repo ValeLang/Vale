@@ -171,6 +171,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "",
           "Makes it so replays will still call this extern function, instead of skipping it and returning the original recorded value."),
         Flag(
+          "--opt_level",
+          FLAG_STR(),
+          "How much to optimize the resulting binary.",
+          "",
+          "How much to optimize the resulting binary. Valid values: O0, O1, O2, O2i, O3"),
+        Flag(
           "--enable_side_calling",
           FLAG_BOOL(),
           "Whether to enable fearless FFI and green threads.",
@@ -201,11 +207,17 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "true",
           "Whether to run self-diagnostics while compiling."),
         Flag(
-          "--override_known_live_true",
+          "--force_all_known_live",
           FLAG_BOOL(),
           "Whether to always gen-check, even if known live is true.",
           "false",
           "Whether to always gen-check, even if known live is true."),
+        Flag(
+          "--elide_checks_for_known_live",
+          FLAG_BOOL(),
+          "Whether to skip generation checks when it's statically known to pass.",
+          "false",
+          "Whether to skip generation checks when it's statically known to pass."),
         Flag(
           "--print_mem_overhead",
           FLAG_BOOL(),
@@ -279,6 +291,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   no_std = parsed_flags.get_bool_flag("--no_std", false);
 
   maybe_region_override = parsed_flags.get_string_flag("--region_override");
+  maybe_opt_level = parsed_flags.get_string_flag("--opt_level");
   maybe_cpu = parsed_flags.get_string_flag("--cpu");
   executable_name = parsed_flags.get_string_flag("-o", "main");
   flares = parsed_flags.get_bool_flag("--flares", false);
@@ -293,7 +306,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   replay_whitelist_extern = parsed_flags.get_string_flag("--replay_whitelist_extern", "");
   print_mem_overhead = parsed_flags.get_bool_flag("--print_mem_overhead", false);
   elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
-  override_known_live_true = parsed_flags.get_bool_flag("--override_known_live_true", false);
+  force_all_known_live = parsed_flags.get_bool_flag("--force_all_known_live", false);
 
   if verbose {
     println("Parsing command line inputs...");
@@ -424,6 +437,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           &vast_files,
           &output_dir,
           &maybe_region_override,
+          &maybe_opt_level,
           &maybe_cpu,
           executable_name,
           flares,
@@ -437,7 +451,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           pic,
           print_mem_overhead,
           elide_checks_for_known_live,
-          override_known_live_true);
+          force_all_known_live);
   println("Running:\n" + backend_process.command);
   backend_return_code = (backend_process).print_and_join();
   if backend_return_code != 0 {

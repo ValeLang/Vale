@@ -4,6 +4,9 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/IRReader.h>
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Transforms/IPO/Inliner.h"
+#include "llvm/IR/LegacyPassManager.h"
+
 
 #include <sys/stat.h>
 
@@ -33,10 +36,13 @@
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
+
 #include "region/resilientv3/resilientv3.h"
 #include "region/unsafe/unsafe.h"
 #include "function/expressions/shared/string.h"
 #include <sstream>
+#include <region/safe/safe.h>
+#include "region/safe-fastest/safefastest.h"
 #include "region/linear/linear.h"
 #include "function/expressions/shared/members.h"
 #include "function/expressions/expressions.h"
@@ -49,6 +55,12 @@
 #define asmext "s"
 #define objext "o"
 #endif
+
+// This is 0x27100000 in hex.
+// This number was chosen because it ends in zeroes either way, so it should be a bit more
+// recognizable.
+// TODO(#598): Use a random starting value.
+constexpr int FIRST_GEN = 655360000;
 
 // for convenience
 using json = nlohmann::json;
@@ -74,10 +86,10 @@ std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
 
-std::tuple<FuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
+std::tuple<RawFuncPtrLE, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
 Prototype* makeValeMainFunction(
     GlobalState* globalState,
-    FuncPtrLE stringSetupFunctionL,
+    RawFuncPtrLE stringSetupFunctionL,
     Prototype* mainSetupFuncProto,
     Prototype* userMainFunctionPrototype,
     Prototype* mainCleanupFunctionPrototype);
@@ -86,7 +98,7 @@ LLVMValueRef makeEntryFunction(
     Prototype* valeMainPrototype);
 //LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState);
 
-FuncPtrLE declareFunction(
+ValeFuncPtrLE declareFunction(
   GlobalState* globalState,
   Function* functionM);
 
@@ -105,6 +117,8 @@ void makeExternOrExportFunction(
     const std::string &externName,
     Prototype *prototype,
     bool isExport);
+
+void optimize(GlobalState *globalState);
 
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -455,7 +469,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
         resultC << defString;
       } else {
         std::cerr << "Unknown exportee: " << typeid(*kind).name() << std::endl;
-        assert(false);
+        { assert(false); throw 1337; }
         exit(1);
       }
     }
@@ -484,7 +498,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   }
   if (globalState->opt->outputDir.empty()) {
     std::cerr << "Must specify --output-dir!" << std::endl;
-    assert(false);
+    { assert(false); throw 1337; }
   }
   auto outputDir = globalState->opt->outputDir;
 
@@ -674,11 +688,14 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     case RegionOverride::RESILIENT_V3:
       std::cout << "Region override: resilient-v3" << std::endl;
       break;
-//    case RegionOverride::RESILIENT_V4:
-//      std::cout << "Region override: resilient-v4" << std::endl;
-//      break;
+    case RegionOverride::SAFE:
+      std::cout << "Region override: safe" << std::endl;
+      break;
+    case RegionOverride::SAFE_FASTEST:
+      std::cout << "Region override: safe-fastest" << std::endl;
+      break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
 
@@ -740,7 +757,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     }
   }
 
-  FuncPtrLE stringSetupFunctionL;
+  RawFuncPtrLE stringSetupFunctionL;
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;
@@ -762,44 +779,44 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
   LLVMValueRef empty[1] = {};
 
-  globalState->numMainArgs =
+  globalState->numMainArgsLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
-  LLVMSetLinkage(globalState->numMainArgs, LLVMExternalLinkage);
-  LLVMSetInitializer(globalState->numMainArgs, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  LLVMSetLinkage(globalState->numMainArgsLE, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState->numMainArgsLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   auto mainArgsLT =
       LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), 0);
-  globalState->mainArgs =
+  globalState->mainArgsLE =
       LLVMAddGlobal(globalState->mod, mainArgsLT, "__main_args");
-  LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
-  LLVMSetInitializer(globalState->mainArgs, LLVMConstNull(mainArgsLT));
+  LLVMSetLinkage(globalState->mainArgsLE, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState->mainArgsLE, LLVMConstNull(mainArgsLT));
 
-  globalState->liveHeapObjCounter =
+  globalState->liveHeapObjCounterLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
-  LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
-  LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  LLVMSetLinkage(globalState->mainArgsLE, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState->liveHeapObjCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
-  globalState->writeOnlyGlobal =
+  globalState->writeOnlyGlobalLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__writeOnlyGlobal");
-  LLVMSetInitializer(globalState->writeOnlyGlobal, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  LLVMSetInitializer(globalState->writeOnlyGlobalLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
-  globalState->crashGlobal =
+  globalState->crashGlobalLE =
       LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), "__crashGlobal");
-  LLVMSetInitializer(globalState->crashGlobal, LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)));
+  LLVMSetInitializer(globalState->crashGlobalLE, LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)));
 
-  globalState->objIdCounter =
+  globalState->objIdCounterLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__objIdCounter");
-  LLVMSetInitializer(globalState->objIdCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 501, false));
+  LLVMSetInitializer(globalState->objIdCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 501, false));
 
-  globalState->derefCounter =
-      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "derefCounter");
-  LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  globalState->derefCounterLE =
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "derefCounterLE");
+  LLVMSetInitializer(globalState->derefCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
-  globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(globalState), "__never");
-  LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), empty, 0));
+  globalState->neverPtrLE = LLVMAddGlobal(globalState->mod, makeNeverType(globalState), "__never");
+  LLVMSetInitializer(globalState->neverPtrLE, LLVMConstArray(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), empty, 0));
 
-  globalState->sideStack = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "__sideStack");
-  LLVMSetInitializer(globalState->sideStack, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+  globalState->sideStackLE = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "__sideStack");
+  LLVMSetInitializer(globalState->sideStackLE, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
 
 //  globalState->sideStackArgCalleeFuncPtrPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgCalleeFuncPtrPtr");
 //  LLVMSetInitializer(globalState->sideStackArgCalleeFuncPtrPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
@@ -807,13 +824,21 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 //  globalState->sideStackArgReturnDestPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgReturnDestPtr");
 //  LLVMSetInitializer(globalState->sideStackArgReturnDestPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
 
-  globalState->mutRcAdjustCounter =
+  globalState->mutRcAdjustCounterLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__mutRcAdjustCounter");
-  LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  LLVMSetInitializer(globalState->mutRcAdjustCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
-  globalState->livenessCheckCounter =
+  globalState->livenessCheckCounterLE =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__livenessCheckCounter");
-  LLVMSetInitializer(globalState->livenessCheckCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+  LLVMSetInitializer(globalState->livenessCheckCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+
+  globalState->livenessPreCheckCounterLE =
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__livenessPreCheckCounter");
+  LLVMSetInitializer(globalState->livenessPreCheckCounterLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+
+  auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
+  globalState->nextGenThreadGlobalIntLE = LLVMAddGlobal(globalState->mod, genLT, "__vale_nextGen");
+  LLVMSetInitializer(globalState->nextGenThreadGlobalIntLE, LLVMConstInt(genLT, FIRST_GEN, false));
 
   initInternalExterns(globalState);
 
@@ -835,8 +860,14 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     case RegionOverride::RESILIENT_V3:
       globalState->mutRegion = new ResilientV3(globalState, globalState->metalCache->mutRegionId);
       break;
+    case RegionOverride::SAFE:
+      globalState->mutRegion = new Safe(globalState);
+      break;
+    case RegionOverride::SAFE_FASTEST:
+      globalState->mutRegion = new SafeFastest(globalState);
+      break;
     default:
-      assert(false);
+      { assert(false); throw 1337; }
       break;
   }
   globalState->regions.emplace(globalState->mutRegion->getRegionId(), globalState->mutRegion);
@@ -845,7 +876,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   globalState->determinism = &determinism;
 
 
-  assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
+  assert(LLVMTypeOf(globalState->neverPtrLE) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
 
   auto mainSetupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_mainSetup");
   auto mainSetupFuncProto =
@@ -1185,7 +1216,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
 void createModule(std::vector<std::string>& inputFilepaths, GlobalState *globalState) {
   globalState->mod = LLVMModuleCreateWithNameInContext("build", globalState->context);
-  if (!globalState->opt->release) {
+  if (globalState->opt->debug) {
     globalState->dibuilder = LLVMCreateDIBuilder(globalState->mod);
     globalState->difile = LLVMDIBuilderCreateFile(globalState->dibuilder, "main.vale", 9, ".", 1);
     // If theres a compile error on this line, its some sort of LLVM version issue, try commenting or uncommenting the last four args.
@@ -1196,8 +1227,9 @@ void createModule(std::vector<std::string>& inputFilepaths, GlobalState *globalS
             "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
   compileValeCode(globalState, inputFilepaths);
-  if (!globalState->opt->release)
+  if (globalState->opt->debug) {
     LLVMDIBuilderFinalize(globalState->dibuilder);
+  }
 }
 
 // Use provided options (triple, etc.) to creation a machine
@@ -1235,7 +1267,23 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
 
   // Create a specific target machine
 
-  LLVMCodeGenOptLevel opt_level = opt->release? LLVMCodeGenLevelAggressive : LLVMCodeGenLevelNone;
+  LLVMCodeGenOptLevel opt_level = LLVMCodeGenLevelNone;
+  switch (opt->optLevel) {
+    case ValeOptimizationLevel::O0:
+      opt_level = LLVMCodeGenLevelNone;
+      break;
+    case ValeOptimizationLevel::O1:
+      opt_level = LLVMCodeGenLevelLess;
+      break;
+    case ValeOptimizationLevel::O2:
+    case ValeOptimizationLevel::O2i:
+      opt_level = LLVMCodeGenLevelDefault;
+      break;
+    case ValeOptimizationLevel::O3:
+      opt_level = LLVMCodeGenLevelAggressive;
+      break;
+    default: { assert(false); throw 1337; } break;
+  }
 
   LLVMRelocMode reloc = (opt->pic || opt->library)? LLVMRelocPIC : LLVMRelocDefault;
   if (opt->cpu.empty())
@@ -1268,6 +1316,7 @@ void generateOutput(
   LLVMDisposeMessage(layout);
 
   if (!asmPath.empty()) {
+    std::cout << "Printing file " << asmPath << std::endl;
     // Generate assembly file if requested
     if (LLVMTargetMachineEmitToFile(machine, mod, const_cast<char*>(asmPath.c_str()),
         LLVMAssemblyFile, &err) != 0) {
@@ -1326,37 +1375,16 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     }
   }
 
-  if (globalState->opt->release) {
+  if (globalState->opt->optLevel != ValeOptimizationLevel::O0) {
     if (globalState->opt->flares) {
       std::cout << "Warning: Running release optimizations with flares enabled!" << std::endl;
     }
     std::cout << "Running release optimizations..." << std::endl;
 
-    // Create the analysis managers.
-    llvm::LoopAnalysisManager LAM;
-    llvm::FunctionAnalysisManager FAM;
-    llvm::CGSCCAnalysisManager CGAM;
-    llvm::ModuleAnalysisManager MAM;
 
-    // Create the new pass manager builder.
-    // Take a look at the PassBuilder constructor parameters for more
-    // customization, e.g. specifying a TargetMachine or various debugging
-    // options.
-    llvm::PassBuilder PB;
-
-    // Register all the basic analyses with the managers.
-    PB.registerModuleAnalyses(MAM);
-    PB.registerCGSCCAnalyses(CGAM);
-    PB.registerFunctionAnalyses(FAM);
-    PB.registerLoopAnalyses(LAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-    // Create the pass manager.
-    // This one corresponds to a typical -O3 optimization pipeline.
-    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
-
-    // Optimize the IR!
-    MPM.run(*llvm::unwrap(globalState->mod), MAM);
+    // TODO(#599): Perhaps take one of these out.
+    optimize(globalState);
+    optimize(globalState);
   }
 //
 //  // Optimize the generated LLVM IR
@@ -1401,6 +1429,72 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
 
   LLVMDisposeModule(globalState->mod);
   // LLVMContextDispose(gen.context);  // Only need if we created a new context
+}
+
+void optimize(GlobalState *globalState) {
+  llvm::OptimizationLevel opt_level = llvm::OptimizationLevel::O0;
+  switch (globalState->opt->optLevel) {
+    case ValeOptimizationLevel::O0:
+      opt_level = llvm::OptimizationLevel::O0;
+      break;
+    case ValeOptimizationLevel::O1:
+      opt_level = llvm::OptimizationLevel::O1;
+      break;
+    case ValeOptimizationLevel::O2:
+    case ValeOptimizationLevel::O2i:
+      opt_level = llvm::OptimizationLevel::O2;
+      break;
+    case ValeOptimizationLevel::O3:
+      opt_level = llvm::OptimizationLevel::O3;
+      break;
+    default:
+      { assert(false); throw 1337; }
+      break;
+  }
+
+  // Create the analysis managers.
+  llvm::LoopAnalysisManager LAM;
+  llvm::FunctionAnalysisManager FAM;
+  llvm::CGSCCAnalysisManager CGAM;
+  llvm::ModuleAnalysisManager MAM;
+
+  // Create the new pass manager builder.
+// Take a look at the PassBuilder constructor parameters for more
+// customization, e.g. specifying a TargetMachine or various debugging
+// options.
+  llvm::PassBuilder PB;
+
+  // Register all the basic analyses with the managers.
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  // Create the pass manager.
+// This one corresponds to a typical -O0, O3, etc optimization pipeline.
+  llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+
+//    llvm::FunctionPassManager FPM;
+//    FPM.addPass(llvm::InlinerPass());
+//    MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+
+  if (globalState->opt->optLevel == ValeOptimizationLevel::O2i) {
+    llvm::CGSCCPassManager CGPM;
+    CGPM.addPass(llvm::InlinerPass());
+    MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM)));
+  }
+
+//    MPM.addPass(llvm::InlinerPass());
+
+//    PB.registerPipelineStartEPCallback(
+//        [&](llvm::ModulePassManager &MPM, llvm::OptimizationLevel Level) {
+//          MPM.addPass(llvm::InlinerPass());
+//        });
+
+
+  // Optimize the IR!
+  MPM.run(*llvm::unwrap(globalState->mod), MAM);
 }
 
 // Setup LLVM generation, ensuring we know intended target

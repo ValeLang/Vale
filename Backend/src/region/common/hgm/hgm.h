@@ -22,6 +22,12 @@ public:
       Reference* targetType,
       Ref sourceRef);
 
+  Ref crashifyReference(
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      Reference *sourceType,
+      WeakFatPtrLE weakFarPtrLE);
+
   WeakFatPtrLE weakStructPtrToGenWeakInterfacePtr(
       GlobalState *globalState,
       FunctionState *functionState,
@@ -97,13 +103,30 @@ public:
       LLVMValueRef currentGenLE,
       WrapperPtrLE objPtrLE);
 
-  LLVMValueRef lockGenFatPtr(
+  LiveRef lockGenFatPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refM,
+      Ref ref,
+      bool weakRefKnownLive);
+
+  LiveRef preCheckFatPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* refM,
+      Ref ref,
+      bool weakRefKnownLive);
+
+  WrapperPtrLE getWrapperPtr(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      Ref ref,
-      bool weakRefKnownLive);
+      Ref ref);
 
   void innerNoteWeakableDestroyed(
       FunctionState* functionState,
@@ -124,7 +147,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refMT,
-      Ref ref);
+      LiveRef ref);
 
   void discardWeakRef(
       AreaAndFileAndLine from,

@@ -1006,6 +1006,7 @@ class CompilerTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getCompilerOutputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>
+      case _ => compile.expectCompilerOutputs(); vfail()
     }
   }
 
@@ -1216,7 +1217,7 @@ class CompilerTests extends FunSuite with Matchers {
     val lineContaining = (x: CodeLocationS) => SourceCodeUtils.lineContaining(filenamesAndSources, x)
 
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
-      CouldntFindTypeT(tz, "Spaceship")).nonEmpty)
+      CouldntFindTypeT(tz, CodeNameS(interner.intern(StrI("Spaceship"))))).nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,

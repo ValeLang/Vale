@@ -109,14 +109,19 @@ case class ExternAttributeP(range: RangeL) extends IAttributeP { override def eq
 case class BuiltinAttributeP(range: RangeL, generatorName: NameP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ExportAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class PureAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class AdditiveAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 //case class RuleAttributeP(rule: IRulexPR) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-sealed trait IRuneAttributeP
+sealed trait IRuneAttributeP {
+  def range: RangeL
+}
 case class ImmutableRuneAttributeP(range: RangeL) extends IRuneAttributeP
+case class MutableRuneAttributeP(range: RangeL) extends IRuneAttributeP
 //case class TypeRuneAttributeP(range: RangeL, tyype: ITypePR) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ReadOnlyRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
 case class ReadWriteRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
 case class ImmutableRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
+case class AdditiveRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
 case class PoolRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ArenaRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BumpRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -137,7 +142,7 @@ case class GenericParameterTypeP(
 
 case class GenericParametersP(range: RangeL, params: Vector[GenericParameterP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class TemplateRulesP(range: RangeL, rules: Vector[IRulexPR]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ParamsP(range: RangeL, patterns: Vector[PatternPP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ParamsP(range: RangeL, params: Vector[ParameterP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionP(
   range: RangeL,
@@ -176,6 +181,7 @@ case object VaryingP extends VariabilityP { override def toString: String = "var
 sealed trait OwnershipP
 case object OwnP extends OwnershipP { override def toString: String = "own" }
 case object BorrowP extends OwnershipP { override def toString: String = "borrow" }
+case object LiveP extends OwnershipP { override def toString: String = "live" }
 case object WeakP extends OwnershipP { override def toString: String = "weak" }
 case object ShareP extends OwnershipP { override def toString: String = "share" }
 

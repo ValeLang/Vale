@@ -1,6 +1,6 @@
 package dev.vale.typing.types
 
-import dev.vale.{CodeLocationS, IInterning, Interner, Keywords, PackageCoordinate, vassert, vcurious, vfail, vpass}
+import dev.vale.{CodeLocationS, IInterning, StrI, Interner, Keywords, PackageCoordinate, vassert, vcurious, vfail, vpass}
 import dev.vale.postparsing.IImpreciseNameS
 import dev.vale.typing.ast.{AbstractT, FunctionHeaderT, ICitizenAttributeT}
 import dev.vale.typing.env.IEnvironment
@@ -191,6 +191,13 @@ sealed trait ICitizenTT extends ISubKindTT with IInterning {
 
 // These should only be made by StructCompiler, which puts the definition and bounds into coutputs at the same time
 case class StructTT(fullName: IdT[IStructNameT]) extends ICitizenTT {
+  this match {
+    case StructTT(IdT(PackageCoordinate(StrI("test"),Vector()),Vector(),StructNameT(StructTemplateNameT(StrI("Zork")),Vector()))) => {
+      vpass()
+    }
+    case _ =>
+  }
+
   (fullName.initSteps.lastOption, fullName.localName) match {
     case (Some(StructTemplateNameT(_)), StructNameT(_, _)) => vfail()
     case _ =>

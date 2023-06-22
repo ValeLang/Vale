@@ -12,6 +12,14 @@ object U {
       i = i + 1
     }
   }
+  def foreachI[T](vec: Vector[T], func: scala.Function2[Int, T, Unit]): Unit = {
+    //    vec.zipWithIndex.foreach(func)
+    var i = 0
+    while (i < vec.length) {
+      func(i, vec(i))
+      i = i + 1
+    }
+  }
   def foreachIterable[T](vec: Iterable[T], func: scala.Function1[T, Unit]): Unit = {
     //    vec.foreach(func)
     val it = vec.iterator
@@ -32,9 +40,9 @@ object U {
   def mapRange[R](start: Int, until: Int, func: scala.Function1[Int, R])(implicit m: ClassTag[R]): Vector[R] = {
 //    (start until until).map(func).toVector
     val result = new Array[R](until - start)
-    var i = start
-    while (i < until) {
-      result(i) = func(i)
+    var i = 0
+    while (i < until - start) {
+      result(i) = func(start + i)
       i = i + 1
     }
     result.toVector
@@ -137,5 +145,28 @@ object U {
       i = i + 1
     }
     return false
+  }
+  def extract[T, Y](vec: Vector[T], func: scala.PartialFunction[T, Y]): (Vector[Y], Vector[T]) = {
+    val result = mutable.ArrayBuffer[Y]()
+    val remainder = mutable.ArrayBuffer[T]()
+    var i = 0
+    while (i < vec.size) {
+      val el = vec(i)
+      if (func.isDefinedAt(el)) {
+        result += func(el)
+      } else {
+        remainder += el
+      }
+      i = i + 1
+    }
+    return (result.toVector, remainder.toVector)
+  }
+
+  def repeat[T](elem: T, n: Int): Vector[T] = {
+    val result = mutable.ArrayBuffer[T]()
+    (0 until n).foreach(i => {
+      result += elem
+    })
+    result.toVector
   }
 }

@@ -130,7 +130,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       case TopLevelFunctionP(
       FunctionP(_,
       _,
-      Some(BlockPE(_,None,VoidPE(_))))) =>
+      Some(BlockPE(_,None,None,VoidPE(_))))) =>
     }
   }
 

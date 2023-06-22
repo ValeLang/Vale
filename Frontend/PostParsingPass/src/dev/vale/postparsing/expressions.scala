@@ -70,7 +70,7 @@ case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwners
 
 // when we make a closure, we make a struct full of pointers to all our variables
 // and the first element is our parent closure
-// this can live on the stack, since blocks are limited to this expression
+// this can live on the stack, since blocks are additive to this expression
 // later we can optimize it to only have the things we use
 
 
@@ -102,11 +102,23 @@ case class BodySE(
   vpass()
 }
 
+case class PureSE(
+  range: RangeS,
+  location: LocationInDenizen,
+  inner: IExpressionSE
+) extends IExpressionSE {
+  inner match {
+    case BlockSE(range, locals, expr) =>
+    case other => vwat() // Pures always contain blocks, see PSBOB.
+  }
+}
+
 case class BlockSE(
   range: RangeS,
   locals: Vector[LocalS],
   expr: IExpressionSE,
 ) extends IExpressionSE {
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
@@ -252,7 +264,7 @@ case class IndexSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE)
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
-case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: Vector[IExpressionSE]) extends IExpressionSE {
+case class FunctionCallSE(range: RangeS, location: LocationInDenizen, callableExpr: IExpressionSE, argsExprs1: Vector[IExpressionSE]) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 

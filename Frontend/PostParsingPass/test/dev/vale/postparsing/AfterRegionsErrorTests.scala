@@ -2,7 +2,7 @@ package dev.vale.postparsing
 
 import dev.vale.parsing.ast.{FinalP, LoadAsBorrowP, MutableP, UseP}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{LiteralSR, LookupSR, MutabilityLiteralSL, RuneUsage}
+import dev.vale.postparsing.rules.{LiteralSR, MaybeCoercingLookupSR, MutabilityLiteralSL, RuneUsage}
 import dev.vale.solver.IncompleteSolve
 import dev.vale._
 import org.scalatest.{FunSuite, Matchers}

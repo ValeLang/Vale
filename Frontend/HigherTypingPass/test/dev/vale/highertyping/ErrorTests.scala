@@ -1,9 +1,9 @@
 package dev.vale.highertyping
 
-import dev.vale.postparsing.CodeNameS
+import dev.vale.postparsing.{CodeNameS, PostParser, RuneTypeSolveError, RuneTypingCouldntFindType}
 import dev.vale.{Err, Ok, SourceCodeUtils, StrI, vassert, vfail}
-import dev.vale.postparsing.PostParser
 import org.scalatest.{FunSuite, Matchers}
+import dev.vale.solver._
 
 class ErrorTests extends FunSuite with Matchers  {
   def compileProgramForError(compilation: HigherTypingCompilation): ICompileErrorA = {
@@ -22,8 +22,7 @@ class ErrorTests extends FunSuite with Matchers  {
 
 
     compileProgramForError(compilation) match {
-      case e @ CouldntFindTypeA(_, CodeNameS(StrI("Bork"))) => {
-
+      case e @ CouldntSolveRulesA(_,RuneTypeSolveError(_,FailedSolve(_,_,RuleError(RuneTypingCouldntFindType(_,CodeNameS(StrI("Bork"))))))) => {
         val codeMap = compilation.getCodeMap().getOrDie()
         val errorText =
           HigherTypingErrorHumanizer.humanize(
@@ -32,7 +31,7 @@ class ErrorTests extends FunSuite with Matchers  {
             SourceCodeUtils.lineRangeContaining(codeMap, _),
             SourceCodeUtils.lineContaining(codeMap, _),
             e)
-        vassert(errorText.contains("Couldn't find type `Bork`"))
+        vassert(errorText.contains("Couldn't find anything with the name 'Bork'"))
       }
     }
   }

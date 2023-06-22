@@ -2,7 +2,7 @@ package dev.vale.postparsing.rules
 
 import dev.vale.parsing.ast.{LocationP, MutabilityP, OwnershipP, VariabilityP}
 import dev.vale.postparsing._
-import dev.vale.{RangeS, StrI, vassert, vcurious, vpass}
+import dev.vale.{RangeS, StrI, vassert, vassertSome, vcurious, vpass}
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
 
@@ -33,6 +33,8 @@ case class CoordSendSR(
   senderRune: RuneUsage,
   receiverRune: RuneUsage
 ) extends IRulexSR {
+  vpass()
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def runeUsages: Vector[RuneUsage] = Vector(senderRune, receiverRune)
 }
@@ -159,6 +161,7 @@ case class IsStructSR(
   override def runeUsages: Vector[RuneUsage] = Vector(rune)
 }
 
+// TODO: Get rid of this in favor of just CoordComponentsSR.
 case class CoerceToCoordSR(
   range: RangeS,
   coordRune: RuneUsage,
@@ -186,6 +189,17 @@ case class LiteralSR(
   override def runeUsages: Vector[RuneUsage] = Vector(rune)
 }
 
+case class MaybeCoercingLookupSR(
+  range: RangeS,
+  rune: RuneUsage,
+  name: IImpreciseNameS
+) extends IRulexSR {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+  override def runeUsages: Vector[RuneUsage] = Vector(rune)
+}
+
+// A rule that looks up something that's not a Kind, so it doesn't need a default region.
 case class LookupSR(
   range: RangeS,
   rune: RuneUsage,
@@ -194,6 +208,26 @@ case class LookupSR(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
   override def runeUsages: Vector[RuneUsage] = Vector(rune)
+}
+
+case class MaybeCoercingCallSR(
+  range: RangeS,
+  resultRune: RuneUsage,
+  templateRune: RuneUsage,
+  args: Vector[RuneUsage]
+) extends IRulexSR {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
+}
+
+case class CallSR(
+  range: RangeS,
+  resultRune: RuneUsage,
+  templateRune: RuneUsage,
+  args: Vector[RuneUsage]
+) extends IRulexSR {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
 }
 
 case class IndexListSR(
@@ -221,28 +255,12 @@ case class RuneParentEnvLookupSR(
 case class AugmentSR(
   range: RangeS,
   resultRune: RuneUsage,
-  ownership: OwnershipP,
+  ownership: Option[OwnershipP],
   innerRune: RuneUsage
 ) extends IRulexSR {
   vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def runeUsages: Vector[RuneUsage] = Vector(resultRune, innerRune)
-}
-
-case class CallSR(
-  range: RangeS,
-  resultRune: RuneUsage,
-  templateRune: RuneUsage,
-  args: Vector[RuneUsage]
-) extends IRulexSR {
-  this match {
-    case CallSR(_,RuneUsage(_,ImplicitRuneS(LocationInDenizen(Vector(6, 1, 1, 2, 1)))),RuneUsage(_,ImplicitRuneS(LocationInDenizen(Vector(6, 1, 1, 2, 2)))),Vector(RuneUsage(_,CodeRuneS(StrI("S"))), RuneUsage(_,CodeRuneS(StrI("M"))), RuneUsage(_,CodeRuneS(StrI("V"))), RuneUsage(_,CodeRuneS(StrI("E"))))) => {
-      vpass()
-    }
-    case _ =>
-  }
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
 }
 
 case class PackSR(

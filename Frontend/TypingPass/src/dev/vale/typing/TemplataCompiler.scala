@@ -1,6 +1,6 @@
 package dev.vale.typing
 
-import dev.vale.{CodeLocationS, Interner, Keywords, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Interner, Keywords, RangeS, Result, Ok, Err, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
 import dev.vale.postparsing.rules.{EqualsSR, IRulexSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.env.{FunctionEnvironment, GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
@@ -752,6 +752,33 @@ object TemplataCompiler {
       .map({ case (genericParam, index, false) => (genericParam, index) })
       .headOption
   }
+
+  def createRuneTypeSolverEnv(parentEnv: IEnvironment): IRuneTypeSolverEnv = {
+    new IRuneTypeSolverEnv {
+      override def lookup(
+          range: RangeS,
+          nameS: IImpreciseNameS
+      ): Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
+        nameS match {
+          case LambdaStructImpreciseNameS(_) => {
+            vregionmut() // Take out with regions
+            Ok(TemplataLookupResult(KindTemplataType()))
+            // Put back in with regions
+            // Ok(TemplataLookupResult(TemplateTemplataType(Vector(RegionTemplataType()), KindTemplataType())))
+          }
+          case _ => {
+            parentEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
+              case Some(CitizenDefinitionTemplata(environment, a)) => {
+                Ok(CitizenRuneTypeSolverLookupResult(a.tyype, a.genericParameters))
+              }
+              case Some(x) => Ok(TemplataLookupResult(x.tyype))
+              case None => Err(RuneTypingCouldntFindType(range, nameS))
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 class TemplataCompiler(
@@ -1035,11 +1062,12 @@ class TemplataCompiler(
     runeToType: Map[IRuneS, ITemplataType],
     registerWithCompilerOutputs: Boolean):
   ITemplata[ITemplataType] = {
+    vregionmut() // Change with regions
     val immutable =
-      genericParam.attributes.exists({
-        case ImmutableRuneAttributeS(_) => true
-        case _ => false
-      })
+      genericParam.tyype match {
+        case CoordGenericParameterTypeS(coordRegion, kindMutable, regionMutable) => !kindMutable
+        case _ => true
+      }
     val runeType = vassertSome(runeToType.get(genericParam.rune.rune))
     createPlaceholderInner(
       coutputs, env, namePrefix, index, genericParam.rune.rune, runeType, immutable, registerWithCompilerOutputs)
@@ -1096,5 +1124,4 @@ class TemplataCompiler(
       case _ => PlaceholderTemplata(placeholderFullName, runeType)
     }
   }
-
 }

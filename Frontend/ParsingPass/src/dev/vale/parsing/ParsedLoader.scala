@@ -219,17 +219,25 @@ class ParsedLoader(interner: Interner) {
   def loadParams(jobj: JObject): ParamsP = {
     ast.ParamsP(
       loadRange(getObjectField(jobj, "range")),
-      getArrayField(jobj, "patterns").map(expectObject).map(loadPattern))
+      getArrayField(jobj, "params").map(expectObject).map(loadParameter))
+  }
+
+  def loadParameter(jobj: JObject): ParameterP = {
+    ast.ParameterP(
+      loadRange(getObjectField(jobj, "range")),
+      loadOptionalObject(getObjectField(jobj, "virtuality"), loadVirtuality),
+      loadOptionalObject(getObjectField(jobj, "maybePreChecked"), loadRange),
+      loadOptionalObject(getObjectField(jobj, "selfBorrow"), loadRange),
+      loadOptionalObject(getObjectField(jobj, "pattern"), loadPattern))
   }
 
   def loadPattern(jobj: JObject): PatternPP = {
     ast.PatternPP(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(getObjectField(jobj, "preBorrow"), loadRange),
       loadOptionalObject(getObjectField(jobj, "capture"), loadDestinationLocal),
       loadOptionalObject(getObjectField(jobj, "templex"), loadTemplex),
-      loadOptionalObject(getObjectField(jobj, "destructure"), loadDestructure),
-      loadOptionalObject(getObjectField(jobj, "virtuality"), loadVirtuality))
+      loadOptionalObject(getObjectField(jobj, "destructure"), loadDestructure))
+//      loadOptionalObject(getObjectField(jobj, "virtuality"), loadVirtuality))
   }
 
   def loadDestructure(jobj: JObject): DestructureP = {
@@ -280,6 +288,7 @@ class ParsedLoader(interner: Interner) {
   def loadBlock(jobj: JObject): BlockPE = {
     BlockPE(
       loadRange(getObjectField(jobj, "range")),
+      loadOptionalObject(getObjectField(jobj, "maybePure"), loadRange),
       loadOptionalObject(getObjectField(jobj, "maybeDefaultRegion"), loadRegionRune),
       loadExpression(getObjectField(jobj, "inner")))
   }
@@ -406,6 +415,12 @@ class ParsedLoader(interner: Interner) {
           loadOwnership(getObjectField(jobj, "targetOwnership")),
           loadExpression(getObjectField(jobj, "inner")))
       }
+      case "Transmigrate" => {
+        TransmigratePE(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "targetRegion")),
+          loadExpression(getObjectField(jobj, "inner")))
+      }
       case "Mutate" => {
         MutatePE(
           loadRange(getObjectField(jobj, "range")),
@@ -470,6 +485,7 @@ class ParsedLoader(interner: Interner) {
       case "Each" => {
         EachPE(
           loadRange(getObjectField(jobj, "range")),
+          loadOptionalObject(getObjectField(jobj, "maybePure"), loadRange),
           loadPattern(getObjectField(jobj, "entryPattern")),
           loadRange(getObjectField(jobj, "inRange")),
           loadExpression(getObjectField(jobj, "iterableExpr")),
@@ -686,6 +702,7 @@ class ParsedLoader(interner: Interner) {
       case "ReadOnlyRuneAttribute" => ReadOnlyRegionRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ReadWriteRuneAttribute" => ReadWriteRegionRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ImmutableRuneAttribute" => ImmutableRegionRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "AdditiveRuneAttribute" => AdditiveRegionRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "PoolRuneAttribute" => PoolRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ArenaRuneAttribute" => ArenaRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "BumpRuneAttribute" => BumpRuneAttributeP(loadRange(getObjectField(jobj, "range")))
@@ -697,6 +714,7 @@ class ParsedLoader(interner: Interner) {
     getType(jobj) match {
       case "AbstractAttribute" => AbstractAttributeP(loadRange(getObjectField(jobj, "range")))
       case "PureAttribute" => PureAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "AdditiveAttribute" => AdditiveAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ExportAttribute" => ExportAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ExternAttribute" => ExternAttributeP(loadRange(getObjectField(jobj, "range")))
       case "BuiltinAttribute" => {
@@ -823,7 +841,7 @@ class ParsedLoader(interner: Interner) {
           loadRange(getObjectField(jobj, "range")),
           loadName(getObjectField(jobj, "name")),
           loadRange(getObjectField(jobj, "paramsRange")),
-          getArrayField(jobj, "parameters").map(expectObject).map(loadTemplex),
+          getArrayField(jobj, "params").map(expectObject).map(loadTemplex),
           loadTemplex(getObjectField(jobj, "returnType")))
       }
       case x => vimpl(x.toString)

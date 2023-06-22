@@ -73,7 +73,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
   }
   test("15") {
     compile("_ &[#3]MutableStruct") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)),
         Some(
           InterpretedPT(_,
@@ -84,13 +84,12 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
               VariabilityPT(_,FinalP),
               IntPT(_,3),
               NameOrRunePT(NameP(_, StrI("MutableStruct")))))),
-        None,
         None) =>
     }
   }
   test("15m") {
     compile("_ &&[#3]<_, _>MutableStruct") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)),
         Some(
           InterpretedPT(_,
@@ -101,13 +100,12 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
               AnonymousRunePT(_),
               IntPT(_,3),
               NameOrRunePT(NameP(_, StrI("MutableStruct")))))),
-        None,
         None) =>
     }
   }
   test("15z") {
     compile("_ MyOption<MyList<int>>") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)),
         Some(
           CallPT(
@@ -118,7 +116,6 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
                 NameOrRunePT(NameP(_, StrI("MyList"))),
                 Vector(
                   NameOrRunePT(NameP(_, StrI("int")))))))),
-        None,
         None) =>
     }
   }

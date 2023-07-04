@@ -14,7 +14,7 @@ import dev.vale.typing.types.MutabilityT
 import dev.vale.highertyping.FunctionA
 import dev.vale.parsing.ast.MoveP
 import dev.vale.postparsing._
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing.names.FunctionTemplateNameT
 import dev.vale.typing.types._
 import dev.vale.typing.OverloadResolver

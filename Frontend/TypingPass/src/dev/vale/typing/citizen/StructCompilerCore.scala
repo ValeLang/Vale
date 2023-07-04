@@ -17,7 +17,7 @@ import dev.vale.typing.{ast, _}
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.parsing.ast.DontCallMacroP
-import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvEntry, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvEntry, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.names.{AnonymousSubstructImplNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionTemplateNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, SelfNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -34,14 +34,14 @@ class StructCompilerCore(
   delegate: IStructCompilerDelegate) {
 
   def compileStruct(
-    outerEnv: IEnvironment,
-    structRunesEnv: CitizenEnvironment[IStructNameT, IStructTemplateNameT],
+    outerEnv: IInDenizenEnvironmentT,
+    structRunesEnv: CitizenEnvironmentT[IStructNameT, IStructTemplateNameT],
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     structA: StructA):
   Unit = {
     val templateArgs = structRunesEnv.id.localName.templateArgs
-    val templateIdT = structRunesEnv.templateName
+    val templateIdT = structRunesEnv.templateId
     val templateNameT = templateIdT.localName
     val placeholderedNameT = templateNameT.makeStructName(interner, templateArgs)
     val placeholderedIdT = templateIdT.copy(localName = placeholderedNameT)
@@ -86,7 +86,7 @@ class StructCompilerCore(
       })
 
     val structInnerEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         structRunesEnv.globalEnv,
         structRunesEnv,
         templateIdT,
@@ -192,15 +192,14 @@ class StructCompilerCore(
   // }
   // which means we need some way to know what T is.
   def compileInterface(
-    containingEnv: IEnvironment,
-    outerEnv: IEnvironment,
-    interfaceRunesEnv: CitizenEnvironment[IInterfaceNameT, IInterfaceTemplateNameT],
+    outerEnv: IInDenizenEnvironmentT,
+    interfaceRunesEnv: CitizenEnvironmentT[IInterfaceNameT, IInterfaceTemplateNameT],
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     interfaceA: InterfaceA):
   (InterfaceDefinitionT) = {
     val templateArgs = interfaceRunesEnv.id.localName.templateArgs
-    val templateIdT = interfaceRunesEnv.templateName
+    val templateIdT = interfaceRunesEnv.templateId
     val templateNameT = templateIdT.localName
     val placeholderedNameT = templateNameT.makeInterfaceName(interner, templateArgs)
     val placeholderedIdT = templateIdT.copy(localName = placeholderedNameT)
@@ -318,7 +317,7 @@ class StructCompilerCore(
   }
 
   private def makeStructMembers(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     members: Vector[IStructMemberS]):
   Vector[IStructMemberT] = {
@@ -326,7 +325,7 @@ class StructCompilerCore(
   }
 
   private def makeStructMember(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     member: IStructMemberS):
   IStructMemberT = {
@@ -360,7 +359,7 @@ class StructCompilerCore(
 
   // Makes a struct to back a closure
   def makeClosureUnderstruct(
-    containingFunctionEnv: NodeEnvironment,
+    containingFunctionEnv: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     name: IFunctionDeclarationNameS,
@@ -408,7 +407,7 @@ class StructCompilerCore(
     // and see the function and use it.
     // See CSFMSEO and SAFHE.
     val structOuterEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         containingFunctionEnv.globalEnv,
         containingFunctionEnv,
         understructTemplatedIdT,
@@ -427,7 +426,7 @@ class StructCompilerCore(
               interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplataT(understructStructTT)))))
 
     val structInnerEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         structOuterEnv.globalEnv,
         structOuterEnv,
         understructTemplatedIdT,

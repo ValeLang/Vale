@@ -3,7 +3,7 @@ package dev.vale.typing.citizen
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.{GenericParameterS, IFunctionDeclarationNameS, ITemplataType, SealedS}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing.{CompilerOutputs, InferCompiler, InitialKnown, TypingPassOptions}
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.names.{AnonymousSubstructNameT, IdT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, StructTemplateNameT}
@@ -32,7 +32,7 @@ class StructCompilerGenericArgsLayer(
 
   def resolveStruct(
     coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     structTemplata: StructDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -102,7 +102,7 @@ class StructCompilerGenericArgsLayer(
   // See SFWPRL for how this is different from resolveInterface.
   def predictInterface(
     coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     interfaceTemplata: InterfaceDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -165,7 +165,7 @@ class StructCompilerGenericArgsLayer(
   // See SFWPRL for how this is different from resolveStruct.
   def predictStruct(
     coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     structTemplata: StructDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -227,7 +227,7 @@ class StructCompilerGenericArgsLayer(
 
   def resolveInterface(
     coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     interfaceTemplata: InterfaceDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -359,7 +359,7 @@ class StructCompilerGenericArgsLayer(
       val id = assembleStructName(structTemplateId, templateArgs)
 
       val innerEnv =
-        CitizenEnvironment(
+        CitizenEnvironmentT(
           outerEnv.globalEnv,
           outerEnv,
           structTemplateId,
@@ -439,7 +439,7 @@ class StructCompilerGenericArgsLayer(
       val id = assembleInterfaceName(interfaceTemplateId, templateArgs)
 
       val innerEnv =
-        CitizenEnvironment(
+        CitizenEnvironmentT(
           outerEnv.globalEnv,
           outerEnv,
           interfaceTemplateId,
@@ -452,13 +452,13 @@ class StructCompilerGenericArgsLayer(
 
       coutputs.declareTypeInnerEnv(interfaceTemplateId, innerEnv)
 
-      core.compileInterface(declaringEnv, outerEnv, innerEnv, coutputs, parentRanges, interfaceA)
+      core.compileInterface(outerEnv, innerEnv, coutputs, parentRanges, interfaceA)
     })
   }
 
   // Makes a struct to back a closure
   def makeClosureUnderstruct(
-    containingFunctionEnv: NodeEnvironment,
+    containingFunctionEnv: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     name: IFunctionDeclarationNameS,

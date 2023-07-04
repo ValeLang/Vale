@@ -35,7 +35,7 @@ class FunctionCompilerCore(
   val bodyCompiler = new BodyCompiler(opts, nameTranslator, templataCompiler, convertHelper, new IBodyCompilerDelegate {
     override def evaluateBlockStatements(
       coutputs: CompilerOutputs,
-      startingNenv: NodeEnvironment,
+      startingNenv: NodeEnvironmentT,
       nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
@@ -61,7 +61,7 @@ class FunctionCompilerCore(
   // - either no template args, or they were already added to the env.
   // - either no closured vars, or they were already added to the env.
   def evaluateFunctionForHeader(
-    fullEnv: FunctionEnvironment,
+    fullEnv: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     params2: Vector[ParameterT]):
@@ -243,7 +243,7 @@ class FunctionCompilerCore(
   // - either no template args, or they were already added to the env.
   // - either no closured vars, or they were already added to the env.
   def getFunctionPrototypeForCall(
-    fullEnv: FunctionEnvironment,
+    fullEnv: FunctionEnvironmentT,
       coutputs: CompilerOutputs,
     callRange: List[RangeS],
       params2: Vector[ParameterT]):
@@ -253,7 +253,7 @@ class FunctionCompilerCore(
   }
 
   def getFunctionPrototypeInnerForCall(
-    fullEnv: FunctionEnvironment,
+    fullEnv: FunctionEnvironmentT,
     id: IdT[IFunctionNameT]):
   PrototypeT = {
     val retCoordRune = vassertSome(fullEnv.function.maybeRetCoordRune)
@@ -268,7 +268,7 @@ class FunctionCompilerCore(
   }
 
   def finalizeHeader(
-      fullEnv: FunctionEnvironment,
+      fullEnv: FunctionEnvironmentT,
       coutputs: CompilerOutputs,
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
@@ -281,7 +281,7 @@ class FunctionCompilerCore(
   // By MaybeDeferred we mean that this function might be called later, to reduce reentrancy.
   private def finishFunctionMaybeDeferred(
       coutputs: CompilerOutputs,
-      fullEnvSnapshot: FunctionEnvironment,
+      fullEnvSnapshot: FunctionEnvironmentT,
       callRange: List[RangeS],
       life: LocationInFunctionEnvironmentT,
       attributesT: Vector[IFunctionAttributeT],
@@ -291,7 +291,7 @@ class FunctionCompilerCore(
   FunctionHeaderT = {
     val (maybeEvaluatedRetCoord, body2) =
       bodyCompiler.declareAndEvaluateFunctionBody(
-        FunctionEnvironmentBox(fullEnvSnapshot),
+        FunctionEnvironmentBoxT(fullEnvSnapshot),
         coutputs, life, callRange, fullEnvSnapshot.function, maybeExplicitReturnCoord, paramsT, isDestructor)
 
     val retCoord = vassertOne(maybeExplicitReturnCoord.toList ++ maybeEvaluatedRetCoord.toList)

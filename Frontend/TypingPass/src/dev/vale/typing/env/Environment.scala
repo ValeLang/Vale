@@ -21,17 +21,13 @@ import dev.vale.typing.types.{InterfaceTT, KindPlaceholderT, StructTT}
 import scala.collection.immutable.{List, Map, Set}
 
 
-trait IEnvironment {
+trait IEnvironmentT {
   override def toString: String = {
     "#Environment:" + id
   }
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash these, too big.
 
   def globalEnv: GlobalEnvironment
-
-  // This is the denizen that we're currently compiling.
-  // If we're compiling a generic, it's the denizen that currently has placeholders defined.
-  def rootCompilingDenizenEnv: IEnvironment
 
   def templatas: TemplatasStore
 
@@ -94,8 +90,16 @@ trait IEnvironment {
   def id: IdT[INameT]
 }
 
-trait IEnvironmentBox extends IEnvironment {
-  def snapshot: IEnvironment
+trait IInDenizenEnvironmentT extends IEnvironmentT {
+  // This is the denizen that we're currently compiling.
+  // If we're compiling a generic, it's the denizen that currently has placeholders defined.
+  def rootCompilingDenizenEnv: IInDenizenEnvironmentT
+
+  def denizenId: IdT[INameT]
+}
+
+trait IDenizenEnvironmentBoxT extends IInDenizenEnvironmentT {
+  def snapshot: IInDenizenEnvironmentT
   override def toString: String = {
     "#Environment:" + id
   }
@@ -167,7 +171,7 @@ object TemplatasStore {
     }
   }
 
-  def entryToTemplata(definingEnv: IEnvironment, entry: IEnvEntry): ITemplataT[ITemplataType] = {
+  def entryToTemplata(definingEnv: IEnvironmentT, entry: IEnvEntry): ITemplataT[ITemplataType] = {
     //    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelName2()))
     entry match {
       case FunctionEnvEntry(func) => templata.FunctionTemplataT(definingEnv, func)
@@ -334,7 +338,7 @@ case class TemplatasStore(
   }
 
   private[env] def lookupWithNameInner(
-    definingEnv: IEnvironment,
+    definingEnv: IEnvironmentT,
 
     name: INameT,
     lookupFilter: Set[ILookupContext]):
@@ -345,7 +349,7 @@ case class TemplatasStore(
   }
 
   private[env] def lookupWithImpreciseNameInner(
-    definingEnv: IEnvironment,
+    definingEnv: IEnvironmentT,
 
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext]):
@@ -357,37 +361,37 @@ case class TemplatasStore(
   }
 }
 
-object PackageEnvironment {
+object PackageEnvironmentT {
   // THIS IS TEMPORARY, it pulls in all global namespaces!
   // See https://github.com/ValeLang/Vale/issues/356
-  def makeTopLevelEnvironment(globalEnv: GlobalEnvironment, namespaceName: IdT[INameT]): PackageEnvironment[INameT] = {
-    PackageEnvironment(
+  def makeTopLevelEnvironment(globalEnv: GlobalEnvironment, namespaceName: IdT[INameT]): PackageEnvironmentT[INameT] = {
+    PackageEnvironmentT(
       globalEnv,
       namespaceName,
       globalEnv.nameToTopLevelEnvironment.values.toVector)
   }
 }
 
-case class PackageEnvironment[+T <: INameT](
+case class PackageEnvironmentT[+T <: INameT](
   globalEnv: GlobalEnvironment,
   id: IdT[T],
 
   // These are ones that the user imports (or the ancestors that we implicitly import)
   globalNamespaces: Vector[TemplatasStore]
-) extends IEnvironment {
+) extends IEnvironmentT {
   val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
 
   override def templatas: TemplatasStore = {
     vimpl()
   }
 
-  override def rootCompilingDenizenEnv: IEnvironment = vwat()
+//  override def rootCompilingDenizenEnv: IInDenizenEnvironment = vwat()
 
   override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[IEnvironment]) {
+    if (!obj.isInstanceOf[IInDenizenEnvironmentT]) {
       return false
     }
-    return id.equals(obj.asInstanceOf[IEnvironment].id)
+    return id.equals(obj.asInstanceOf[IInDenizenEnvironmentT].id)
   }
 
   private[env] override def lookupWithNameInner(
@@ -397,7 +401,7 @@ case class PackageEnvironment[+T <: INameT](
   Iterable[ITemplataT[ITemplataType]] = {
     globalEnv.builtins.lookupWithNameInner(this, name, lookupFilter) ++
     globalNamespaces.flatMap(ns => {
-      val env = PackageEnvironment(globalEnv, ns.templatasStoreName, globalNamespaces)
+      val env = PackageEnvironmentT(globalEnv, ns.templatasStoreName, globalNamespaces)
       ns.lookupWithNameInner(env, name, lookupFilter)
     })
   }
@@ -410,41 +414,48 @@ case class PackageEnvironment[+T <: INameT](
     globalEnv.builtins.lookupWithImpreciseNameInner(this, name, lookupFilter) ++
     globalNamespaces.flatMap(ns => {
       ns.lookupWithImpreciseNameInner(
-        PackageEnvironment(globalEnv, ns.templatasStoreName, globalNamespaces),
+        PackageEnvironmentT(globalEnv, ns.templatasStoreName, globalNamespaces),
         name, lookupFilter)
     })
   }
 }
 
 
-case class CitizenEnvironment[+T <: INameT, +Y <: ITemplateNameT](
+case class CitizenEnvironmentT[+T <: INameT, +Y <: ITemplateNameT](
   globalEnv: GlobalEnvironment,
-  parentEnv: IEnvironment,
-  templateName: IdT[Y],
+  parentEnv: IEnvironmentT,
+  templateId: IdT[Y],
   id: IdT[T],
   templatas: TemplatasStore
-) extends IEnvironment {
+) extends IInDenizenEnvironmentT {
   vassert(templatas.templatasStoreName == id)
+
+  override def denizenId: IdT[INameT] = templateId
 
   val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[IEnvironment]) {
+    if (!obj.isInstanceOf[IInDenizenEnvironmentT]) {
       return false
     }
-    return id.equals(obj.asInstanceOf[IEnvironment].id)
+    return id.equals(obj.asInstanceOf[IInDenizenEnvironmentT].id)
   }
 
-  override def rootCompilingDenizenEnv: IEnvironment = {
+  override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = {
     (id.localName, parentEnv.id.localName) match {
       case (_ : IInstantiationNameT, _ : ITemplateNameT) => this
       case (_, PackageTopLevelNameT()) => this
       case _ => {
-        val result = parentEnv.rootCompilingDenizenEnv
-        result.id.localName match {
-          case _ : IInstantiationNameT =>
-          case other => vwat(other)
+        parentEnv match {
+          case parentInDenizenEnv : IInDenizenEnvironmentT => {
+            val result = parentInDenizenEnv.rootCompilingDenizenEnv
+            result.id.localName match {
+              case _ : IInstantiationNameT =>
+              case other => vwat(other)
+            }
+            result
+          }
+          case _ => vwat()
         }
-        result
       }
     }
   }
@@ -478,14 +489,14 @@ case class CitizenEnvironment[+T <: INameT, +Y <: ITemplateNameT](
   }
 }
 
-object GeneralEnvironment {
+object GeneralEnvironmentT {
   def childOf[Y <: INameT](
     interner: Interner,
-    parentEnv: IEnvironment,
+    parentEnv: IInDenizenEnvironmentT,
     newName: IdT[Y],
     newEntriesList: Vector[(INameT, IEnvEntry)] = Vector()):
-  GeneralEnvironment[Y] = {
-    GeneralEnvironment(
+  GeneralEnvironmentT[Y] = {
+    GeneralEnvironmentT(
       parentEnv.globalEnv,
       parentEnv,
       newName,
@@ -494,21 +505,82 @@ object GeneralEnvironment {
   }
 }
 
-case class GeneralEnvironment[+T <: INameT](
+case class ExportEnvironmentT(
+    globalEnv: GlobalEnvironment,
+    parentEnv: PackageEnvironmentT[INameT],
+    id: IdT[INameT],
+    //  defaultRegion: ITemplata[RegionTemplataType],
+    templatas: TemplatasStore
+) extends IInDenizenEnvironmentT {
+  override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = this
+  override def denizenId: IdT[INameT] = id
+
+  override def lookupWithNameInner(
+      name: INameT,
+      lookupFilter: Set[ILookupContext],
+      getOnlyNearest: Boolean):
+  Iterable[ITemplataT[ITemplataType]] = {
+    EnvironmentHelper.lookupWithNameInner(
+      this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
+  }
+
+  override def lookupWithImpreciseNameInner(
+      name: IImpreciseNameS,
+      lookupFilter: Set[ILookupContext],
+      getOnlyNearest: Boolean):
+  Iterable[ITemplataT[ITemplataType]] = {
+    EnvironmentHelper.lookupWithImpreciseNameInner(
+      this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
+  }
+}
+
+case class ExternEnvironmentT(
+    globalEnv: GlobalEnvironment,
+    parentEnv: PackageEnvironmentT[INameT],
+    id: IdT[INameT],
+    //  defaultRegion: ITemplata[RegionTemplataType],
+    templatas: TemplatasStore
+) extends IInDenizenEnvironmentT {
+  override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = this
+  override def denizenId: IdT[INameT] = id
+
+  override def lookupWithNameInner(
+      name: INameT,
+      lookupFilter: Set[ILookupContext],
+      getOnlyNearest: Boolean):
+  Iterable[ITemplataT[ITemplataType]] = {
+    EnvironmentHelper.lookupWithNameInner(
+      this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
+  }
+
+  override def lookupWithImpreciseNameInner(
+      name: IImpreciseNameS,
+      lookupFilter: Set[ILookupContext],
+      getOnlyNearest: Boolean):
+  Iterable[ITemplataT[ITemplataType]] = {
+    EnvironmentHelper.lookupWithImpreciseNameInner(
+      this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
+  }
+}
+
+case class GeneralEnvironmentT[+T <: INameT](
   globalEnv: GlobalEnvironment,
-  parentEnv: IEnvironment,
+  parentEnv: IInDenizenEnvironmentT,
   id: IdT[T],
   templatas: TemplatasStore
-) extends IEnvironment {
+) extends IInDenizenEnvironmentT {
+  override def denizenId: IdT[INameT] = id
+
   override def equals(obj: Any): Boolean = vcurious();
 
   override def hashCode(): Int = vcurious()
 
-  override def rootCompilingDenizenEnv: IEnvironment = {
-    parentEnv match {
-      case PackageEnvironment(_, _, _) => this
-      case _ => parentEnv.rootCompilingDenizenEnv
-    }
+  override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = {
+//    parentEnv match {
+//      case PackageEnvironment(_, _, _) => this
+//      case _ => parentEnv.rootCompilingDenizenEnv
+//    }
+    parentEnv.rootCompilingDenizenEnv
   }
 
   override def lookupWithNameInner(

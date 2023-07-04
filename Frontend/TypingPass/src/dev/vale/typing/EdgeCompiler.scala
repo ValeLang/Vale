@@ -6,7 +6,7 @@ import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, U, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{InterfaceEdgeBlueprintT, PrototypeT}
-import dev.vale.typing.env.{GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import dev.vale.typing.env.{GeneralEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.ImplCompiler
@@ -151,7 +151,7 @@ class EdgeCompiler(
   def createOverridePlaceholderMimicking(
     coutputs: CompilerOutputs,
     originalTemplataToMimic: ITemplataT[ITemplataType],
-    dispatcherOuterEnv: IEnvironment,
+    dispatcherOuterEnv: IInDenizenEnvironmentT,
     index: Int,
     rune: IRuneS):
   ITemplataT[ITemplataType] = {
@@ -202,7 +202,7 @@ class EdgeCompiler(
     coutputs.declareType(placeholderTemplateId)
     coutputs.declareTypeOuterEnv(
       placeholderTemplateId,
-      GeneralEnvironment.childOf(interner, dispatcherOuterEnv, placeholderTemplateId))
+      GeneralEnvironmentT.childOf(interner, dispatcherOuterEnv, placeholderTemplateId))
 
     val result =
       originalTemplataToMimic match {
@@ -258,7 +258,7 @@ class EdgeCompiler(
     val dispatcherTemplateId =
       abstractFuncTemplateId.addStep(dispatcherTemplateName)
     val dispatcherOuterEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         abstractFuncOuterEnv,
         dispatcherTemplateId)
@@ -345,7 +345,7 @@ class EdgeCompiler(
         dispatcherTemplateId.localName.makeFunctionName(interner, keywords, dispatcherPlaceholders.toVector, dispatcherParams))
 
     val dispatcherInnerEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         dispatcherOuterEnv,
         dispatcherId,
@@ -458,7 +458,7 @@ class EdgeCompiler(
     val overrideImpreciseName =
       vassertSome(TemplatasStore.getImpreciseName(interner, abstractFunctionPrototype.id.localName))
     val dispatcherCaseEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         dispatcherInnerEnv,
         dispatcherInnerEnv.id.addStep(

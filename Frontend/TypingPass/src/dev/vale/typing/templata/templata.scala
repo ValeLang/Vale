@@ -4,7 +4,7 @@ import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, IFunctionNameT, IImplNameT, INameT, InterfaceTemplateNameT, PlaceholderNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, IFunctionNameT, IImplNameT, INameT, InterfaceTemplateNameT, KindPlaceholderNameT}
 import dev.vale.typing.types._
 import dev.vale.{RangeS, StrI, vassert, vfail, vimpl, vpass, vwat}
 import dev.vale.highertyping._
@@ -103,7 +103,7 @@ case class CoordTemplataT(coord: CoordT) extends ITemplataT[CoordTemplataType] {
   vpass()
 }
 case class PlaceholderTemplataT[+T <: ITemplataType](
-  idT: IdT[PlaceholderNameT],
+  idT: IdT[KindPlaceholderNameT],
   tyype: T
 ) extends ITemplataT[T] {
   tyype match {

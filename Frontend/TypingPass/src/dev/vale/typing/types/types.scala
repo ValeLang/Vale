@@ -210,4 +210,4 @@ case class OverloadSetT(
 
 }
 
-case class PlaceholderT(id: IdT[PlaceholderNameT]) extends ISubKindTT with ISuperKindTT
+case class KindPlaceholderT(id: IdT[KindPlaceholderNameT]) extends ISubKindTT with ISuperKindTT

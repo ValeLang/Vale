@@ -3,7 +3,7 @@ package dev.vale.typing
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.infer.{KindIsNotConcrete, OwnershipDidntMatch}
-import dev.vale.{CodeLocationS, Collector, Err, FileCoordinateMap, Ok, PackageCoordinate, RangeS, Tests, vassert, vassertOne, vpass, vwat, _}
+import dev.vale._
 import dev.vale.parsing.ParseErrorHumanizer
 import dev.vale.postparsing.PostParser
 import dev.vale.typing.templata._
@@ -16,12 +16,12 @@ import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.{FailedSolve, RuleError, Step}
 import dev.vale.typing.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SignatureT, SoftLoadTE, UserFunctionT, referenceExprResultKind, referenceExprResultStructName}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, PlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
-import org.scalatest.{FunSuite, Matchers, _}
+import org.scalatest._
 
 import scala.collection.immutable.List
 import scala.io.Source
@@ -577,14 +577,14 @@ class CompilerTests extends FunSuite with Matchers {
           _,
           FunctionNameT(
             FunctionTemplateNameT(StrI("MySome"), _),
-            Vector(CoordTemplataT(CoordT(OwnT, PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0, CodeRuneS(StrI("T"))))))))),
-            Vector(CoordT(OwnT,PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))))),
+            Vector(CoordTemplataT(CoordT(OwnT, KindPlaceholderT(IdT(_,_,KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, CodeRuneS(StrI("T"))))))))),
+            Vector(CoordT(OwnT,KindPlaceholderT(IdT(_,_,KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))))))),
         Vector(),
         Vector(
           ParameterT(
             CodeVarNameT(StrI("value")),
             None,
-            CoordT(OwnT,PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0, _))))))),
+            CoordT(OwnT,KindPlaceholderT(IdT(_,_,KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _))))))),
         CoordT(
           OwnT,
           StructTT(
@@ -593,7 +593,7 @@ class CompilerTests extends FunSuite with Matchers {
               StructNameT(
                 StructTemplateNameT(StrI("MySome")),
                 Vector(
-                  CoordTemplataT(CoordT(OwnT, PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0, _))))))))))),
+                  CoordTemplataT(CoordT(OwnT, KindPlaceholderT(IdT(_,_,KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _))))))))))),
         Some(_)) =>
     }
 
@@ -1742,7 +1742,7 @@ class CompilerTests extends FunSuite with Matchers {
     Collector.only(doUpcast, {
       case UpcastTE(sourceExpr, targetSuperKind, _) => {
         sourceExpr.result.coord.kind match {
-          case PlaceholderT(_) =>
+          case KindPlaceholderT(_) =>
         }
         targetSuperKind match {
           case InterfaceTT(IdT(_, Vector(),InterfaceNameT(InterfaceTemplateNameT(StrI("IShip")),Vector()))) =>
@@ -1791,11 +1791,11 @@ class CompilerTests extends FunSuite with Matchers {
     val as = Collector.only(asFunc, { case as@AsSubtypeTE(_, _, _, _, _, _, _, _) => as })
     val AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor, _, _, _) = as
     sourceExpr.result.coord match {
-      case CoordT(BorrowT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _))))) =>
+      case CoordT(BorrowT,KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, _))))) =>
       //case CoordT(BorrowT, InterfaceTT(FullNameT(_, Vector(), InterfaceNameT(InterfaceTemplateNameT(StrI("IShip")), Vector())))) =>
     }
     targetSubtype.kind match {
-      case PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))) =>
+      case KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))) =>
       case StructTT(IdT(_, Vector(), StructNameT(StructTemplateNameT(StrI("Raza")), Vector()))) =>
     }
     val (firstGenericArg, secondGenericArg) =
@@ -1814,14 +1814,14 @@ class CompilerTests extends FunSuite with Matchers {
       case CoordTemplataT(
       CoordT(
       BorrowT,
-      PlaceholderT(
-      IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))) =>
+      KindPlaceholderT(
+      IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))))) =>
     }
     secondGenericArg match {
       case CoordTemplataT(
       CoordT(
       BorrowT,
-      PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _)))))) =>
+      KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, _)))))) =>
     }
     vassert(okConstructor.paramTypes.head == targetSubtype)
     vassert(errConstructor.paramTypes.head == sourceExpr.result.coord)
@@ -1900,11 +1900,11 @@ class CompilerTests extends FunSuite with Matchers {
       val as = Collector.only(asFunc, { case as@AsSubtypeTE(_, _, _, _, _, _, _, _) => as })
       val AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor, _, _, _) = as
       sourceExpr.result.coord match {
-        case CoordT(BorrowT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _))))) =>
+        case CoordT(BorrowT,KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, _))))) =>
         //case CoordT(BorrowT, InterfaceTT(FullNameT(_, Vector(), InterfaceNameT(InterfaceTemplateNameT(StrI("IShip")), Vector())))) =>
       }
       targetSubtype.kind match {
-        case PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))) =>
+        case KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))) =>
         case StructTT(IdT(_, Vector(), StructNameT(StructTemplateNameT(StrI("Raza")), Vector()))) =>
       }
       val (firstGenericArg, secondGenericArg) =
@@ -1923,14 +1923,14 @@ class CompilerTests extends FunSuite with Matchers {
         case CoordTemplataT(
         CoordT(
         BorrowT,
-        PlaceholderT(
-        IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))) =>
+        KindPlaceholderT(
+        IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))))) =>
       }
       secondGenericArg match {
         case CoordTemplataT(
         CoordT(
         BorrowT,
-        PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),PlaceholderNameT(PlaceholderTemplateNameT(1, _)))))) =>
+        KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("as"),_)),KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, _)))))) =>
       }
       vassert(okConstructor.paramTypes.head == targetSubtype)
       vassert(errConstructor.paramTypes.head == sourceExpr.result.coord)

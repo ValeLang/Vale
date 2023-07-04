@@ -28,15 +28,15 @@ case class IdT[+T <: INameT](
 
   // Placeholders should only be the last name, getPlaceholdersInKind assumes it
   initSteps.foreach({
-    case PlaceholderNameT(_) => vfail()
-    case PlaceholderTemplateNameT(_, _) => vfail()
+    case KindPlaceholderNameT(_) => vfail()
+    case KindPlaceholderTemplateNameT(_, _) => vfail()
     case _ =>
   })
   // Placeholders are under the template name.
   // There's really no other way; we make the placeholders before knowing the function's
   // instantated name.
   localName match {
-    case PlaceholderNameT(_) => {
+    case KindPlaceholderNameT(_) => {
       initSteps.last match {
         case _ : ITemplateNameT =>
         case OverrideDispatcherNameT(_, _, _) => {
@@ -234,12 +234,19 @@ case class RuntimeSizedArrayNameT(template: RuntimeSizedArrayTemplateNameT, arr:
   }
 }
 
+sealed trait IPlaceholderNameT extends INameT {
+  def index: Int
+  def rune: IRuneS
+}
+
 // This exists because PlaceholderT is a kind, and all kinds need environments to assist
 // in call/overload resolution. Environments are associated with templates, so it makes
 // some sense to have a "placeholder template" notion.
-case class PlaceholderTemplateNameT(index: Int, rune: IRuneS) extends ISubKindTemplateNameT with ISuperKindTemplateNameT
-case class PlaceholderNameT(template: PlaceholderTemplateNameT) extends ISubKindNameT with ISuperKindNameT {
+case class KindPlaceholderTemplateNameT(index: Int, rune: IRuneS) extends ISubKindTemplateNameT with ISuperKindTemplateNameT
+case class KindPlaceholderNameT(template: KindPlaceholderTemplateNameT) extends IPlaceholderNameT with ISubKindNameT with ISuperKindNameT {
   override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector()
+  override def rune: IRuneS = template.rune
+  override def index: Int = template.index
 }
 
 // See NNSPAFOC.

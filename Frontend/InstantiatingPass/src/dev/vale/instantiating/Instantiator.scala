@@ -310,7 +310,7 @@ object Instantiator {
     instantiationBoundArgs: InstantiationBoundArguments):
   Unit = {
     if (opts.sanityCheck) {
-      vassert(Collector.all(structFullName, { case PlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(structFullName, { case KindPlaceholderNameT(_) => }).isEmpty)
     }
 
     val structTemplate = TemplataCompiler.getStructTemplate(structFullName)
@@ -482,7 +482,7 @@ object Instantiator {
           val implPlaceholder =
             vassertSome(
               implPlaceholderToDispatcherPlaceholder.find(_._2 == dispatcherPlaceholderTemplata))._1
-          val IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune))) = implPlaceholder
+          val IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) = implPlaceholder
           val templata = implFullName.localName.templateArgs(index)
           dispatcherPlaceholderFullName -> templata
         })
@@ -524,7 +524,7 @@ object Instantiator {
           val implPlaceholder =
             vassertSome(
               implPlaceholderToCasePlaceholder.find(_._2 == casePlaceholderTemplata))._1
-          val IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune))) = implPlaceholder
+          val IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) = implPlaceholder
           val templata = implFullName.localName.templateArgs(index)
           casePlaceholderFullName -> templata
           //          // templata is the value from the edge that's doing the overriding. It comes from the impl.
@@ -905,7 +905,7 @@ object Instantiator {
   }
 
   def assemblePlaceholderMap(hinputs: Hinputs, id: IdT[IInstantiationNameT]):
-  Map[IdT[PlaceholderNameT], ITemplataT[ITemplataType]] = {
+  Map[IdT[KindPlaceholderNameT], ITemplataT[ITemplataType]] = {
     val containersPlaceholderMap =
       // This might be a lambda's name. If it is, its name has an init step that's the parent
       // function's name, and we want its mappings too.
@@ -913,7 +913,7 @@ object Instantiator {
         case Some(IdT(packageCoord, initSteps, parentLocalName : IInstantiationNameT)) => {
           assemblePlaceholderMap(hinputs, IdT(packageCoord, initSteps, parentLocalName))
         }
-        case _ => Map[IdT[PlaceholderNameT], ITemplataT[ITemplataType]]()
+        case _ => Map[IdT[KindPlaceholderNameT], ITemplataT[ITemplataType]]()
       })
 
     val placeholderedName =
@@ -936,11 +936,11 @@ object Instantiator {
     placeholderedName.localName.templateArgs
       .zip(id.localName.templateArgs)
       .flatMap({
-        case (CoordTemplataT(CoordT(placeholderOwnership, PlaceholderT(placeholderId))), c @ CoordTemplataT(_)) => {
+        case (CoordTemplataT(CoordT(placeholderOwnership, KindPlaceholderT(placeholderId))), c @ CoordTemplataT(_)) => {
           vassert(placeholderOwnership == OwnT || placeholderOwnership == ShareT)
           List((placeholderId -> c))
         }
-        case (KindTemplataT(PlaceholderT(placeholderId)), kindTemplata) => {
+        case (KindTemplataT(KindPlaceholderT(placeholderId)), kindTemplata) => {
           List((placeholderId -> kindTemplata))
         }
         case (PlaceholderTemplataT(placeholderId, tyype), templata) => {
@@ -968,7 +968,7 @@ class Instantiator(
   denizenName: IdT[IInstantiationNameT],
 
   // This IdT might be the top level denizen and not necessarily *this* denizen, see LHPCTLD.
-  substitutions: Map[IdT[INameT], Map[IdT[PlaceholderNameT], ITemplataT[ITemplataType]]],
+  substitutions: Map[IdT[INameT], Map[IdT[KindPlaceholderNameT], ITemplataT[ITemplataType]]],
 
   val denizenBoundToDenizenCallerSuppliedThing: DenizenBoundToDenizenCallerBoundArg) {
   //  selfFunctionBoundToRuneUnsubstituted: Map[PrototypeT, IRuneS],
@@ -1032,7 +1032,7 @@ class Instantiator(
       }
       case IdT(_, _, ExternFunctionNameT(_, _)) => {
         if (opts.sanityCheck) {
-          vassert(Collector.all(desiredPrototype, { case PlaceholderTemplateNameT(_, _) => }).isEmpty)
+          vassert(Collector.all(desiredPrototype, { case KindPlaceholderTemplateNameT(_, _) => }).isEmpty)
         }
         desiredPrototype
       }
@@ -1120,7 +1120,7 @@ class Instantiator(
     val StructDefinitionT(templateName, instantiatedCitizen, attributes, weakable, mutabilityT, members, isClosure, _, _) = structDefT
 
     if (opts.sanityCheck) {
-      vassert(Collector.all(newFullName, { case PlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(newFullName, { case KindPlaceholderNameT(_) => }).isEmpty)
     }
 
     val mutability = expectMutabilityTemplata(translateTemplata(mutabilityT)).mutability
@@ -1147,8 +1147,8 @@ class Instantiator(
     monouts.structs.put(result.instantiatedCitizen.id, result)
 
     if (opts.sanityCheck) {
-      vassert(Collector.all(result.instantiatedCitizen, { case PlaceholderNameT(_) => }).isEmpty)
-      vassert(Collector.all(result.members, { case PlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(result.instantiatedCitizen, { case KindPlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(result.members, { case KindPlaceholderNameT(_) => }).isEmpty)
     }
     result
   }
@@ -1181,7 +1181,7 @@ class Instantiator(
         Vector())
 
     if (opts.sanityCheck) {
-      vassert(Collector.all(result, { case PlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(result, { case KindPlaceholderNameT(_) => }).isEmpty)
     }
 
     vassert(!monouts.interfaceToImplToAbstractPrototypeToOverride.contains(newFullName))
@@ -1751,7 +1751,7 @@ class Instantiator(
   CoordT = {
     val CoordT(ownership, kind) = coord
     kind match {
-      case PlaceholderT(placeholderFullName) => {
+      case KindPlaceholderT(placeholderFullName) => {
         // Let's get the index'th placeholder from the top level denizen.
         // If we're compiling a function or a struct, it might actually be a lambda function or lambda struct.
         // In these cases, the topLevelDenizenPlaceholderIndexToTemplata actually came from the containing function,
@@ -1853,7 +1853,7 @@ class Instantiator(
           translateBoundArgsForCallee(
             hinputs.getInstantiationBoundArgs(i.id)))
       }
-      case p @ PlaceholderT(_) => {
+      case p @ KindPlaceholderT(_) => {
         translatePlaceholder(p) match {
           case s : ISuperKindTT => s
           case other => vwat(other)
@@ -1862,7 +1862,7 @@ class Instantiator(
     }
   }
 
-  def translatePlaceholder(t: PlaceholderT): KindT = {
+  def translatePlaceholder(t: KindPlaceholderT): KindT = {
     val newSubstitutingTemplata =
       vassertSome(
         vassertSome(substitutions.get(t.id.initId(interner)))
@@ -1916,7 +1916,7 @@ class Instantiator(
       case VoidT() => VoidT()
       case StrT() => StrT()
       case NeverT(fromBreak) => NeverT(fromBreak)
-      case p @ PlaceholderT(_) => translatePlaceholder(p)
+      case p @ KindPlaceholderT(_) => translatePlaceholder(p)
       case s @ StructTT(_) => {
         translateStruct(
           s, translateBoundArgsForCallee(hinputs.getInstantiationBoundArgs(s.id)))
@@ -1959,7 +1959,7 @@ class Instantiator(
         case other => vimpl(other)
       }
     if (opts.sanityCheck) {
-      vassert(Collector.all(result, { case PlaceholderNameT(_) => }).isEmpty)
+      vassert(Collector.all(result, { case KindPlaceholderNameT(_) => }).isEmpty)
     }
     result
   }
@@ -2116,8 +2116,8 @@ class Instantiator(
   INameT = {
     name match {
       case v : IVarNameT => translateVarName(v)
-      case PlaceholderTemplateNameT(index, _) => vwat()
-      case PlaceholderNameT(inner) => vwat()
+      case KindPlaceholderTemplateNameT(index, _) => vwat()
+      case KindPlaceholderNameT(inner) => vwat()
       case StructNameT(StructTemplateNameT(humanName), templateArgs) => {
         interner.intern(StructNameT(
           interner.intern(StructTemplateNameT(humanName)),

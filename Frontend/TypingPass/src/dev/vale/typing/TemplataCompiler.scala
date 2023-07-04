@@ -4,7 +4,7 @@ import dev.vale.{CodeLocationS, Interner, Keywords, RangeS, Result, Ok, Err, vas
 import dev.vale.postparsing.rules.{EqualsSR, IRulexSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.env.{FunctionEnvironment, GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, KindPlaceholderNameT, KindPlaceholderTemplateNameT, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -94,8 +94,8 @@ object TemplataCompiler {
   def getPlaceholderTemplataId(implPlaceholder: ITemplataT[ITemplataType]) = {
     implPlaceholder match {
       case PlaceholderTemplataT(n, _) => n
-      case KindTemplataT(PlaceholderT(n)) => n
-      case CoordTemplataT(CoordT(_, PlaceholderT(n))) => n
+      case KindTemplataT(KindPlaceholderT(n)) => n
+      case CoordTemplataT(CoordT(_, KindPlaceholderT(n))) => n
       case other => vwat(other)
     }
   }
@@ -218,7 +218,7 @@ object TemplataCompiler {
       last.template)
   }
 
-  def getPlaceholderTemplate(id: IdT[PlaceholderNameT]): IdT[PlaceholderTemplateNameT] = {
+  def getPlaceholderTemplate(id: IdT[KindPlaceholderNameT]): IdT[KindPlaceholderTemplateNameT] = {
     val IdT(packageCoord, initSteps, last) = id
     IdT(
       packageCoord,
@@ -321,7 +321,7 @@ object TemplataCompiler {
                   expectMutability(substituteTemplatasInTemplata(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
                   substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType)))))))))
       }
-      case p @ PlaceholderT(id @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune)))) => {
+      case p @ KindPlaceholderT(id @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune)))) => {
         if (id.initId(interner) == needleTemplateName) {
           newSubstitutingTemplatas(index)
         } else {
@@ -547,7 +547,7 @@ object TemplataCompiler {
     templata match {
       case CoordTemplataT(c) => CoordTemplataT(substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, c))
       case KindTemplataT(k) => substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, k)
-      case PlaceholderTemplataT(id @ IdT(_, _, pn @ PlaceholderNameT(PlaceholderTemplateNameT(index, rune))), _) => {
+      case PlaceholderTemplataT(id @ IdT(_, _, pn @ KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))), _) => {
         if (id.initId(interner) == needleTemplateName) {
           newSubstitutingTemplatas(index)
         } else {
@@ -1085,12 +1085,12 @@ class TemplataCompiler(
   ITemplataT[ITemplataType] = {
     val placeholderId =
       namePrefix.addStep(
-        interner.intern(PlaceholderNameT(
-          interner.intern(PlaceholderTemplateNameT(index, rune)))))
+        interner.intern(KindPlaceholderNameT(
+          interner.intern(KindPlaceholderTemplateNameT(index, rune)))))
     val placeholderTemplateId =
       TemplataCompiler.getPlaceholderTemplate(placeholderId)
 
-    val placeholderKindT = PlaceholderT(placeholderId)
+    val placeholderKindT = KindPlaceholderT(placeholderId)
     if (registerWithCompilerOutputs) {
       coutputs.declareType(placeholderTemplateId)
 

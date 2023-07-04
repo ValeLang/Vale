@@ -33,7 +33,7 @@ class TypeHammer(
 
       case a @ contentsStaticSizedArrayTT(_, _, _, _) => translateStaticSizedArray(hinputs, hamuts, a)
       case a @ contentsRuntimeSizedArrayTT(_, _) => translateRuntimeSizedArray(hinputs, hamuts, a)
-      case PlaceholderT(fullName) => {
+      case KindPlaceholderT(fullName) => {
         // this is a bit of a hack. sometimes lambda templates like to remember their original
         // defining generics, and we dont translate those in the instantiator, so it can later
         // use them to find those original templates.

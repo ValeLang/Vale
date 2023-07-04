@@ -6,7 +6,7 @@ import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, vfail, vimpl, vwat}
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntEvaluateFunction, OverloadResolver}
 import dev.vale.typing.ast.{ConstructTE, PrototypeT}
 import dev.vale.typing.citizen.StructCompiler
-import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironment, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentT, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
@@ -19,7 +19,7 @@ import dev.vale.typing.types.CoordT
 
 class FunctorHelper( interner: Interner, keywords: Keywords) {
   def getFunctorForPrototype(
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     dropFunction: PrototypeTemplataT):

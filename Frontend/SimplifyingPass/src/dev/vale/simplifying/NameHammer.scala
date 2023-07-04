@@ -7,7 +7,7 @@ import dev.vale.typing.names._
 import dev.vale.finalast._
 import dev.vale.postparsing.AnonymousSubstructParentInterfaceTemplateRuneS
 import dev.vale.typing._
-import dev.vale.typing.env.PackageEnvironment
+import dev.vale.typing.env.PackageEnvironmentT
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._

@@ -2,7 +2,7 @@ package dev.vale.typing
 
 import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
 import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, FunctionDefinitionT, ImplT, KindExportT, KindExternT, PrototypeT, SignatureT, getFunctionLastName}
-import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvironment, IEnvironment}
+import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentT, IInDenizenEnvironmentT}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.types._
@@ -32,7 +32,7 @@ case class CompilerOutputs() {
   // been processed yet.
   private val signatureToFunction: mutable.HashMap[SignatureT, FunctionDefinitionT] = mutable.HashMap()
 //  private val functionsByPrototype: mutable.HashMap[PrototypeT, FunctionT] = mutable.HashMap()
-  private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
+  private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironmentT] = mutable.HashMap()
 
   // declaredNames is the structs that we're currently in the process of defining
   // Things will appear here before they appear in structTemplateNameToDefinition/interfaceTemplateNameToDefinition
@@ -41,10 +41,10 @@ case class CompilerOutputs() {
   private val functionDeclaredNames: mutable.HashMap[IdT[INameT], RangeS] = mutable.HashMap()
   // Outer env is the env that contains the template.
   // This will be the instantiated name, not just the template name, see UINIT.
-  private val functionNameToOuterEnv: mutable.HashMap[IdT[IFunctionTemplateNameT], IEnvironment] = mutable.HashMap()
+  private val functionNameToOuterEnv: mutable.HashMap[IdT[IFunctionTemplateNameT], IInDenizenEnvironmentT] = mutable.HashMap()
   // Inner env is the env that contains the solved rules for the declaration, given placeholders.
   // This will be the instantiated name, not just the template name, see UINIT.
-  private val functionNameToInnerEnv: mutable.HashMap[IdT[INameT], IEnvironment] = mutable.HashMap()
+  private val functionNameToInnerEnv: mutable.HashMap[IdT[INameT], IInDenizenEnvironmentT] = mutable.HashMap()
 
 
   // declaredNames is the structs that we're currently in the process of defining
@@ -52,14 +52,14 @@ case class CompilerOutputs() {
   // This is to prevent infinite recursion / stack overflow when typingpassing recursive types
   private val typeDeclaredNames: mutable.HashSet[IdT[ITemplateNameT]] = mutable.HashSet()
   // Outer env is the env that contains the template.
-  private val typeNameToOuterEnv: mutable.HashMap[IdT[ITemplateNameT], IEnvironment] = mutable.HashMap()
+  private val typeNameToOuterEnv: mutable.HashMap[IdT[ITemplateNameT], IInDenizenEnvironmentT] = mutable.HashMap()
   // Inner env is the env that contains the solved rules for the declaration, given placeholders.
   // We can key by template name here because there's only one inner env per template. This is the env
   // that has placeholders and stuff.
   // Also, if it's keyed by template name, we can access it earlier, before the definition is even made.
   // This is important for when we want to be compiling a struct/interface and one of its internal methods
   // wants to look in its inner env to get some bounds.
-  private val typeNameToInnerEnv: mutable.HashMap[IdT[ITemplateNameT], IEnvironment] = mutable.HashMap()
+  private val typeNameToInnerEnv: mutable.HashMap[IdT[ITemplateNameT], IInDenizenEnvironmentT] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
   private val typeNameToMutability: mutable.HashMap[IdT[ITemplateNameT], ITemplataT[MutabilityTemplataType]] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
@@ -263,7 +263,7 @@ case class CompilerOutputs() {
 
   def declareFunctionInnerEnv(
     nameT: IdT[IFunctionNameT],
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
   ): Unit = {
     vassert(functionDeclaredNames.contains(nameT))
     // One should declare the outer env first
@@ -274,7 +274,7 @@ case class CompilerOutputs() {
 
   def declareFunctionOuterEnv(
     nameT: IdT[IFunctionTemplateNameT],
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
   ): Unit = {
     vassert(!functionNameToOuterEnv.contains(nameT))
     //    vassert(nameT == env.fullName)
@@ -283,7 +283,7 @@ case class CompilerOutputs() {
 
   def declareTypeOuterEnv(
     nameT: IdT[ITemplateNameT],
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
   ): Unit = {
     vassert(typeDeclaredNames.contains(nameT))
     vassert(!typeNameToOuterEnv.contains(nameT))
@@ -293,7 +293,7 @@ case class CompilerOutputs() {
 
   def declareTypeInnerEnv(
     templateId: IdT[ITemplateNameT],
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
   ): Unit = {
 //    val templateFullName = TemplataCompiler.getTemplate(nameT)
     vassert(typeDeclaredNames.contains(templateId))
@@ -469,10 +469,10 @@ case class CompilerOutputs() {
 //  def getStaticSizedArrayType(size: ITemplata[IntegerTemplataType], mutability: ITemplata[MutabilityTemplataType], variability: ITemplata[VariabilityTemplataType], elementType: CoordT): Option[StaticSizedArrayTT] = {
 //    staticSizedArrayTypes.get((size, mutability, variability, elementType))
 //  }
-  def getEnvForFunctionSignature(sig: SignatureT): FunctionEnvironment = {
+  def getEnvForFunctionSignature(sig: SignatureT): FunctionEnvironmentT = {
     vassertSome(envByFunctionSignature.get(sig))
   }
-  def getOuterEnvForType(range: List[RangeS], name: IdT[ITemplateNameT]): IEnvironment = {
+  def getOuterEnvForType(range: List[RangeS], name: IdT[ITemplateNameT]): IInDenizenEnvironmentT = {
     typeNameToOuterEnv.get(name) match {
       case None => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "No outer env for type: " + name))
@@ -480,13 +480,13 @@ case class CompilerOutputs() {
       case Some(x) => x
     }
   }
-  def getInnerEnvForType(name: IdT[ITemplateNameT]): IEnvironment = {
+  def getInnerEnvForType(name: IdT[ITemplateNameT]): IInDenizenEnvironmentT = {
     vassertSome(typeNameToInnerEnv.get(name))
   }
-  def getInnerEnvForFunction(name: IdT[INameT]): IEnvironment = {
+  def getInnerEnvForFunction(name: IdT[INameT]): IInDenizenEnvironmentT = {
     vassertSome(functionNameToInnerEnv.get(name))
   }
-  def getOuterEnvForFunction(name: IdT[IFunctionTemplateNameT]): IEnvironment = {
+  def getOuterEnvForFunction(name: IdT[IFunctionTemplateNameT]): IInDenizenEnvironmentT = {
     vassertSome(functionNameToOuterEnv.get(name))
   }
   def getReturnTypeForSignature(sig: SignatureT): Option[CoordT] = {

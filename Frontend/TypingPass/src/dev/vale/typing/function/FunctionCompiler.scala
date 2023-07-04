@@ -19,7 +19,7 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, IFunctionGenerator, InferCompiler, TemplataCompiler, TypingPassOptions}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.citizen.StructCompiler
-import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, FunctionEnvironment, IEnvironment, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataLookupContext}
+import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, FunctionEnvironmentT, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataLookupContext}
 import dev.vale.typing.names.{LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -32,7 +32,7 @@ import scala.collection.immutable.{List, Set}
 trait IFunctionCompilerDelegate {
   def evaluateBlockStatements(
     coutputs: CompilerOutputs,
-    startingNenv: NodeEnvironment,
+    startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
@@ -55,7 +55,7 @@ trait IFunctionCompilerDelegate {
   def generateFunction(
     functionCompilerCore: FunctionCompilerCore,
     generator: IFunctionGenerator,
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
@@ -122,7 +122,7 @@ class FunctionCompiler(
 
   def evaluateTemplatedLightFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     functionTemplata: FunctionTemplataT,
     alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -140,7 +140,7 @@ class FunctionCompiler(
 
   def evaluateTemplatedFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     functionTemplata: FunctionTemplataT,
     alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -179,7 +179,7 @@ class FunctionCompiler(
   def evaluateTemplatedFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     argTypes: Vector[CoordT],
@@ -211,7 +211,7 @@ class FunctionCompiler(
   def evaluateGenericLightFunctionParentForPrototype(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     args: Vector[Option[CoordT]]):
   IEvaluateFunctionResult = {
@@ -225,7 +225,7 @@ class FunctionCompiler(
   def evaluateGenericLightFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT]):
@@ -239,7 +239,7 @@ class FunctionCompiler(
 
   def evaluateClosureStruct(
     coutputs: CompilerOutputs,
-    containingNodeEnv: NodeEnvironment,
+    containingNodeEnv: NodeEnvironmentT,
     callRange: List[RangeS],
     name: IFunctionDeclarationNameS,
     functionA: FunctionA,
@@ -262,7 +262,7 @@ class FunctionCompiler(
   }
 
   private def determineClosureVariableMember(
-    env: NodeEnvironment,
+    env: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     name: IVarNameS) = {
     val (variability2, memberType) =

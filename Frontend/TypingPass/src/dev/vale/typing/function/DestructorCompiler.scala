@@ -14,7 +14,7 @@ import dev.vale.typing.templata._
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TypingPassOptions}
 import dev.vale.typing.ast.{DiscardTE, FunctionCallTE, PrototypeT, ReferenceExpressionTE}
-import dev.vale.typing.env.{GlobalEnvironment, IEnvironment, PackageEnvironment}
+import dev.vale.typing.env.{GlobalEnvironment, IInDenizenEnvironmentT, PackageEnvironmentT}
 import dev.vale.typing.names.{IdT, PackageTopLevelNameT}
 import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
@@ -32,7 +32,7 @@ class DestructorCompiler(
     structCompiler: StructCompiler,
     overloadCompiler: OverloadResolver) {
   def getDropFunction(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     type2: CoordT):
@@ -47,7 +47,7 @@ class DestructorCompiler(
   }
 
   def drop(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     undestructedExpr2: ReferenceExpressionTE):

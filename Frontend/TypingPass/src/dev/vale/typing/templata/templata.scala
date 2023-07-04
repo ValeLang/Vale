@@ -3,7 +3,7 @@ package dev.vale.typing.templata
 import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, IFunctionNameT, IImplNameT, INameT, InterfaceTemplateNameT, KindPlaceholderNameT}
 import dev.vale.typing.types._
 import dev.vale.{RangeS, StrI, vassert, vfail, vimpl, vpass, vwat}
@@ -134,7 +134,7 @@ case class FunctionTemplataT(
   // We need this because, for example, lambdas need to find their underlying struct
   // somewhere.
   // See TMRE for more on these environments.
-  outerEnv: IEnvironment,
+  outerEnv: IEnvironmentT,
 
   // This is the env entry that the function came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -182,7 +182,7 @@ case class StructDefinitionTemplataT(
   // The paackage this interface was declared in.
   // has the name of the surrounding environment, does NOT include struct's name.
   // See TMRE for more on these environments.
-  declaringEnv: IEnvironment,
+  declaringEnv: IEnvironmentT,
 
   // This is the env entry that the struct came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -224,11 +224,11 @@ case class ContainerFunction(function: FunctionA) extends IContainer { val hash 
 case class ContainerImpl(impl: ImplA) extends IContainer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 sealed trait CitizenDefinitionTemplataT extends ITemplataT[TemplateTemplataType] {
-  def declaringEnv: IEnvironment
+  def declaringEnv: IEnvironmentT
   def originCitizen: CitizenA
 }
 object CitizenDefinitionTemplataT {
-  def unapply(c: CitizenDefinitionTemplataT): Option[(IEnvironment, CitizenA)] = {
+  def unapply(c: CitizenDefinitionTemplataT): Option[(IEnvironmentT, CitizenA)] = {
     c match {
       case StructDefinitionTemplataT(env, origin) => Some((env, origin))
       case InterfaceDefinitionTemplataT(env, origin) => Some((env, origin))
@@ -240,7 +240,7 @@ case class InterfaceDefinitionTemplataT(
   // The paackage this interface was declared in.
   // Has the name of the surrounding environment, does NOT include interface's name.
   // See TMRE for more on these environments.
-  declaringEnv: IEnvironment,
+  declaringEnv: IEnvironmentT,
 
   // This is the env entry that the interface came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -282,7 +282,7 @@ case class InterfaceDefinitionTemplataT(
 case class ImplDefinitionTemplataT(
   // The paackage this interface was declared in.
   // See TMRE for more on these environments.
-  env: IEnvironment,
+  env: IEnvironmentT,
 //
 //  // The containers are the structs/interfaces/impls/functions that this thing is inside.
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one

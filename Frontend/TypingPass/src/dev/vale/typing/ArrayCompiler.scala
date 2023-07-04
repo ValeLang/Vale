@@ -12,7 +12,7 @@ import dev.vale.typing.templata.{ITemplataT, _}
 import OverloadResolver.FindFunctionFailure
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.typing.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
-import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, NodeEnvironment, NodeEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentBoxT, GlobalEnvironment, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox, PackageEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.names.{IdT, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, RuntimeSizedArrayTemplateNameT, SelfNameT, StaticSizedArrayNameT, StaticSizedArrayTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
@@ -40,7 +40,7 @@ class ArrayCompiler(
 
   def evaluateStaticSizedArrayFromCallable(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
     rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
     maybeElementTypeRuneA: Option[IRuneS],
@@ -125,7 +125,7 @@ class ArrayCompiler(
 
   def evaluateRuntimeSizedArrayFromCallable(
     coutputs: CompilerOutputs,
-    callingEnv: NodeEnvironment,
+    callingEnv: NodeEnvironmentT,
       parentRanges: List[RangeS],
     rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
     maybeElementTypeRune: Option[IRuneS],
@@ -274,7 +274,7 @@ class ArrayCompiler(
 
   def evaluateStaticSizedArrayFromValues(
       coutputs: CompilerOutputs,
-      callingEnv: IEnvironment,
+      callingEnv: IInDenizenEnvironmentT,
       parentRanges: List[RangeS],
       rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
       maybeElementTypeRuneA: Option[IRuneS],
@@ -376,7 +376,7 @@ class ArrayCompiler(
 
   def evaluateDestroyStaticSizedArrayIntoCallable(
     coutputs: CompilerOutputs,
-    fate: FunctionEnvironmentBox,
+    fate: FunctionEnvironmentBoxT,
     range: List[RangeS],
     arrTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
@@ -402,7 +402,7 @@ class ArrayCompiler(
 
   def evaluateDestroyRuntimeSizedArrayIntoCallable(
     coutputs: CompilerOutputs,
-    fate: FunctionEnvironmentBox,
+    fate: FunctionEnvironmentBoxT,
     range: List[RangeS],
     arrTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
@@ -452,9 +452,9 @@ class ArrayCompiler(
     // and see the function and use it.
     // See CSFMSEO and SAFHE.
     val arrayOuterEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         globalEnv,
-        PackageEnvironment(globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
+        PackageEnvironmentT(globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
         templateId,
         templateId,
         TemplatasStore(templateId, Map(), Map()))
@@ -516,9 +516,9 @@ class ArrayCompiler(
     // and see the function and use it.
     // See CSFMSEO and SAFHE.
     val arrayOuterEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         globalEnv,
-        PackageEnvironment(globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
+        PackageEnvironmentT(globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
         templateId,
         templateId,
         TemplatasStore(templateId, Map(), Map()))

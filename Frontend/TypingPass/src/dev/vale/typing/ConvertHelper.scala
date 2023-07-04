@@ -1,7 +1,7 @@
 package dev.vale.typing
 
 import dev.vale.typing.ast.ReferenceExpressionTE
-import dev.vale.typing.env.{GlobalEnvironment, IEnvironment}
+import dev.vale.typing.env.{GlobalEnvironment, IInDenizenEnvironmentT}
 import dev.vale.{RangeS, vcurious, vfail}
 import dev.vale.typing.types._
 import dev.vale._
@@ -10,7 +10,7 @@ import dev.vale.typing.citizen.{IsParent, IsParentResult, IsntParent}
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 //import dev.vale.astronomer.IRulexSR
 import dev.vale.typing.citizen.ImplCompiler
-import dev.vale.typing.env.IEnvironmentBox
+import dev.vale.typing.env.IDenizenEnvironmentBoxT
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
@@ -21,7 +21,7 @@ import dev.vale.postparsing._
 trait IConvertHelperDelegate {
   def isParent(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
     descendantCitizenRef: ISubKindTT,
     ancestorInterfaceRef: ISuperKindTT):
@@ -32,7 +32,7 @@ class ConvertHelper(
     opts: TypingPassOptions,
     delegate: IConvertHelperDelegate) {
   def convertExprs(
-      env: IEnvironment,
+      env: IInDenizenEnvironmentT,
       coutputs: CompilerOutputs,
       range: List[RangeS],
       sourceExprs: Vector[ReferenceExpressionTE],
@@ -51,7 +51,7 @@ class ConvertHelper(
   }
 
   def convert(
-      env: IEnvironment,
+      env: IInDenizenEnvironmentT,
       coutputs: CompilerOutputs,
       range: List[RangeS],
       sourceExpr: ReferenceExpressionTE,
@@ -111,7 +111,7 @@ class ConvertHelper(
   }
 
   def convert(
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     range: List[RangeS],
     sourceExpr: ReferenceExpressionTE,

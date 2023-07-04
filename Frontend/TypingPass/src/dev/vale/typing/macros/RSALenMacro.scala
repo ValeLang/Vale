@@ -3,10 +3,10 @@ package dev.vale.typing.macros
 import dev.vale.{RangeS, StrI, vimpl}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
-import dev.vale.typing.env.FunctionEnvironment
+import dev.vale.typing.env.FunctionEnvironmentT
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
-import dev.vale.typing.env.FunctionEnvironmentBox
+import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.ast
 import dev.vale.highertyping.FunctionA
 
@@ -15,7 +15,7 @@ class RSALenMacro() extends IFunctionBodyMacro {
   val generatorId: String = "vale_runtime_sized_array_len"
 
   def generateFunctionBody(
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,

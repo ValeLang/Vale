@@ -8,7 +8,7 @@ import dev.vale.typing.types._
 import dev.vale._
 import dev.vale.postparsing.{IRuneS, ITemplataType}
 import dev.vale.typing._
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
@@ -31,7 +31,7 @@ case class ImplT(
 
   templata: ImplDefinitionTemplataT,
 
-  implOuterEnv: IEnvironment,
+  implOuterEnv: IInDenizenEnvironmentT,
 
   instantiatedId: IdT[IImplNameT],
   templateId: IdT[IImplTemplateNameT],

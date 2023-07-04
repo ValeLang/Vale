@@ -7,7 +7,7 @@ import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, InheritBoundsFromTypeItself, OverloadResolver, TemplataCompiler, TypingPassOptions, UseBoundsFromContainer, ast}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
-import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
+import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironmentT}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IdT, NameTranslator, KindPlaceholderNameT}
 import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertSome, vcurious, vimpl}
 import dev.vale.typing.types._
@@ -16,7 +16,7 @@ import dev.vale.postparsing.ConstructorNameS
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast._
-import dev.vale.typing.env.PackageEnvironment
+import dev.vale.typing.env.PackageEnvironmentT
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 import dev.vale.typing.function.{DestructorCompiler, FunctionCompilerCore}
@@ -103,7 +103,7 @@ class StructConstructorMacro(
 
 
   override def generateFunctionBody(
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,

@@ -2,7 +2,7 @@ package dev.vale.typing.macros
 
 import dev.vale.{RangeS, StrI}
 import dev.vale.typing.CompilerOutputs
-import dev.vale.typing.ast.{FunctionHeaderT, LocationInFunctionEnvironment, ParameterT}
+import dev.vale.typing.ast.{FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT}
 import dev.vale.typing.env.{FunctionEnvironment, IEnvEntry}
 import dev.vale.typing.names.{IdT, INameT}
 import dev.vale.typing.types._
@@ -12,7 +12,7 @@ import dev.vale.postparsing.MutabilityTemplataType
 import dev.vale.typing.ast._
 import dev.vale.typing.env.IEnvEntry
 import dev.vale.typing.names.CitizenTemplateNameT
-import dev.vale.typing.templata.ITemplata
+import dev.vale.typing.templata.ITemplataT
 import dev.vale.typing.types.InterfaceTT
 
 trait IFunctionBodyMacro {
@@ -22,7 +22,7 @@ trait IFunctionBodyMacro {
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],

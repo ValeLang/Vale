@@ -4,13 +4,13 @@ package dev.vale.typing.expression
 import dev.vale.RangeS
 import dev.vale.postparsing._
 import dev.vale.typing.{TypingPassOptions, CompilerOutputs}
-import dev.vale.typing.ast.{BlockTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
+import dev.vale.typing.ast.{BlockTE, LocationInFunctionEnvironmentT, ReferenceExpressionTE}
 import dev.vale.typing.env.{FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.typing.types.CoordT
 import dev.vale.postparsing.ExpressionScout
-import dev.vale.typing.{ast, _}
+import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.names.TypingPassBlockResultVarNameT
@@ -23,7 +23,7 @@ trait IBlockCompilerDelegate {
   def evaluateAndCoerceToReferenceExpression(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT])
@@ -33,7 +33,7 @@ trait IBlockCompilerDelegate {
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
     range: List[RangeS],
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     unresultifiedUndestructedExpressions: ReferenceExpressionTE):
   ReferenceExpressionTE
 }
@@ -57,7 +57,7 @@ class BlockCompiler(
   def evaluateBlock(
     parentFate: FunctionEnvironmentBox,
     coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     block1: BlockSE):
   (BlockTE, Set[IVarNameT], Set[IVarNameT], Set[CoordT]) = {
@@ -80,7 +80,7 @@ class BlockCompiler(
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
     parentRanges: List[RangeS],
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     blockSE: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedRootExpression, returnsFromExprs) =

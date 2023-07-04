@@ -119,10 +119,10 @@ class ConvertHelper(
     targetSuperKind: ISuperKindTT):
   (ReferenceExpressionTE) = {
     delegate.isParent(coutputs, callingEnv, range, sourceSubKind, targetSuperKind) match {
-      case IsParent(_, _, implFullName) => {
-        vassert(coutputs.getInstantiationBounds(implFullName).nonEmpty)
+      case IsParent(_, _, implId) => {
+        vassert(coutputs.getInstantiationBounds(implId).nonEmpty)
         UpcastTE(
-          sourceExpr, targetSuperKind, implFullName)
+          sourceExpr, targetSuperKind, implId)
       }
       case IsntParent(candidates) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't upcast a " + sourceSubKind + " to a " + targetSuperKind + ": " + candidates))

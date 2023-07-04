@@ -17,7 +17,7 @@ import dev.vale.typing.env._
 import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, IFunctionGenerator, InferCompiler, TemplataCompiler, TypingPassOptions}
-import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironment, ParameterT, PrototypeT, ReferenceExpressionTE}
+import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, FunctionEnvironment, IEnvironment, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataLookupContext}
 import dev.vale.typing.names.{LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator}
@@ -34,7 +34,7 @@ trait IFunctionCompilerDelegate {
     coutputs: CompilerOutputs,
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
@@ -42,7 +42,7 @@ trait IFunctionCompilerDelegate {
   def translatePatternList(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
@@ -57,7 +57,7 @@ trait IFunctionCompilerDelegate {
     generator: IFunctionGenerator,
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
@@ -70,8 +70,8 @@ object FunctionCompiler {
   trait IEvaluateFunctionResult
 
   case class EvaluateFunctionSuccess(
-    prototype: PrototypeTemplata,
-    inferences: Map[IRuneS, ITemplata[ITemplataType]]
+    prototype: PrototypeTemplataT,
+    inferences: Map[IRuneS, ITemplataT[ITemplataType]]
   ) extends IEvaluateFunctionResult
 
   case class EvaluateFunctionFailure(
@@ -105,11 +105,11 @@ class FunctionCompiler(
   def evaluateGenericFunctionFromNonCall(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-    functionTemplata: FunctionTemplata,
+    functionTemplata: FunctionTemplataT,
     verifyConclusions: Boolean):
   (FunctionHeaderT) = {
     Profiler.frame(() => {
-      val FunctionTemplata(env, function) = functionTemplata
+      val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight) {
         closureOrLightLayer.evaluateGenericLightFunctionFromNonCall(
           env, coutputs, function.range :: parentRanges, function, verifyConclusions)
@@ -124,12 +124,12 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    functionTemplata: FunctionTemplata,
-    alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
-      val FunctionTemplata(declaringEnv, function) = functionTemplata
+      val FunctionTemplataT(declaringEnv, function) = functionTemplata
       closureOrLightLayer.evaluateTemplatedLightBannerFromCall(
         declaringEnv,
         coutputs,
@@ -142,12 +142,12 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    functionTemplata: FunctionTemplata,
-    alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
-      val FunctionTemplata(declaringEnv, function) = functionTemplata
+      val FunctionTemplataT(declaringEnv, function) = functionTemplata
       if (function.isLight()) {
         closureOrLightLayer.evaluateTemplatedLightBannerFromCall(
           declaringEnv,
@@ -161,7 +161,7 @@ class FunctionCompiler(
             case _ => vwat()
           }
 
-        val KindTemplata(closureStructRef@StructTT(_)) =
+        val KindTemplataT(closureStructRef@StructTT(_)) =
           vassertOne(
             declaringEnv.lookupNearestWithName(
               lambdaCitizenName2,
@@ -180,13 +180,13 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callingEnv: IEnvironment, // See CSSNCE
-    functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     argTypes: Vector[CoordT],
     verifyConclusions: Boolean):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
-      val FunctionTemplata(env, function) = functionTemplata
+      val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight()) {
         closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
           env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, argTypes, verifyConclusions)
@@ -196,7 +196,7 @@ class FunctionCompiler(
             case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
             case _ => vwat()
           }
-        val KindTemplata(closureStructRef @ StructTT(_)) =
+        val KindTemplataT(closureStructRef @ StructTT(_)) =
           vassertOne(
             env.lookupNearestWithName(
               lambdaCitizenName2,
@@ -212,11 +212,11 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callingEnv: IEnvironment, // See CSSNCE
-    functionTemplata: FunctionTemplata,
+    functionTemplata: FunctionTemplataT,
     args: Vector[Option[CoordT]]):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
-      val FunctionTemplata(env, function) = functionTemplata
+      val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericLightFunctionParentForPrototype2(
         env, coutputs, callingEnv, callRange, function, args)
     })
@@ -226,12 +226,12 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callingEnv: IEnvironment, // See CSSNCE
-    functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT]):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
-      val FunctionTemplata(env, function) = functionTemplata
+      val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericLightFunctionFromCallForPrototype2(
         env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, args.map(Some(_)))
     })

@@ -6,7 +6,7 @@ import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionN
 import dev.vale.typing.types._
 import dev.vale.testvm.IntV
 import dev.vale.typing.ast._
-import dev.vale.typing.templata.ITemplata.{expectCoord, expectCoordTemplata}
+import dev.vale.typing.templata.ITemplataT.{expectCoord, expectCoordTemplata}
 import dev.vale.typing.types._
 import dev.vale.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
@@ -344,7 +344,7 @@ class VirtualTests extends FunSuite with Matchers {
           }
         })
       vassert(destVar.coord == returnType)
-      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.localName.templateArgs
+      val Vector(successType, failType) = returnType.kind.expectInterface().id.localName.templateArgs
       vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
       vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
     }
@@ -358,7 +358,7 @@ class VirtualTests extends FunSuite with Matchers {
           }
         })
       vassert(destVar.coord == returnType)
-      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.localName.templateArgs
+      val Vector(successType, failType) = returnType.kind.expectInterface().id.localName.templateArgs
       vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
       vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
     }

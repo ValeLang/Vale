@@ -1,7 +1,7 @@
 package dev.vale.typing.env
 
 import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
-import dev.vale.typing.templata.ITemplata
+import dev.vale.typing.templata.ITemplataT
 import dev.vale.vpass
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.ITemplataType
@@ -17,7 +17,7 @@ case class FunctionEnvEntry(function: FunctionA) extends IEnvEntry {
 case class ImplEnvEntry(impl: ImplA) extends IEnvEntry { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class StructEnvEntry(struct: StructA) extends IEnvEntry { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class InterfaceEnvEntry(interface: InterfaceA) extends IEnvEntry { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
-case class TemplataEnvEntry(templata: ITemplata[ITemplataType]) extends IEnvEntry {
+case class TemplataEnvEntry(templata: ITemplataT[ITemplataType]) extends IEnvEntry {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vpass()
 }

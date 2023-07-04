@@ -6,8 +6,8 @@ import dev.vale.typing.ast._
 import dev.vale.typing.names._
 
 object simpleName {
-  def unapply(fullName: IdT[INameT]): Option[String] = {
-    fullName.localName match {
+  def unapply(id: IdT[INameT]): Option[String] = {
+    id.localName match {
 //      case ImplDeclareNameT(_) => None
       case LambdaCallFunctionNameT(_, _, _) => Some("__call")
       case LetNameT(_) => None
@@ -32,10 +32,10 @@ object functionName {
     unapply(function2.header)
   }
   def unapply(header: FunctionHeaderT): Option[String] = {
-    simpleName.unapply(header.fullName)
+    simpleName.unapply(header.id)
   }
   def unapply(prototype: PrototypeT): Option[String] = {
-    simpleName.unapply(prototype.fullName)
+    simpleName.unapply(prototype.id)
   }
 }
 

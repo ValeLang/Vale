@@ -8,7 +8,7 @@ import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.{CodeLocationS, Collector, FileCoordinate, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vpass, vwat}
 import dev.vale.typing.ast._
-import dev.vale.typing.templata.{CoordTemplata, ITemplata, MutabilityTemplata, PrototypeTemplata}
+import dev.vale.typing.templata.{CoordTemplataT, ITemplataT, MutabilityTemplataT, PrototypeTemplataT}
 import dev.vale.typing.types.InterfaceTT
 
 import scala.collection.immutable.{List, Map}
@@ -61,7 +61,7 @@ case class CompilerOutputs() {
   // wants to look in its inner env to get some bounds.
   private val typeNameToInnerEnv: mutable.HashMap[IdT[ITemplateNameT], IEnvironment] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
-  private val typeNameToMutability: mutable.HashMap[IdT[ITemplateNameT], ITemplata[MutabilityTemplataType]] = mutable.HashMap()
+  private val typeNameToMutability: mutable.HashMap[IdT[ITemplateNameT], ITemplataT[MutabilityTemplataType]] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
   private val interfaceNameToSealed: mutable.HashMap[IdT[IInterfaceTemplateNameT], Boolean] = mutable.HashMap()
 
@@ -138,20 +138,20 @@ case class CompilerOutputs() {
   }
 
   def getInstantiationBounds(
-    instantiationFullName: IdT[IInstantiationNameT]):
+    instantiationId: IdT[IInstantiationNameT]):
   Option[InstantiationBoundArguments] = {
-    instantiationNameToInstantiationBounds.get(instantiationFullName)
+    instantiationNameToInstantiationBounds.get(instantiationId)
   }
 
   def addInstantiationBounds(
-    instantiationFullName: IdT[IInstantiationNameT],
+    instantiationId: IdT[IInstantiationNameT],
     functionBoundToRune: InstantiationBoundArguments):
   Unit = {
     // We'll do this when we can cache instantiations from StructTemplar etc.
     // // We should only add instantiation bounds in exactly one place: the place that makes the
     // // PrototypeT/StructTT/InterfaceTT.
     // vassert(!instantiationNameToInstantiationBounds.contains(instantiationFullName))
-    instantiationNameToInstantiationBounds.get(instantiationFullName) match {
+    instantiationNameToInstantiationBounds.get(instantiationId) match {
       case Some(existing) => {
         // Make Sure Bound Args Match For Instantiation (MSBAMFI)
         // Theres some ambiguities or something here. sometimes when we evaluate
@@ -164,7 +164,7 @@ case class CompilerOutputs() {
       case None =>
     }
 
-    instantiationNameToInstantiationBounds.put(instantiationFullName, functionBoundToRune)
+    instantiationNameToInstantiationBounds.put(instantiationId, functionBoundToRune)
   }
 
 //  // This means we've at least started to evaluate this function's body.
@@ -245,7 +245,7 @@ case class CompilerOutputs() {
 
   def declareTypeMutability(
     templateName: IdT[ITemplateNameT],
-    mutability: ITemplata[MutabilityTemplataType]
+    mutability: ITemplataT[MutabilityTemplataType]
   ): Unit = {
     vassert(typeDeclaredNames.contains(templateName))
     vassert(!typeNameToMutability.contains(templateName))
@@ -287,25 +287,25 @@ case class CompilerOutputs() {
   ): Unit = {
     vassert(typeDeclaredNames.contains(nameT))
     vassert(!typeNameToOuterEnv.contains(nameT))
-    vassert(nameT == env.fullName)
+    vassert(nameT == env.id)
     typeNameToOuterEnv += (nameT -> env)
   }
 
   def declareTypeInnerEnv(
-    templateFullName: IdT[ITemplateNameT],
+    templateId: IdT[ITemplateNameT],
     env: IEnvironment,
   ): Unit = {
 //    val templateFullName = TemplataCompiler.getTemplate(nameT)
-    vassert(typeDeclaredNames.contains(templateFullName))
+    vassert(typeDeclaredNames.contains(templateId))
     // One should declare the outer env first
-    vassert(typeNameToOuterEnv.contains(templateFullName))
-    vassert(!typeNameToInnerEnv.contains(templateFullName))
+    vassert(typeNameToOuterEnv.contains(templateId))
+    vassert(!typeNameToInnerEnv.contains(templateId))
     //    vassert(nameT == env.fullName)
-    typeNameToInnerEnv += (templateFullName -> env)
+    typeNameToInnerEnv += (templateId -> env)
   }
 
   def addStruct(structDef: StructDefinitionT): Unit = {
-    if (structDef.mutability == MutabilityTemplata(ImmutableT)) {
+    if (structDef.mutability == MutabilityTemplataT(ImmutableT)) {
       structDef.members.foreach({
         case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
           vwat() // Immutable structs cant contain address members
@@ -343,14 +343,14 @@ case class CompilerOutputs() {
 //  }
 
   def addImpl(impl: ImplT): Unit = {
-    vassert(!allImpls.contains(impl.templateFullName))
-    allImpls.put(impl.templateFullName, impl)
+    vassert(!allImpls.contains(impl.templateId))
+    allImpls.put(impl.templateId, impl)
     subCitizenTemplateToImpls.put(
-      impl.subCitizenTemplateFullName,
-      subCitizenTemplateToImpls.getOrElse(impl.subCitizenTemplateFullName, Vector()) :+ impl)
+      impl.subCitizenTemplateId,
+      subCitizenTemplateToImpls.getOrElse(impl.subCitizenTemplateId, Vector()) :+ impl)
     superInterfaceTemplateToImpls.put(
-      impl.superInterfaceTemplateName,
-      superInterfaceTemplateToImpls.getOrElse(impl.superInterfaceTemplateName, Vector()) :+ impl)
+      impl.superInterfaceTemplateId,
+      superInterfaceTemplateToImpls.getOrElse(impl.superInterfaceTemplateId, Vector()) :+ impl)
   }
 
   def getParentImplsForSubCitizenTemplate(subCitizenTemplate: IdT[ICitizenTemplateNameT]): Vector[ImplT] = {
@@ -365,7 +365,7 @@ case class CompilerOutputs() {
   }
 
   def addFunctionExport(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
-    vassert(getInstantiationBounds(function.fullName).nonEmpty)
+    vassert(getInstantiationBounds(function.id).nonEmpty)
     functionExports += FunctionExportT(range, function, packageCoord, exportedName)
   }
 
@@ -403,7 +403,7 @@ case class CompilerOutputs() {
 //    }
 //  }
 
-  def lookupMutability(templateName: IdT[ITemplateNameT]): ITemplata[MutabilityTemplataType] = {
+  def lookupMutability(templateName: IdT[ITemplateNameT]): ITemplataT[MutabilityTemplataType] = {
     // If it has a structTT, then we've at least started to evaluate this citizen
     typeNameToMutability.get(templateName) match {
       case None => vfail("Still figuring out mutability for struct: " + templateName) // See MFDBRE
@@ -438,7 +438,7 @@ case class CompilerOutputs() {
     vassertSome(structTemplateNameToDefinition.get(templateName))
   }
   def lookupInterface(interfaceTT: InterfaceTT): InterfaceDefinitionT = {
-    lookupInterface(TemplataCompiler.getInterfaceTemplate(interfaceTT.fullName))
+    lookupInterface(TemplataCompiler.getInterfaceTemplate(interfaceTT.id))
   }
   def lookupInterface(templateName: IdT[IInterfaceTemplateNameT]): InterfaceDefinitionT = {
     vassertSome(interfaceTemplateNameToDefinition.get(templateName))
@@ -453,7 +453,7 @@ case class CompilerOutputs() {
   }
   def lookupCitizen(citizenTT: ICitizenTT): CitizenDefinitionT = {
     citizenTT match {
-      case s @ StructTT(_) => lookupStruct(s.fullName)
+      case s @ StructTT(_) => lookupStruct(s.id)
       case s @ InterfaceTT(_) => lookupInterface(s)
     }
   }

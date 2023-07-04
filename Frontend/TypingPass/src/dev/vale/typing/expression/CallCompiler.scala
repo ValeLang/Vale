@@ -6,7 +6,7 @@ import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.GlobalFunctionFamilyNameS
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
+import dev.vale.typing.ast.{FunctionCallTE, LocationInFunctionEnvironmentT, ReferenceExpressionTE}
 import dev.vale.typing.env.{FunctionEnvironmentBox, IEnvironment, NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -28,7 +28,7 @@ class CallCompiler(
   private def evaluateCall(
       coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       range: List[RangeS],
       callableExpr: ReferenceExpressionTE,
       explicitTemplateArgRulesS: Vector[IRulexSR],
@@ -75,7 +75,7 @@ class CallCompiler(
           argsExprs2.map(a => a.result.coord),
           exact = true)
 
-        vassert(coutputs.getInstantiationBounds(prototype.prototype.prototype.fullName).nonEmpty)
+        vassert(coutputs.getInstantiationBounds(prototype.prototype.prototype.id).nonEmpty)
         (ast.FunctionCallTE(prototype.prototype.prototype, argsExprs2))
       }
       case other => {
@@ -110,7 +110,7 @@ class CallCompiler(
   private def evaluateCustomCall(
       nenv: NodeEnvironmentBox,
       coutputs: CompilerOutputs,
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       range: List[RangeS],
       kind: KindT,
       explicitTemplateArgRulesS: Vector[IRulexSR],
@@ -149,9 +149,9 @@ class CallCompiler(
     val mutability = Compiler.getMutability(coutputs, kind)
     val ownership =
       mutability match {
-        case MutabilityTemplata(MutableT) => BorrowT
-        case MutabilityTemplata(ImmutableT) => ShareT
-        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => BorrowT
+        case MutabilityTemplataT(MutableT) => BorrowT
+        case MutabilityTemplataT(ImmutableT) => ShareT
+        case PlaceholderTemplataT(idT, MutabilityTemplataType()) => BorrowT
       }
     vassert(givenCallableBorrowExpr2.result.coord.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
@@ -165,7 +165,7 @@ class CallCompiler(
 
     checkTypes(coutputs, env, range, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
 
-    vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.fullName).nonEmpty)
+    vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.id).nonEmpty)
     val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2);
 
     (resultingExpr2)
@@ -220,7 +220,7 @@ class CallCompiler(
   def evaluatePrefixCall(
       coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
       callableReferenceExpr2: ReferenceExpressionTE,
     explicitTemplateArgRulesS: Vector[IRulexSR],

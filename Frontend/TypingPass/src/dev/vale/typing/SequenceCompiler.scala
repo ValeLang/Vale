@@ -45,7 +45,7 @@ class SequenceCompiler(
     parentRanges: List[RangeS],
     types2: Vector[CoordT]):
   StructTT = {
-    val tupleTemplate @ StructDefinitionTemplata(_, _) =
+    val tupleTemplate @ StructDefinitionTemplataT(_, _) =
       vassertSome(
         env.lookupNearestWithName(
           interner.intern(StructTemplateNameT(keywords.tupleHumanName)), Set(TemplataLookupContext)))
@@ -55,7 +55,7 @@ class SequenceCompiler(
       RangeS.internal(interner, -17653) :: parentRanges,
       tupleTemplate,
 //      Vector(CoordListTemplata(types2))).kind
-      types2.map(CoordTemplata)).expect().kind
+      types2.map(CoordTemplataT)).expect().kind
   }
 
   def makeTupleCoord(

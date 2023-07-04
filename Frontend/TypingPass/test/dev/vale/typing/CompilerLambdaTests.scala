@@ -130,10 +130,10 @@ class CompilerLambdaTests extends FunSuite with Matchers {
     // Check that the param type is right
     Collector.only(lambda, { case ParameterT(CodeVarNameT(StrI("a")), None, CoordT(ShareT, IntT.i32)) => {} })
     // Check the name is right
-    vassert(coutputs.nameIsLambdaIn(lambda.header.fullName, "main"))
+    vassert(coutputs.nameIsLambdaIn(lambda.header.id, "main"))
 
     val main = coutputs.lookupFunction("main");
-    Collector.only(main, { case FunctionCallTE(callee, _) if coutputs.nameIsLambdaIn(callee.fullName, "main") => })
+    Collector.only(main, { case FunctionCallTE(callee, _) if coutputs.nameIsLambdaIn(callee.id, "main") => })
   }
 
   test("Tests lambda and concept function") {

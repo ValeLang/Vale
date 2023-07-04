@@ -178,7 +178,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val destructor =
       vassertOne(
         coutputs.functions.find(func => {
-          func.header.fullName.localName match {
+          func.header.id.localName match {
             case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
             case _ => false
           }

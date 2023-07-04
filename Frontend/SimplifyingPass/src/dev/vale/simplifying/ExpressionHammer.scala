@@ -1085,8 +1085,8 @@ class ExpressionHammer(
       superFunctionPrototype.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       structHammer.translateInterface(hinputs, hamuts, interfaceTT)
-    val edge = hinputs.interfaceToEdgeBlueprints(interfaceTT.fullName)
-    vassert(edge.interface == interfaceTT.fullName)
+    val edge = hinputs.interfaceToEdgeBlueprints(interfaceTT.id)
+    vassert(edge.interface == interfaceTT.id)
     val indexInEdge = edge.superFamilyRootHeaders.indexWhere(x => superFunctionPrototype.toSignature == x._1.toSignature)
     vassert(indexInEdge >= 0)
 

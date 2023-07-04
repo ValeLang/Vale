@@ -3,9 +3,9 @@ package dev.vale.typing.env
 import dev.vale.highertyping.FunctionA
 import dev.vale.{Interner, vassert, vcurious, vfail, vpass}
 import dev.vale.postparsing._
-import dev.vale.typing.ast.{LocationInFunctionEnvironment, ParameterT}
+import dev.vale.typing.ast.{LocationInFunctionEnvironmentT, ParameterT}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IVarNameT}
-import dev.vale.typing.templata.{FunctionTemplata, ITemplata}
+import dev.vale.typing.templata.{FunctionTemplataT, ITemplataT}
 import dev.vale.typing.types._
 import dev.vale.highertyping._
 import dev.vale.postparsing.IImpreciseNameS
@@ -18,19 +18,19 @@ import scala.collection.immutable.{List, Map, Set}
 case class BuildingFunctionEnvironmentWithClosureds(
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  fullName: IdT[IFunctionTemplateNameT],
+  id: IdT[IFunctionTemplateNameT],
   templatas: TemplatasStore,
   function: FunctionA,
   variables: Vector[IVariableT],
   isRootCompilingDenizen: Boolean
 ) extends IEnvironment {
 
-  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[IEnvironment]) {
       return false
     }
-    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+    return id.equals(obj.asInstanceOf[IEnvironment].id)
   }
 
   override def rootCompilingDenizenEnv: IEnvironment = {
@@ -49,7 +49,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
     name: INameT,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
@@ -59,7 +59,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
@@ -68,20 +68,20 @@ case class BuildingFunctionEnvironmentWithClosureds(
 case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  fullName: IdT[IFunctionTemplateNameT],
-  templateArgs: Vector[ITemplata[ITemplataType]],
+  id: IdT[IFunctionTemplateNameT],
+  templateArgs: Vector[ITemplataT[ITemplataType]],
   templatas: TemplatasStore,
   function: FunctionA,
   variables: Vector[IVariableT],
   isRootCompilingDenizen: Boolean
 ) extends IEnvironment {
 
-  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[IEnvironment]) {
       return false
     }
-    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+    return id.equals(obj.asInstanceOf[IEnvironment].id)
   }
 
   override def rootCompilingDenizenEnv: IEnvironment = {
@@ -100,7 +100,7 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
     name: INameT,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
@@ -110,7 +110,7 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
@@ -121,7 +121,7 @@ case class NodeEnvironment(
   parentFunctionEnv: FunctionEnvironment,
   parentNodeEnv: Option[NodeEnvironment],
   node: IExpressionSE,
-  life: LocationInFunctionEnvironment,
+  life: LocationInFunctionEnvironmentT,
 
   // The things below are the "state"; they can be different for any given line in a function.
   templatas: TemplatasStore,
@@ -134,12 +134,12 @@ case class NodeEnvironment(
 ) extends IEnvironment {
   vassert(declaredLocals.map(_.name) == declaredLocals.map(_.name).distinct)
 
-  val hash = fullName.hashCode() ^ life.hashCode();
+  val hash = id.hashCode() ^ life.hashCode();
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
     obj match {
       case that @ NodeEnvironment(_, _, _, _, _, _, _, _) => {
-        fullName == that.fullName && life == that.life
+        id == that.id && life == that.life
       }
     }
   }
@@ -151,7 +151,7 @@ case class NodeEnvironment(
     }
   }
 
-  override def fullName: IdT[IFunctionNameT] = parentFunctionEnv.fullName
+  override def id: IdT[IFunctionNameT] = parentFunctionEnv.id
   def function = parentFunctionEnv.function
 
   private[env] override def lookupWithNameInner(
@@ -159,7 +159,7 @@ case class NodeEnvironment(
     name: INameT,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentNodeEnv.getOrElse(parentFunctionEnv), name, lookupFilter, getOnlyNearest)
   }
@@ -169,7 +169,7 @@ case class NodeEnvironment(
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentNodeEnv.getOrElse(parentFunctionEnv), name, lookupFilter, getOnlyNearest)
   }
@@ -329,7 +329,7 @@ case class NodeEnvironment(
       Some(this),
       node,
       life,
-      TemplatasStore(fullName, Map(), Map()),
+      TemplatasStore(id, Map(), Map()),
       declaredLocals, // See WTHPFE.
       unstackifiedLocals, // See WTHPFE
       restackifiedLocals) // See WTHPFE.
@@ -377,7 +377,7 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def snapshot: NodeEnvironment = nodeEnvironment
-  def fullName: IdT[IFunctionNameT] = nodeEnvironment.parentFunctionEnv.fullName
+  def id: IdT[IFunctionNameT] = nodeEnvironment.parentFunctionEnv.id
   def node: IExpressionSE = nodeEnvironment.node
   def maybeReturnType: Option[CoordT] = nodeEnvironment.parentFunctionEnv.maybeReturnType
   def globalEnv: GlobalEnvironment = nodeEnvironment.globalEnv
@@ -413,7 +413,7 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
 
     nameS: IImpreciseNameS,
     lookupFilter: Set[ILookupContext]):
-  Option[ITemplata[ITemplataType]] = {
+  Option[ITemplataT[ITemplataType]] = {
     nodeEnvironment.lookupNearestWithImpreciseName(nameS, lookupFilter)
   }
 
@@ -421,15 +421,15 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
 
     nameS: INameT,
     lookupFilter: Set[ILookupContext]):
-  Option[ITemplata[ITemplataType]] = {
+  Option[ITemplataT[ITemplataType]] = {
     nodeEnvironment.lookupNearestWithName(nameS, lookupFilter)
   }
 
-  def lookupAllWithImpreciseName( nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext]): Iterable[ITemplata[ITemplataType]] = {
+  def lookupAllWithImpreciseName( nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext]): Iterable[ITemplataT[ITemplataType]] = {
     nodeEnvironment.lookupAllWithImpreciseName(nameS, lookupFilter)
   }
 
-  def lookupAllWithName( nameS: INameT, lookupFilter: Set[ILookupContext]): Iterable[ITemplata[ITemplataType]] = {
+  def lookupAllWithName( nameS: INameT, lookupFilter: Set[ILookupContext]): Iterable[ITemplataT[ITemplataType]] = {
     nodeEnvironment.lookupAllWithName(nameS, lookupFilter)
   }
 
@@ -465,7 +465,7 @@ case class FunctionEnvironment(
   globalEnv: GlobalEnvironment,
   // This points to the environment containing the function, not parent blocks, see WTHPFE.
   parentEnv: IEnvironment,
-  fullName: IdT[IFunctionNameT], // Includes the name of the function
+  id: IdT[IFunctionNameT], // Includes the name of the function
 
   templatas: TemplatasStore,
 
@@ -479,13 +479,13 @@ case class FunctionEnvironment(
   // Eventually we might have a list of imported environments here, pointing at the
   // environments in the global environment.
 ) extends IEnvironment {
-  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[IEnvironment]) {
       return false
     }
-    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+    return id.equals(obj.asInstanceOf[IEnvironment].id)
   }
 
   override def rootCompilingDenizenEnv: IEnvironment = {
@@ -499,13 +499,13 @@ case class FunctionEnvironment(
     }
   }
 
-  def templata = FunctionTemplata(parentEnv, function)
+  def templata = FunctionTemplataT(parentEnv, function)
 
   def addEntry(interner: Interner, name: INameT, entry: IEnvEntry): FunctionEnvironment = {
     FunctionEnvironment(
       globalEnv,
       parentEnv,
-      fullName,
+      id,
       templatas.addEntry(interner, name, entry),
       function,
       maybeReturnType,
@@ -516,7 +516,7 @@ case class FunctionEnvironment(
     FunctionEnvironment(
       globalEnv,
       parentEnv,
-      fullName,
+      id,
       templatas.addEntries(interner, newEntries),
       function,
       maybeReturnType,
@@ -529,7 +529,7 @@ case class FunctionEnvironment(
     name: INameT,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
@@ -539,12 +539,12 @@ case class FunctionEnvironment(
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
 
-  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironment): NodeEnvironment = {
+  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironmentT): NodeEnvironment = {
     // See WTHPFE, if this is a lambda, we let our blocks start with
     // locals from the parent function.
     val (declaredLocals, unstackifiedLocals, restackifiedLocals) =
@@ -560,7 +560,7 @@ case class FunctionEnvironment(
       None,
       node,
       life,
-      TemplatasStore(fullName, Map(), Map()),
+      TemplatasStore(id, Map(), Map()),
       declaredLocals, // See WTHPFE.
       unstackifiedLocals, // See WTHPFE.
       restackifiedLocals) // See WTHPFE.
@@ -589,7 +589,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   override def snapshot: FunctionEnvironment = functionEnvironment
-  def fullName: IdT[IFunctionNameT] = functionEnvironment.fullName
+  def id: IdT[IFunctionNameT] = functionEnvironment.id
   def function: FunctionA = functionEnvironment.function
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
   override def globalEnv: GlobalEnvironment = functionEnvironment.globalEnv
@@ -611,7 +611,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
 
     nameS: IImpreciseNameS,
     lookupFilter: Set[ILookupContext]):
-  Option[ITemplata[ITemplataType]] = {
+  Option[ITemplataT[ITemplataType]] = {
     functionEnvironment.lookupNearestWithImpreciseName(nameS, lookupFilter)
   }
 
@@ -619,15 +619,15 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
 
     nameS: INameT,
     lookupFilter: Set[ILookupContext]):
-  Option[ITemplata[ITemplataType]] = {
+  Option[ITemplataT[ITemplataType]] = {
     functionEnvironment.lookupNearestWithName(nameS, lookupFilter)
   }
 
-  override def lookupAllWithImpreciseName( nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext]): Iterable[ITemplata[ITemplataType]] = {
+  override def lookupAllWithImpreciseName( nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext]): Iterable[ITemplataT[ITemplataType]] = {
     functionEnvironment.lookupAllWithImpreciseName(nameS, lookupFilter)
   }
 
-  override def lookupAllWithName( nameS: INameT, lookupFilter: Set[ILookupContext]): Iterable[ITemplata[ITemplataType]] = {
+  override def lookupAllWithName( nameS: INameT, lookupFilter: Set[ILookupContext]): Iterable[ITemplataT[ITemplataType]] = {
     functionEnvironment.lookupAllWithName(nameS, lookupFilter)
   }
 
@@ -639,7 +639,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment.lookupWithNameInner(nameS, lookupFilter, getOnlyNearest)
   }
 
-  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironment): NodeEnvironment = {
+  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironmentT): NodeEnvironment = {
     functionEnvironment.makeChildNodeEnvironment(node, life)
   }
 
@@ -704,7 +704,7 @@ object EnvironmentHelper {
     name: INameT,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     val result = templatas.lookupWithNameInner(requestingEnv, name, lookupFilter)
     if (result.nonEmpty && getOnlyNearest) {
       result
@@ -721,7 +721,7 @@ object EnvironmentHelper {
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplata[ITemplataType]] = {
+  Iterable[ITemplataT[ITemplataType]] = {
     val result = templatas.lookupWithImpreciseNameInner(requestingEnv, name, lookupFilter)
     if (result.nonEmpty && getOnlyNearest) {
       result

@@ -168,8 +168,8 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("bork").header.fullName.localName.templateArgs.last match {
-      case CoordTemplata(CoordT(OwnT, _)) =>
+    coutputs.lookupFunction("bork").header.id.localName.templateArgs.last match {
+      case CoordTemplataT(CoordT(OwnT, _)) =>
     }
   }
 
@@ -197,8 +197,8 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("genericGetFuel").header.fullName.localName.templateArgs.last match {
-      case CoordTemplata(CoordT(_,StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
+    coutputs.lookupFunction("genericGetFuel").header.id.localName.templateArgs.last match {
+      case CoordTemplataT(CoordT(_,StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
     }
   }
 
@@ -224,7 +224,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
 
     val lambdaFuncs =
       coutputs.functions.filter(func => {
-        func.header.fullName.localName.template match {
+        func.header.id.localName.template match {
           case FunctionTemplateNameT(StrI("__call"), _) => true
           case _ => false
         }
@@ -264,8 +264,8 @@ class AfterRegionsTests extends FunSuite with Matchers {
       StructNameT(
       StructTemplateNameT(StrI("MyHashSet")),
       Vector(
-      CoordTemplata(CoordT(ShareT,BoolT())),
-      IntegerTemplata(5)))))) =>
+      CoordTemplataT(CoordT(ShareT,BoolT())),
+      IntegerTemplataT(5)))))) =>
     }
   }
 
@@ -288,8 +288,8 @@ class AfterRegionsTests extends FunSuite with Matchers {
       InterfaceNameT(
       InterfaceTemplateNameT(StrI("MyInterface")),
       Vector(
-      CoordTemplata(CoordT(ShareT,BoolT())),
-      IntegerTemplata(5)))))) =>
+      CoordTemplataT(CoordT(ShareT,BoolT())),
+      IntegerTemplataT(5)))))) =>
     }
   }
 

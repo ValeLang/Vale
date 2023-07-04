@@ -1,7 +1,7 @@
 package dev.vale.typing
 
 import dev.vale.postparsing.{IRuneS, ITemplataType}
-import dev.vale.typing.ast.{EdgeT, FunctionDefinitionT, FunctionExportT, FunctionExternT, InterfaceEdgeBlueprint, KindExportT, KindExternT, PrototypeT, SignatureT}
+import dev.vale.typing.ast.{EdgeT, FunctionDefinitionT, FunctionExportT, FunctionExternT, InterfaceEdgeBlueprintT, KindExportT, KindExternT, PrototypeT, SignatureT}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, IFunctionNameT, IdT, LambdaCitizenNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -24,7 +24,7 @@ case class Hinputs(
 //  immKindToDestructor: Map[KindT, PrototypeT],
 
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
-  interfaceToEdgeBlueprints: Map[IdT[IInterfaceNameT], InterfaceEdgeBlueprint],
+  interfaceToEdgeBlueprints: Map[IdT[IInterfaceNameT], InterfaceEdgeBlueprintT],
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   interfaceToSubCitizenToEdge: Map[IdT[IInterfaceNameT], Map[IdT[ICitizenNameT], EdgeT]],
 
@@ -49,49 +49,49 @@ case class Hinputs(
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
-  def lookupStruct(structFullName: IdT[IStructNameT]): StructDefinitionT = {
-    vassertSome(structs.find(_.instantiatedCitizen.fullName == structFullName))
+  def lookupStruct(structId: IdT[IStructNameT]): StructDefinitionT = {
+    vassertSome(structs.find(_.instantiatedCitizen.id == structId))
   }
 
   def lookupStructByTemplate(structTemplateName: IStructTemplateNameT): StructDefinitionT = {
-    vassertSome(structs.find(_.instantiatedCitizen.fullName.localName.template == structTemplateName))
+    vassertSome(structs.find(_.instantiatedCitizen.id.localName.template == structTemplateName))
   }
 
   def lookupInterfaceByTemplate(interfaceTemplateName: IInterfaceTemplateNameT): InterfaceDefinitionT = {
-    vassertSome(interfaces.find(_.instantiatedCitizen.fullName.localName.template == interfaceTemplateName))
+    vassertSome(interfaces.find(_.instantiatedCitizen.id.localName.template == interfaceTemplateName))
   }
 
   def lookupImplByTemplate(implTemplateName: IImplTemplateNameT): EdgeT = {
-    vassertSome(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeFullName.localName.template == implTemplateName))
+    vassertSome(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeId.localName.template == implTemplateName))
   }
 
-  def lookupInterface(interfaceFullName: IdT[IInterfaceNameT]): InterfaceDefinitionT = {
-    vassertSome(interfaces.find(_.instantiatedCitizen.fullName == interfaceFullName))
+  def lookupInterface(interfaceId: IdT[IInterfaceNameT]): InterfaceDefinitionT = {
+    vassertSome(interfaces.find(_.instantiatedCitizen.id == interfaceId))
   }
 
-  def lookupEdge(implFullName: IdT[IImplNameT]): EdgeT = {
-    vassertOne(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeFullName == implFullName))
+  def lookupEdge(implId: IdT[IImplNameT]): EdgeT = {
+    vassertOne(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeId == implId))
   }
 
   def getInstantiationBoundArgs(instantiationName: IdT[IInstantiationNameT]): InstantiationBoundArguments = {
     vassertSome(instantiationNameToInstantiationBounds.get(instantiationName))
   }
 
-  def lookupStructByTemplateFullName(structTemplateFullName: IdT[IStructTemplateNameT]): StructDefinitionT = {
-    vassertSome(structs.find(_.templateName == structTemplateFullName))
+  def lookupStructByTemplateId(structTemplateId: IdT[IStructTemplateNameT]): StructDefinitionT = {
+    vassertSome(structs.find(_.templateName == structTemplateId))
   }
 
-  def lookupInterfaceByTemplateFullName(interfaceTemplateFullName: IdT[IInterfaceTemplateNameT]): InterfaceDefinitionT = {
-    vassertSome(interfaces.find(_.templateName == interfaceTemplateFullName))
+  def lookupInterfaceByTemplateId(interfaceTemplateId: IdT[IInterfaceTemplateNameT]): InterfaceDefinitionT = {
+    vassertSome(interfaces.find(_.templateName == interfaceTemplateId))
   }
 
-  def lookupCitizenByTemplateFullName(interfaceTemplateFullName: IdT[ICitizenTemplateNameT]): CitizenDefinitionT = {
-    interfaceTemplateFullName match {
+  def lookupCitizenByTemplateId(interfaceTemplateId: IdT[ICitizenTemplateNameT]): CitizenDefinitionT = {
+    interfaceTemplateId match {
       case IdT(packageCoord, initSteps, t: IStructTemplateNameT) => {
-        lookupStructByTemplateFullName(IdT(packageCoord, initSteps, t))
+        lookupStructByTemplateId(IdT(packageCoord, initSteps, t))
       }
       case IdT(packageCoord, initSteps, t: IInterfaceTemplateNameT) => {
-        lookupInterfaceByTemplateFullName(IdT(packageCoord, initSteps, t))
+        lookupInterfaceByTemplateId(IdT(packageCoord, initSteps, t))
       }
     }
   }
@@ -109,12 +109,12 @@ case class Hinputs(
   }
 
   def lookupFunction(funcTemplateName: IFunctionTemplateNameT): Option[FunctionDefinitionT] = {
-    functions.find(_.header.fullName.localName.template == funcTemplateName).headOption
+    functions.find(_.header.id.localName.template == funcTemplateName).headOption
   }
 
   def lookupFunction(humanName: String): FunctionDefinitionT = {
     val matches = functions.filter(f => {
-      f.header.fullName.localName match {
+      f.header.id.localName match {
         case FunctionNameT(n, _, _) if n.humanName.str == humanName => true
         case _ => false
       }
@@ -169,7 +169,7 @@ case class Hinputs(
   def lookupUserFunction(humanName: String): FunctionDefinitionT = {
     val matches =
       functions
-        .filter(function => simpleName.unapply(function.header.fullName).contains(humanName))
+        .filter(function => simpleName.unapply(function.header.id).contains(humanName))
         .filter(_.header.isUserFunction)
     if (matches.size == 0) {
       vfail("Not found!")
@@ -194,7 +194,7 @@ case class Hinputs(
   }
 
   def lookupLambdasIn(needleFunctionHumanName: String): Vector[FunctionDefinitionT] = {
-    functions.filter(f => nameIsLambdaIn(f.header.fullName, needleFunctionHumanName)).toVector
+    functions.filter(f => nameIsLambdaIn(f.header.id, needleFunctionHumanName)).toVector
   }
 
   def lookupLambdaIn(needleFunctionHumanName: String): FunctionDefinitionT = {

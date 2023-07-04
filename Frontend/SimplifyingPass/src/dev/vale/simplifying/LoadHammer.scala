@@ -194,7 +194,7 @@ class LoadHammer(
     // pointing at this box. First, get the box, then mutate what's inside.
     var varFullNameH =
     nameHammer.translateFullName(
-      hinputs, hamuts, currentFunctionHeader.fullName.addStep(memberName))
+      hinputs, hamuts, currentFunctionHeader.id.addStep(memberName))
     val loadBoxNode =
         MemberLoadH(
           structResultLine.expectStructAccess(),
@@ -258,7 +258,7 @@ class LoadHammer(
           memberIndex,
           expectedMemberTypeH,
           loadResultType,
-          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(memberName)))
+          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(memberName)))
     (loadedNode, structDeferreds)
   }
 
@@ -285,7 +285,7 @@ class LoadHammer(
     // We need to load the box, then mutate its contents.
     val varNameH =
     nameHammer.translateFullName(
-      hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))
+      hinputs, hamuts, currentFunctionHeader.id.addStep(varId))
     val loadBoxNode =
         LocalLoadH(
           local,
@@ -333,7 +333,7 @@ class LoadHammer(
           local,
           targetOwnership,
           nameHammer.translateFullName(
-            hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId)))
+            hinputs, hamuts, currentFunctionHeader.id.addStep(varId)))
     (loadedNode, Vector.empty)
   }
 
@@ -357,7 +357,7 @@ class LoadHammer(
       LocalLoadH(
         local,
         finalast.BorrowH,
-        nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(localVar.name)))
+        nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(localVar.name)))
     loadBoxNode
   }
 
@@ -421,7 +421,7 @@ class LoadHammer(
         memberIndex,
         expectedStructBoxMemberType,
         loadResultType,
-        nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(memberName)))
+        nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(memberName)))
 
     (loadBoxNode, structDeferreds)
   }

@@ -14,7 +14,7 @@ import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
 import dev.vale.typing.names.RuneNameT
-import dev.vale.typing.templata.PrototypeTemplata
+import dev.vale.typing.templata.PrototypeTemplataT
 import dev.vale.typing.types.CoordT
 
 class FunctorHelper( interner: Interner, keywords: Keywords) {
@@ -22,7 +22,7 @@ class FunctorHelper( interner: Interner, keywords: Keywords) {
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
-    dropFunction: PrototypeTemplata):
+    dropFunction: PrototypeTemplataT):
   ReinterpretTE = {
     vfail()
 //    val functorTemplate =

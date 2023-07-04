@@ -6,13 +6,13 @@ import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
-import dev.vale.postparsing.{ICompileErrorS, _}
+import dev.vale.postparsing._
 import dev.vale.testvm._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.WeakableImplingMismatch
 import dev.vale.typing.expression.TookWeakRefOfNonWeakableError
 import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT}
-import dev.vale.typing.templata.MutabilityTemplata
+import dev.vale.typing.templata.MutabilityTemplataT
 import dev.vale.typing.types.{CoordT, ImmutableT, IntT, ShareT, contentsRuntimeSizedArrayTT}
 import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.von.{IVonData, VonBool, VonFloat, VonInt}

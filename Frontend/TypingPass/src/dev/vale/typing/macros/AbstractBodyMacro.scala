@@ -4,12 +4,12 @@ import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, vassert, vassertSome
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, ast}
-import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, InterfaceFunctionCallTE, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, InterfaceFunctionCallTE, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, TemplatasStore}
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
-import dev.vale.typing.templata.{FunctionTemplata, PrototypeTemplata}
+import dev.vale.typing.templata.{FunctionTemplataT, PrototypeTemplataT}
 
 class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver: OverloadResolver) extends IFunctionBodyMacro {
   val generatorId: StrI = keywords.abstractBody
@@ -18,7 +18,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     params2: Vector[ParameterT],
@@ -28,11 +28,11 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
     vassert(params2.exists(_.virtuality == Some(AbstractT())))
     val header =
       FunctionHeaderT(
-        env.fullName,
+        env.id,
         Vector.empty,
         params2,
         returnReferenceType2,
-        originFunction.map(FunctionTemplata(env.parentEnv, _)))
+        originFunction.map(FunctionTemplataT(env.parentEnv, _)))
 
     // Find self, but instead of calling it like a regular function call, call it like an interface.
     // We do this instead of grabbing the prototype out of the environment because we want to get its
@@ -42,14 +42,14 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
         env,
         coutputs,
         callRange,
-        vassertSome(TemplatasStore.getImpreciseName(interner, env.fullName.localName)),
+        vassertSome(TemplatasStore.getImpreciseName(interner, env.id.localName)),
         Vector(),
         Vector(),
         params2.map(_.tyype),
         Vector(),
         true,
         true) match {
-        case Ok(EvaluateFunctionSuccess(PrototypeTemplata(_, prototype), _)) => prototype
+        case Ok(EvaluateFunctionSuccess(PrototypeTemplataT(_, prototype), _)) => prototype
         case Err(fff @ FindFunctionFailure(_, _, _)) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, fff))
       }
 

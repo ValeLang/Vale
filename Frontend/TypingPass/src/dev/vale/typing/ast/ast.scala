@@ -126,8 +126,8 @@ case class OverrideT(
   // might not be simple placeholders
   dispatcherCallId: IdT[OverrideDispatcherNameT],
 
-  implPlaceholderToDispatcherPlaceholder: Vector[(IdT[PlaceholderNameT], ITemplataT[ITemplataType])],
-  implPlaceholderToCasePlaceholder: Vector[(IdT[PlaceholderNameT], ITemplataT[ITemplataType])],
+  implPlaceholderToDispatcherPlaceholder: Vector[(IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])],
+  implPlaceholderToCasePlaceholder: Vector[(IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])],
 
   // This is needed for bringing in the impl's bound args for the override dispatcher's case, see
   // TIBANFC.
@@ -345,7 +345,7 @@ case class FunctionHeaderT(
         val templateName = TemplataCompiler.getFunctionTemplate(id)
         val placeholders =
           Collector.all(id, {
-            case PlaceholderT(name) => name
+            case KindPlaceholderT(name) => name
             case PlaceholderTemplataT(name, _) => name
           })
         // Filter out any placeholders that came from the parent, in case this is a lambda function.
@@ -366,12 +366,12 @@ case class FunctionHeaderT(
           } else {
             // make sure all the placeholders in the parameters exist as template args
             placeholdersOfThisFunction.foreach({
-              case placeholderName @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune))) => {
+              case placeholderName @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) => {
                 id.localName.templateArgs(index) match {
-                  case KindTemplataT(PlaceholderT(placeholderNameAtIndex)) => {
+                  case KindTemplataT(KindPlaceholderT(placeholderNameAtIndex)) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
-                  case CoordTemplataT(CoordT(_, PlaceholderT(placeholderNameAtIndex))) => {
+                  case CoordTemplataT(CoordT(_, KindPlaceholderT(placeholderNameAtIndex))) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
                   case PlaceholderTemplataT(placeholderNameAtIndex, _) => {

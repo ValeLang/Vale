@@ -553,7 +553,7 @@ object CompilerErrorHumanizer {
         kind match {
           case IntT(bits) => "i" + bits
           case BoolT() => "bool"
-          case PlaceholderT(name) => "Kind$" + humanizeName(codeMap, name)
+          case KindPlaceholderT(name) => "Kind$" + humanizeName(codeMap, name)
           case StrT() => "str"
           case NeverT(_) => "never"
           case VoidT() => "void"
@@ -647,8 +647,8 @@ object CompilerErrorHumanizer {
           }) +
           "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
-      case PlaceholderNameT(template) => humanizeName(codeMap, template)
-      case PlaceholderTemplateNameT(index, rune) => humanizeRune(rune)
+      case KindPlaceholderNameT(template) => humanizeName(codeMap, template)
+      case KindPlaceholderTemplateNameT(index, rune) => humanizeRune(rune)
       case CodeVarNameT(name) => name.str
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
       case FunctionTemplateNameT(humanName, codeLoc) => humanName.str

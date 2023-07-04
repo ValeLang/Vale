@@ -144,8 +144,8 @@ class Compiler(
       new IInfererDelegate {
         def getPlaceholdersInId(accum: Accumulator[IdT[INameT]], id: IdT[INameT]): Unit = {
           id.localName match {
-            case PlaceholderNameT(_) => accum.add(id)
-            case PlaceholderTemplateNameT(_, _) => accum.add(id)
+            case KindPlaceholderNameT(_) => accum.add(id)
+            case KindPlaceholderTemplateNameT(_, _) => accum.add(id)
             case _ =>
           }
         }
@@ -201,7 +201,7 @@ class Compiler(
             }
             case StructTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
             case InterfaceTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
-            case PlaceholderT(id) => accum.add(id)
+            case KindPlaceholderT(id) => accum.add(id)
             case OverloadSetT(env, name) =>
             case other => vimpl(other)
           }
@@ -253,7 +253,7 @@ class Compiler(
           kind: KindT):
         Boolean = {
           kind match {
-            case p @ PlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.originalCallingEnv, p, false)
+            case p @ KindPlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.originalCallingEnv, p, false)
             case contentsRuntimeSizedArrayTT(_, _) => false
             case OverloadSetT(_, _) => false
             case NeverT(fromBreak) => true
@@ -1270,7 +1270,7 @@ object Compiler {
     kind match {
       case VoidT() | IntT(_) | BoolT() | StrT() | NeverT(_) | FloatT() => true
 //      case TupleTT(_, understruct) => isPrimitive(understruct)
-      case PlaceholderT(_) => false
+      case KindPlaceholderT(_) => false
       case StructTT(_) => false
       case InterfaceTT(_) => false
       case contentsStaticSizedArrayTT(_, _, _, _) => false
@@ -1286,7 +1286,7 @@ object Compiler {
   def getMutability(coutputs: CompilerOutputs, concreteValue2: KindT):
   ITemplataT[MutabilityTemplataType] = {
     concreteValue2 match {
-      case PlaceholderT(id) => coutputs.lookupMutability(TemplataCompiler.getPlaceholderTemplate(id))
+      case KindPlaceholderT(id) => coutputs.lookupMutability(TemplataCompiler.getPlaceholderTemplate(id))
       case NeverT(_) => MutabilityTemplataT(ImmutableT)
       case IntT(_) => MutabilityTemplataT(ImmutableT)
       case FloatT() => MutabilityTemplataT(ImmutableT)

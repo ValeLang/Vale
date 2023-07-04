@@ -227,7 +227,7 @@ class LocalHelper(
           case PlaceholderTemplataT(idT, MutabilityTemplataType()) => BorrowT
         }
       }
-      case p @ PlaceholderT(id) => {
+      case p @ KindPlaceholderT(id) => {
         val mutability = Compiler.getMutability(coutputs, p)
         mutability match {
           case MutabilityTemplataT(MutableT) => BorrowT

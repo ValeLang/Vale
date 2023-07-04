@@ -8,7 +8,7 @@ import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, 
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IdT, NameTranslator, PlaceholderNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IdT, NameTranslator, KindPlaceholderNameT}
 import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertSome, vcurious, vimpl}
 import dev.vale.typing.types._
 import dev.vale.highertyping.FunctionA

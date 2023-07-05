@@ -68,8 +68,8 @@ class ConvertHelper(
       case _ =>
     }
 
-    val CoordT(targetOwnership, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, _, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, _, sourceType) = sourcePointerType;
 
     targetPointerType.kind match {
       case NeverT(_) => vcurious()

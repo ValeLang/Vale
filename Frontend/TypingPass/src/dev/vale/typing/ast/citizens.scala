@@ -100,14 +100,7 @@ sealed trait IMemberTypeT  {
 }
 
 case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT
-case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
-  reference match {
-    case CoordT(OwnT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("Marine")),Vector())))) => {
-      vpass()
-    }
-    case _ =>
-  }
-}
+case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT
 
 case class InterfaceDefinitionT(
   templateName: IdT[IInterfaceTemplateNameT],

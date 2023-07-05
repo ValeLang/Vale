@@ -1081,7 +1081,7 @@ class ExpressionHammer(
     }
 
 //    val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val CoordT(_, interfaceTT @ InterfaceTT(_)) =
+    val CoordT(_, _,interfaceTT @ InterfaceTT(_)) =
       superFunctionPrototype.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       structHammer.translateInterface(hinputs, hamuts, interfaceTT)

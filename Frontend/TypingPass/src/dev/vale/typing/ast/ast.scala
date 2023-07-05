@@ -126,8 +126,8 @@ case class OverrideT(
   // might not be simple placeholders
   dispatcherCallId: IdT[OverrideDispatcherNameT],
 
-  implPlaceholderToDispatcherPlaceholder: Vector[(IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])],
-  implPlaceholderToCasePlaceholder: Vector[(IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])],
+  implPlaceholderToDispatcherPlaceholder: Vector[(IdT[IPlaceholderNameT], ITemplataT[ITemplataType])],
+  implPlaceholderToCasePlaceholder: Vector[(IdT[IPlaceholderNameT], ITemplataT[ITemplataType])],
 
   // This is needed for bringing in the impl's bound args for the override dispatcher's case, see
   // TIBANFC.
@@ -183,8 +183,8 @@ object ProgramT {
 //  val emptyTupleTT =
 //    StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector(), CitizenNameT(CitizenTemplateNameT(tupleHumanName), Vector(CoordListTemplata(Vector())))))
 
-  val intType = CoordT(ShareT, IntT.i32)
-  val boolType = CoordT(ShareT, BoolT())
+  val intType = CoordT(ShareT, GlobalRegionT(), IntT.i32)
+  val boolType = CoordT(ShareT, GlobalRegionT(), BoolT())
 }
 
 case class FunctionDefinitionT(
@@ -371,7 +371,7 @@ case class FunctionHeaderT(
                   case KindTemplataT(KindPlaceholderT(placeholderNameAtIndex)) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
-                  case CoordTemplataT(CoordT(_, KindPlaceholderT(placeholderNameAtIndex))) => {
+                  case CoordTemplataT(CoordT(_, _, KindPlaceholderT(placeholderNameAtIndex))) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
                   case PlaceholderTemplataT(placeholderNameAtIndex, _) => {
@@ -421,7 +421,7 @@ case class FunctionHeaderT(
   def getAbstractInterface: Option[InterfaceTT] = {
     val abstractInterfaces =
       params.collect({
-        case ParameterT(_, Some(AbstractT()), CoordT(_, ir @ InterfaceTT(_))) => ir
+        case ParameterT(_, Some(AbstractT()), CoordT(_, _, ir @ InterfaceTT(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption

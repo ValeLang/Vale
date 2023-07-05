@@ -13,7 +13,7 @@ import dev.vale.typing.citizen.WeakableImplingMismatch
 import dev.vale.typing.expression.TookWeakRefOfNonWeakableError
 import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT}
 import dev.vale.typing.templata.MutabilityTemplataT
-import dev.vale.typing.types.{CoordT, ImmutableT, IntT, ShareT, contentsRuntimeSizedArrayTT}
+import dev.vale.typing.types._
 import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.von.{IVonData, VonBool, VonFloat, VonInt}
 import org.scalatest.{FunSuite, Matchers}
@@ -331,7 +331,7 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
-    main.header.returnType shouldEqual CoordT(ShareT, IntT.i32)
+    main.header.returnType shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 }

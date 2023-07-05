@@ -16,10 +16,10 @@ import dev.vale.typing.env._
 import FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve, Solver}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
-import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosureds, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsT, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.infer.ITypingPassSolverError
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, InitialKnown, InitialSend, TemplataCompiler, TypingPassOptions}
-import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT, NameTranslator, KindPlaceholderNameT, KindPlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types.CoordT
 //import dev.vale.typingpass.infer.{InferSolveFailure, InferSolveSuccess}
@@ -53,9 +53,9 @@ class FunctionCompilerSolvingLayer(
   // - env is the environment the templated function was made in
   def evaluateTemplatedFunctionFromCallForPrototype(
     // The environment the function was defined in.
-    outerEnv: BuildingFunctionEnvironmentWithClosureds,
+    outerEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT],
@@ -103,9 +103,9 @@ class FunctionCompilerSolvingLayer(
   // - env is the environment the templated function was made in
   def evaluateTemplatedFunctionFromCallForBanner(
       // The environment the function was defined in.
-      declaringEnv: BuildingFunctionEnvironmentWithClosureds,
+      declaringEnv: BuildingFunctionEnvironmentWithClosuredsT,
       coutputs: CompilerOutputs,
-      originalCallingEnv: IEnvironment, // See CSSNCE
+      originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
       callRange: List[RangeS],
       alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
@@ -154,9 +154,9 @@ class FunctionCompilerSolvingLayer(
   // This assumes it met any type bound restrictions (or, will; not implemented yet)
   def evaluateTemplatedLightBannerFromCall(
       // The environment the function was defined in.
-      nearEnv: BuildingFunctionEnvironmentWithClosureds,
+      nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
       coutputs: CompilerOutputs,
-    originalCallingEnv: IEnvironment, // See CSSNCE
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
       explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
@@ -214,7 +214,7 @@ class FunctionCompilerSolvingLayer(
 
   private def checkClosureConcernsHandled(
     // The environment the function was defined in.
-    nearEnv: BuildingFunctionEnvironmentWithClosureds
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT
   ): Unit = {
     val function = nearEnv.function
     function.body match {
@@ -229,13 +229,13 @@ class FunctionCompilerSolvingLayer(
 
   // IOW, add the necessary data to turn the near env into the runed env.
   private def addRunedDataToNearEnv(
-    nearEnv: BuildingFunctionEnvironmentWithClosureds,
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     identifyingRunes: Vector[IRuneS],
     templatasByRune: Map[IRuneS, ITemplataT[ITemplataType]],
     reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplataT]
     // I suspect we'll eventually need some impl bounds here
-  ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs = {
-    val BuildingFunctionEnvironmentWithClosureds(globalEnv, parentEnv, id, templatas, function, variables, isRootCompilingDenizen) = nearEnv
+  ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT = {
+    val BuildingFunctionEnvironmentWithClosuredsT(globalEnv, parentEnv, id, templatas, function, variables, isRootCompilingDenizen) = nearEnv
 
     val identifyingTemplatas = identifyingRunes.map(templatasByRune)
 
@@ -247,7 +247,7 @@ class FunctionCompilerSolvingLayer(
         templatasByRune.toVector
           .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) }))
 
-    BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
+    BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT(
       globalEnv, parentEnv, id, identifyingTemplatas, newEntries, function, variables, isRootCompilingDenizen)
   }
 
@@ -259,9 +259,9 @@ class FunctionCompilerSolvingLayer(
   // - env is the environment the templated function was made in
   def evaluateGenericFunctionFromCallForPrototype(
     // The environment the function was defined in.
-    outerEnv: BuildingFunctionEnvironmentWithClosureds,
+    outerEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[Option[CoordT]]):
@@ -312,9 +312,9 @@ class FunctionCompilerSolvingLayer(
 
   def evaluateGenericFunctionParentForPrototype(
     // The environment the function was defined in.
-    nearEnv: BuildingFunctionEnvironmentWithClosureds,
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     args: Vector[Option[CoordT]]):
   IEvaluateFunctionResult = {
@@ -415,7 +415,7 @@ class FunctionCompilerSolvingLayer(
   // - either no closured vars, or they were already added to the env.
   def evaluateGenericFunctionFromNonCall(
     // The environment the function was defined in.
-    nearEnv: BuildingFunctionEnvironmentWithClosureds,
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     verifyConclusions: Boolean):

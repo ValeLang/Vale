@@ -6,7 +6,7 @@ import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, U, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{InterfaceEdgeBlueprintT, PrototypeT}
-import dev.vale.typing.env.{GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import dev.vale.typing.env.{GeneralEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.ImplCompiler
@@ -151,7 +151,7 @@ class EdgeCompiler(
   def createOverridePlaceholderMimicking(
     coutputs: CompilerOutputs,
     originalTemplataToMimic: ITemplataT[ITemplataType],
-    dispatcherOuterEnv: IEnvironment,
+    dispatcherOuterEnv: IInDenizenEnvironmentT,
     index: Int,
     rune: IRuneS):
   ITemplataT[ITemplataType] = {
@@ -192,8 +192,8 @@ class EdgeCompiler(
     // To be consistent, we'll do this for every placeholder, not just the extra one like ZZ.
 
     val placeholderName =
-      interner.intern(PlaceholderNameT(
-        interner.intern(PlaceholderTemplateNameT(index, rune))))
+      interner.intern(KindPlaceholderNameT(
+        interner.intern(KindPlaceholderTemplateNameT(index, rune))))
     val placeholderId = dispatcherOuterEnv.id.addStep(placeholderName)
     // And, because it's new, we need to declare it and its environment.
     val placeholderTemplateId =
@@ -202,24 +202,24 @@ class EdgeCompiler(
     coutputs.declareType(placeholderTemplateId)
     coutputs.declareTypeOuterEnv(
       placeholderTemplateId,
-      GeneralEnvironment.childOf(interner, dispatcherOuterEnv, placeholderTemplateId))
+      GeneralEnvironmentT.childOf(interner, dispatcherOuterEnv, placeholderTemplateId))
 
     val result =
       originalTemplataToMimic match {
         case PlaceholderTemplataT(_, tyype) => {
           PlaceholderTemplataT(placeholderId, tyype)
         }
-        case KindTemplataT(PlaceholderT(originalPlaceholderId)) => {
+        case KindTemplataT(KindPlaceholderT(originalPlaceholderId)) => {
           val originalPlaceholderTemplateId = TemplataCompiler.getPlaceholderTemplate(originalPlaceholderId)
           val mutability = coutputs.lookupMutability(originalPlaceholderTemplateId)
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-          KindTemplataT(PlaceholderT(placeholderId))
+          KindTemplataT(KindPlaceholderT(placeholderId))
         }
-        case CoordTemplataT(CoordT(ownership, PlaceholderT(originalPlaceholderId))) => {
+        case CoordTemplataT(CoordT(ownership, KindPlaceholderT(originalPlaceholderId))) => {
           val originalPlaceholderTemplateId = TemplataCompiler.getPlaceholderTemplate(originalPlaceholderId)
           val mutability = coutputs.lookupMutability(originalPlaceholderTemplateId)
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-          CoordTemplataT(CoordT(ownership, PlaceholderT(placeholderId)))
+          CoordTemplataT(CoordT(ownership, KindPlaceholderT(placeholderId)))
         }
         case other => vwat(other)
       }
@@ -258,7 +258,7 @@ class EdgeCompiler(
     val dispatcherTemplateId =
       abstractFuncTemplateId.addStep(dispatcherTemplateName)
     val dispatcherOuterEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         abstractFuncOuterEnv,
         dispatcherTemplateId)
@@ -279,7 +279,7 @@ class EdgeCompiler(
     // have that ZZ.
     // Note that these placeholder indexes might not line up with the ones from the original impl.
     val implPlaceholderToDispatcherPlaceholder =
-      U.mapWithIndex[ITemplataT[ITemplataType], (IdT[PlaceholderNameT], ITemplataT[ITemplataType])](
+      U.mapWithIndex[ITemplataT[ITemplataType], (IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])](
         impl.instantiatedId.localName.templateArgs.toVector
         .zip(impl.runeIndexToIndependence)
         .filter({ case (templata, independent) => !independent }) // Only grab dependent runes
@@ -345,7 +345,7 @@ class EdgeCompiler(
         dispatcherTemplateId.localName.makeFunctionName(interner, keywords, dispatcherPlaceholders.toVector, dispatcherParams))
 
     val dispatcherInnerEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         dispatcherOuterEnv,
         dispatcherId,
@@ -359,7 +359,7 @@ class EdgeCompiler(
     // Step 3: Figure Out Dependent And Independent Runes, see FODAIR.
 
     val implRuneToImplPlaceholderAndCasePlaceholder =
-      U.mapWithIndex[(IRuneS, ITemplataT[ITemplataType]), (IRuneS, IdT[PlaceholderNameT], ITemplataT[ITemplataType])](
+      U.mapWithIndex[(IRuneS, ITemplataT[ITemplataType]), (IRuneS, IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])](
         impl.templata.impl.genericParams.map(_.rune.rune).toVector
           .zip(impl.instantiatedId.localName.templateArgs.toIterable)
           .zip(impl.runeIndexToIndependence)
@@ -458,7 +458,7 @@ class EdgeCompiler(
     val overrideImpreciseName =
       vassertSome(TemplatasStore.getImpreciseName(interner, abstractFunctionPrototype.id.localName))
     val dispatcherCaseEnv =
-      GeneralEnvironment.childOf(
+      GeneralEnvironmentT.childOf(
         interner,
         dispatcherInnerEnv,
         dispatcherInnerEnv.id.addStep(

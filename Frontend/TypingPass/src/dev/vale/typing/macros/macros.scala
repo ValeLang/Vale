@@ -3,7 +3,7 @@ package dev.vale.typing.macros
 import dev.vale.{RangeS, StrI}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT}
-import dev.vale.typing.env.{FunctionEnvironment, IEnvEntry}
+import dev.vale.typing.env.{FunctionEnvironmentT, IEnvEntry}
 import dev.vale.typing.names.{IdT, INameT}
 import dev.vale.typing.types._
 import dev.vale.RangeS
@@ -19,7 +19,7 @@ trait IFunctionBodyMacro {
 //  def generatorId: String
 
   def generateFunctionBody(
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,

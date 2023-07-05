@@ -16,7 +16,7 @@ import dev.vale.typing.types.MutabilityT
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.patterns._
 import dev.vale.typing.ast._
-import dev.vale.typing.env.PackageEnvironment
+import dev.vale.typing.env.PackageEnvironmentT
 import dev.vale.typing.function.FunctionCompilerCore
 import dev.vale.typing.macros.citizen.StructDropMacro
 import dev.vale.typing.names.AnonymousSubstructImplNameT

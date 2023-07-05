@@ -1,10 +1,10 @@
 package dev.vale.typing
 
-import dev.vale.{CodeLocationS, Interner, Keywords, RangeS, Result, Ok, Err, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
+import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, RangeS, Result, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
 import dev.vale.postparsing.rules.{EqualsSR, IRulexSR, RuneUsage}
 import dev.vale.postparsing._
-import dev.vale.typing.env.{FunctionEnvironment, GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.env.{FunctionEnvironmentT, GeneralEnvironmentT, IEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -33,7 +33,7 @@ trait ITemplataCompilerDelegate {
 
   def isParent(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
     subKindTT: ISubKindTT,
     superKindTT: ISuperKindTT):
@@ -41,7 +41,7 @@ trait ITemplataCompilerDelegate {
 
   def resolveStruct(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     structTemplata: StructDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -49,7 +49,7 @@ trait ITemplataCompilerDelegate {
 
   def resolveInterface(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -58,7 +58,7 @@ trait ITemplataCompilerDelegate {
   IResolveOutcome[InterfaceTT]
 
   def resolveStaticSizedArrayKind(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     mutability: ITemplataT[MutabilityTemplataType],
     variability: ITemplataT[VariabilityTemplataType],
@@ -66,7 +66,7 @@ trait ITemplataCompilerDelegate {
     type2: CoordT):
   StaticSizedArrayTT
 
-  def resolveRuntimeSizedArrayKind(env: IEnvironment, state: CompilerOutputs, element: CoordT, arrayMutability: ITemplataT[MutabilityTemplataType]): RuntimeSizedArrayTT
+  def resolveRuntimeSizedArrayKind(env: IInDenizenEnvironmentT, state: CompilerOutputs, element: CoordT, arrayMutability: ITemplataT[MutabilityTemplataType]): RuntimeSizedArrayTT
 }
 
 object TemplataCompiler {
@@ -94,8 +94,8 @@ object TemplataCompiler {
   def getPlaceholderTemplataId(implPlaceholder: ITemplataT[ITemplataType]) = {
     implPlaceholder match {
       case PlaceholderTemplataT(n, _) => n
-      case KindTemplataT(PlaceholderT(n)) => n
-      case CoordTemplataT(CoordT(_, PlaceholderT(n))) => n
+      case KindTemplataT(KindPlaceholderT(n)) => n
+      case CoordTemplataT(CoordT(_, KindPlaceholderT(n))) => n
       case other => vwat(other)
     }
   }
@@ -218,7 +218,7 @@ object TemplataCompiler {
       last.template)
   }
 
-  def getPlaceholderTemplate(id: IdT[PlaceholderNameT]): IdT[PlaceholderTemplateNameT] = {
+  def getPlaceholderTemplate(id: IdT[KindPlaceholderNameT]): IdT[KindPlaceholderTemplateNameT] = {
     val IdT(packageCoord, initSteps, last) = id
     IdT(
       packageCoord,
@@ -321,7 +321,7 @@ object TemplataCompiler {
                   expectMutability(substituteTemplatasInTemplata(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
                   substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType)))))))))
       }
-      case p @ PlaceholderT(id @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune)))) => {
+      case p @ KindPlaceholderT(id @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune)))) => {
         if (id.initId(interner) == needleTemplateName) {
           newSubstitutingTemplatas(index)
         } else {
@@ -547,7 +547,7 @@ object TemplataCompiler {
     templata match {
       case CoordTemplataT(c) => CoordTemplataT(substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, c))
       case KindTemplataT(k) => substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, k)
-      case PlaceholderTemplataT(id @ IdT(_, _, pn @ PlaceholderNameT(PlaceholderTemplateNameT(index, rune))), _) => {
+      case PlaceholderTemplataT(id @ IdT(_, _, pn @ KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))), _) => {
         if (id.initId(interner) == needleTemplateName) {
           newSubstitutingTemplatas(index)
         } else {
@@ -753,7 +753,7 @@ object TemplataCompiler {
       .headOption
   }
 
-  def createRuneTypeSolverEnv(parentEnv: IEnvironment): IRuneTypeSolverEnv = {
+  def createRuneTypeSolverEnv(parentEnv: IInDenizenEnvironmentT): IRuneTypeSolverEnv = {
     new IRuneTypeSolverEnv {
       override def lookup(
           range: RangeS,
@@ -790,7 +790,7 @@ class TemplataCompiler(
 
   def isTypeConvertible(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
@@ -926,7 +926,7 @@ class TemplataCompiler(
 //  }
 
   def lookupTemplata(
-    env: IEnvironment,
+    env: IEnvironmentT,
     coutputs: CompilerOutputs,
     range: List[RangeS],
     name: INameT):
@@ -938,7 +938,7 @@ class TemplataCompiler(
   }
 
   def lookupTemplata(
-    env: IEnvironment,
+    env: IEnvironmentT,
     coutputs: CompilerOutputs,
     range: List[RangeS],
     name: IImpreciseNameS):
@@ -967,7 +967,7 @@ class TemplataCompiler(
 
   def coerceToCoord(
     coutputs: CompilerOutputs,
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     range: List[RangeS],
     templata: ITemplataT[ITemplataType]):
   (ITemplataT[ITemplataType]) = {
@@ -1055,7 +1055,7 @@ class TemplataCompiler(
 
   def createPlaceholder(
     coutputs: CompilerOutputs,
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     namePrefix: IdT[INameT],
     genericParam: GenericParameterS,
     index: Int,
@@ -1075,7 +1075,7 @@ class TemplataCompiler(
 
   def createPlaceholderInner(
     coutputs: CompilerOutputs,
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     namePrefix: IdT[INameT],
     index: Int,
     rune: IRuneS,
@@ -1085,19 +1085,19 @@ class TemplataCompiler(
   ITemplataT[ITemplataType] = {
     val placeholderId =
       namePrefix.addStep(
-        interner.intern(PlaceholderNameT(
-          interner.intern(PlaceholderTemplateNameT(index, rune)))))
+        interner.intern(KindPlaceholderNameT(
+          interner.intern(KindPlaceholderTemplateNameT(index, rune)))))
     val placeholderTemplateId =
       TemplataCompiler.getPlaceholderTemplate(placeholderId)
 
-    val placeholderKindT = PlaceholderT(placeholderId)
+    val placeholderKindT = KindPlaceholderT(placeholderId)
     if (registerWithCompilerOutputs) {
       coutputs.declareType(placeholderTemplateId)
 
       val mutability = MutabilityTemplataT(if (immutable) ImmutableT else MutableT)
       coutputs.declareTypeMutability(placeholderTemplateId, mutability)
 
-      val placeholderEnv = GeneralEnvironment.childOf(interner, env, placeholderTemplateId)
+      val placeholderEnv = GeneralEnvironmentT.childOf(interner, env, placeholderTemplateId)
       coutputs.declareTypeOuterEnv(placeholderTemplateId, placeholderEnv)
       coutputs.declareTypeInnerEnv(placeholderTemplateId, placeholderEnv)
     }

@@ -11,7 +11,7 @@ import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CannotSubscriptT, CantMoveFromGlobal, CantMutateFinalElement, CantMutateFinalMember, CantReconcileBranchesResults, CantUnstackifyOutsideLocalFromInsideWhile, CantUseUnstackifiedLocal, CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntConvertForMutateT, CouldntConvertForReturnT, CouldntFindIdentifierToLoadT, CouldntFindMemberT, HigherTypingInferError, IfConditionIsntBoolean, InferCompiler, OverloadResolver, RangedInternalErrorT, SequenceCompiler, TemplataCompiler, TypingPassOptions, ast, templata}
 import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironmentT, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReinterpretTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, VoidLiteralTE, WhileTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent, StructCompiler}
-import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, ExpressionLookupContext, FunctionEnvironment, IEnvironment, ILocalVariableT, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, ExpressionLookupContext, FunctionEnvironmentT, IInDenizenEnvironmentT, ILocalVariableT, NodeEnvironmentT, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.highertyping._
 import dev.vale.parsing._
@@ -37,7 +37,7 @@ case class TookWeakRefOfNonWeakableError() extends Throwable { val hash = runtim
 trait IExpressionCompilerDelegate {
   def evaluateTemplatedFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -46,7 +46,7 @@ trait IExpressionCompilerDelegate {
 
   def evaluateGenericFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -55,7 +55,7 @@ trait IExpressionCompilerDelegate {
 
   def evaluateClosureStruct(
     coutputs: CompilerOutputs,
-    containingNodeEnv: NodeEnvironment,
+    containingNodeEnv: NodeEnvironmentT,
     callRange: List[RangeS],
     name: IFunctionDeclarationNameS,
     function1: FunctionA):
@@ -96,7 +96,7 @@ class ExpressionCompiler(
 
     override def dropSince(
       coutputs: CompilerOutputs,
-      startingNenv: NodeEnvironment,
+      startingNenv: NodeEnvironmentT,
       nenv: NodeEnvironmentBox,
       range: List[RangeS],
       life: LocationInFunctionEnvironmentT,
@@ -1286,7 +1286,7 @@ class ExpressionCompiler(
 
   def getOption(
     coutputs: CompilerOutputs,
-    nenv: FunctionEnvironment,
+    nenv: FunctionEnvironmentT,
     range: List[RangeS],
     containedCoord: CoordT):
   (CoordT, PrototypeT, PrototypeT, IdT[IImplNameT], IdT[IImplNameT]) = {
@@ -1341,7 +1341,7 @@ class ExpressionCompiler(
 
   def getResult(
     coutputs: CompilerOutputs,
-    nenv: FunctionEnvironment,
+    nenv: FunctionEnvironmentT,
     range: List[RangeS],
     containedSuccessCoord: CoordT,
     containedFailCoord: CoordT):
@@ -1478,7 +1478,7 @@ class ExpressionCompiler(
     constructExpr2
   }
 
-  private def newGlobalFunctionGroupExpression(env: IEnvironment, coutputs: CompilerOutputs, name: IImpreciseNameS): ReferenceExpressionTE = {
+  private def newGlobalFunctionGroupExpression(env: IInDenizenEnvironmentT, coutputs: CompilerOutputs, name: IImpreciseNameS): ReferenceExpressionTE = {
     ReinterpretTE(
       VoidLiteralTE(),
       CoordT(
@@ -1488,7 +1488,7 @@ class ExpressionCompiler(
 
   def evaluateBlockStatements(
     coutputs: CompilerOutputs,
-    startingNenv: NodeEnvironment,
+    startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
@@ -1582,7 +1582,7 @@ class ExpressionCompiler(
 
   def dropSince(
     coutputs: CompilerOutputs,
-    startingNenv: NodeEnvironment,
+    startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     range: List[RangeS],
     life: LocationInFunctionEnvironmentT,

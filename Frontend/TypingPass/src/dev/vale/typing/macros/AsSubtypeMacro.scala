@@ -5,12 +5,12 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
 import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent}
-import dev.vale.typing.env.FunctionEnvironment
+import dev.vale.typing.env.FunctionEnvironmentT
 import dev.vale.typing.expression.ExpressionCompiler
 import dev.vale.typing.templata.{CoordTemplataT, KindTemplataT}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
-import dev.vale.typing.env.FunctionEnvironmentBox
+import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.types.InterfaceTT
 import dev.vale.typing.ast
 import dev.vale.typing.function.DestructorCompiler
@@ -23,7 +23,7 @@ class AsSubtypeMacro(
   val generatorId: StrI = keywords.vale_as_subtype
 
   def generateFunctionBody(
-    env: FunctionEnvironment,
+    env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,

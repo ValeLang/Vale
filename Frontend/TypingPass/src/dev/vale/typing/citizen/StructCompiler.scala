@@ -5,7 +5,7 @@ import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing._
 import dev.vale.typing.names.{IdT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceTemplateNameT, IStructTemplateNameT, ITemplateNameT, NameTranslator, PackageTopLevelNameT}
 import dev.vale.typing.templata._
@@ -36,14 +36,14 @@ trait IStructCompilerDelegate {
   FunctionHeaderT
 
   def scoutExpectedFunctionForPrototype(
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     functionName: IImpreciseNameS,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
     args: Vector[CoordT],
-    extraEnvsToLookIn: Vector[IEnvironment],
+    extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
     exact: Boolean,
     verifyConclusions: Boolean):
   EvaluateFunctionSuccess
@@ -75,7 +75,7 @@ class StructCompiler(
 
   def resolveStruct(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     structTemplata: StructDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
@@ -107,7 +107,7 @@ class StructCompiler(
 
     // We declare the struct's outer environment this early because of MDATOEF.
     val outerEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         declaringEnv.globalEnv,
         declaringEnv,
         structTemplateId,
@@ -152,7 +152,7 @@ class StructCompiler(
 
     // We declare the interface's outer environment this early because of MDATOEF.
     val outerEnv =
-      CitizenEnvironment(
+      CitizenEnvironmentT(
         declaringEnv.globalEnv,
         declaringEnv,
         interfaceTemplateId,
@@ -189,7 +189,7 @@ class StructCompiler(
   // See SFWPRL for how this is different from resolveInterface.
   def predictInterface(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -203,7 +203,7 @@ class StructCompiler(
   // See SFWPRL for how this is different from resolveStruct.
   def predictStruct(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -216,7 +216,7 @@ class StructCompiler(
 
   def resolveInterface(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -232,7 +232,7 @@ class StructCompiler(
 
   def resolveCitizen(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -258,7 +258,7 @@ class StructCompiler(
 
   // Makes a struct to back a closure
   def makeClosureUnderstruct(
-    containingFunctionEnv: NodeEnvironment,
+    containingFunctionEnv: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     name: IFunctionDeclarationNameS,

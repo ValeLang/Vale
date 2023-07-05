@@ -520,7 +520,7 @@ class PatternCompiler(
 
   private def loadFromStruct(
     coutputs: CompilerOutputs,
-    env: IEnvironment,
+    env: IInDenizenEnvironmentT,
     loadRange: RangeS,
     containerAlias: ReferenceExpressionTE,
     structTT: StructTT,

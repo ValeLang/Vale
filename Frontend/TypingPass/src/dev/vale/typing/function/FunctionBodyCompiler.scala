@@ -8,7 +8,7 @@ import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing._
 import dev.vale.typing.{BodyResultDoesntMatch, CompileErrorExceptionT, ConvertHelper, CouldntConvertForReturnT, RangedInternalErrorT, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
-import dev.vale.typing.env.{FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
+import dev.vale.typing.env.{FunctionEnvironmentBoxT, NodeEnvironmentT, NodeEnvironmentBox}
 import dev.vale.typing.names.NameTranslator
 import dev.vale.typing.types._
 import dev.vale.typing.types._
@@ -25,7 +25,7 @@ import scala.collection.immutable.{List, Set}
 trait IBodyCompilerDelegate {
   def evaluateBlockStatements(
     coutputs: CompilerOutputs,
-    startingNenv: NodeEnvironment,
+    startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
@@ -55,7 +55,7 @@ class BodyCompiler(
   // - IF we had to infer it, the return type.
   // - The body.
   def declareAndEvaluateFunctionBody(
-    funcOuterEnv: FunctionEnvironmentBox,
+    funcOuterEnv: FunctionEnvironmentBoxT,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
@@ -137,7 +137,7 @@ class BodyCompiler(
   }
 
   private def evaluateFunctionBody(
-    funcOuterEnv: FunctionEnvironmentBox,
+    funcOuterEnv: FunctionEnvironmentBoxT,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],

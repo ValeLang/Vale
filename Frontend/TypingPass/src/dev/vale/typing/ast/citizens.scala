@@ -1,9 +1,9 @@
 package dev.vale.typing.ast
 
-import dev.vale.postparsing.{CoordTemplataType, IRuneS, ITemplataType, MutabilityTemplataType, PackTemplataType}
+import dev.vale.postparsing._
 import dev.vale.typing.TemplataCompiler
-import dev.vale.typing.names.{CitizenNameT, CodeVarNameT, FunctionBoundNameT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, IVarNameT, IdT, ImplBoundNameT, StructNameT, StructTemplateNameT}
-import dev.vale.typing.templata.{ITemplata, PlaceholderTemplata}
+import dev.vale.typing.names._
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.{StrI, vcurious, vfail, vpass}
 
@@ -22,14 +22,14 @@ case class StructDefinitionT(
   instantiatedCitizen: StructTT,
   attributes: Vector[ICitizenAttributeT],
   weakable: Boolean,
-  mutability: ITemplata[MutabilityTemplataType],
+  mutability: ITemplataT[MutabilityTemplataType],
   members: Vector[IStructMemberT],
   isClosure: Boolean,
   runeToFunctionBound: Map[IRuneS, IdT[FunctionBoundNameT]],
   runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
 ) extends CitizenDefinitionT {
   override def genericParamTypes: Vector[ITemplataType] = {
-    instantiatedCitizen.fullName.localName.templateArgs.map(_.tyype)
+    instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
   }
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -77,7 +77,7 @@ case class NormalStructMemberT(
 
 case class VariadicStructMemberT(
   name: IVarNameT,
-  tyype: PlaceholderTemplata[PackTemplataType]
+  tyype: PlaceholderTemplataT[PackTemplataType]
 ) extends IStructMemberT {
   vpass()
 }
@@ -115,16 +115,16 @@ case class InterfaceDefinitionT(
   ref: InterfaceTT,
   attributes: Vector[ICitizenAttributeT],
   weakable: Boolean,
-  mutability: ITemplata[MutabilityTemplataType],
+  mutability: ITemplataT[MutabilityTemplataType],
   runeToFunctionBound: Map[IRuneS, IdT[FunctionBoundNameT]],
   runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
   // This does not include abstract functions declared outside the interface.
   // Note from later: Though, sometimes macros add functions into the inside.
   // See IMRFDI for why we need to remember only the internal methods here.
   internalMethods: Vector[(PrototypeT, Int)]
-) extends CitizenDefinitionT  {
+) extends CitizenDefinitionT {
   override def genericParamTypes: Vector[ITemplataType] = {
-    instantiatedCitizen.fullName.localName.templateArgs.map(_.tyype)
+    instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
   }
 
   override def instantiatedCitizen: ICitizenTT = instantiatedInterface

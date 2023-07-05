@@ -134,7 +134,7 @@ class MutateHammer(
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT.fullName)
+    val structDefT = hinputs.lookupStruct(structTT.id)
     val memberIndex = structDefT.members.indexWhere(_.name == memberName)
     vassert(memberIndex >= 0)
     val member2 =
@@ -158,7 +158,7 @@ class MutateHammer(
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
-    val nameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(memberName))
+    val nameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(memberName))
     val loadResultType =
       CoordH(
         finalast.BorrowH,
@@ -197,7 +197,7 @@ class MutateHammer(
       structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT.fullName)
+    val structDefT = hinputs.lookupStruct(structTT.id)
     val memberIndex =
       structDefT.members
         .indexWhere(_.name == memberName)
@@ -212,7 +212,7 @@ class MutateHammer(
           destinationResultLine.expectStructAccess(),
           memberIndex,
           sourceExprResultLine,
-          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(memberName)))
+          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(memberName)))
     (storeNode, destinationDeferreds)
   }
 
@@ -235,7 +235,7 @@ class MutateHammer(
 
     // This means we're trying to mutate a local variable that holds a box.
     // We need to load the box, then mutate its contents.
-    val nameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId))
+    val nameH = nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(varId))
     val loadBoxNode =
       LocalLoadH(
         local,
@@ -265,7 +265,7 @@ class MutateHammer(
         LocalStoreH(
           local,
           sourceExprResultLine,
-          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.fullName.addStep(varId)))
+          nameHammer.translateFullName(hinputs, hamuts, currentFunctionHeader.id.addStep(varId)))
     (newStoreNode, Vector.empty)
   }
 }

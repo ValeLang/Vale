@@ -5,7 +5,7 @@ import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, IRulexSR, LookupSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, InheritBoundsFromTypeItself, OverloadResolver, TemplataCompiler, TypingPassOptions, UseBoundsFromContainer, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IdT, NameTranslator, PlaceholderNameT}
@@ -21,8 +21,8 @@ import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 import dev.vale.typing.function.{DestructorCompiler, FunctionCompilerCore}
 import dev.vale.typing.infer.CouldntFindFunction
-import dev.vale.typing.templata.ITemplata.expectMutability
-import dev.vale.typing.templata.{CoordTemplata, ITemplata, KindTemplata, MutabilityTemplata, PlaceholderTemplata}
+import dev.vale.typing.templata.ITemplataT.expectMutability
+import dev.vale.typing.templata.{CoordTemplataT, ITemplataT, KindTemplataT, MutabilityTemplataT, PlaceholderTemplataT}
 import dev.vale.typing.types.InterfaceTT
 
 import scala.collection.mutable
@@ -106,25 +106,25 @@ class StructConstructorMacro(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val Some(CoordT(_, structTT @ StructTT(_))) = maybeRetCoord
-    val definition = coutputs.lookupStruct(structTT.fullName)
+    val definition = coutputs.lookupStruct(structTT.id)
     val placeholderSubstituter =
       TemplataCompiler.getPlaceholderSubstituter(
         interner,
         keywords,
-        structTT.fullName,
+        structTT.id,
         // We only know about this struct from the return type, we don't get to inherit any of its
         // bounds or guarantees from. Satisfy them from our environment instead.
         UseBoundsFromContainer(
           definition.runeToFunctionBound,
           definition.runeToImplBound,
-          vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
+          vassertSome(coutputs.getInstantiationBounds(structTT.id))))
     val members =
       definition.members.map({
         case NormalStructMemberT(name, _, ReferenceMemberTypeT(tyype)) => {
@@ -134,8 +134,8 @@ class StructConstructorMacro(
         case VariadicStructMemberT(name, tyype) => vimpl()
       })
 
-    val constructorFullName = env.fullName
-    vassert(constructorFullName.localName.parameters.size == members.size)
+    val constructorId = env.id
+    vassert(constructorId.localName.parameters.size == members.size)
     val constructorParams =
       members.map({ case (name, coord) => ParameterT(name, None, coord) })
     val mutability =
@@ -146,19 +146,19 @@ class StructConstructorMacro(
         UseBoundsFromContainer(
           definition.runeToFunctionBound,
           definition.runeToImplBound,
-          vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
+          vassertSome(coutputs.getInstantiationBounds(structTT.id))))
     val constructorReturnOwnership =
       mutability match {
-        case MutabilityTemplata(MutableT) => OwnT
-        case MutabilityTemplata(ImmutableT) => ShareT
-        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => OwnT
+        case MutabilityTemplataT(MutableT) => OwnT
+        case MutabilityTemplataT(ImmutableT) => ShareT
+        case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
       }
     val constructorReturnType = CoordT(constructorReturnOwnership, structTT)
 
     // not virtual because how could a constructor be virtual
     val header =
       ast.FunctionHeaderT(
-        constructorFullName,
+        constructorId,
         Vector.empty,
         constructorParams,
         constructorReturnType,

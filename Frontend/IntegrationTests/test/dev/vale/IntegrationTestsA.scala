@@ -776,13 +776,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(
-      hinputs.functions.filter(func => func.header.fullName.localName match {
+      hinputs.functions.filter(func => func.header.id.localName match {
         case FunctionNameT(FunctionTemplateNameT(StrI("bork"), _), _, _) => true
         case _ => false
       }).isEmpty)
 
     vassert(
-      hinputs.functions.find(func => func.header.fullName.localName match {
+      hinputs.functions.find(func => func.header.id.localName match {
         case FunctionNameT(FunctionTemplateNameT(StrI("helperFunc"), _), _, _) => true
         case _ => false
       }).size == 1)

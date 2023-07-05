@@ -3,10 +3,10 @@ package dev.vale.typing.macros.rsa
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.typing.CompilerOutputs
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, PopRuntimeSizedArrayTE, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, PopRuntimeSizedArrayTE, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, TemplataLookupContext}
 import dev.vale.typing.macros.IFunctionBodyMacro
-import dev.vale.typing.templata.{CoordTemplata, MutabilityTemplata}
+import dev.vale.typing.templata.{CoordTemplataT, MutabilityTemplataT}
 import dev.vale.typing.types._
 import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, vassertSome, vimpl}
 import dev.vale.postparsing.CodeRuneS
@@ -22,7 +22,7 @@ class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFuncti
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
@@ -30,7 +30,7 @@ class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFuncti
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
       FunctionHeaderT(
-        env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+        env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
 
 //    val CoordTemplata(elementType) =
 //      vassertSome(

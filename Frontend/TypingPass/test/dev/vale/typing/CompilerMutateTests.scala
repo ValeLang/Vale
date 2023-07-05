@@ -36,7 +36,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs();
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(CodeVarNameT(StrI("a")), VaryingT, _)), ConstantIntTE(IntegerTemplata(4), _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(CodeVarNameT(StrI("a")), VaryingT, _)), ConstantIntTE(IntegerTemplataT(4), _)) => })
 
     val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
     val resultCoord = lookup.result.coord
@@ -178,7 +178,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.kind match {
-          case contentsStaticSizedArrayTT(IntegerTemplata(10),MutabilityTemplata(ImmutableT),VariabilityTemplata(FinalT),CoordT(ShareT,IntT(_))) =>
+          case contentsStaticSizedArrayTT(IntegerTemplataT(10),MutabilityTemplataT(ImmutableT),VariabilityTemplataT(FinalT),CoordT(ShareT,IntT(_))) =>
         }
       }
     }
@@ -210,7 +210,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
-      case Err(CantImplNonInterface(_, KindTemplata(IntT(32)))) =>
+      case Err(CantImplNonInterface(_, KindTemplataT(IntT(32)))) =>
       case _ => vfail()
     }
   }
@@ -361,7 +361,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantImplNonInterface(
-        tz, KindTemplata(fireflyKind)))
+        tz, KindTemplataT(fireflyKind)))
       .nonEmpty)
   }
 }

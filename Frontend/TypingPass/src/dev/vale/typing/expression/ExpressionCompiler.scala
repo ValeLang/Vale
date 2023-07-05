@@ -174,7 +174,7 @@ class ExpressionCompiler(
             case MutabilityTemplataT(ImmutableT) => ShareT
             case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
-        val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
+        val closuredVarsStructRefRef = CoordT(ownership, GlobalRegionT(), closuredVarsStructRef)
         val name2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
         val borrowExpr =
           localHelper.borrowSoftLoad(
@@ -208,7 +208,7 @@ class ExpressionCompiler(
             case MutabilityTemplataT(ImmutableT) => ShareT
             case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
-        val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
+        val closuredVarsStructRefCoord = CoordT(ownership, GlobalRegionT(), closuredVarsStructRef)
         val borrowExpr =
           localHelper.borrowSoftLoad(
             coutputs,
@@ -259,7 +259,7 @@ class ExpressionCompiler(
             case MutabilityTemplataT(ImmutableT) => ShareT
             case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
-        val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
+        val closuredVarsStructRefRef = CoordT(ownership, GlobalRegionT(), closuredVarsStructRef)
         val closureParamVarName2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
 
         val borrowExpr =
@@ -292,7 +292,7 @@ class ExpressionCompiler(
             case MutabilityTemplataT(ImmutableT) => ShareT
             case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
-        val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
+        val closuredVarsStructRefCoord = CoordT(ownership, GlobalRegionT(), closuredVarsStructRef)
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.id)
 
         vassert(closuredVarsStructDef.members.map(_.name).contains(varName))
@@ -364,7 +364,7 @@ class ExpressionCompiler(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
       }
-    val resultPointerType = CoordT(ownership, closureStructRef)
+    val resultPointerType = CoordT(ownership, GlobalRegionT(), closureStructRef)
 
     val constructExpr2 =
       ConstructTE(closureStructRef, resultPointerType, lookupExpressions2)
@@ -884,7 +884,7 @@ class ExpressionCompiler(
 
           val (conditionExpr, returnsFromCondition) =
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 1, parentRanges, conditionSE)
-          if (conditionExpr.result.coord != CoordT(ShareT, BoolT())) {
+          if (conditionExpr.result.coord != CoordT(ShareT, GlobalRegionT(), BoolT())) {
             throw CompileErrorExceptionT(IfConditionIsntBoolean(conditionSE.range :: parentRanges, conditionExpr.result.coord))
           }
 
@@ -944,7 +944,7 @@ class ExpressionCompiler(
                 } else if (commonAncestors.size > 1) {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, s"More than one common ancestor of two branches of if:\n${a}\n${b}"))
                 } else {
-                  CoordT(ownership, commonAncestors.head)
+                  CoordT(ownership, GlobalRegionT(), commonAncestors.head)
                 }
               }
               case (a, b) => {
@@ -1275,7 +1275,7 @@ class ExpressionCompiler(
     if (generatorPrototype.paramTypes(0) != generatorType) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator first param doesn't agree with generator expression's result!"))
     }
-    if (generatorPrototype.paramTypes(1) != CoordT(ShareT, IntT.i32)) {
+    if (generatorPrototype.paramTypes(1) != CoordT(ShareT, GlobalRegionT(), IntT.i32)) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in an integer as its second param!"))
     }
     if (arrayMutability == ImmutableT &&
@@ -1298,7 +1298,7 @@ class ExpressionCompiler(
     val optInterfaceRef =
       structCompiler.resolveInterface(
         coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplataT(containedCoord))).expect().kind
-    val ownOptCoord = CoordT(OwnT, optInterfaceRef)
+    val ownOptCoord = CoordT(OwnT, GlobalRegionT(), optInterfaceRef)
 
     val someConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Some)), Set(ExpressionLookupContext)).toList match {
@@ -1353,7 +1353,7 @@ class ExpressionCompiler(
       }
     val resultInterfaceRef =
       structCompiler.resolveInterface(coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord))).expect().kind
-    val ownResultCoord = CoordT(OwnT, resultInterfaceRef)
+    val ownResultCoord = CoordT(OwnT, GlobalRegionT(), resultInterfaceRef)
 
     val okConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Ok)), Set(ExpressionLookupContext)).toList match {
@@ -1483,6 +1483,7 @@ class ExpressionCompiler(
       VoidLiteralTE(),
       CoordT(
         ShareT,
+        GlobalRegionT(),
         interner.intern(OverloadSetT(env, name))))
   }
 

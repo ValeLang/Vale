@@ -112,7 +112,7 @@ class StructConstructorMacro(
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
-    val Some(CoordT(_, structTT @ StructTT(_))) = maybeRetCoord
+    val Some(CoordT(_, _, structTT @ StructTT(_))) = maybeRetCoord
     val definition = coutputs.lookupStruct(structTT.id)
     val placeholderSubstituter =
       TemplataCompiler.getPlaceholderSubstituter(
@@ -153,7 +153,7 @@ class StructConstructorMacro(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
       }
-    val constructorReturnType = CoordT(constructorReturnOwnership, structTT)
+    val constructorReturnType = CoordT(constructorReturnOwnership, GlobalRegionT(), structTT)
 
     // not virtual because how could a constructor be virtual
     val header =

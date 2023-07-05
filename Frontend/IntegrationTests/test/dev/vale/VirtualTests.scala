@@ -27,7 +27,7 @@ class VirtualTests extends FunSuite with Matchers {
       val keywords = compile.keywords
 
       vassert(coutputs.getAllUserFunctions.size == 2)
-      vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+      vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, GlobalRegionT(), IntT.i32))
 
       val doThing =
         vassertSome(
@@ -47,6 +47,7 @@ class VirtualTests extends FunSuite with Matchers {
                     Vector(
                       CoordT(
                         OwnT,
+                        GlobalRegionT(),
                         interner.intern(
                           InterfaceTT(
                             IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
@@ -67,7 +68,7 @@ class VirtualTests extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(coutputs.getAllUserFunctions.size == 2)
-    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, GlobalRegionT(), IntT.i32))
 
 
     val doThing =
@@ -89,6 +90,7 @@ class VirtualTests extends FunSuite with Matchers {
                   Vector(
                     CoordT(
                       OwnT,
+                      GlobalRegionT(),
                       interner.intern(
                         InterfaceTT(
                           IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
@@ -238,7 +240,7 @@ class VirtualTests extends FunSuite with Matchers {
     val interner = compile.interner
 
     vassert(coutputs.getAllUserFunctions.size == 1)
-    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, GlobalRegionT(), IntT.i32))
 
 
     val doThing = coutputs.lookupFunction("doThing")

@@ -905,7 +905,7 @@ object Instantiator {
   }
 
   def assemblePlaceholderMap(hinputs: Hinputs, id: IdT[IInstantiationNameT]):
-  Map[IdT[KindPlaceholderNameT], ITemplataT[ITemplataType]] = {
+  Map[IdT[IPlaceholderNameT], ITemplataT[ITemplataType]] = {
     val containersPlaceholderMap =
       // This might be a lambda's name. If it is, its name has an init step that's the parent
       // function's name, and we want its mappings too.
@@ -936,7 +936,7 @@ object Instantiator {
     placeholderedName.localName.templateArgs
       .zip(id.localName.templateArgs)
       .flatMap({
-        case (CoordTemplataT(CoordT(placeholderOwnership, KindPlaceholderT(placeholderId))), c @ CoordTemplataT(_)) => {
+        case (CoordTemplataT(CoordT(placeholderOwnership, _, KindPlaceholderT(placeholderId))), c @ CoordTemplataT(_)) => {
           vassert(placeholderOwnership == OwnT || placeholderOwnership == ShareT)
           List((placeholderId -> c))
         }
@@ -968,7 +968,7 @@ class Instantiator(
   denizenName: IdT[IInstantiationNameT],
 
   // This IdT might be the top level denizen and not necessarily *this* denizen, see LHPCTLD.
-  substitutions: Map[IdT[INameT], Map[IdT[KindPlaceholderNameT], ITemplataT[ITemplataType]]],
+  substitutions: Map[IdT[INameT], Map[IdT[IPlaceholderNameT], ITemplataT[ITemplataType]]],
 
   val denizenBoundToDenizenCallerSuppliedThing: DenizenBoundToDenizenCallerBoundArg) {
   //  selfFunctionBoundToRuneUnsubstituted: Map[PrototypeT, IRuneS],
@@ -1749,7 +1749,7 @@ class Instantiator(
   def translateCoord(
     coord: CoordT):
   CoordT = {
-    val CoordT(ownership, kind) = coord
+    val CoordT(ownership, _, kind) = coord
     kind match {
       case KindPlaceholderT(placeholderFullName) => {
         // Let's get the index'th placeholder from the top level denizen.
@@ -1758,7 +1758,7 @@ class Instantiator(
         // see LHPCTLD.
 
         vassertSome(vassertSome(substitutions.get(placeholderFullName.initId(interner))).get(placeholderFullName)) match {
-          case CoordTemplataT(CoordT(innerOwnership, kind)) => {
+          case CoordTemplataT(CoordT(innerOwnership, _, kind)) => {
             val combinedOwnership =
               (ownership, innerOwnership) match {
                 case (OwnT, OwnT) => OwnT
@@ -1775,7 +1775,7 @@ class Instantiator(
                 case (OwnT, ShareT) => ShareT
                 case other => vwat(other)
               }
-            CoordT(combinedOwnership, kind)
+            CoordT(combinedOwnership, GlobalRegionT(), kind)
           }
           case KindTemplataT(kind) => {
             val newOwnership =
@@ -1783,7 +1783,7 @@ class Instantiator(
                 case ImmutableT => ShareT
                 case MutableT => ownership
               }
-            CoordT(newOwnership, kind)
+            CoordT(newOwnership, GlobalRegionT(), kind)
           }
         }
       }
@@ -1798,7 +1798,7 @@ class Instantiator(
             case (_, ImmutableT) => ShareT
             case (other, MutableT) => other
           }
-        CoordT(newOwnership, translateKind(other))
+        CoordT(newOwnership, GlobalRegionT(), translateKind(other))
       }
     }
   }

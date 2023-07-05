@@ -95,7 +95,7 @@ object TemplataCompiler {
     implPlaceholder match {
       case PlaceholderTemplataT(n, _) => n
       case KindTemplataT(KindPlaceholderT(n)) => n
-      case CoordTemplataT(CoordT(_, KindPlaceholderT(n))) => n
+      case CoordTemplataT(CoordT(_, _, KindPlaceholderT(n))) => n
       case other => vwat(other)
     }
   }
@@ -253,10 +253,10 @@ object TemplataCompiler {
     boundArgumentsSource: IBoundArgumentsSource,
     coord: CoordT):
   CoordT = {
-    val CoordT(ownership, kind) = coord
+    val CoordT(ownership, _, kind) = coord
     substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, kind) match {
-      case KindTemplataT(kind) => CoordT(ownership, kind)
-      case CoordTemplataT(CoordT(innerOwnership, kind)) => {
+      case KindTemplataT(kind) => CoordT(ownership, GlobalRegionT(), kind)
+      case CoordTemplataT(CoordT(innerOwnership, _, kind)) => {
         val resultOwnership =
           (ownership, innerOwnership) match {
             case (ShareT, _) => ShareT
@@ -267,7 +267,7 @@ object TemplataCompiler {
             case (BorrowT, BorrowT) => BorrowT
             case _ => vimpl()
           }
-        CoordT(resultOwnership, kind)
+        CoordT(resultOwnership, GlobalRegionT(), kind)
       }
     }
 
@@ -711,7 +711,7 @@ object TemplataCompiler {
     val maybeMentionedKind =
       templata match {
         case KindTemplataT(kind) => Some(kind)
-        case CoordTemplataT(CoordT(_, kind)) => Some(kind)
+        case CoordTemplataT(CoordT(_, _, kind)) => Some(kind)
         case _ => None
       }
     maybeMentionedKind match {
@@ -796,8 +796,8 @@ class TemplataCompiler(
     targetPointerType: CoordT):
   Boolean = {
 
-    val CoordT(targetOwnership, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, _, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, _, sourceType) = sourcePointerType;
 
     // Note the Never case will short-circuit a true, regardless of the other checks (ownership)
 
@@ -849,31 +849,31 @@ class TemplataCompiler(
       }
     kind match {
       case a @ contentsRuntimeSizedArrayTT(_, _) => {
-        CoordT(ownership, a)
+        CoordT(ownership, GlobalRegionT(), a)
       }
       case a @ contentsStaticSizedArrayTT(_, _, _, _) => {
-        CoordT(ownership, a)
+        CoordT(ownership, GlobalRegionT(), a)
       }
       case s @ StructTT(_) => {
-        CoordT(ownership, s)
+        CoordT(ownership, GlobalRegionT(), s)
       }
       case i @ InterfaceTT(_) => {
-        CoordT(ownership, i)
+        CoordT(ownership, GlobalRegionT(), i)
       }
       case VoidT() => {
-        CoordT(ShareT, VoidT())
+        CoordT(ShareT, GlobalRegionT(), VoidT())
       }
       case i @ IntT(_) => {
-        CoordT(ShareT, i)
+        CoordT(ShareT, GlobalRegionT(), i)
       }
       case FloatT() => {
-        CoordT(ShareT, FloatT())
+        CoordT(ShareT, GlobalRegionT(), FloatT())
       }
       case BoolT() => {
-        CoordT(ShareT, BoolT())
+        CoordT(ShareT, GlobalRegionT(), BoolT())
       }
       case StrT() => {
-        CoordT(ShareT, StrT())
+        CoordT(ShareT, GlobalRegionT(), StrT())
       }
     }
   }
@@ -962,6 +962,7 @@ class TemplataCompiler(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, tyype) => OwnT
       },
+      GlobalRegionT(),
       kind)
   }
 
@@ -1047,7 +1048,7 @@ class TemplataCompiler(
         case st @ StructDefinitionTemplataT(_, _) => resolveStructTemplate(st)
         case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterfaceTemplate(it)
         case KindTemplataT(c : ICitizenTT) => TemplataCompiler.getCitizenTemplate(c.id)
-        case CoordTemplataT(CoordT(OwnT | ShareT, c : ICitizenTT)) => TemplataCompiler.getCitizenTemplate(c.id)
+        case CoordTemplataT(CoordT(OwnT | ShareT, _, c : ICitizenTT)) => TemplataCompiler.getCitizenTemplate(c.id)
         case _ => return false
       }
     TemplataCompiler.getCitizenTemplate(actualCitizenRef.id) == citizenTemplateId
@@ -1119,7 +1120,7 @@ class TemplataCompiler(
           } else {
             OwnT
           }
-        CoordTemplataT(CoordT(ownership, placeholderKindT))
+        CoordTemplataT(CoordT(ownership, GlobalRegionT(), placeholderKindT))
       }
       case _ => PlaceholderTemplataT(placeholderId, runeType)
     }

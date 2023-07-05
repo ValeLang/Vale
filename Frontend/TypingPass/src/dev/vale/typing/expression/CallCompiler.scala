@@ -121,8 +121,8 @@ class CallCompiler(
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.coord match {
-        case CoordT(BorrowT | ShareT, _) => (givenCallableUnborrowedExpr2)
-        case CoordT(OwnT, _) => {
+        case CoordT(BorrowT | ShareT, _, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(OwnT, _, _) => {
           localHelper.makeTemporaryLocal(coutputs, nenv, range, life, givenCallableUnborrowedExpr2, BorrowT)
         }
       }
@@ -135,7 +135,7 @@ class CallCompiler(
 //      }
 
     val argsTypes2 = givenArgsExprs2.map(_.result.coord)
-    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, kind)
+    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, GlobalRegionT(), kind)
     val paramFilters = Vector(closureParamType) ++ argsTypes2
     val resolved =
       overloadCompiler.findFunction(

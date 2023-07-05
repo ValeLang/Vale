@@ -25,6 +25,7 @@ class RSAMutablePushMacro(interner: Interner, keywords: Keywords) extends IFunct
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):

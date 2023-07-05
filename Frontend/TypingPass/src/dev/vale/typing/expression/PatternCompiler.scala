@@ -105,6 +105,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
     runeAToTypeWithImplicitlyCoercingLookupsS: Map[IRuneS, ITemplataType],
     pattern: AtomSP,
@@ -146,11 +147,12 @@ class PatternCompiler(
 
             val CompleteCompilerSolve(_, templatasByRune, _, Vector()) =
               inferCompiler.solveExpectComplete(
-                InferEnv(nenv.snapshot, parentRanges, nenv.snapshot),
+                InferEnv(nenv.snapshot, parentRanges, callLocation, nenv.snapshot),
                 coutputs,
                 rulesA,
                 runeAToType.toMap,
                 pattern.range :: parentRanges,
+                callLocation,
                 Vector(),
                 Vector(
                   InitialSend(
@@ -169,7 +171,7 @@ class PatternCompiler(
 
             // Now we convert m to a Marine. This also checks that it *can* be
             // converted to a Marine.
-            convertHelper.convert(nenv.snapshot, coutputs, pattern.range :: parentRanges, unconvertedInputExpr, expectedCoord)
+            convertHelper.convert(nenv.snapshot, coutputs, pattern.range :: parentRanges, callLocation, unconvertedInputExpr, expectedCoord)
           }
         }
 

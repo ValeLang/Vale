@@ -157,6 +157,7 @@ class StructDropMacro(
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     originFunction1: Option[FunctionA],
     params2: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -216,6 +217,7 @@ class StructDropMacro(
                         bodyEnv,
                         coutputs,
                         originFunction1.map(_.range).toList ++ callRange,
+                        callLocation,
                         UnletTE(v))
                     }))
               }

@@ -32,6 +32,7 @@ class RSAImmutableNewMacro(
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -78,6 +79,7 @@ class RSAImmutableNewMacro(
         env,
         coutputs,
         callRange,
+        callLocation,
         interner.intern(CodeNameS(keywords.underscoresCall)),
         Vector(),
         Vector(),

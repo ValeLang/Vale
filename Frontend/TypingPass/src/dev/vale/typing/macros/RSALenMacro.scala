@@ -2,13 +2,14 @@ package dev.vale.typing.macros
 
 import dev.vale.{RangeS, StrI, vimpl}
 import dev.vale.typing.CompilerOutputs
-import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.env.FunctionEnvironmentT
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.ast
 import dev.vale.highertyping.FunctionA
+import dev.vale.postparsing.LocationInDenizen
 
 
 class RSALenMacro() extends IFunctionBodyMacro {
@@ -20,6 +21,7 @@ class RSALenMacro() extends IFunctionBodyMacro {
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):

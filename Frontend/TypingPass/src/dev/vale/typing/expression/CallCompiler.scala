@@ -26,19 +26,22 @@ class CallCompiler(
     overloadCompiler: OverloadResolver) {
 
   private def evaluateCall(
-      coutputs: CompilerOutputs,
+    coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-      life: LocationInFunctionEnvironmentT,
-      range: List[RangeS],
-      callableExpr: ReferenceExpressionTE,
-      explicitTemplateArgRulesS: Vector[IRulexSR],
-      explicitTemplateArgRunesS: Vector[IRuneS],
-      givenArgsExprs2: Vector[ReferenceExpressionTE]):
+    life: LocationInFunctionEnvironmentT,
+    range: List[RangeS],
+    callLocation: LocationInDenizen,
+    callableExpr: ReferenceExpressionTE,
+    explicitTemplateArgRulesS: Vector[IRulexSR],
+    explicitTemplateArgRunesS: Vector[IRuneS],
+    givenArgsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
     callableExpr.result.coord.kind match {
       case NeverT(true) => vwat()
       case NeverT(false) | BoolT() => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.result.coord.kind))
+        throw CompileErrorExceptionT(RangedInternalErrorT(
+          range,
+          "wot " + callableExpr.result.coord.kind))
       }
       case OverloadSetT(overloadSetEnv, functionName) => {
         val unconvertedArgsPointerTypes2 =
@@ -50,27 +53,29 @@ class CallCompiler(
 
         val prototype =
           overloadCompiler.findFunction(
-              overloadSetEnv,
-              coutputs,
-              range,
-              functionName,
-              explicitTemplateArgRulesS,
-              explicitTemplateArgRunesS,
-              unconvertedArgsPointerTypes2,
-              Vector.empty,
-              false,
-              true) match {
+            overloadSetEnv,
+            coutputs,
+            range,
+            callLocation,
+            functionName,
+            explicitTemplateArgRulesS,
+            explicitTemplateArgRunesS,
+            unconvertedArgsPointerTypes2,
+            Vector.empty,
+            false,
+            true) match {
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
             case Ok(x) => x
           }
         val argsExprs2 =
           convertHelper.convertExprs(
-            nenv.snapshot, coutputs, range, givenArgsExprs2, prototype.prototype.prototype.paramTypes)
+            nenv.snapshot, coutputs, range, callLocation, givenArgsExprs2, prototype.prototype.prototype.paramTypes)
 
         checkTypes(
           coutputs,
           nenv.snapshot,
           range,
+          callLocation,
           prototype.prototype.prototype.paramTypes,
           argsExprs2.map(a => a.result.coord),
           exact = true)
@@ -84,6 +89,7 @@ class CallCompiler(
           coutputs,
           life,
           range,
+          callLocation,
           callableExpr.result.coord.kind,
           explicitTemplateArgRulesS,
           explicitTemplateArgRunesS,
@@ -108,22 +114,30 @@ class CallCompiler(
 
   // By "custom call" we mean calling __call.
   private def evaluateCustomCall(
-      nenv: NodeEnvironmentBox,
-      coutputs: CompilerOutputs,
-      life: LocationInFunctionEnvironmentT,
-      range: List[RangeS],
-      kind: KindT,
-      explicitTemplateArgRulesS: Vector[IRulexSR],
-      explicitTemplateArgRunesS: Vector[IRuneS],
-      givenCallableUnborrowedExpr2: ReferenceExpressionTE,
-      givenArgsExprs2: Vector[ReferenceExpressionTE]):
-      (FunctionCallTE) = {
+    nenv: NodeEnvironmentBox,
+    coutputs: CompilerOutputs,
+    life: LocationInFunctionEnvironmentT,
+    range: List[RangeS],
+    callLocation: LocationInDenizen,
+    kind: KindT,
+    explicitTemplateArgRulesS: Vector[IRulexSR],
+    explicitTemplateArgRunesS: Vector[IRuneS],
+    givenCallableUnborrowedExpr2: ReferenceExpressionTE,
+    givenArgsExprs2: Vector[ReferenceExpressionTE]):
+    (FunctionCallTE) = {
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.coord match {
         case CoordT(BorrowT | ShareT, _, _) => (givenCallableUnborrowedExpr2)
         case CoordT(OwnT, _, _) => {
-          localHelper.makeTemporaryLocal(coutputs, nenv, range, life, givenCallableUnborrowedExpr2, BorrowT)
+          localHelper.makeTemporaryLocal(
+            coutputs,
+            nenv,
+            range,
+            callLocation,
+            life,
+            givenCallableUnborrowedExpr2,
+            BorrowT)
         }
       }
 
@@ -139,9 +153,17 @@ class CallCompiler(
     val paramFilters = Vector(closureParamType) ++ argsTypes2
     val resolved =
       overloadCompiler.findFunction(
-        env, coutputs, range,
+        env,
+        coutputs,
+        range,
+        callLocation,
         interner.intern(CodeNameS(keywords.underscoresCall)),
-        explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false, true) match {
+        explicitTemplateArgRulesS,
+        explicitTemplateArgRunesS,
+        paramFilters,
+        Vector.empty,
+        false,
+        true) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
         case Ok(x) => x
       }
@@ -163,7 +185,7 @@ class CallCompiler(
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.prototype.paramTypes + " args: " + argTypes))
     }
 
-    checkTypes(coutputs, env, range, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
+    checkTypes(coutputs, env, range, callLocation, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
 
     vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.id).nonEmpty)
     val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2);
@@ -176,6 +198,7 @@ class CallCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     params: Vector[CoordT],
     args: Vector[CoordT],
     exact: Boolean):
@@ -186,7 +209,7 @@ class CallCompiler(
 
       } else {
         if (!exact) {
-          templataCompiler.isTypeConvertible(coutputs, callingEnv, parentRanges, argsHead, paramsHead) match {
+          templataCompiler.isTypeConvertible(coutputs, callingEnv, parentRanges, callLocation, argsHead, paramsHead) match {
             case (true) => {
 
             }
@@ -218,18 +241,28 @@ class CallCompiler(
   }
 
   def evaluatePrefixCall(
-      coutputs: CompilerOutputs,
+    coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
-      callableReferenceExpr2: ReferenceExpressionTE,
+    callLocation: LocationInDenizen,
+    callableReferenceExpr2: ReferenceExpressionTE,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
-    argsExprs2: Vector[ReferenceExpressionTE]):
+    argsExprs2: Vector[ReferenceExpressionTE]
+  ):
   (FunctionCallTE) = {
     val callExpr =
       evaluateCall(
-        coutputs, nenv, life, range, callableReferenceExpr2, explicitTemplateArgRulesS, explicitTemplateArgRunesS, argsExprs2)
+        coutputs,
+        nenv,
+        life,
+        range,
+        callLocation,
+        callableReferenceExpr2,
+        explicitTemplateArgRulesS,
+        explicitTemplateArgRunesS,
+        argsExprs2)
     (callExpr)
   }
 }

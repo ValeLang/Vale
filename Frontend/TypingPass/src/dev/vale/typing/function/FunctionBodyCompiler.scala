@@ -29,6 +29,7 @@ trait IBodyCompilerDelegate {
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -59,6 +60,7 @@ class BodyCompiler(
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     function1: FunctionA,
     maybeExplicitReturnCoord: Option[CoordT],
     params2: Vector[ParameterT],
@@ -74,7 +76,16 @@ class BodyCompiler(
         case None => {
           val (body2, returns) =
             evaluateFunctionBody(
-                funcOuterEnv, coutputs, life, parentRanges, function1.params, params2, bodyS, isDestructor, None) match {
+                funcOuterEnv,
+              coutputs,
+              life,
+              parentRanges,
+              callLocation,
+              function1.params,
+              params2,
+              bodyS,
+              isDestructor,
+              None) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
                 throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range :: parentRanges, function1.name, expectedType, actualType))
 
@@ -104,6 +115,7 @@ class BodyCompiler(
                 coutputs,
                 life,
                 parentRanges,
+              callLocation,
                 function1.params,
                 params2,
                 bodyS,
@@ -141,6 +153,7 @@ class BodyCompiler(
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
     params1: Vector[ParameterS],
     params2: Vector[ParameterT],
     body1: BodySE,
@@ -154,7 +167,8 @@ class BodyCompiler(
       evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(coutputs, startingEnv, env, life + 1, parentRanges, body1.block);
+      delegate.evaluateBlockStatements(
+        coutputs, startingEnv, env, life + 1, parentRanges, callLocation, body1.block);
 
     val unconvertedBodyWithoutReturn = Compiler.consecutive(Vector(patternsTE, statementsFromBlock))
 
@@ -163,11 +177,11 @@ class BodyCompiler(
       maybeExpectedResultType match {
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
-          if (templataCompiler.isTypeConvertible(coutputs, startingEnv, parentRanges, unconvertedBodyWithoutReturn.result.coord, expectedResultType)) {
+          if (templataCompiler.isTypeConvertible(coutputs, startingEnv, parentRanges, callLocation, unconvertedBodyWithoutReturn.result.coord, expectedResultType)) {
             if (unconvertedBodyWithoutReturn.kind == NeverT(false)) {
               unconvertedBodyWithoutReturn
             } else {
-              convertHelper.convert(funcOuterEnv.snapshot, coutputs, body1.range :: parentRanges, unconvertedBodyWithoutReturn, expectedResultType);
+              convertHelper.convert(funcOuterEnv.snapshot, coutputs, body1.range :: parentRanges, callLocation, unconvertedBodyWithoutReturn, expectedResultType);
             }
           } else {
             return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.result.coord))

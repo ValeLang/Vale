@@ -2,9 +2,10 @@ package dev.vale.typing.macros
 
 import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, vassert, vassertSome, vimpl}
 import dev.vale.highertyping.FunctionA
+import dev.vale.postparsing.LocationInDenizen
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, ast}
-import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, InterfaceFunctionCallTE, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, InterfaceFunctionCallTE, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentT, TemplatasStore}
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
@@ -20,6 +21,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     params2: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -42,6 +44,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
         env,
         coutputs,
         callRange,
+        callLocation,
         vassertSome(TemplatasStore.getImpreciseName(interner, env.id.localName)),
         Vector(),
         Vector(),

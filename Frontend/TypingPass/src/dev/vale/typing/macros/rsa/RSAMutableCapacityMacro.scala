@@ -25,6 +25,7 @@ class RSAMutableCapacityMacro(interner: Interner, keywords: Keywords) extends IF
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):

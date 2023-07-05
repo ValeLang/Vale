@@ -54,15 +54,15 @@ class DestructorCompiler(
   (ReferenceExpressionTE) = {
     val resultExpr2 =
       undestructedExpr2.result.coord match {
-        case CoordT(ShareT, NeverT(_)) => undestructedExpr2
-        case CoordT(ShareT, _) => DiscardTE(undestructedExpr2)
-        case r@CoordT(OwnT, _) => {
+        case CoordT(ShareT, _, NeverT(_)) => undestructedExpr2
+        case CoordT(ShareT, _, _) => DiscardTE(undestructedExpr2)
+        case r@CoordT(OwnT, _, _) => {
           val destructorPrototype = getDropFunction(env, coutputs, callRange, r)
           vassert(coutputs.getInstantiationBounds(destructorPrototype.prototype.prototype.id).nonEmpty)
           FunctionCallTE(destructorPrototype.prototype.prototype, Vector(undestructedExpr2))
         }
-        case CoordT(BorrowT, _) => (DiscardTE(undestructedExpr2))
-        case CoordT(WeakT, _) => (DiscardTE(undestructedExpr2))
+        case CoordT(BorrowT, _, _) => (DiscardTE(undestructedExpr2))
+        case CoordT(WeakT, _, _) => (DiscardTE(undestructedExpr2))
       }
     resultExpr2.result.coord.kind match {
       case VoidT() | NeverT(_) =>

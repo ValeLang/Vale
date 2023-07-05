@@ -153,8 +153,8 @@ class Compiler(
         def getPlaceholdersInTemplata(accum: Accumulator[IdT[INameT]], templata: ITemplataT[ITemplataType]): Unit = {
           templata match {
             case KindTemplataT(kind) => getPlaceholdersInKind(accum, kind)
-            case CoordTemplataT(CoordT(_, kind)) => getPlaceholdersInKind(accum, kind)
-            case CoordTemplataT(CoordT(_, _)) =>
+            case CoordTemplataT(CoordT(_, _, kind)) => getPlaceholdersInKind(accum, kind)
+            case CoordTemplataT(CoordT(_, _, _)) =>
             case PlaceholderTemplataT(idT, _) => accum.add(idT)
             case IntegerTemplataT(_) =>
             case BooleanTemplataT(_) =>
@@ -1206,14 +1206,14 @@ class Compiler(
               }
             })
           }
-          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, elementKind)) => {
+          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind)) => {
             if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
                   List(export.range), packageCoord, exportedKind, elementKind))
             }
           }
-          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, elementKind)) => {
+          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind)) => {
             if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(

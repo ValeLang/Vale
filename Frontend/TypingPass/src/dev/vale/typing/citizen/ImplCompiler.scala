@@ -86,7 +86,7 @@ class ImplCompiler(
         // to evaluate an override.
         callingEnv,
         range :: parentRanges,
-        vimpl(),//callLocation?
+        callLocation,
         outerEnv)
     val solver =
       inferCompiler.makeSolver(

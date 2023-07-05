@@ -3,9 +3,14 @@ package dev.vale
 import scala.collection.mutable.ArrayBuffer
 
 object SourceCodeUtils {
+  def humanizePackage(packageCoord: PackageCoordinate): String = {
+    val PackageCoordinate(module, packages) = packageCoord
+    module.str + packages.map("." + _.str).mkString("")
+  }
+
   def humanizeFile(coordinate: FileCoordinate): String = {
-    val FileCoordinate(PackageCoordinate(module, packages), filepath) = coordinate
-    module.str + packages.map("." + _.str).mkString("") + ":" + filepath
+    val FileCoordinate(packageCoord, filepath) = coordinate
+    humanizePackage(packageCoord) + ":" + filepath
   }
 
   def humanizePos(

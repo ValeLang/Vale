@@ -18,16 +18,19 @@ object PostParserErrorHumanizer {
   String = {
     val errorStrBody =
       (err match {
-        case RuneExplicitTypeConflictS(range, rune, types) => "Too many explicit types for rune " + humanizeRune(rune) + ": " + types.map(humanizeTemplataType).mkString(", ")
+        case RuneExplicitTypeConflictS(range, rune, types) => "Too many explicit types for rune " + humanizeRune(rune) + "" + types.map(humanizeTemplataType).mkString(", ")
         case RangedInternalErrorS(range, message) => " " + message
-        case UnknownRuleFunctionS(range, name) => ": Unknown rule function name: "+ name
-        case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"
-        case CouldntFindVarToMutateS(range, name) => s": No variable named ${name}. Try declaring it above, like `${name} = 42;`\n"
-        case CantOwnershipInterfaceInImpl(range) => s": Can only impl a plain interface, remove symbol."
-        case CantOwnershipStructInImpl(range) => s": Only a plain struct/interface can be in an impl, remove symbol."
-        case CantOverrideOwnershipped(range) => s": Can only impl a plain interface, remove symbol."
+        case UnknownRuleFunctionS(range, name) => "Unknown rule function name: "+ name
+        case UnknownRegionError(range, name) => "Unknown region: " + name
+        case UnimplementedExpression(range, expressionName) => s"${expressionName} not supported yet.\n"
+        case CouldntFindRuneS(range, name) => "Couldn't find generic parameter \"" + name + "\".\n"
+        case CouldntFindVarToMutateS(range, name) => s"No variable named ${name}. Try declaring it above, like `${name} = 42;`\n"
+        case CantOwnershipInterfaceInImpl(range) => s"Can only impl a plain interface, remove symbol."
+        case CantOwnershipStructInImpl(range) => s"Only a plain struct/interface can be in an impl, remove symbol."
+        case CantOverrideOwnershipped(range) => s"Can only impl a plain interface, remove symbol."
+        case BadRuneAttributeErrorS(range, attr) => "Bad rune attribute: " + attr
         case CouldntSolveRulesS(range, error) => {
-          s": Couldn't solve:\n" +
+          s"Couldn't solve:\n" +
           SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataType, IRuneTypeRuleError](
             codeMap,
             linesBetween,
@@ -43,7 +46,7 @@ object PostParserErrorHumanizer {
             error.failedSolve)._1
         }
         case IdentifyingRunesIncompleteS(range, error) => {
-          s": Not enough identifying runes:\n" +
+          s"Not enough identifying runes:\n" +
             SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, Boolean, IIdentifiabilityRuleError](
               codeMap,
               linesBetween,
@@ -58,15 +61,14 @@ object PostParserErrorHumanizer {
               PostParserErrorHumanizer.humanizeRule,
               error.failedSolve)._1
         }
-        case VariableNameAlreadyExists(range, name) => s": Local named " + humanizeName(name) + " already exists!\n(If you meant to modify the variable, use the `set` keyword beforehand.)"
-        case InterfaceMethodNeedsSelf(range) => s": Interface's method needs a virtual param of interface's type!"
-        case ForgotSetKeywordError(range) => s": Changing a struct's member must start with the `set` keyword."
-        case CantUseThatLocalName(range, name) => s": Can't use the name ${name} for a local."
-        case ExternHasBody(range) => s": Extern function can't have a body too."
-//        case CantInitializeIndividualElementsOfRuntimeSizedArray(range) => s": Can't initialize individual elements of a runtime-sized array."
-        case InitializingRuntimeSizedArrayRequiresSizeAndCallable(range) => s": Initializing a runtime-sized array requires 1-2 arguments: a capacity, and optionally a function that will populate that many elements."
-        case InitializingStaticSizedArrayRequiresSizeAndCallable(range) => s": Initializing a statically-sized array requires one argument: a function that will populate the elements."
-//        case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range) => s": Initializing a statically-sized array requires a size in-between the square brackets."
+        case VariableNameAlreadyExists(range, name) => s"Local named " + humanizeName(name) + " already exists!\n(If you meant to modify the variable, use the `set` keyword beforehand.)"
+        case InterfaceMethodNeedsSelf(range) => s"Interface's method needs a virtual param of interface's type!"
+        case ForgotSetKeywordError(range) => s"Changing a struct's member must start with the `set` keyword."
+        case ExternHasBody(range) => s"Extern function can't have a body too."
+//        case CantInitializeIndividualElementsOfRuntimeSizedArray(range) => s"Can't initialize individual elements of a runtime-sized array."
+        case InitializingRuntimeSizedArrayRequiresSizeAndCallable(range) => s"Initializing a runtime-sized array requires 1-2 arguments: a capacity, and optionally a function that will populate that many elements."
+        case InitializingStaticSizedArrayRequiresSizeAndCallable(range) => s"Initializing a statically-sized array requires one argument: a function that will populate the elements."
+//        case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range) => s"Initializing a statically-sized array requires a size in-between the square brackets."
       })
 
     val posStr = codeMap(err.range.begin)
@@ -80,6 +82,18 @@ object PostParserErrorHumanizer {
     error: IRuneTypeRuleError):
   String = {
     error match {
+      case FoundTemplataDidntMatchExpectedType(range, expectedType, actualType) => {
+        "Expected " + humanizeTemplataType(expectedType) + " but found " + humanizeTemplataType(actualType)
+      }
+      case RuneTypingCouldntFindType(range, name) => {
+        "Couldn't find anything with the name '" + humanizeImpreciseName(name) + "'"
+      }
+      case NotEnoughArgumentsForGenericCall(range, indexOfNonDefaultingParam) => {
+        "Not enough arguments for generic call, expected at least " + (indexOfNonDefaultingParam + 1)
+      }
+      case FoundPrimitiveDidntMatchExpectedType(range, expectedType, actualType) => {
+        "Found primitive didnt match expected type. Expected " + humanizeTemplataType(expectedType) + " but was " + humanizeTemplataType(actualType)
+      }
       case other => vimpl(other)
     }
   }
@@ -109,6 +123,8 @@ object PostParserErrorHumanizer {
       case FunctionNameS(name, codeLocation) => name.str
       case AnonymousSubstructTemplateNameS(tlcd) => humanizeName(tlcd) + ".anonymous"
       case TopLevelCitizenDeclarationNameS(name, range) => name.str
+      case RuntimeSizedArrayDeclarationNameS() => "__rsa"
+      case ImplDeclarationNameS(_) => "(impl)"
     }
   }
 
@@ -168,11 +184,15 @@ object PostParserErrorHumanizer {
       case AnonymousSubstructMethodInheritedRuneS(interface, method, inner) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ":" + humanizeRune(inner)
       case AnonymousSubstructMethodSelfOwnCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".ownself"
       case AnonymousSubstructMethodSelfBorrowCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".borrowself"
+      case DenizenDefaultRegionRuneS(denizenName) => humanizeName(denizenName) + "'"
+      case ExternDefaultRegionRuneS(denizenName) => humanizeName(denizenName) + "'"
       case AnonymousSubstructVoidKindRuneS() => "anon.void.kind"
       case AnonymousSubstructVoidCoordRuneS() => "anon.void"
       case ImplicitCoercionOwnershipRuneS(_, inner) => humanizeRune(inner) + ".own"
       case ImplicitCoercionKindRuneS(_, inner) => humanizeRune(inner) + ".kind"
       case ImplicitCoercionTemplateRuneS(_, inner) => humanizeRune(inner) + ".gen"
+      case ImplicitRegionRuneS(originalRune) => humanizeRune(originalRune) + ".region"
+      case CallRegionRuneS(lid) => "_" + lid.path.mkString("") + ".pcall"
       case other => vimpl(other)
     }
   }
@@ -183,6 +203,7 @@ object PostParserErrorHumanizer {
       case CoordTemplataType() => "Type"
       case FunctionTemplataType() => "Func"
       case IntegerTemplataType() => "Int"
+      case RegionTemplataType() => "Region"
       case BooleanTemplataType() => "Bool"
       case MutabilityTemplataType() => "Mut"
       case PrototypeTemplataType() => "Prot"
@@ -216,10 +237,12 @@ object PostParserErrorHumanizer {
       case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) => resultRune.map(r => humanizeRune(r.rune)).getOrElse("_") + " = " + humanizeRune(subRune.rune) + " call-isa " + humanizeRune(superRune.rune)
       case CoordSendSR(range, senderRune, receiverRune) => humanizeRune(senderRune.rune) + " -> " + humanizeRune(receiverRune.rune)
       case CoerceToCoordSR(range, coordRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
+      case MaybeCoercingCallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
+      case MaybeCoercingLookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + "\"" + humanizeImpreciseName(name) + "\""
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
-      case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + humanizeImpreciseName(name)
+      case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = \"" + humanizeImpreciseName(name) + "\""
       case LiteralSR(range, rune, literal) => humanizeRune(rune.rune) + " = " + humanizeLiteral(literal)
-      case AugmentSR(range, resultRune, ownership, innerRune) => humanizeRune(resultRune.rune) + " = " + humanizeOwnership(ownership) + humanizeRune(innerRune.rune)
+      case AugmentSR(range, resultRune, ownership, innerRune) => humanizeRune(resultRune.rune) + " = " + ownership.map(humanizeOwnership).getOrElse("") + humanizeRune(innerRune.rune)
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"
@@ -274,5 +297,9 @@ object PostParserErrorHumanizer {
       case BorrowP => "&"
       case WeakP => "&&"
     }
+  }
+
+  def humanizeRegion(r: RuneUsage) = {
+    vimpl(r)
   }
 }

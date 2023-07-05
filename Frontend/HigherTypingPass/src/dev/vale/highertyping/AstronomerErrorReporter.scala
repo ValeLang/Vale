@@ -12,11 +12,15 @@ case class CompileErrorExceptionA(err: ICompileErrorA) extends RuntimeException 
 }
 
 sealed trait ICompileErrorA { def range: RangeS }
-case class CouldntFindTypeA(range: RangeS, name: IImpreciseNameS) extends ICompileErrorA {
+sealed trait ILookupFailedErrorA extends ICompileErrorA
+case class TooManyMatchingTypesA(range: RangeS, name: IImpreciseNameS) extends ILookupFailedErrorA {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
-case class TooManyMatchingTypesA(range: RangeS, name: String) extends ICompileErrorA { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CouldntFindTypeA(range: RangeS, name: IImpreciseNameS) extends ILookupFailedErrorA {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+}
 case class CouldntSolveRulesA(range: RangeS, error: RuneTypeSolveError) extends ICompileErrorA {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }

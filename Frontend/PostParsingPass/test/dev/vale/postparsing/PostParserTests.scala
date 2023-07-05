@@ -1,14 +1,14 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, SourceCodeUtils, StrI, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, SourceCodeUtils, StrI, vassert, vfail, vregionmut}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FinalP, LoadAsBorrowP, MutableP, UseP}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{LiteralSR, LookupSR, MutabilityLiteralSL, RuneUsage}
+import dev.vale.postparsing.rules.{LiteralSR, MaybeCoercingLookupSR, MutabilityLiteralSL, RuneUsage}
 import dev.vale.solver.IncompleteSolve
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import dev.vale.postparsing.patterns.AbstractSP
+import dev.vale.postparsing.patterns._
 import dev.vale.postparsing.rules._
 import dev.vale.solver.IncompleteSolve
 import org.scalatest.{FunSuite, Matchers}
@@ -38,6 +38,20 @@ class PostParserTests extends FunSuite with Matchers with Collector {
       case Ok(t) => vfail("Accidentally compiled!\n")
     }
   }
+
+  vregionmut() // Put this back in with regions
+  // test("Every function gets region generic param") {
+  //   val program1 = compile("func moo() int { 3 }")
+  //
+  //   val moo = program1.lookupFunction("moo")
+  //   moo.genericParams match {
+  //     case Vector(
+  //       GenericParameterS(_,
+  //         RuneUsage(_,DenizenDefaultRegionRuneS(_)),
+  //         RegionGenericParameterTypeS(ReadWriteRegionS),
+  //         None)) =>
+  //   }
+  // }
 
   // See: User Must Specify Enough Identifying Runes (UMSEIR)
   test("Test UMSEIR") {
@@ -69,7 +83,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     val ret = Collector.only(block.expr, { case x @ ReturnSE(_, _) => x })
-    val call = Collector.only(ret.inner, { case x @ FunctionCallSE(_, _, _) => x })
+    val call = Collector.only(ret.inner, { case x @ FunctionCallSE(_, _, _, _) => x })
     Collector.only(call.callableExpr, { case x @ OutsideLoadSE(_, _, CodeNameS(StrI("+")), _, _) => x })
   }
 
@@ -81,7 +95,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
       case LiteralSR(_, r, MutabilityLiteralSL(MutableP)) => vassert(r == imoo.mutabilityRune)
     }
     imoo.memberRules shouldHave {
-      case LookupSR(_, m, CodeNameS(StrI("int"))) => vassert(m == imoo.members(0).typeRune)
+      case MaybeCoercingLookupSR(_, m, CodeNameS(StrI("int"))) => vassert(m == imoo.members(0).typeRune)
     }
     imoo.members match {
       case Vector(NormalStructMemberS(_, StrI("x"), FinalP, _)) =>
@@ -94,16 +108,21 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
     val lambda =
       Collector.only(expr, {
-        case ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
+        case ReturnSE(_, FunctionCallSE(_, _, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
       })
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.genericParams match {
       case Vector(
-        GenericParameterS(_, RuneUsage(_, MagicParamRuneS(mp1)), _, _, None),
-        GenericParameterS(_, RuneUsage(_, MagicParamRuneS(mp2)), _, _, None)) => {
-        vassert(mp1 != mp2)
+        GenericParameterS(_,RuneUsage(_,mp1b @ MagicParamRuneS(_)),CoordGenericParameterTypeS(None,_,false),None),
+        GenericParameterS(_,RuneUsage(_,mp2b @ MagicParamRuneS(_)),CoordGenericParameterTypeS(None,_,false),None)
+        // Put this back in when we have regions
+        // , _
+        ) => {
+        vassert(mp1b != mp2b) // Two different runes
       }
     }
+
+    vregionmut() // see above
   }
 
   test("Interface") {
@@ -139,10 +158,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val program1 = compile("impl IMoo for Moo;")
     val impl = program1.impls.head
     impl.rules shouldHave {
-      case LookupSR(_, r, CodeNameS(StrI("Moo"))) => vassert(r == impl.structKindRune)
+      case MaybeCoercingLookupSR(_, r, CodeNameS(StrI("Moo"))) => vassert(r == impl.structKindRune)
     }
     impl.rules shouldHave {
-      case LookupSR(_, r, CodeNameS(StrI("IMoo"))) => vassert(r == impl.interfaceKindRune)
+      case MaybeCoercingLookupSR(_, r, CodeNameS(StrI("IMoo"))) => vassert(r == impl.interfaceKindRune)
     }
   }
 
@@ -152,7 +171,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     val ret = Collector.only(block, { case r @ ReturnSE(_, _) => r })
-    Collector.only(ret, { case FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(ConstantBoolSE(_,true))) => })
+    Collector.only(ret, { case FunctionCallSE(_, _, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(ConstantBoolSE(_,true))) => })
 //    { case ReturnSE(_,FunctionCallSE(_,_,Vector()) => }
   }
 
@@ -162,20 +181,38 @@ class PostParserTests extends FunSuite with Matchers with Collector {
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     val ret = Collector.only(block, { case r @ ReturnSE(_, _) => r })
-    Collector.only(ret, { case FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(LocalLoadSE(_,CodeVarNameS(StrI("x")), UseP))) => })
+    Collector.only(ret, { case FunctionCallSE(_, _, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(LocalLoadSE(_,CodeVarNameS(StrI("x")), UseP))) => })
   }
 
-  test("Pure regioned function") {
-    val program1 = compile("pure func main<r'>(ship &r'Spaceship) t' { }")
-    val main = program1.lookupFunction("main")
-    vassert(main.genericParams.isEmpty)
+  vregionmut() // Put this back in with regions
+  // test("Pure regioned function") {
+  //   val program1 = compile("pure func moo<r'>(ship &r'Spaceship) { }")
+  //   val moo = program1.lookupFunction("moo")
+  //
+  //   moo.genericParams match {
+  //     case Vector(
+  //       GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI(r))),RegionGenericParameterTypeS(ReadOnlyRegionS),None)
+  //       // Put this back in when we have regions
+  //       // ,GenericParameterS(_,RuneUsage(_,DenizenDefaultRegionRuneS(FunctionNameS(StrI("moo"),_))),RegionGenericParameterTypeS(ReadWriteRegionS),None)
+  //     ) =>
+  //   }
+  // }
 
-    // We just want to make sure its not a region rune.
-    // Implicit rune is fine, it does that when there's no return.
-    main.maybeRetCoordRune match {
-      case Some(RuneUsage(_, ImplicitRuneS(_))) =>
-    }
-  }
+  vregionmut() // Put this back in with regions
+//   test("Pure regioned function with explicit self region") {
+//     val program1 = compile("pure func moo<r', t' rw>(ship &r'Spaceship) t'{ }")
+//     val moo = program1.lookupFunction("moo")
+//
+//     moo.genericParams match {
+// //      case Vector(
+// //        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))),Vector(),None),
+// //        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("t"))),Vector(),None),
+// //        GenericParameterS(_,RuneUsage(_,DefaultRegionRuneS()),Vector(ReadWriteRuneAttributeS(_)),None)) (of class scala.collection.immutable.Vector)
+//       case Vector(
+//         GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))), RegionGenericParameterTypeS(ReadOnlyRegionS), None),
+//         GenericParameterS(_, RuneUsage(_,CodeRuneS(StrI("t"))), RegionGenericParameterTypeS(ReadWriteRegionS), None)) =>
+//     }
+//   }
 
   test("Function with magic lambda and regular lambda") {
     // There was a bug that confused the two, and an underscore would add a magic param to every lambda after it
@@ -193,10 +230,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val BlockSE(_, _, ConsecutorSE(things)) = block
     val lambdas = Collector.all(things, { case f @ FunctionSE(_) => f }).toList
     lambdas.head.function.params match {
-      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(MagicParamNameS(_), false)), None, Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
+      case Vector(_, ParameterS(_, _, false, AtomSP(_, Some(CaptureS(MagicParamNameS(_), false)), Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
     }
     lambdas.last.function.params match {
-      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")), false)), None, Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
+      case Vector(_, ParameterS(_, _, false, AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")), false)), Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
     }
   }
 
@@ -220,33 +257,22 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     Collector.only(exprs, {
       case LetSE(_,
       _,
-      AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), None, _, None),
+      AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), _, None),
       ConstantIntSE(_, 4, _)) =>
     })
     Collector.only(exprs, {
       case LetSE(_,
         _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), _, None),
         ConstantBoolSE(_, true)) =>
     })
     Collector.only(exprs, {
-      case FunctionCallSE(_,
+      case FunctionCallSE(_, _,
         OutsideLoadSE(_, _, CodeNameS(StrI("MyStruct")), _, _),
         Vector(
           LocalLoadSE(_, ConstructingMemberNameS(StrI("x")), UseP),
           LocalLoadSE(_, ConstructingMemberNameS(StrI("y")), UseP))) =>
     })
-  }
-
-  test("Cant use set as a local name") {
-    val error = compileForError(
-      """func moo() {
-        |  [set] = (6,);
-        |}
-        |""".stripMargin)
-    error match {
-      case CantUseThatLocalName(_, "set") =>
-    }
   }
 
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
@@ -338,20 +364,20 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     Collector.only(block, {
       case LetSE(_, _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("x")), false)), _, None),
         ConstantIntSE(_, 4, _)) =>
     })
     Collector.only(block, {
       case LetSE(_, _,
-        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), None, _, None),
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS(StrI("y")), false)), _, None),
         LocalLoadSE(_, ConstructingMemberNameS(StrI("x")), LoadAsBorrowP)) =>
     })
     Collector.only(block, {
-      case FunctionCallSE(_,
-      OutsideLoadSE(_, _, CodeNameS(StrI("MyStruct")), _, _),
-      Vector(
-      LocalLoadSE(_, ConstructingMemberNameS(StrI("x")), UseP),
-      LocalLoadSE(_, ConstructingMemberNameS(StrI("y")), UseP))) =>
+      case FunctionCallSE(_, _,
+        OutsideLoadSE(_, _, CodeNameS(StrI("MyStruct")), _, _),
+        Vector(
+        LocalLoadSE(_, ConstructingMemberNameS(StrI("x")), UseP),
+        LocalLoadSE(_, ConstructingMemberNameS(StrI("y")), UseP))) =>
     })
   }
 
@@ -378,13 +404,13 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IterableNameS(_), false)),None,None,None),
+        AtomSP(_,Some(CaptureS(IterableNameS(_), false)),None,None),
         OutsideLoadSE(_,_,CodeNameS(StrI("myList")),None,UseP)) =>
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IteratorNameS(_), false)),None,None,None),
-        FunctionCallSE(_,
+        AtomSP(_,Some(CaptureS(IteratorNameS(_), false)),None,None),
+        FunctionCallSE(_,_,
           OutsideLoadSE(_,_,CodeNameS(StrI("begin")),None,LoadAsBorrowP),
           Vector(LocalLoadSE(_,IterableNameS(_),LoadAsBorrowP)))) =>
     }
@@ -393,14 +419,14 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(IterationOptionNameS(_), false)),None,None,None),
-        FunctionCallSE(_,
+        AtomSP(_,Some(CaptureS(IterationOptionNameS(_), false)),None,None),
+        FunctionCallSE(_,_,
           OutsideLoadSE(_,_,CodeNameS(StrI("next")),None,LoadAsBorrowP),
           Vector(
             LocalLoadSE(_,IteratorNameS(_),LoadAsBorrowP)))) =>
     }
     body.block shouldHave {
-      case FunctionCallSE(_,
+      case FunctionCallSE(_,_,
         OutsideLoadSE(_,_,CodeNameS(StrI("isEmpty")),_,_),
         Vector(
           LocalLoadSE(_,IterationOptionNameS(_),LoadAsBorrowP))) =>
@@ -410,8 +436,8 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case LetSE(_,_,
-        AtomSP(_,Some(CaptureS(CodeVarNameS(StrI("i")), false)),None,None,None),
-        FunctionCallSE(_,
+        AtomSP(_,Some(CaptureS(CodeVarNameS(StrI("i")), false)),None,None),
+        FunctionCallSE(_,_,
           OutsideLoadSE(_,_,CodeNameS(StrI("get")),None,LoadAsBorrowP),
           Vector(LocalLoadSE(_,IterationOptionNameS(_),UseP)))) =>
     }
@@ -428,11 +454,11 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
     val main = program1.lookupFunction("moo")
     Collector.only(main.body, {
-      case FunctionCallSE(_,
+      case FunctionCallSE(_,_,
         OutsideLoadSE(_, _, CodeNameS(StrI("println")), _, _),
         Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS(StrI("self")), LoadAsBorrowP), StrI("x"), true))) =>
     })
-    Collector.all(main.body, { case FunctionCallSE(_, _, _) => }).size shouldEqual 1
+    Collector.all(main.body, { case FunctionCallSE(_, _, _, _) => }).size shouldEqual 1
   }
 
   test("Reports when mutating nonexistant local") {

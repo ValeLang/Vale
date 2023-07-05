@@ -35,46 +35,41 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
   }
   test("Two-element destructure with ignore") {
     compile("[_, b]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
           None,None,
-          Some(DestructureP(_,Vector(PatternPP(_,_,Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)), None, None, None), capture("b")))),
-          None) =>
+          Some(DestructureP(_,Vector(PatternPP(_,Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)), None, None), capture("b"))))) =>
     }
   }
   test("Capture with destructure") {
     compile("a [x, y]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
         None,
-        Some(DestructureP(_,Vector(capture("x"), capture("y")))),
-        None) =>
+        Some(DestructureP(_,Vector(capture("x"), capture("y"))))) =>
     }
   }
   test("Type with destructure") {
     compile("A[a, b]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         None,
         Some(NameOrRunePT(NameP(_, StrI("A")))),
-        Some(DestructureP(_,Vector(capture("a"), capture("b")))),
-        None) =>
+        Some(DestructureP(_,Vector(capture("a"), capture("b"))))) =>
     }
   }
   test("Capture and type with destructure") {
     compile("a A[x, y]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
         Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
         Some(NameOrRunePT(NameP(_, StrI("A")))),
-        Some(DestructureP(_,Vector(capture("x"), capture("y")))),
-        None) =>
+        Some(DestructureP(_,Vector(capture("x"), capture("y"))))) =>
     }
   }
   test("Capture with types inside") {
     compile("a [_ int, _ bool]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
           Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
           None,
-          Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool")))),
-          None) =>
+          Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool"))))) =>
     }
   }
   test("Destructure with type inside") {

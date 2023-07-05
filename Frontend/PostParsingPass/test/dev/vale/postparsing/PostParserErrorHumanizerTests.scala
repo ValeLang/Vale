@@ -3,7 +3,6 @@ package dev.vale.postparsing
 import dev.vale.{CodeLocationS, Err, FileCoordinateMap, Interner, Ok, RangeS, SourceCodeUtils, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
-import dev.vale.postparsing.patterns.AbstractSP
 import dev.vale.postparsing.rules._
 import org.scalatest.{FunSuite, Matchers}
 
@@ -51,9 +50,6 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ForgotSetKeywordError(tz))
-      .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
-      CantUseThatLocalName(tz, "set"))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(humanizePos, linesBetween, lineRangeContaining, lineContaining,
       ExternHasBody(tz))

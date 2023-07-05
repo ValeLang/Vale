@@ -12,7 +12,7 @@ import dev.vale.typing.types._
 
 import scala.collection.mutable
 
-case class InstantiationBoundArguments(
+case class InstantiationBoundArgumentsT(
   runeToFunctionBoundArg: Map[IRuneS, PrototypeT],
   runeToImplBoundArg: Map[IRuneS, IdT[IImplNameT]])
 
@@ -28,7 +28,7 @@ case class Hinputs(
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   interfaceToSubCitizenToEdge: Map[IdT[IInterfaceNameT], Map[IdT[ICitizenNameT], EdgeT]],
 
-  instantiationNameToInstantiationBounds: Map[IdT[IInstantiationNameT], InstantiationBoundArguments],
+  instantiationNameToInstantiationBounds: Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT],
 
   kindExports: Vector[KindExportT],
   functionExports: Vector[FunctionExportT],
@@ -73,7 +73,7 @@ case class Hinputs(
     vassertOne(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeId == implId))
   }
 
-  def getInstantiationBoundArgs(instantiationName: IdT[IInstantiationNameT]): InstantiationBoundArguments = {
+  def getInstantiationBoundArgs(instantiationName: IdT[IInstantiationNameT]): InstantiationBoundArgumentsT = {
     vassertSome(instantiationNameToInstantiationBounds.get(instantiationName))
   }
 

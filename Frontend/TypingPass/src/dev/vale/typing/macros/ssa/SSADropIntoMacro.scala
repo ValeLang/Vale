@@ -2,8 +2,9 @@ package dev.vale.typing.macros.ssa
 
 import dev.vale.{Keywords, RangeS, StrI, vimpl}
 import dev.vale.highertyping.FunctionA
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
-import dev.vale.typing.env.{FunctionEnvironmentT, FunctionEnvironmentBoxT}
+import dev.vale.postparsing.LocationInDenizen
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
+import dev.vale.typing.env.{FunctionEnvironmentBoxT, FunctionEnvironmentT}
 import dev.vale.typing.{ArrayCompiler, CompilerOutputs}
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.types.CoordT
@@ -20,6 +21,7 @@ class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+      callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -35,6 +37,7 @@ class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
             coutputs,
             fate,
             callRange,
+            callLocation,
             ArgLookupTE(0, paramCoords(0).tyype),
             ArgLookupTE(1, paramCoords(1).tyype))))
     (header, body)

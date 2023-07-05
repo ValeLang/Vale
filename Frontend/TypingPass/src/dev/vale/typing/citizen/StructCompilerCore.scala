@@ -1,7 +1,7 @@
 package dev.vale.typing.citizen
 
 import dev.vale.highertyping.{FunctionA, InterfaceA, StructA}
-import dev.vale.{Interner, Keywords, vassertOne, vcurious, vfail, vimpl, vwat, _}
+import dev.vale._
 import dev.vale.parsing.ast.{CallMacroP, DontCallMacroP}
 import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.postparsing._
@@ -22,7 +22,7 @@ import dev.vale.typing.names.{AnonymousSubstructImplNameT, CitizenNameT, Citizen
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
-import dev.vale.typing.templata.ITemplata.expectMutabilityTemplata
+import dev.vale.typing.templata.ITemplataT.expectMutabilityTemplata
 
 import scala.collection.immutable.List
 
@@ -40,15 +40,15 @@ class StructCompilerCore(
     parentRanges: List[RangeS],
     structA: StructA):
   Unit = {
-    val templateArgs = structRunesEnv.fullName.localName.templateArgs
-    val templateFullNameT = structRunesEnv.templateName
-    val templateNameT = templateFullNameT.localName
+    val templateArgs = structRunesEnv.id.localName.templateArgs
+    val templateIdT = structRunesEnv.templateName
+    val templateNameT = templateIdT.localName
     val placeholderedNameT = templateNameT.makeStructName(interner, templateArgs)
-    val placeholderedFullNameT = templateFullNameT.copy(localName = placeholderedNameT)
+    val placeholderedIdT = templateIdT.copy(localName = placeholderedNameT)
 
     // Usually when we make a StructTT we put the instantiation bounds into the coutputs,
     // but this isn't really an instantiation, so we don't here.
-    val placeholderedStructTT = interner.intern(StructTT(placeholderedFullNameT))
+    val placeholderedStructTT = interner.intern(StructTT(placeholderedIdT))
 
     val attributesWithoutExportOrMacros =
       structA.attributes.filter({
@@ -64,7 +64,7 @@ class StructCompilerCore(
       structRunesEnv.lookupNearestWithImpreciseName(
         interner.intern(RuneNameS(structA.mutabilityRune.rune)),
         Set(TemplataLookupContext)).toList match {
-        case List(m) => ITemplata.expectMutability(m)
+        case List(m) => ITemplataT.expectMutability(m)
         case _ => vwat()
       }
 
@@ -89,13 +89,13 @@ class StructCompilerCore(
       CitizenEnvironment(
         structRunesEnv.globalEnv,
         structRunesEnv,
-        templateFullNameT,
-        placeholderedFullNameT,
-        TemplatasStore(placeholderedFullNameT, Map(), Map()))
+        templateIdT,
+        placeholderedIdT,
+        TemplatasStore(placeholderedIdT, Map(), Map()))
 
     val members = makeStructMembers(structInnerEnv, coutputs, structA.members)
 
-    if (mutability == MutabilityTemplata(ImmutableT)) {
+    if (mutability == MutabilityTemplataT(ImmutableT)) {
       members.zipWithIndex.foreach({
         case (VariadicStructMemberT(name, tyype), index) => {
           vimpl() // Dont have imm variadics yet
@@ -134,10 +134,10 @@ class StructCompilerCore(
         // We need to defer all these functions until after the structs and interfaces are done.
         coutputs.deferEvaluatingFunction(
           DeferredEvaluatingFunction(
-            outerEnv.fullName.addStep(name),
+            outerEnv.id.addStep(name),
             (coutputs) => {
               delegate.evaluateGenericFunctionFromNonCallForHeader(
-                coutputs, parentRanges, FunctionTemplata(outerEnv, functionA), true)
+                coutputs, parentRanges, FunctionTemplataT(outerEnv, functionA), true)
             }))
       }
       case _ => vcurious()
@@ -148,7 +148,7 @@ class StructCompilerCore(
 
     val structDefT =
       StructDefinitionT(
-        templateFullNameT,
+        templateIdT,
         placeholderedStructTT,
         translateCitizenAttributes(attributesWithoutExportOrMacros),
         structA.weakable,
@@ -164,7 +164,7 @@ class StructCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          placeholderedFullNameT.localName match {
+          placeholderedIdT.localName match {
             case StructNameT(StructTemplateNameT(humanName), _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
@@ -199,15 +199,15 @@ class StructCompilerCore(
     parentRanges: List[RangeS],
     interfaceA: InterfaceA):
   (InterfaceDefinitionT) = {
-    val templateArgs = interfaceRunesEnv.fullName.localName.templateArgs
-    val templateFullNameT = interfaceRunesEnv.templateName
-    val templateNameT = templateFullNameT.localName
+    val templateArgs = interfaceRunesEnv.id.localName.templateArgs
+    val templateIdT = interfaceRunesEnv.templateName
+    val templateNameT = templateIdT.localName
     val placeholderedNameT = templateNameT.makeInterfaceName(interner, templateArgs)
-    val placeholderedFullNameT = templateFullNameT.copy(localName = placeholderedNameT)
+    val placeholderedIdT = templateIdT.copy(localName = placeholderedNameT)
 
     // Usually when we make a StructTT we put the instantiation bounds into the coutputs,
     // but this isn't really an instantiation, so we don't here.
-    val placeholderedInterfaceTT = interner.intern(InterfaceTT(placeholderedFullNameT))
+    val placeholderedInterfaceTT = interner.intern(InterfaceTT(placeholderedIdT))
 
     val attributesWithoutExportOrMacros =
       interfaceA.attributes.filter({
@@ -220,7 +220,7 @@ class StructCompilerCore(
 
 
     val mutability =
-      ITemplata.expectMutability(
+      ITemplataT.expectMutability(
         vassertSome(
           interfaceRunesEnv.lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(interfaceA.mutabilityRune.rune)),
@@ -246,10 +246,10 @@ class StructCompilerCore(
 //            }
 //            case Some(m) => m
 //          }
-//        val newEntriesList = maacro.getInterfaceSiblingEntries(placeholderedFullNameT, interfaceA)
+//        val newEntriesList = maacro.getInterfaceSiblingEntries(placeholderedIdT, interfaceA)
 //        val newEntries =
 //          newEntriesList.map({ case (entryName, value) =>
-//            vcurious(placeholderedFullNameT.steps.size + 1 == entryName.steps.size)
+//            vcurious(placeholderedIdT.steps.size + 1 == entryName.steps.size)
 //            val last = entryName.last
 //            last -> value
 //          })
@@ -260,9 +260,9 @@ class StructCompilerCore(
 //      CitizenEnvironment(
 //        interfaceRunesEnv.globalEnv,
 //        interfaceRunesEnv,
-//        templateFullNameT,
-//        placeholderedFullNameT,
-//        TemplatasStore(placeholderedFullNameT, Map(), Map())
+//        templateIdT,
+//        placeholderedIdT,
+//        TemplatasStore(placeholderedIdT, Map(), Map())
 //          .addEntries(interner, envEntriesFromMacros)
 //          .addEntries(
 //            interner,
@@ -277,7 +277,7 @@ class StructCompilerCore(
         case (name, FunctionEnvEntry(functionA)) => {
           val header =
             delegate.evaluateGenericFunctionFromNonCallForHeader(
-              coutputs, parentRanges, FunctionTemplata(outerEnv, functionA), true)
+              coutputs, parentRanges, FunctionTemplataT(outerEnv, functionA), true)
           header.toPrototype -> vassertSome(header.getVirtualIndex)
         }
       }).toVector
@@ -287,7 +287,7 @@ class StructCompilerCore(
 
     val interfaceDef2 =
       InterfaceDefinitionT(
-        templateFullNameT,
+        templateIdT,
         placeholderedInterfaceTT,
         interner.intern(placeholderedInterfaceTT),
         translateCitizenAttributes(attributesWithoutExportOrMacros),
@@ -302,7 +302,7 @@ class StructCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          placeholderedFullNameT.localName match {
+          placeholderedIdT.localName match {
             case InterfaceNameT(InterfaceTemplateNameT(humanName), _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
@@ -337,7 +337,7 @@ class StructCompilerCore(
     val variabilityT = Conversions.evaluateVariability(member.variability)
     member match {
       case NormalStructMemberS(_, name, _, _) => {
-        val CoordTemplata(coord) = typeTemplata
+        val CoordTemplataT(coord) = typeTemplata
         NormalStructMemberT(
           interner.intern(CodeVarNameT(name)),
           variabilityT,
@@ -346,8 +346,8 @@ class StructCompilerCore(
       case VariadicStructMemberS(_, variability, coordListRune) => {
         val placeholderTemplata =
           env.lookupNearestWithName(interner.intern(RuneNameT(coordListRune.rune)), Set(TemplataLookupContext)) match {
-            case Some(PlaceholderTemplata(fullNameT, PackTemplataType(CoordTemplataType()))) => {
-              PlaceholderTemplata(fullNameT, PackTemplataType(CoordTemplataType()))
+            case Some(PlaceholderTemplataT(idT, PackTemplataType(CoordTemplataType()))) => {
+              PlaceholderTemplataT(idT, PackTemplataType(CoordTemplataType()))
             }
             case _ => vwat()
           }
@@ -366,7 +366,7 @@ class StructCompilerCore(
     name: IFunctionDeclarationNameS,
     functionA: FunctionA,
     members: Vector[NormalStructMemberT]):
-  (StructTT, MutabilityT, FunctionTemplata) = {
+  (StructTT, MutabilityT, FunctionTemplataT) = {
     val isMutable =
       members.exists({ case NormalStructMemberT(name, variability, tyype) =>
         if (variability == VaryingT) {
@@ -387,18 +387,18 @@ class StructCompilerCore(
 
     val understructTemplateNameT =
       interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(functionA.range.begin)))
-    val understructTemplatedFullNameT =
-      containingFunctionEnv.fullName
+    val understructTemplatedIdT =
+      containingFunctionEnv.id
         .addStep(understructTemplateNameT)
 
     val understructInstantiatedNameT =
       understructTemplateNameT.makeStructName(interner, Vector())
-    val understructInstantiatedFullNameT =
-      containingFunctionEnv.fullName.addStep(understructInstantiatedNameT)
+    val understructInstantiatedIdT =
+      containingFunctionEnv.id.addStep(understructInstantiatedNameT)
 
     // Lambdas have no bounds, so we just supply Map()
-    coutputs.addInstantiationBounds(understructInstantiatedFullNameT, InstantiationBoundArguments(Map(), Map()))
-    val understructStructTT = interner.intern(StructTT(understructInstantiatedFullNameT))
+    coutputs.addInstantiationBounds(understructInstantiatedIdT, InstantiationBoundArguments(Map(), Map()))
+    val understructStructTT = interner.intern(StructTT(understructInstantiatedIdT))
 
     val dropFuncNameT =
       interner.intern(FunctionTemplateNameT(keywords.drop, functionA.range.begin))
@@ -411,9 +411,9 @@ class StructCompilerCore(
       CitizenEnvironment(
         containingFunctionEnv.globalEnv,
         containingFunctionEnv,
-        understructTemplatedFullNameT,
-        understructTemplatedFullNameT,
-        TemplatasStore(understructTemplatedFullNameT, Map(), Map())
+        understructTemplatedIdT,
+        understructTemplatedIdT,
+        TemplatasStore(understructTemplatedIdT, Map(), Map())
           .addEntries(
             interner,
             Vector(
@@ -423,36 +423,36 @@ class StructCompilerCore(
                 FunctionEnvEntry(
                   containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(
                     interner.intern(FunctionNameS(keywords.drop, functionA.range.begin)), functionA.range)),
-              understructInstantiatedNameT -> TemplataEnvEntry(KindTemplata(understructStructTT)),
-              interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplata(understructStructTT)))))
+              understructInstantiatedNameT -> TemplataEnvEntry(KindTemplataT(understructStructTT)),
+              interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplataT(understructStructTT)))))
 
     val structInnerEnv =
       CitizenEnvironment(
         structOuterEnv.globalEnv,
         structOuterEnv,
-        understructTemplatedFullNameT,
-        understructInstantiatedFullNameT,
-        TemplatasStore(understructInstantiatedFullNameT, Map(), Map())
+        understructTemplatedIdT,
+        understructInstantiatedIdT,
+        TemplatasStore(understructInstantiatedIdT, Map(), Map())
           // There are no inferences we'd need to add, because it's a lambda and they don't have
           // any rules or anything.
           .addEntries(interner, Vector()))
 
     // We return this from the function in case we want to eagerly compile it (which we do
     // if it's not a template).
-    val functionTemplata = FunctionTemplata(structInnerEnv, functionA)
+    val functionTemplata = FunctionTemplataT(structInnerEnv, functionA)
 
-    coutputs.declareType(understructTemplatedFullNameT)
-    coutputs.declareTypeOuterEnv(understructTemplatedFullNameT, structOuterEnv)
-    coutputs.declareTypeInnerEnv(understructTemplatedFullNameT, structInnerEnv)
-    coutputs.declareTypeMutability(understructTemplatedFullNameT, MutabilityTemplata(mutability))
+    coutputs.declareType(understructTemplatedIdT)
+    coutputs.declareTypeOuterEnv(understructTemplatedIdT, structOuterEnv)
+    coutputs.declareTypeInnerEnv(understructTemplatedIdT, structInnerEnv)
+    coutputs.declareTypeMutability(understructTemplatedIdT, MutabilityTemplataT(mutability))
 
     val closureStructDefinition =
       StructDefinitionT(
-        understructTemplatedFullNameT,
+        understructTemplatedIdT,
         understructStructTT,
         Vector.empty,
         false,
-        MutabilityTemplata(mutability),
+        MutabilityTemplataT(mutability),
         members,
         true,
         // Closures have no function bounds or impl bounds
@@ -473,7 +473,7 @@ class StructCompilerCore(
         coutputs,
         parentRanges,
         structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
-          case Some(ft@FunctionTemplata(_, _)) => ft
+          case Some(ft@FunctionTemplataT(_, _)) => ft
           case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))
         },
         true)

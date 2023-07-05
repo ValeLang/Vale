@@ -3,11 +3,11 @@ package dev.vale.typing.macros
 import dev.vale.{Keywords, RangeS, StrI, vassertSome, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
-import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent}
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.expression.ExpressionCompiler
-import dev.vale.typing.templata.{CoordTemplata, KindTemplata}
+import dev.vale.typing.templata.{CoordTemplataT, KindTemplataT}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBox
@@ -26,17 +26,17 @@ class AsSubtypeMacro(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
 
-    val CoordTemplata(CoordT(_, targetKind)) = vassertSome(env.fullName.localName.templateArgs.headOption)
-    val CoordT(incomingOwnership, _) = vassertSome(env.fullName.localName.parameters.headOption)
+    val CoordTemplataT(CoordT(_, targetKind)) = vassertSome(env.id.localName.templateArgs.headOption)
+    val CoordT(incomingOwnership, _) = vassertSome(env.id.localName.parameters.headOption)
 
     val incomingCoord = paramCoords(0).tyype
     val incomingKind = incomingCoord.kind
@@ -55,9 +55,9 @@ class AsSubtypeMacro(
     val subKind = targetKind match { case x : ISubKindTT => x case other => vwat(other) }
     val superKind = incomingKind match { case x : ISuperKindTT => x case other => vwat(other) }
 
-    val implFullName =
+    val implId =
       implCompiler.isParent(coutputs, env, callRange, subKind, superKind) match {
-        case IsParent(_, _, implFullName) => implFullName
+        case IsParent(_, _, implId) => implId
       }
 
     val asSubtypeExpr =
@@ -67,7 +67,7 @@ class AsSubtypeMacro(
         resultCoord,
         okConstructor,
         errConstructor,
-        implFullName,
+        implId,
         okResultImpl,
         errResultImpl)
 

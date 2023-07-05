@@ -7,7 +7,7 @@ import dev.vale.parsing.ast.INameDeclarationP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing._
 import dev.vale.typing.{BodyResultDoesntMatch, CompileErrorExceptionT, ConvertHelper, CouldntConvertForReturnT, RangedInternalErrorT, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.names.NameTranslator
 import dev.vale.typing.types._
@@ -27,7 +27,7 @@ trait IBodyCompilerDelegate {
     coutputs: CompilerOutputs,
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
@@ -35,7 +35,7 @@ trait IBodyCompilerDelegate {
   def translatePatternList(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
@@ -57,7 +57,7 @@ class BodyCompiler(
   def declareAndEvaluateFunctionBody(
     funcOuterEnv: FunctionEnvironmentBox,
     coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     function1: FunctionA,
     maybeExplicitReturnCoord: Option[CoordT],
@@ -139,7 +139,7 @@ class BodyCompiler(
   private def evaluateFunctionBody(
     funcOuterEnv: FunctionEnvironmentBox,
     coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     params1: Vector[ParameterS],
     params2: Vector[ParameterT],
@@ -212,7 +212,7 @@ class BodyCompiler(
   private def evaluateLets(
     nenv: NodeEnvironmentBox,
       coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
       params1: Vector[ParameterS],
       params2: Vector[ParameterT]):

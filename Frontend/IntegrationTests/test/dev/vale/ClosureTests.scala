@@ -12,7 +12,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.types._
 import org.scalatest.{FunSuite, Matchers}
-import dev.vale.typing.templata.MutabilityTemplata
+import dev.vale.typing.templata.MutabilityTemplataT
 import dev.vale.von.VonInt
 
 class ClosureTests extends FunSuite with Matchers {
@@ -29,12 +29,12 @@ class ClosureTests extends FunSuite with Matchers {
         childMutated: IVariableUseCertainty) = {
       val addressibleIfMutable =
         LocalHelper.determineIfLocalIsAddressible(
-          MutabilityTemplata(MutableT),
+          MutabilityTemplataT(MutableT),
           LocalS(
             CodeVarNameS(interner.intern(StrI("x"))), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       val addressibleIfImmutable =
         LocalHelper.determineIfLocalIsAddressible(
-          MutabilityTemplata(ImmutableT),
+          MutabilityTemplataT(ImmutableT),
           LocalS(
             CodeVarNameS(interner.intern(StrI("x"))), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       (addressibleIfMutable, addressibleIfImmutable)
@@ -138,8 +138,8 @@ class ClosureTests extends FunSuite with Matchers {
     val closuredVarsStructDef =
       vassertSome(
         coutputs.structs.find(structDef => {
-          TemplataCompiler.getTemplate(structDef.instantiatedCitizen.fullName) ==
-            TemplataCompiler.getTemplate(closuredVarsStructTT.fullName)
+          TemplataCompiler.getTemplate(structDef.instantiatedCitizen.id) ==
+            TemplataCompiler.getTemplate(closuredVarsStructTT.id)
         }))
 
     val expectedMembers =
@@ -198,7 +198,7 @@ class ClosureTests extends FunSuite with Matchers {
     // The struct should have an int x in it.
     val closure = coutputs.lookupLambdaIn("main")
     val closureStruct = closure.header.params.head.tyype.kind.expectStruct()
-    val closureStructDef = coutputs.lookupStruct(closureStruct.fullName)
+    val closureStructDef = coutputs.lookupStruct(closureStruct.id)
     val expectedMembers = Vector(NormalStructMemberT(interner.intern(CodeVarNameT(interner.intern(StrI("x")))), VaryingT, AddressMemberTypeT(CoordT(ShareT, IntT.i32))));
     closureStructDef.members shouldEqual expectedMembers
 
@@ -243,13 +243,13 @@ class ClosureTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val closureStruct =
       coutputs.structs.find(struct => {
-        struct.instantiatedCitizen.fullName.localName match {
+        struct.instantiatedCitizen.id.localName match {
           case LambdaCitizenNameT(_) => true
           case _ => false
         }
       }).get
     closureStruct.mutability match {
-      case MutabilityTemplata(MutableT) =>
+      case MutabilityTemplataT(MutableT) =>
     }
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }

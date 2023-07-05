@@ -48,10 +48,10 @@ object CompilerErrorHumanizer {
               codeMap, linesBetween, lineRangeContaining, lineContaining, error)
         }
         case UnexpectedArrayElementType(range, expectedType, actualType) => {
-          "Unexpected type for array element, tried to put a " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " into an array of " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
+          "Unexpected type for array element, tried to put a " + humanizeTemplata(codeMap, CoordTemplataT(actualType)) + " into an array of " + humanizeTemplata(codeMap, CoordTemplataT(expectedType))
         }
         case IndexedArrayWithNonInteger(range, tyype) => {
-          "Indexed array with non-integer: " + humanizeTemplata(codeMap, CoordTemplata(tyype))
+          "Indexed array with non-integer: " + humanizeTemplata(codeMap, CoordTemplataT(tyype))
         }
         case CantUseReadonlyReferenceAsReadwrite(range) => {
           "Can't make readonly reference into a readwrite one!"
@@ -60,16 +60,16 @@ object CompilerErrorHumanizer {
           "Couldn't find override: " + humanizeFindFunctionFailure(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, range, fff)
         }
         case CantReconcileBranchesResults(range, thenResult, elseResult) => {
-          "If branches return different types: " + humanizeTemplata(codeMap, CoordTemplata(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplata(elseResult))
+          "If branches return different types: " + humanizeTemplata(codeMap, CoordTemplataT(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplataT(elseResult))
         }
         case CantMoveOutOfMemberT(range, name) => {
           "Cannot move out of member (" + name + ")"
         }
         case CantMutateFinalMember(range, struct, memberName) => {
-          "Cannot mutate final member '" + printableVarName(memberName) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
+          "Cannot mutate final member '" + printableVarName(memberName) + "' of container " + humanizeTemplata(codeMap, KindTemplataT(struct))
         }
         case CantMutateFinalElement(range, coord) => {
-          "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
+          "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplataT(coord)) + " to point to a different element; it's an array of final references."
         }
         case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
           "Argument function return type doesn't match interface method param"
@@ -81,10 +81,10 @@ object CompilerErrorHumanizer {
           "Can't move a local (" + name + ") from inside a while loop."
         }
         case CannotSubscriptT(range, tyype) => {
-          "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
+          "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplataT(tyype)) + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
-          "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
+          "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplataT(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplataT(expectedType))
         }
         case CouldntConvertForMutateT(range, expectedType, actualType) => {
           "Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
@@ -96,17 +96,17 @@ object CompilerErrorHumanizer {
           "Couldn't evaluate impl statement:\n" +
             humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, eff match {
               case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
-                IncompleteSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+                IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
                   steps, unsolvedRules, unknownRunes, incompleteConclusions)
               }
               case FailedCompilerSolve(steps, unsolvedRules, error) => {
-                FailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+                FailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
                   steps, unsolvedRules, error)
               }
             })
       }
         case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
-          "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
+          "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplataT(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplataT(resultType))
         }
         case CouldntFindIdentifierToLoadT(range, name) => {
           "Couldn't find anything named `" + PostParserErrorHumanizer.humanizeImpreciseName(name) + "`!"
@@ -131,7 +131,7 @@ object CompilerErrorHumanizer {
           "Wrong number of receivers; receiving " + actualNum + " but should be " + expectedNum + "."
         }
         case CantDowncastUnrelatedTypes(range, sourceKind, targetKind, candidates) => {
-          "Can't downcast `" + humanizeTemplata(codeMap, KindTemplata(sourceKind)) + "` to unrelated `" + humanizeTemplata(codeMap, KindTemplata(targetKind)) + "`"
+          "Can't downcast `" + humanizeTemplata(codeMap, KindTemplataT(sourceKind)) + "` to unrelated `" + humanizeTemplata(codeMap, KindTemplataT(targetKind)) + "`"
         }
         case CantDowncastToInterface(range, targetKind) => {
           "Can't downcast to an interface (" + targetKind + ") yet."
@@ -184,7 +184,7 @@ object CompilerErrorHumanizer {
         }
         case TypingPassSolverError(range, failedSolve) => {
           val (text, lineBegins) =
-            SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+            SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
               codeMap,
               linesBetween,
               lineRangeContaining,
@@ -198,11 +198,11 @@ object CompilerErrorHumanizer {
               PostParserErrorHumanizer.humanizeRule,
               failedSolve match {
                 case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
-                  IncompleteSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+                  IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
                     steps, unsolvedRules, unknownRunes, incompleteConclusions)
                 }
                 case FailedCompilerSolve(steps, unsolvedRules, error) => {
-                  FailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+                  FailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
                     steps, unsolvedRules, error)
                 }
               })
@@ -234,11 +234,11 @@ object CompilerErrorHumanizer {
     val ResolveFailure(range, reason) = fff
     humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, reason match {
       case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
-        IncompleteSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+        IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
           steps, unsolvedRules, unknownRunes, incompleteConclusions)
       }
       case FailedCompilerSolve(steps, unsolvedRules, error) => {
-        FailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+        FailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
           steps, unsolvedRules, error)
       }
     })
@@ -258,7 +258,7 @@ object CompilerErrorHumanizer {
       PostParserErrorHumanizer.humanizeImpreciseName(name) +
       "(" +
       args.map({
-        case tyype => humanizeTemplata(codeMap, CoordTemplata(tyype))
+        case tyype => humanizeTemplata(codeMap, CoordTemplataT(tyype))
       }).mkString(", ") +
       "). " +
       (if (rejectedCalleeToReason.isEmpty) {
@@ -305,11 +305,11 @@ object CompilerErrorHumanizer {
       case BoolT() => "bool"
       case FloatT() => "float"
       case StrT() => "str"
-      case StructTT(f) => printableFullName(f)
+      case StructTT(f) => printableId(f)
     }
   }
-  private def printableFullName(fullName2: IdT[INameT]): String = {
-    fullName2.localName match {
+  private def printableId(id: IdT[INameT]): String = {
+    id.localName match {
       case CitizenNameT(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
       case x => x.toString
     }
@@ -359,12 +359,12 @@ object CompilerErrorHumanizer {
         "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
       case SpecificParamDoesntMatchExactly(index, arg, param) => {
-          "Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplata(arg)) +
-          " isn't the same exact type as expected parameter " + humanizeTemplata(codeMap, CoordTemplata(param))
+          "Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplataT(arg)) +
+          " isn't the same exact type as expected parameter " + humanizeTemplata(codeMap, CoordTemplataT(param))
       }
       case SpecificParamDoesntSend(index, arg, param) => {
-          " Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplata(arg)) +
-          " can't be given to expected parameter " + humanizeTemplata(codeMap, CoordTemplata(param))
+          " Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplataT(arg)) +
+          " can't be given to expected parameter " + humanizeTemplata(codeMap, CoordTemplataT(param))
       }
       case SpecificParamVirtualityDoesntMatch(index) => {
         "Virtualities don't match at index " + index
@@ -373,11 +373,11 @@ object CompilerErrorHumanizer {
       case InferFailure(reason) => {
         humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, reason match {
           case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
-            IncompleteSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+            IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
               steps, unsolvedRules, unknownRunes, incompleteConclusions)
           }
           case FailedCompilerSolve(steps, unsolvedRules, error) => {
-            FailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+            FailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
               steps, unsolvedRules, error)
           }
         })
@@ -394,28 +394,28 @@ object CompilerErrorHumanizer {
   ): String = {
     error match {
       case IsaFailed(sub, suuper) => {
-        "Kind " + humanizeTemplata(codeMap, KindTemplata(sub)) + " does not implement interface " + humanizeTemplata(codeMap, KindTemplata(suuper))
+        "Kind " + humanizeTemplata(codeMap, KindTemplataT(sub)) + " does not implement interface " + humanizeTemplata(codeMap, KindTemplataT(suuper))
       }
       case BadIsaSubKind(kind) => {
-        "Kind " + humanizeTemplata(codeMap, KindTemplata(kind)) + " cannot be a sub-kind."
+        "Kind " + humanizeTemplata(codeMap, KindTemplataT(kind)) + " cannot be a sub-kind."
       }
       case CantGetComponentsOfPlaceholderPrototype(_) => {
         "Can't get components of placeholder."
       }
       case ReturnTypeConflict(_, expectedReturnType, actualPrototype) => {
-        "Found function: " + humanizeName(codeMap, actualPrototype.fullName) + " which returns " + humanizeTemplata(codeMap, CoordTemplata(actualPrototype.returnType)) + " but expected return type of " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType))
+        "Found function: " + humanizeName(codeMap, actualPrototype.id) + " which returns " + humanizeTemplata(codeMap, CoordTemplataT(actualPrototype.returnType)) + " but expected return type of " + humanizeTemplata(codeMap, CoordTemplataT(expectedReturnType))
       }
       case CantShareMutable(kind) => {
-        "Can't share a mutable kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
+        "Can't share a mutable kind: " + humanizeTemplata(codeMap, KindTemplataT(kind))
       }
       case BadIsaSuperKind(kind) => {
-        "Bad super kind in isa: " + humanizeTemplata(codeMap, KindTemplata(kind))
+        "Bad super kind in isa: " + humanizeTemplata(codeMap, KindTemplataT(kind))
       }
       case SendingNonIdenticalKinds(sendCoord, receiveCoord) => {
-        "Sending non-identical kinds: " + humanizeTemplata(codeMap, CoordTemplata(sendCoord)) + " and " + humanizeTemplata(codeMap, CoordTemplata(receiveCoord))
+        "Sending non-identical kinds: " + humanizeTemplata(codeMap, CoordTemplataT(sendCoord)) + " and " + humanizeTemplata(codeMap, CoordTemplataT(receiveCoord))
       }
       case SendingNonCitizen(kind) => {
-        "Sending non-struct non-interface Kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
+        "Sending non-struct non-interface Kind: " + humanizeTemplata(codeMap, KindTemplataT(kind))
       }
       case CantCheckPlaceholder(range) => {
         "Cant check a placeholder!"
@@ -445,18 +445,18 @@ object CompilerErrorHumanizer {
         "Expected an instantiation of " + humanizeTemplata(codeMap, expected) + " but got " + humanizeTemplata(codeMap, actual)
       }
       case OwnershipDidntMatch(coord, expectedOwnership) => {
-        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
+        "Given type " + humanizeTemplata(codeMap, CoordTemplataT(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
       }
       case ReceivingDifferentOwnerships(params) => {
         "Received conflicting ownerships: " +
           params.map({ case (rune, coord) =>
-            humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplata(coord))
+            humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplataT(coord))
           }).mkString(", ")
       }
       case NoAncestorsSatisfyCall(params) => {
         "No ancestors satisfy call: " +
           params.map({ case (rune, coord) =>
-            humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplata(coord))
+            humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplataT(coord))
           }).mkString(", ")
       }
     }
@@ -467,10 +467,10 @@ object CompilerErrorHumanizer {
     linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
     lineRangeContaining: (CodeLocationS) => RangeS,
     lineContaining: (CodeLocationS) => String,
-    result: IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]):
+    result: IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]):
   String = {
     val (text, lineBegins) =
-      SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError](
+      SolverErrorHumanizer.humanizeFailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
         codeMap,
         linesBetween,
         lineRangeContaining,
@@ -492,7 +492,7 @@ object CompilerErrorHumanizer {
     candidate: ICalleeCandidate) = {
     candidate match {
       case HeaderCalleeCandidate(header) => {
-        humanizeName(codeMap, header.fullName)
+        humanizeName(codeMap, header.id)
       }
       case PrototypeTemplataCalleeCandidate(range, prototypeT) => {
         val begin = lineRangeContaining(range.begin).begin
@@ -509,27 +509,27 @@ object CompilerErrorHumanizer {
 
   def humanizeTemplata(
     codeMap: CodeLocationS => String,
-    templata: ITemplata[ITemplataType]):
+    templata: ITemplataT[ITemplataType]):
   String = {
     templata match {
-      case RuntimeSizedArrayTemplateTemplata() => "Array"
-      case StaticSizedArrayTemplateTemplata() => "StaticArray"
-      case InterfaceDefinitionTemplata(env, originInterface) => originInterface.name.name.str
-      case StructDefinitionTemplata(env, originStruct) => PostParserErrorHumanizer.humanizeName(originStruct.name)
-      case VariabilityTemplata(variability) => {
+      case RuntimeSizedArrayTemplateTemplataT() => "Array"
+      case StaticSizedArrayTemplateTemplataT() => "StaticArray"
+      case InterfaceDefinitionTemplataT(env, originInterface) => originInterface.name.name.str
+      case StructDefinitionTemplataT(env, originStruct) => PostParserErrorHumanizer.humanizeName(originStruct.name)
+      case VariabilityTemplataT(variability) => {
         variability match {
           case FinalT => "final"
           case VaryingT => "vary"
         }
       }
-      case IntegerTemplata(value) => value.toString
-      case MutabilityTemplata(mutability) => {
+      case IntegerTemplataT(value) => value.toString
+      case MutabilityTemplataT(mutability) => {
         mutability match {
           case MutableT => "mut"
           case ImmutableT => "imm"
         }
       }
-      case OwnershipTemplata(ownership) => {
+      case OwnershipTemplataT(ownership) => {
         ownership match {
           case OwnT => "own"
           case BorrowT => "borrow"
@@ -537,19 +537,19 @@ object CompilerErrorHumanizer {
           case ShareT => "share"
         }
       }
-      case PrototypeTemplata(range, prototype) => {
-        humanizeName(codeMap, prototype.fullName)
+      case PrototypeTemplataT(range, prototype) => {
+        humanizeName(codeMap, prototype.id)
       }
-      case CoordTemplata(CoordT(ownership, kind)) => {
+      case CoordTemplataT(CoordT(ownership, kind)) => {
         (ownership match {
           case OwnT => ""
           case ShareT => ""
           case BorrowT => "&"
           case WeakT => "&&"
         }) +
-          humanizeTemplata(codeMap, KindTemplata(kind))
+          humanizeTemplata(codeMap, KindTemplataT(kind))
       }
-      case KindTemplata(kind) => {
+      case KindTemplataT(kind) => {
         kind match {
           case IntT(bits) => "i" + bits
           case BoolT() => "bool"
@@ -564,25 +564,25 @@ object CompilerErrorHumanizer {
           case contentsRuntimeSizedArrayTT(mutability, elementType) => {
             "Array<" +
               humanizeTemplata(codeMap, mutability) + ", " +
-              humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
+              humanizeTemplata(codeMap, CoordTemplataT(elementType)) + ">"
           }
           case contentsStaticSizedArrayTT(size, mutability, variability, elementType) => {
             "StaticArray<" +
               humanizeTemplata(codeMap, size) + ", " +
               humanizeTemplata(codeMap, mutability) + ", " +
               humanizeTemplata(codeMap, variability) + ", " +
-              humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
+              humanizeTemplata(codeMap, CoordTemplataT(elementType)) + ">"
           }
         }
       }
-      case CoordListTemplata(coords) => {
-        "(" + coords.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+      case CoordListTemplataT(coords) => {
+        "(" + coords.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
-      case StringTemplata(value) => "\"" + value + "\""
-      case PlaceholderTemplata(fullNameT, tyype) => {
+      case StringTemplataT(value) => "\"" + value + "\""
+      case PlaceholderTemplataT(idT, tyype) => {
         tyype match {
-          case CoordTemplataType() => "$" + humanizeName(codeMap, fullNameT)
-          case _ => humanizeTemplataType(tyype) + "$" + humanizeName(codeMap, fullNameT)
+          case CoordTemplataType() => "$" + humanizeName(codeMap, idT)
+          case _ => humanizeTemplataType(tyype) + "$" + humanizeName(codeMap, idT)
         }
       }
       case other => vimpl(other)
@@ -609,7 +609,7 @@ object CompilerErrorHumanizer {
       case AnonymousSubstructConstructorNameT(template, templateArgs, parameters) => {
         humanizeName(codeMap, template) +
           "<" + templateArgs.map(humanizeTemplata(codeMap, _)).mkString(", ") + ">" +
-          "(" + parameters.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+          "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case AnonymousSubstructConstructorTemplateNameT(substruct) => {
         "asc:" + humanizeName(codeMap, substruct)
@@ -636,7 +636,7 @@ object CompilerErrorHumanizer {
           } else {
             ""
           }) +
-          "(" + parameters.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+          "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case FunctionBoundNameT(template, templateArgs, parameters) => {
         humanizeName(codeMap, template) +
@@ -645,7 +645,7 @@ object CompilerErrorHumanizer {
           } else {
             ""
           }) +
-          "(" + parameters.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+          "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case PlaceholderNameT(template) => humanizeName(codeMap, template)
       case PlaceholderTemplateNameT(index, rune) => humanizeRune(rune)
@@ -661,7 +661,7 @@ object CompilerErrorHumanizer {
             ""
           }) +
           (if (parameters.nonEmpty) {
-            "(" + parameters.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+            "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
           } else {
             ""
           })
@@ -677,18 +677,18 @@ object CompilerErrorHumanizer {
       case RuntimeSizedArrayNameT(RuntimeSizedArrayTemplateNameT(), RawArrayNameT(mutability, elementType)) => {
         "[]" +
           (mutability match {
-            case MutabilityTemplata(ImmutableT) => "<imm>"
-            case MutabilityTemplata(MutableT) => ""
+            case MutabilityTemplataT(ImmutableT) => "<imm>"
+            case MutabilityTemplataT(MutableT) => ""
             case other => "<" + humanizeTemplata(codeMap, other) + ">"
           }) +
-          humanizeTemplata(codeMap, CoordTemplata(elementType))
+          humanizeTemplata(codeMap, CoordTemplataT(elementType))
       }
       case StaticSizedArrayNameT(StaticSizedArrayTemplateNameT(), size, variability, RawArrayNameT(mutability, elementType)) => {
         "[]<" +
           humanizeTemplata(codeMap, size) + ", "
           humanizeTemplata(codeMap, mutability) + ", "
           humanizeTemplata(codeMap, variability) + ">"
-          humanizeTemplata(codeMap, CoordTemplata(elementType))
+          humanizeTemplata(codeMap, CoordTemplataT(elementType))
       }
       case AnonymousSubstructNameT(interface, templateArgs) => {
         humanizeName(codeMap, interface) +
@@ -703,6 +703,6 @@ object CompilerErrorHumanizer {
   }
 
   def humanizeSignature(codeMap: CodeLocationS => String, signature: SignatureT): String = {
-    humanizeName(codeMap, signature.fullName)
+    humanizeName(codeMap, signature.id)
   }
 }

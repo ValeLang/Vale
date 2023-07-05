@@ -12,7 +12,6 @@ object OptimizedSolverState {
       mutable.HashMap[Rune, Int](),
       mutable.HashMap[Int, Rune](),
       mutable.ArrayBuffer[Rule](),
-//      mutable.ArrayBuffer[Vector[Int]](),
       mutable.ArrayBuffer[Int](),
       mutable.ArrayBuffer[Array[Int]](),
       mutable.ArrayBuffer[mutable.ArrayBuffer[Int]](),
@@ -22,8 +21,9 @@ object OptimizedSolverState {
       mutable.ArrayBuffer[Int](),
       mutable.ArrayBuffer[Array[Int]](),
       mutable.ArrayBuffer[Int](),
-      0.to(20).map(_ => 0).toArray, // DO NOT SUBMIT happens with long generics calls
-      0.to(20).map(_ => mutable.ArrayBuffer[Int]()).toArray, // DO NOT SUBMIT happens with long generics calls
+      // We sometimes hit the limits of these arrays with long generics calls, perhaps we should vector them?
+      0.to(20).map(_ => 0).toArray,
+      0.to(20).map(_ => mutable.ArrayBuffer[Int]()).toArray,
       mutable.ArrayBuffer[Option[Conclusion]]())
   }
 }

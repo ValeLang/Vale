@@ -274,6 +274,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     val begin = iter.getPos()
 
     val maybeOwnership =
+//      if (iter.trySkipAll(Array({ case WordLE(_, pre) if pre == keywords.pre => }, { case SymbolLE(_, '&') => }))) { Some(OwnershipPT(RangeL(begin, iter.getPos()), PreCheckedBorrowP)) }
       if (iter.trySkipSymbol('^')) { Some(OwnershipPT(RangeL(begin, iter.getPos()), OwnP)) }
       else if (iter.trySkipSymbol('@')) { Some(OwnershipPT(RangeL(begin, iter.getPos()), ShareP)) }
       else if (iter.trySkipSymbols(Vector('&', '&'))) { Some(OwnershipPT(RangeL(begin, iter.getPos()), WeakP)) }
@@ -386,10 +387,6 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     }
     iter.trySkipWord(keywords.fiinal) match {
       case Some(range) => return Ok(VariabilityPT(range, FinalP))
-      case None =>
-    }
-    iter.trySkipWord(keywords.borrow) match {
-      case Some(range) => return Ok(OwnershipPT(range, BorrowP))
       case None =>
     }
     iter.trySkipWord(keywords.weak) match {

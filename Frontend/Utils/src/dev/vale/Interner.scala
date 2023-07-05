@@ -100,7 +100,6 @@ class Interner {
 }
 // "String Interned"
 case class StrI(str: String) extends IInterning {
-  override def toString: String = str
   override def shortcutNewInterningId(): Long = {
     if (str.length > 8) {
       return 0

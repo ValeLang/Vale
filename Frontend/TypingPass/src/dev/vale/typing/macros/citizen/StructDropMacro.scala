@@ -1,7 +1,7 @@
 package dev.vale.typing.macros.citizen
 
 import dev.vale.highertyping._
-import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
+import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing.rules._
 import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
 import dev.vale.postparsing._
@@ -97,10 +97,12 @@ class StructDropMacro(
         runeToType.toMap,
         Vector(
           ParameterS(
+            range(-1340),
+            None,
+            false,
             AtomSP(
               range(-1340),
               Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)), false)),
-              None,
               Some(use(-64002, selfCoordRune)), None))),
         Some(use(-64002, voidCoordRune)),
         rules.buildArray().toVector,
@@ -128,7 +130,15 @@ class StructDropMacro(
         CodeRuneS(keywords.DropVK) -> KindTemplataType(),
         CodeRuneS(keywords.DropV) -> CoordTemplataType()),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)), false)), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
+        ParameterS(
+          RangeS.internal(interner, -1342),
+          None,
+          false,
+          AtomSP(
+            RangeS.internal(interner, -1342),
+            Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)), false)),
+            Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))),
+            None))),
       Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV))),
       Vector(
         LookupSR(

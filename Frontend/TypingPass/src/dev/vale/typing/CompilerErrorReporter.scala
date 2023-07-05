@@ -52,7 +52,8 @@ case class CantDowncastUnrelatedTypes(range: List[RangeS], sourceKind: KindT, ta
   vpass()
 }
 case class CantDowncastToInterface(range: List[RangeS], targetKind: InterfaceTT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class CouldntFindTypeT(range: List[RangeS], name: String) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CouldntFindTypeT(range: List[RangeS], name: IImpreciseNameS) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TooManyTypesWithNameT(range: List[RangeS], name: IImpreciseNameS) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ArrayElementsHaveDifferentTypes(range: List[RangeS], types: Set[CoordT]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class UnexpectedArrayElementType(range: List[RangeS], expectedType: CoordT, actualType: CoordT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class InitializedWrongNumberOfElements(range: List[RangeS], expectedNumElements: Int, numElementsInitialized: Int) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

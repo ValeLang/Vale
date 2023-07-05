@@ -261,6 +261,9 @@ class CompilerMutateTests extends FunSuite with Matchers {
   test("Humanize errors") {
     val interner = new Interner()
     val keywords = new Keywords(interner)
+    val nameStr = interner.intern(StrI("main"))
+    val testPackageCoord = PackageCoordinate.TEST_TLD(interner, keywords)
+    val tzCodeLoc = CodeLocationS.testZero(interner)
     val fireflyKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Firefly")), Vector.empty))))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
     val serenityKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Serenity")), Vector.empty))))
@@ -275,7 +278,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
 
     val tz = List(RangeS.testZero(interner))
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
-      CouldntFindTypeT(tz, "Spaceship")).nonEmpty)
+      CouldntFindTypeT(tz, CodeNameS(interner.intern(StrI("Spaceship"))))).nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntFindFunctionToCallT(
         tz,
@@ -299,7 +302,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       BodyResultDoesntMatch(
         tz,
-        FunctionNameS(interner.intern(StrI("myFunc")), CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
+        FunctionNameS(interner.intern(StrI("myFunc")), tzCodeLoc), fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CouldntConvertForReturnT(
@@ -336,7 +339,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
       FunctionAlreadyExists(
         tz.head,
         tz.head,
-        IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector())))))
+        IdT(testPackageCoord, Vector.empty, interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector())))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, humanizePos, linesBetween, lineRangeContaining, lineContaining,
       CantMutateFinalMember(

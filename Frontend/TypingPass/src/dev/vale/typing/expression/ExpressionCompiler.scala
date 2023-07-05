@@ -439,7 +439,7 @@ class ExpressionCompiler(
           vassert(nenv.functionEnvironment.fullName.localName.parameters(index) == paramCoord)
           (ArgLookupTE(index, paramCoord), Set())
         }
-        case FunctionCallSE(range, OutsideLoadSE(_, rules, name, maybeTemplateArgs, callableTargetOwnership), argsExprs1) => {
+        case FunctionCallSE(range, location, OutsideLoadSE(_, rules, name, maybeTemplateArgs, callableTargetOwnership), argsExprs1) => {
 //          vassert(callableTargetOwnership == PointConstraintP(Some(ReadonlyP)))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(coutputs, nenv, life + 0, parentRanges, argsExprs1)
@@ -455,7 +455,7 @@ class ExpressionCompiler(
               argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallSE(range, OutsideLoadSE(_, rules, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+        case FunctionCallSE(range, location, OutsideLoadSE(_, rules, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
 //          vassert(callableTargetOwnership == PointConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(coutputs, nenv, life + 0, parentRanges, argsExprs1)
@@ -471,7 +471,7 @@ class ExpressionCompiler(
               argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallSE(range, callableExpr1, argsExprs1) => {
+        case FunctionCallSE(range, location, callableExpr1, argsExprs1) => {
           val (undecayedCallableExpr2, returnsFromCallable) =
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 0, parentRanges, callableExpr1);
           val decayedCallableExpr2 =
@@ -822,20 +822,38 @@ class ExpressionCompiler(
           val (sourceExpr2, returnsFromSource) =
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 0, parentRanges, sourceExpr1)
 
+          val runeTypeSolveEnv =
+            new IRuneTypeSolverEnv {
+              override def lookup(range: RangeS, nameS: IImpreciseNameS):
+              Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
+                nenv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
+                  case Some(CitizenDefinitionTemplata(environment, a)) => {
+                    Ok(CitizenRuneTypeSolverLookupResult(a.tyype, a.genericParameters))
+                  }
+                  case Some(x) => Ok(TemplataLookupResult(x.tyype))
+                  case None => Err(RuneTypingCouldntFindType(range, nameS))
+                }
+              }
+            }
+
           val runeToInitiallyKnownType = PatternSUtils.getRuneTypesFromPattern(pattern)
           val runeToType =
             new RuneTypeSolver(interner).solve(
-                opts.globalOptions.sanityCheck,
-                opts.globalOptions.useOptimizedSolver,
-                nameS => vassertOne(nenv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
-                range :: parentRanges,
-                false,
-                rulesA,
-                List(),
-                true,
-                runeToInitiallyKnownType.toMap) match {
+              opts.globalOptions.sanityCheck,
+              opts.globalOptions.useOptimizedSolver,
+              runeTypeSolveEnv,
+              range :: parentRanges,
+              false,
+              rulesA,
+              List(),
+              true,
+              runeToInitiallyKnownType.toMap) match {
               case Ok(r) => r
-              case Err(e) => throw CompileErrorExceptionT(HigherTypingInferError(range :: parentRanges, e))
+              case Err(e) => {
+                throw CompileErrorExceptionT(HigherTypingInferError(
+                  range ::
+                      parentRanges, e))
+              }
             }
           val resultTE =
             patternCompiler.inferAndTranslatePattern(
@@ -1522,11 +1540,14 @@ class ExpressionCompiler(
     val runeSToPreKnownTypeA =
       runeToExplicitType ++
         paramsS.map(_.pattern.coordRune.get.rune -> CoordTemplataType()).toMap
+
+    val runeTypeSolveEnv = TemplataCompiler.createRuneTypeSolverEnv(nenv.snapshot)
+
     val runeAToTypeWithImplicitlyCoercingLookupsS =
       new RuneTypeSolver(interner).solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        lookupType,
+        runeTypeSolveEnv,
         rangeS :: parentRanges,
         false, rulesWithImplicitlyCoercingLookupsS, identifyingRunesS.map(_.rune.rune), true, runeSToPreKnownTypeA) match {
         case Ok(t) => t
@@ -1540,7 +1561,11 @@ class ExpressionCompiler(
     // what types we *expect* them to be, so we could coerce.
     // That coercion is good, but lets make it more explicit.
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    explicifyLookups((range, name) => lookupType(name), runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS)
+    explicifyLookups(runeTypeSolveEnv, runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+      case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
+      case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
+      case Ok(()) =>
+    }
 
     vale.highertyping.FunctionA(
       rangeS,

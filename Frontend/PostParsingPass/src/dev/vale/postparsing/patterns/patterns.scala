@@ -2,9 +2,8 @@ package dev.vale.postparsing.patterns
 
 import dev.vale.postparsing.IVarNameS
 import dev.vale.postparsing.rules.RuneUsage
-import dev.vale.{RangeS, vcurious, vpass}
+import dev.vale.{RangeS, StrI, vcurious, vpass, vwat}
 import dev.vale.postparsing._
-import dev.vale.RangeS
 
 import scala.collection.immutable.List
 
@@ -23,16 +22,13 @@ case class AtomSP(
   // remember the LocalSs in scope. But it'd be even more difficult for Scout to know the Used/NotUsed
   // etc up-front to include in the pattern.
   name: Option[CaptureS],
-  virtuality: Option[AbstractSP],
   coordRune: Option[RuneUsage],
   destructure: Option[Vector[AtomSP]]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
-}
 
-case class AbstractSP(
-  range: RangeS,
-  // True if this is defined inside an interface
-  // False if this is a free function somewhere else
-  isInternalMethod: Boolean
-)
+  name match {
+    case Some(CaptureS(CodeVarNameS(StrI("_")), _)) => vwat()
+    case _ =>
+  }
+}

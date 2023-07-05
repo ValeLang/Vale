@@ -67,9 +67,14 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
                   iter.trySkipWord(keywords.rw) match {
                     case Some(range) => Vector(ReadWriteRegionRuneAttributeP(range))
                     case None => {
-                      iter.trySkipWord(keywords.imm) match {
-                        case Some(range) => Vector(ImmutableRegionRuneAttributeP(range))
-                        case None => Vector()
+                      iter.trySkipWord(keywords.additive) match {
+                        case Some(range) => Vector(AdditiveRegionRuneAttributeP(range))
+                        case None => {
+                          iter.trySkipWord(keywords.imm) match {
+                            case Some(range) => Vector(ImmutableRegionRuneAttributeP(range))
+                            case None => Vector()
+                          }
+                        }
                       }
                     }
                   }
@@ -98,6 +103,8 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       } else {
         None
       }
+
+    vassert(iter.atEnd)
 
     Ok(GenericParameterP(range, NameP(name.range, name.str), maybeType, maybeCoordRegion, attributes, maybeDefaultPT))
   }
@@ -229,7 +236,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
               }
             }).toVector)
 
-      val maybeDefaultRegionP = None
+      val maybeDefaultRegionP = vregionmut(None)
 
       val struct =
         StructP(
@@ -307,7 +314,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
               }
             })
 
-      val maybeDefaultRegionP = None
+      val maybeDefaultRegionP = vregionmut(None)
 
       val interface =
         InterfaceP(
@@ -525,6 +532,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       }
       case ExportAttributeL(range) => Ok(ExportAttributeP(range))
       case PureAttributeL(range) => Ok(PureAttributeP(range))
+      case AdditiveAttributeL(range) => Ok(AdditiveAttributeP(range))
       case WeakableAttributeL(range) => Ok(WeakableAttributeP(range))
       case SealedAttributeL(range) => Ok(SealedAttributeP(range))
       case MacroCallL(range, inclusion, name) => {
@@ -557,14 +565,14 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       val paramsP =
         ParamsP(
           paramsL.range,
-          U.mapWithIndex[ScrambleIterator, PatternPP](
+          U.mapWithIndex[ScrambleIterator, ParameterP](
             new ScrambleIterator(paramsL.contents).splitOnSymbol(',', false),
             (index, patternIter) => {
-              patternParser.parsePattern(patternIter, index, isInCitizen, true, false) match {
+              patternParser.parseParameter(patternIter, index, isInCitizen, true, false) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
-            }).toVector)
+            }))
 
       val trailingDetailsWithReturnAndWhereAndDefaultRegion = originalTrailingDetailsL
       val (trailingDetailsWithReturnAndWhere, maybeDefaultRegion) =
@@ -637,7 +645,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
               case Err(err) => return Err(err)
               case Ok(result) => result
             }
-          BlockPE(blockL.range, maybeDefaultRegion, statementsP)
+          BlockPE(blockL.range, None, maybeDefaultRegion, statementsP)
         })
 
       Ok(FunctionP(funcRangeL, header, bodyP))

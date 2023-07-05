@@ -10,13 +10,13 @@ import org.scalatest.{FunSuite, Matchers}
 class WhileTests extends FunSuite with Collector with TestParseUtils {
   test("Simple while loop") {
     compileBlockContentsExpect("while true {}") shouldHave {
-      case WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, None,VoidPE(_))) =>
+      case WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, None,None,VoidPE(_))) =>
     }
   }
 
   test("Result after while loop") {
     compileBlockContentsExpect("while true {} false") shouldHave {
-      case WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, None,VoidPE(_))) =>
+      case WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, None,None,VoidPE(_))) =>
     }
   }
 
@@ -25,9 +25,9 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
       case WhilePE(_,
         ConsecutorPE(
           Vector(
-            LetPE(_,PatternPP(_,None,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("x"))), None)),None,None,None),ConstantIntPE(_,4,None)),
+            LetPE(_,PatternPP(_,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("x"))), None)),None,None),ConstantIntPE(_,4,None)),
           BinaryCallPE(_,NameP(_,StrI(">")),LookupPE(LookupNameP(NameP(_, StrI("x"))),None),ConstantIntPE(_,6,None)))),
-        BlockPE(_,None,VoidPE(_))) =>
+        BlockPE(_,None,None,VoidPE(_))) =>
     }
   }
 }

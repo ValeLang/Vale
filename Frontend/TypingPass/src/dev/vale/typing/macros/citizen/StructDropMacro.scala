@@ -175,9 +175,9 @@ class StructDropMacro(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
       }
-    val structType = CoordT(structOwnership, structTT)
+    val structType = CoordT(structOwnership, GlobalRegionT(), structTT)
 
-    val ret = CoordT(ShareT, VoidT())
+    val ret = CoordT(ShareT, GlobalRegionT(), VoidT())
     val header = ast.FunctionHeaderT(env.id, Vector.empty, params2, ret, Some(env.templata))
 
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)

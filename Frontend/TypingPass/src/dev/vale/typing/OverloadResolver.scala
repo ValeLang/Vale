@@ -763,7 +763,7 @@ class OverloadResolver(
     val paramFilters =
       Vector(
         callableTE.result.underlyingCoord,
-        CoordT(ShareT, IntT.i32))
+        CoordT(ShareT, GlobalRegionT(), IntT.i32))
       findFunction(
         callingEnv, coutputs, range, funcName, Vector.empty, Vector.empty,
         paramFilters, Vector.empty, false, verifyConclusions) match {

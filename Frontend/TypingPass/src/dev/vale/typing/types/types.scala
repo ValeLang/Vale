@@ -56,8 +56,15 @@ case object YonderT extends LocationT {
   override def toString: String = "heap"
 }
 
+case class GlobalRegionT()
 
-case class CoordT(ownership: OwnershipT, kind: KindT)  {
+case class CoordT(
+  ownership: OwnershipT,
+  // TODO(regions): Replace with an actual region.
+  // Usually these will just be placeholders, but one day we might want to say e.g. host'
+  region: GlobalRegionT,
+  kind: KindT)  {
+
   vpass()
 
   kind match {

@@ -68,9 +68,9 @@ class RSAImmutableNewMacro(
 
     val generatorArgCoord =
       paramCoords(1).tyype match {
-        case CoordT(ShareT, kind) => CoordT(ShareT, kind)
-        case CoordT(BorrowT, kind) => CoordT(BorrowT, kind)
-        case CoordT(OwnT, kind) => vwat() // shouldnt happen, signature takes in an &
+        case CoordT(ShareT, _, kind) => CoordT(ShareT, GlobalRegionT(), kind)
+        case CoordT(BorrowT, _, kind) => CoordT(BorrowT, GlobalRegionT(), kind)
+        case CoordT(OwnT, _, kind) => vwat() // shouldnt happen, signature takes in an &
       }
 
     val generatorPrototype =
@@ -81,7 +81,7 @@ class RSAImmutableNewMacro(
         interner.intern(CodeNameS(keywords.underscoresCall)),
         Vector(),
         Vector(),
-        Vector(generatorArgCoord, CoordT(ShareT, IntT(32))),
+        Vector(generatorArgCoord, CoordT(ShareT, GlobalRegionT(), IntT(32))),
         Vector(),
         false,
         true) match {

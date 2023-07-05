@@ -117,7 +117,7 @@ class BodyCompiler(
 
           if (returns == Set(explicitRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(CoordT(ShareT, NeverT(false)))) {
+          } else if (returns == Set(CoordT(ShareT, GlobalRegionT(), NeverT(false)))) {
             // Let it through, it returns a never but we expect something else, that's fine
           } else if (returns == Set() && body2.result.kind == NeverT(false)) {
             // Let it through, it doesn't return anything yet it results in a never, which means
@@ -187,8 +187,8 @@ class BodyCompiler(
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, NeverT(false)))) {
-        returnsMaybeWithNever - CoordT(ShareT, NeverT(false))
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, GlobalRegionT(), NeverT(false)))) {
+        returnsMaybeWithNever - CoordT(ShareT, GlobalRegionT(), NeverT(false))
       } else {
         returnsMaybeWithNever
       }

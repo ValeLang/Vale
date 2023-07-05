@@ -60,13 +60,13 @@ class IfTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, IntT.i32))
+    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32))
     ifs.size shouldEqual 2
     val userFuncs = coutputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case CoordT(ShareT, IntT.i32) =>
-        case CoordT(ShareT, BoolT()) =>
+        case CoordT(ShareT, _, IntT.i32) =>
+        case CoordT(ShareT, _, BoolT()) =>
         case other => vwat(other)
       }
     })
@@ -92,12 +92,12 @@ class IfTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, IntT.i32))
+    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32))
     val userFuncs = coutputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case CoordT(ShareT, IntT.i32) =>
-        case CoordT(ShareT, BoolT()) =>
+        case CoordT(ShareT, _, IntT.i32) =>
+        case CoordT(ShareT, _, BoolT()) =>
       }
     })
 
@@ -118,7 +118,7 @@ class IfTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, StrT()))
+    ifs.foreach(iff => iff.result.coord shouldEqual CoordT(ShareT, GlobalRegionT(), StrT()))
 
     compile.evalForKind(Vector()) match { case VonStr("#") => }
   }

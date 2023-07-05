@@ -15,15 +15,14 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
 
   test("Capture with destructure with type inside") {
     compile("a [a int, b bool]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
           Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
           None,
           Some(
           DestructureP(_,
             Vector(
               capturedWithType("a", NameOrRunePT(NameP(_, StrI("int")))),
-              capturedWithType("b", NameOrRunePT(NameP(_, StrI("bool"))))))),
-          None) =>
+              capturedWithType("b", NameOrRunePT(NameP(_, StrI("bool")))))))) =>
     }
   }
   test("capture with empty sequence type") {
@@ -33,23 +32,22 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
   }
   test("empty destructure") {
     compilePattern("[]") shouldHave
-      { case PatternPP(_,None,None,None,Some(DestructureP(_,Vector())),None) => }
+      { case PatternPP(_,None,None,Some(DestructureP(_,Vector()))) => }
   }
   test("capture with empty destructure") {
     // Needs the space between the braces, see https://github.com/ValeLang/Vale/issues/434
     compile("a [ ]") shouldHave {
-      case PatternPP(_,_,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),None,Some(DestructureP(_,Vector())),None) =>
+      case PatternPP(_,Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),None,Some(DestructureP(_,Vector()))) =>
     }
   }
   test("Destructure with nested atom") {
     compile("a [b int]") shouldHave {
-      case PatternPP(_,_,
+      case PatternPP(_,
           Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, StrI("a"))), None)),
           None,
           Some(
-          DestructureP(_,
-            Vector(capturedWithType("b", NameOrRunePT(NameP(_, StrI("int"))))))),
-          None) =>
+            DestructureP(_,
+              Vector(capturedWithType("b", NameOrRunePT(NameP(_, StrI("int")))))))) =>
     }
   }
 }

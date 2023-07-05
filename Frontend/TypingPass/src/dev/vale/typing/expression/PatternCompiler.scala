@@ -4,7 +4,7 @@ import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.parsing.ast.LoadAsBorrowP
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.CaptureS
-import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vfail, vimpl}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, Result, vassert, vassertSome, vfail, vimpl}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, InferCompiler, InitialSend, RangedInternalErrorT, TypingPassOptions, WrongNumberOfDestructuresError}
 import dev.vale.typing.ast.{ConstantIntTE, DestroyMutRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE}
@@ -126,6 +126,8 @@ class PatternCompiler(
             unconvertedInputExpr
           }
           case Some(receiverRune) => {
+            val runeTypeSolveEnv = TemplataCompiler.createRuneTypeSolverEnv(nenv.snapshot)
+
             val runeAToType =
               mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
             // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
@@ -134,8 +136,12 @@ class PatternCompiler(
             // That coercion is good, but lets make it more explicit.
             val ruleBuilder = ArrayBuffer[IRulexSR]()
             explicifyLookups(
-              (range, name) => vassertSome(nenv.lookupNearestWithImpreciseName(name, Set(TemplataLookupContext))).tyype,
-              runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS)
+              runeTypeSolveEnv,
+              runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+              case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
+              case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
+              case Ok(()) =>
+            }
             val rulesA = ruleBuilder.toVector
 
             val CompleteCompilerSolve(_, templatasByRune, _, Vector()) =
@@ -188,12 +194,7 @@ class PatternCompiler(
   ReferenceExpressionTE = {
     vassert(previousLiveCaptureLocals.map(_.name) == previousLiveCaptureLocals.map(_.name).distinct)
 
-    val AtomSP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
-
-    if (maybeVirtuality.nonEmpty) {
-      // This is actually to be expected for when we translate the patterns from the
-      // function's parameters. Ignore them.
-    }
+    val AtomSP(range, maybeCaptureLocalVarA, coordRuneA, maybeDestructure) = pattern
 
     // We make it here instead of down in the maybeDestructure clauses because whether we destructure it or not
     // is unrelated to whether we destructure it.

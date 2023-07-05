@@ -60,32 +60,55 @@ case class ProgramA(
 }
 
 case class StructA(
-    range: RangeS,
-    name: IStructDeclarationNameS,
-    attributes: Vector[ICitizenAttributeS],
-    weakable: Boolean,
-    mutabilityRune: RuneUsage,
+  range: RangeS,
+  name: IStructDeclarationNameS,
+  attributes: Vector[ICitizenAttributeS],
+  weakable: Boolean,
+  mutabilityRune: RuneUsage,
 
-    // This is needed for recursive structures like
-    //   struct ListNode<T> imm where T Ref {
-    //     tail ListNode<T>;
-    //   }
-    maybePredictedMutability: Option[MutabilityP],
-    tyype: TemplateTemplataType,
-    genericParameters: Vector[GenericParameterS],
+  // This is needed for recursive structures like
+  //   struct ListNode<T> imm where T Ref {
+  //     tail ListNode<T>;
+  //   }
+  maybePredictedMutability: Option[MutabilityP],
+  tyype: TemplateTemplataType,
+  genericParameters: Vector[GenericParameterS],
 
-    // These are separated so that these alone can be run during resolving, see SMRASDR.
-    headerRuneToType: Map[IRuneS, ITemplataType],
-    headerRules: Vector[IRulexSR],
-    // These are separated so they can be skipped during resolving, see SMRASDR.
-    membersRuneToType: Map[IRuneS, ITemplataType],
-    memberRules: Vector[IRulexSR],
-    members: Vector[IStructMemberS]
+  // These are separated so that these alone can be run during resolving, see SMRASDR.
+  headerRuneToType: Map[IRuneS, ITemplataType],
+  headerRules: Vector[IRulexSR],
+
+  // These are separated so they can be skipped during resolving, see SMRASDR.
+  membersRuneToType: Map[IRuneS, ITemplataType],
+  memberRules: Vector[IRulexSR],
+  members: Vector[IStructMemberS]
 ) extends CitizenA {
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
 
   vpass()
+
+  vassert(
+    !genericParameters.exists({ case x =>
+      x.rune.rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
+  vassert(
+    !headerRuneToType.exists({ case (rune, _) =>
+      rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
+  vassert(
+    !membersRuneToType.exists({ case (rune, _) =>
+      rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[StructA]) { return false }
@@ -118,11 +141,12 @@ case class ImplA(
 }
 
 case class ExportAsA(
-    range: RangeS,
-    exportedName: StrI,
+  range: RangeS,
+  exportedName: StrI,
   rules: Vector[IRulexSR],
-    runeToType: Map[IRuneS, ITemplataType],
-    typeRune: RuneUsage) {
+  runeToType: Map[IRuneS, ITemplataType],
+  typeRune: RuneUsage)
+{
   val hash = range.hashCode() + exportedName.hashCode
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
@@ -132,28 +156,48 @@ case class ExportAsA(
   }
 }
 
-sealed trait CitizenA
+sealed trait CitizenA {
+  def tyype: TemplateTemplataType
+  def genericParameters: Vector[GenericParameterS]
+}
 
 case class InterfaceA(
-    range: RangeS,
-    name: TopLevelInterfaceDeclarationNameS,
-    attributes: Vector[ICitizenAttributeS],
-    weakable: Boolean,
-    mutabilityRune: RuneUsage,
-    // This is needed for recursive structures like
-    //   struct ListNode<T> imm where T Ref {
-    //     tail ListNode<T>;
-    //   }
-    maybePredictedMutability: Option[MutabilityP],
-    tyype: TemplateTemplataType,
+  range: RangeS,
+  name: TopLevelInterfaceDeclarationNameS,
+  attributes: Vector[ICitizenAttributeS],
+  weakable: Boolean,
+  mutabilityRune: RuneUsage,
+  // This is needed for recursive structures like
+  //   struct ListNode<T> imm where T Ref {
+  //     tail ListNode<T>;
+  //   }
+  maybePredictedMutability: Option[MutabilityP],
+  tyype: TemplateTemplataType,
 //    knowableRunes: Set[IRuneS],
-    genericParameters: Vector[GenericParameterS],
+  genericParameters: Vector[GenericParameterS],
 //    localRunes: Set[IRuneS],
-    runeToType: Map[IRuneS, ITemplataType],
+  runeToType: Map[IRuneS, ITemplataType],
   rules: Vector[IRulexSR],
-    // See IMRFDI
-    internalMethods: Vector[FunctionA]
+
+  // See IMRFDI
+  internalMethods: Vector[FunctionA]
 ) extends CitizenA {
+
+  vassert(
+    !genericParameters.exists({ case x =>
+      x.rune.rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
+  vassert(
+    !runeToType.exists({ case (rune, _) =>
+      rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
+
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
@@ -224,6 +268,18 @@ case class FunctionA(
 ) {
   val hash = range.hashCode() + name.hashCode()
   vpass()
+
+  vassert(
+    !genericParameters.exists({ case x =>
+      x.rune.rune match { case DenizenDefaultRegionRuneS(_) => true case _ => false }
+    }))
+  vassert(
+    !runeToType.exists({ case (rune, _) =>
+      rune match {
+        case DenizenDefaultRegionRuneS(_) => true
+        case _ => false
+      }
+    }))
 
   vassert(range.begin.file.packageCoordinate == name.packageCoordinate)
 

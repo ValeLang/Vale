@@ -1,17 +1,26 @@
 package dev.vale.parsing.ast
 
 import dev.vale.lexing.RangeL
-import dev.vale.vcurious
+import dev.vale.{vassert, vcurious, vwat}
 
 //sealed trait IVirtualityP
 case class AbstractP(range: RangeL)// extends IVirtualityP
 //case class OverrideP(range: RangeP, tyype: ITemplexPT) extends IVirtualityP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
+case class ParameterP(
+    range: RangeL,
+    virtuality: Option[AbstractP],
+    maybePreChecked: Option[RangeL],
+    selfBorrow: Option[RangeL],
+    pattern: Option[PatternPP]) {
+
+  vassert(selfBorrow.nonEmpty || pattern.nonEmpty)
+}
+
 case class DestinationLocalP(decl: INameDeclarationP, mutate: Option[RangeL])
 
 case class PatternPP(
     range: RangeL,
-    preBorrow: Option[RangeL],
     destination: Option[DestinationLocalP],
 
     // If they just have a destructure, this will probably be a ManualSequence(None).
@@ -24,8 +33,7 @@ case class PatternPP(
     // single type and in the other, T is a pack of types). And we might also want
     // to account for nested parens, like struct Fn:((#Params...), (#Rets...))
 
-    destructure: Option[DestructureP],
-    virtuality: Option[AbstractP])
+    destructure: Option[DestructureP])
 
 case class DestructureP(
   range: RangeL,
@@ -37,7 +45,12 @@ case class DestructureP(
 sealed trait INameDeclarationP {
   def range: RangeL
 }
-case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); override def range: RangeL = name.range }
+case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); override def range: RangeL = name.range
+  if (name.str.str == "_") {
+    vwat()
+  }
+}
 case class IgnoredLocalNameDeclarationP(range: RangeL) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); }
 case class IterableNameDeclarationP(range: RangeL) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class IteratorNameDeclarationP(range: RangeL) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -48,7 +61,7 @@ object Patterns {
   object capturedWithTypeRune {
     def unapply(arg: PatternPP): Option[(String, String)] = {
       arg match {
-        case PatternPP(_, _, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name.str, kindRune.str))
+        case PatternPP(_, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), Some(NameOrRunePT(NameP(_, kindRune))), None) => Some((name.str, kindRune.str))
         case _ => None
       }
     }
@@ -61,7 +74,7 @@ object Patterns {
   object capture {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), None, None, None) => Some(name.str)
+        case PatternPP(_, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), None, None) => Some(name.str)
         case _ => None
       }
     }
@@ -69,7 +82,7 @@ object Patterns {
   object fromEnv {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, None | Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)), Some(NameOrRunePT(NameP(_, kindName))), None, None) => Some(kindName.str)
+        case PatternPP(_, None | Some(DestinationLocalP(IgnoredLocalNameDeclarationP(_), None)), Some(NameOrRunePT(NameP(_, kindName))), None) => Some(kindName.str)
         case _ => None
       }
     }
@@ -85,7 +98,7 @@ object Patterns {
   object capturedWithType {
     def unapply(arg: PatternPP): Option[(String, ITemplexPT)] = {
       arg match {
-        case PatternPP(_, _, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), Some(templex), None, None) => Some((name.str, templex))
+        case PatternPP(_, Some(DestinationLocalP(LocalNameDeclarationP(NameP(_, name)), None)), Some(templex), None) => Some((name.str, templex))
         case _ => None
       }
     }

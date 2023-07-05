@@ -109,7 +109,7 @@ struct ListNode<T> {
 
 when we try to resolve the `Opt<ListNode<T>>` it will try to resolve the `ListNode<T>` which runs all these rules _again_, and goes into an infinite loop.
 
-The answer is to not run the innars' rules when we're resolving. Only run the innards when compiling the definition.
+The answer is to not run the innards' rules when we're resolving. Only run the innards when compiling the definition.
 
 
 # Require Explicit Multiple Upcasting to Indirect Descendants and Ancestors (REMUIDDA)
@@ -331,6 +331,17 @@ This should also help when we switch to regions, where we want to say that two g
 share the same region.
 
 
+### Start Incremental Placeholdering With Default Region (SIPWDR)
+
+Per IRAGP, we solve as much of a struct definition as we can, and then add a placeholder, then do another solve, add another placeholder, and so on.
+
+Solving generally requires the context region, so we can do template calls. But when solving the struct definition, the context region is a placeholder. But even the first placeholder only comes after a solve. But solving needs a placeholder.
+
+Seems like a circular dependency! Easily resolved, though.
+
+Since we know that every denizen has a region generic parameter, we can just toss in the placeholder for that in the beginning.
+
+One day, we might want to say something like `struct Moo host'{ x int; }` or something. At that point this might fall apart and we might not be able to assume a region is a generic parameter. Not sure what we'll do then.
 
 
 # Solve First With Predictions, Resolve Later (SFWPRL)
@@ -1566,3 +1577,33 @@ We had a bug (search for test case with RRBFS) where the hail mary was thrown ev
 Moral of the story: these two last-resort strategies can sometimes race.
 
 For now, we resolve it by only doing the hail mary for call sites.
+
+
+# Instantiator Accesses Parts of Coord Generic Args (IAPCGA)
+
+As part of MNRFGC, a coord has no placeholder itself, it's instead a collection of a placeholder region and a placeholder kind (and maybe one day, a placeholder ownership?).
+
+
+This led to a complication in the instantiator, which accesses things like 
+
+
+# Coercing Calls And Lookups (CCAL)
+
+We have a case:
+
+```
+struct Moo<T> { bork T; }
+struct Bork<T> { x Moo<T>; }
+```
+
+and the compiler struggles on the `x Moo<T>` part.
+
+There are two rules:
+
+$1 = "Moo" (a MaybeCoercingLookup)
+$2 = $1<T> (a MaybeCoercingCall)
+
+It can't figure out $1 because it doesn't know whether it should load "Moo" as a kind<coord> or a coord<coord>.
+
+It can't figure out that second rule because it doesn't know $1, and can't conclude it just from knowing $2 (a coord) and the args (T).
+

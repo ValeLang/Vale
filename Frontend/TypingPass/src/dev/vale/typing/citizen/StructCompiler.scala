@@ -31,6 +31,7 @@ trait IStructCompilerDelegate {
   def evaluateGenericFunctionFromNonCallForHeader(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     functionTemplata: FunctionTemplataT,
     verifyConclusions: Boolean):
   FunctionHeaderT
@@ -39,6 +40,7 @@ trait IStructCompilerDelegate {
     env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     functionName: IImpreciseNameS,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
@@ -77,12 +79,13 @@ class StructCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[StructTT] = {
     Profiler.frame(() => {
       templateArgsLayer.resolveStruct(
-        coutputs, callingEnv, callRange, structTemplata, uncoercedTemplateArgs)
+        coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
     })
   }
 
@@ -179,10 +182,11 @@ class StructCompiler(
   def compileStruct(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT):
   Unit = {
     Profiler.frame(() => {
-      templateArgsLayer.compileStruct(coutputs, parentRanges, structTemplata)
+      templateArgsLayer.compileStruct(coutputs, parentRanges, callLocation, structTemplata)
     })
   }
 
@@ -191,13 +195,14 @@ class StructCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   (InterfaceTT) = {
     templateArgsLayer.predictInterface(
-      coutputs, callingEnv, callRange, interfaceTemplata, uncoercedTemplateArgs)
+      coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
   }
 
   // See SFWPRL for how this is different from resolveStruct.
@@ -205,19 +210,21 @@ class StructCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     structTemplata: StructDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   (StructTT) = {
     templateArgsLayer.predictStruct(
-      coutputs, callingEnv, callRange, structTemplata, uncoercedTemplateArgs)
+      coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
   }
 
   def resolveInterface(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
@@ -225,7 +232,7 @@ class StructCompiler(
   IResolveOutcome[InterfaceTT] = {
     val success =
       templateArgsLayer.resolveInterface(
-        coutputs, callingEnv, callRange, interfaceTemplata, uncoercedTemplateArgs)
+        coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
 
     success
   }
@@ -234,26 +241,28 @@ class StructCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     citizenTemplata: CitizenDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[ICitizenTT] = {
     citizenTemplata match {
-      case st @ StructDefinitionTemplataT(_, _) => resolveStruct(coutputs, callingEnv, callRange, st, uncoercedTemplateArgs)
-      case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterface(coutputs, callingEnv, callRange, it, uncoercedTemplateArgs)
+      case st @ StructDefinitionTemplataT(_, _) => resolveStruct(coutputs, callingEnv, callRange, callLocation, st, uncoercedTemplateArgs)
+      case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterface(coutputs, callingEnv, callRange, callLocation, it, uncoercedTemplateArgs)
     }
   }
 
   def compileInterface(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT):
   Unit = {
     templateArgsLayer.compileInterface(
-      coutputs, parentRanges, interfaceTemplata)
+      coutputs, parentRanges, callLocation, interfaceTemplata)
   }
 
   // Makes a struct to back a closure
@@ -261,12 +270,13 @@ class StructCompiler(
     containingFunctionEnv: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     name: IFunctionDeclarationNameS,
     functionS: FunctionA,
     members: Vector[NormalStructMemberT]):
   (StructTT, MutabilityT, FunctionTemplataT) = {
 //    Profiler.reentrant("StructCompiler-makeClosureUnderstruct", name.codeLocation.toString, () => {
-      templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, coutputs, parentRanges, name, functionS, members)
+      templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, coutputs, parentRanges, callLocation, name, functionS, members)
 //    })
   }
 

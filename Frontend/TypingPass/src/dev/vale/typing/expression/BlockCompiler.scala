@@ -25,6 +25,7 @@ trait IBlockCompilerDelegate {
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -33,6 +34,7 @@ trait IBlockCompilerDelegate {
     startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     range: List[RangeS],
+    callLocation: LocationInDenizen,
     life: LocationInFunctionEnvironmentT,
     unresultifiedUndestructedExpressions: ReferenceExpressionTE):
   ReferenceExpressionTE
@@ -59,6 +61,7 @@ class BlockCompiler(
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     block1: BlockSE):
   (BlockTE, Set[IVarNameT], Set[IVarNameT], Set[CoordT]) = {
     val nenv = NodeEnvironmentBox(parentFate.makeChildNodeEnvironment(block1, life))
@@ -66,7 +69,7 @@ class BlockCompiler(
 
     val (expressionsWithResult, returnsFromExprs) =
       evaluateBlockStatements(
-        coutputs, startingNenv, nenv, parentRanges, life, block1)
+        coutputs, startingNenv, nenv, parentRanges, callLocation, life, block1)
 
     val block2 = BlockTE(expressionsWithResult)
 
@@ -80,11 +83,14 @@ class BlockCompiler(
     startingNenv: NodeEnvironmentT,
     nenv: NodeEnvironmentBox,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     life: LocationInFunctionEnvironmentT,
     blockSE: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedRootExpression, returnsFromExprs) =
-      delegate.evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 0, parentRanges, blockSE.expr);
+      delegate.evaluateAndCoerceToReferenceExpression(
+        coutputs, nenv, life + 0, parentRanges,
+        callLocation, blockSE.expr);
 
     val unneveredUnresultifiedUndestructedExpressions =
       unneveredUnresultifiedUndestructedRootExpression
@@ -112,8 +118,14 @@ class BlockCompiler(
 //      }
 
     val newExpr =
-          delegate.dropSince(
-            coutputs, startingNenv, nenv, RangeS(blockSE.range.end, blockSE.range.end) :: parentRanges, life, unresultifiedUndestructedExpressions)
+      delegate.dropSince(
+        coutputs,
+        startingNenv,
+        nenv,
+        RangeS(blockSE.range.end, blockSE.range.end) :: parentRanges,
+        callLocation,
+        life,
+        unresultifiedUndestructedExpressions)
 
     (newExpr, returnsFromExprs)
   }

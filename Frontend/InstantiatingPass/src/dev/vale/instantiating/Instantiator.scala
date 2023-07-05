@@ -4,7 +4,7 @@ import dev.vale.options.GlobalOptions
 import dev.vale.{Accumulator, Collector, Interner, Keywords, StrI, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.postparsing.{IRuneS, ITemplataType, IntegerTemplataType}
 import dev.vale.typing.TemplataCompiler.{getTopLevelDenizenId, substituteTemplatasInKind}
-import dev.vale.typing.{Hinputs, InstantiationBoundArguments, TemplataCompiler}
+import dev.vale.typing.{Hinputs, InstantiationBoundArgumentsT, TemplataCompiler}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.names._
@@ -47,7 +47,7 @@ class InstantiatedOutputs() {
     mutable.HashMap()
   // We already know from the hinputs that Opt<T has drop> has func drop(T).
   // In this map, we'll know that Opt<int> has func drop(int).
-  val abstractFuncToInstantiatorAndSuppliedPrototypes: mutable.HashMap[IdT[IFunctionNameT], (Instantiator, InstantiationBoundArguments)] =
+  val abstractFuncToInstantiatorAndSuppliedPrototypes: mutable.HashMap[IdT[IFunctionNameT], (Instantiator, InstantiationBoundArgumentsT)] =
   mutable.HashMap()
   // This map collects all overrides for every impl. We'll use it to assemble vtables soon.
   val interfaceToImplToAbstractPrototypeToOverride:
@@ -56,10 +56,10 @@ class InstantiatedOutputs() {
 
   // These are new impls and abstract funcs we discover for interfaces.
   // As we discover a new impl or a new abstract func, we'll later need to stamp a lot more overrides either way.
-  val newImpls: mutable.Queue[(IdT[IImplNameT], InstantiationBoundArguments)] = mutable.Queue()
+  val newImpls: mutable.Queue[(IdT[IImplNameT], InstantiationBoundArgumentsT)] = mutable.Queue()
   // The int is a virtual index
-  val newAbstractFuncs: mutable.Queue[(PrototypeT, Int, IdT[IInterfaceNameT], InstantiationBoundArguments)] = mutable.Queue()
-  val newFunctions: mutable.Queue[(PrototypeT, InstantiationBoundArguments, Option[DenizenBoundToDenizenCallerBoundArg])] = mutable.Queue()
+  val newAbstractFuncs: mutable.Queue[(PrototypeT, Int, IdT[IInterfaceNameT], InstantiationBoundArgumentsT)] = mutable.Queue()
+  val newFunctions: mutable.Queue[(PrototypeT, InstantiationBoundArgumentsT, Option[DenizenBoundToDenizenCallerBoundArg])] = mutable.Queue()
 
   def addMethodToVTable(
     implFullName: IdT[IImplNameT],
@@ -251,7 +251,7 @@ object Instantiator {
     hinputs: Hinputs,
     monouts: InstantiatedOutputs,
     interfaceFullName: IdT[IInterfaceNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   Unit = {
     val interfaceTemplate = TemplataCompiler.getInterfaceTemplate(interfaceFullName)
 
@@ -307,7 +307,7 @@ object Instantiator {
     hinputs: Hinputs,
     monouts: InstantiatedOutputs,
     structFullName: IdT[IStructNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   Unit = {
     if (opts.sanityCheck) {
       vassert(Collector.all(structFullName, { case KindPlaceholderNameT(_) => }).isEmpty)
@@ -377,7 +377,7 @@ object Instantiator {
     interfaceFullName: IdT[IInterfaceNameT],
     abstractFunc: PrototypeT,
     virtualIndex: Int,
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   Unit = {
     val funcTemplateNameT = TemplataCompiler.getFunctionTemplate(abstractFunc.id)
 
@@ -636,7 +636,7 @@ object Instantiator {
     hinputs: Hinputs,
     monouts: InstantiatedOutputs,
     implFullName: IdT[IImplNameT],
-    instantiationBoundsForUnsubstitutedImpl: InstantiationBoundArguments):
+    instantiationBoundsForUnsubstitutedImpl: InstantiationBoundArgumentsT):
   Unit = {
     val implTemplateFullName = TemplataCompiler.getImplTemplate(implFullName)
     val implDefinition =
@@ -726,7 +726,7 @@ object Instantiator {
     hinputs: Hinputs,
     monouts: InstantiatedOutputs,
     desiredPrototype: PrototypeT,
-    suppliedBoundArgs: InstantiationBoundArguments,
+    suppliedBoundArgs: InstantiationBoundArgumentsT,
     // This is only Some if this is a lambda. This will contain the prototypes supplied to the top level denizen by its
     // own caller, see LCNBAFA.
     maybeDenizenBoundToDenizenCallerSuppliedThing: Option[DenizenBoundToDenizenCallerBoundArg]):
@@ -841,7 +841,7 @@ object Instantiator {
   // See NBIFP
   private def hoistBoundsFromParameterInner(
     parameterDenizenBoundToDenizenCallerSuppliedThing: DenizenBoundToDenizenCallerBoundArg,
-    calleeRuneToBoundArgT: InstantiationBoundArguments,
+    calleeRuneToBoundArgT: InstantiationBoundArgumentsT,
     calleeRuneToCalleeFunctionBoundT: Map[IRuneS, IdT[FunctionBoundNameT]],
     calleeRuneToCalleeImplBoundT: Map[IRuneS, IdT[ImplBoundNameT]]):
   DenizenBoundToDenizenCallerBoundArg = {
@@ -1066,8 +1066,8 @@ class Instantiator(
     // This contains a map from rune to a prototype, specifically the prototype that we
     // (the *template* caller) is supplying to the *template* callee. This prototype might
     // be a placeholder, phrased in terms of our (the *template* caller's) placeholders
-    instantiationBoundArgsForCallUnsubstituted: InstantiationBoundArguments):
-  InstantiationBoundArguments = {
+    instantiationBoundArgsForCallUnsubstituted: InstantiationBoundArgumentsT):
+  InstantiationBoundArgumentsT = {
     val runeToSuppliedPrototypeForCallUnsubstituted =
       instantiationBoundArgsForCallUnsubstituted.runeToFunctionBoundArg
     val runeToSuppliedPrototypeForCall =
@@ -1110,7 +1110,7 @@ class Instantiator(
       })
     // And now we have a map from the callee's rune to the *instantiated* callee's impls.
 
-    InstantiationBoundArguments(runeToSuppliedPrototypeForCall, runeToSuppliedImplForCall)
+    InstantiationBoundArgumentsT(runeToSuppliedPrototypeForCall, runeToSuppliedImplForCall)
   }
 
   def translateStructDefinition(
@@ -1655,7 +1655,7 @@ class Instantiator(
 
   def translateStructFullName(
     fullNameT: IdT[IStructNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   IdT[IStructNameT] = {
     val IdT(module, steps, lastT) = fullNameT
 
@@ -1674,7 +1674,7 @@ class Instantiator(
 
   def translateInterfaceFullName(
     fullNameT: IdT[IInterfaceNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   IdT[IInterfaceNameT] = {
     val IdT(module, steps, last) = fullNameT
     val newFullName =
@@ -1699,7 +1699,7 @@ class Instantiator(
 
   def translateCitizenFullName(
     fullName: IdT[ICitizenNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   IdT[ICitizenNameT] = {
     fullName match {
       case IdT(module, steps, last : IStructNameT) => {
@@ -1714,7 +1714,7 @@ class Instantiator(
 
   def translateImplFullName(
     fullNameT: IdT[IImplNameT],
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   IdT[IImplNameT] = {
     val IdT(module, steps, last) = fullNameT
     val fullName =
@@ -1822,14 +1822,14 @@ class Instantiator(
     }
   }
 
-  def translateCitizen(citizen: ICitizenTT, instantiationBoundArgs: InstantiationBoundArguments): ICitizenTT = {
+  def translateCitizen(citizen: ICitizenTT, instantiationBoundArgs: InstantiationBoundArgumentsT): ICitizenTT = {
     citizen match {
       case s @ StructTT(_) => translateStruct(s, instantiationBoundArgs)
       case s @ InterfaceTT(_) => translateInterface(s, instantiationBoundArgs)
     }
   }
 
-  def translateStruct(struct: StructTT, instantiationBoundArgs: InstantiationBoundArguments): StructTT = {
+  def translateStruct(struct: StructTT, instantiationBoundArgs: InstantiationBoundArgumentsT): StructTT = {
     val StructTT(fullName) = struct
 
     val desiredStruct = interner.intern(StructTT(translateStructFullName(fullName, instantiationBoundArgs)))
@@ -1837,7 +1837,7 @@ class Instantiator(
     desiredStruct
   }
 
-  def translateInterface(interface: InterfaceTT, instantiationBoundArgs: InstantiationBoundArguments): InterfaceTT = {
+  def translateInterface(interface: InterfaceTT, instantiationBoundArgs: InstantiationBoundArgumentsT): InterfaceTT = {
     val InterfaceTT(fullName) = interface
 
     val desiredInterface = interner.intern(InterfaceTT(translateInterfaceFullName(fullName, instantiationBoundArgs)))
@@ -2038,7 +2038,7 @@ class Instantiator(
 
   def translateImplName(
     name: IImplNameT,
-    instantiationBoundArgs: InstantiationBoundArguments):
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
   IImplNameT = {
     name match {
       case ImplNameT(ImplTemplateNameT(codeLocationS), templateArgs, subCitizen) => {

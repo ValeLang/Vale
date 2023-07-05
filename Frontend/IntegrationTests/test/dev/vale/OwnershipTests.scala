@@ -29,7 +29,7 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.only(main, {
       case letTE @ LetAndLendTE(ReferenceLocalVariableT(TypingPassTemporaryVarNameT(_),FinalT,_),refExpr,targetOwnership) => {
         refExpr.result.coord match {
-          case CoordT(OwnT, StructTT(simpleName("Muta"))) =>
+          case CoordT(OwnT, _, StructTT(simpleName("Muta"))) =>
         }
         targetOwnership shouldEqual BorrowT
         letTE.result.coord.ownership shouldEqual BorrowT
@@ -179,7 +179,7 @@ class OwnershipTests extends FunSuite with Matchers {
       vassertOne(
         coutputs.functions.find(func => {
           func.header.id.localName match {
-            case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
+            case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, _, StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
             case _ => false
           }
         }))

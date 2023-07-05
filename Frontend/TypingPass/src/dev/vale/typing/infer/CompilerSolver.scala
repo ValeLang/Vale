@@ -415,13 +415,14 @@ class CompilerRuleSolver(
               unsolvedRules.collect({
                 case AugmentSR(range, resultRune, ownership, innerRune)
                   if resultRune.rune == receiver => {
-                  types.CoordT(
+                  CoordT(
                     Conversions.evaluateOwnership(vassertSome(ownership)),
+                    GlobalRegionT(),
                     receiverInstantiationKind)
                 }
               }) ++
-                senderConclusions.map(_._2).map({ case CoordT(ownership, _) =>
-                  types.CoordT(ownership, receiverInstantiationKind)
+                senderConclusions.map(_._2).map({ case CoordT(ownership, _, _) =>
+                  CoordT(ownership, GlobalRegionT(), receiverInstantiationKind)
                 })
             if (possibleCoords.nonEmpty) {
               val ownership =
@@ -430,7 +431,7 @@ class CompilerRuleSolver(
                   case Vector(ownership) => ownership
                   case _ => return Err(RuleError(ReceivingDifferentOwnerships(senderConclusions)))
                 }
-              Some(receiver -> CoordTemplataT(types.CoordT(ownership, receiverInstantiationKind)))
+              Some(receiver -> CoordTemplataT(CoordT(ownership, GlobalRegionT(), receiverInstantiationKind)))
             } else {
               // Just conclude a kind, which will coerce to an owning coord, and hope it's right.
               Some(receiver -> templata.KindTemplataT(receiverInstantiationKind))
@@ -577,16 +578,16 @@ class CompilerRuleSolver(
             val KindTemplataT(kind) = vassertSome(stepState.getConclusion(kindRune.rune))
             val newCoord =
               delegate.getMutability(state, kind) match {
-                case MutabilityTemplataT(ImmutableT) => CoordT(ShareT, kind)
+                case MutabilityTemplataT(ImmutableT) => CoordT(ShareT, GlobalRegionT(), kind)
                 case MutabilityTemplataT(MutableT) | PlaceholderTemplataT(_, MutabilityTemplataType()) => {
-                  CoordT(ownership, kind)
+                  CoordT(ownership, GlobalRegionT(), kind)
                 }
               }
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, resultRune.rune, CoordTemplataT(newCoord))
             Ok(())
           }
           case Some(coord) => {
-            val CoordTemplataT(CoordT(ownership, kind)) = coord
+            val CoordTemplataT(CoordT(ownership, _, kind)) = coord
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, ownershipRune.rune, OwnershipTemplataT(ownership))
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, kindRune.rune, KindTemplataT(kind))
             Ok(())
@@ -688,8 +689,8 @@ class CompilerRuleSolver(
         // If we're here, then we're solving in the definition, not the callsite.
         // Skip checking that they match, just assume they do.
 
-        val CoordTemplataT(CoordT(_, subKindUnchecked)) = vassertSome(stepState.getConclusion(subRune.rune))
-        val CoordTemplataT(CoordT(_, superKindUnchecked)) = vassertSome(stepState.getConclusion(superRune.rune))
+        val CoordTemplataT(CoordT(_, _, subKindUnchecked)) = vassertSome(stepState.getConclusion(subRune.rune))
+        val CoordTemplataT(CoordT(_, _, superKindUnchecked)) = vassertSome(stepState.getConclusion(superRune.rune))
 
         val subKind =
           subKindUnchecked match {
@@ -1008,7 +1009,7 @@ class CompilerRuleSolver(
         template match {
           case RuntimeSizedArrayTemplateTemplataT() => {
             result match {
-              case CoordTemplataT(CoordT(ShareT | OwnT, contentsRuntimeSizedArrayTT(mutability, memberType))) => {
+              case CoordTemplataT(CoordT(ShareT | OwnT, _, contentsRuntimeSizedArrayTT(mutability, memberType))) => {
                 if (argRunes.size != 2) {
                   return Err(WrongNumberOfTemplateArgs(2))
                 }
@@ -1028,7 +1029,7 @@ class CompilerRuleSolver(
           }
           case StaticSizedArrayTemplateTemplataT() => {
             result match {
-              case CoordTemplataT(CoordT(ShareT | OwnT, contentsStaticSizedArrayTT(size, mutability, variability, memberType))) => {
+              case CoordTemplataT(CoordT(ShareT | OwnT, _, contentsStaticSizedArrayTT(size, mutability, variability, memberType))) => {
                 if (argRunes.size != 4) {
                   return Err(WrongNumberOfTemplateArgs(4))
                 }
@@ -1065,7 +1066,7 @@ class CompilerRuleSolver(
                 })
                 Ok(())
               }
-              case CoordTemplataT(CoordT(OwnT | ShareT, interface@InterfaceTT(_))) => {
+              case CoordTemplataT(CoordT(OwnT | ShareT, _, interface@InterfaceTT(_))) => {
                 if (!delegate.kindIsFromTemplate(state, interface, it)) {
                   return Err(CallResultWasntExpectedType(it, result))
                 }
@@ -1089,7 +1090,7 @@ class CompilerRuleSolver(
                 })
                 Ok(())
               }
-              case CoordTemplataT(CoordT(OwnT | ShareT, instantiationInterface@InterfaceTT(_))) => {
+              case CoordTemplataT(CoordT(OwnT | ShareT, _, instantiationInterface@InterfaceTT(_))) => {
                 if (templateInterface != instantiationInterface) {
                   return Err(CallResultWasntExpectedType(it, result))
                 }
@@ -1113,7 +1114,7 @@ class CompilerRuleSolver(
                 })
                 Ok(())
               }
-              case CoordTemplataT(CoordT(OwnT | ShareT, struct@StructTT(_))) => {
+              case CoordTemplataT(CoordT(OwnT | ShareT, _, struct@StructTT(_))) => {
                 if (!delegate.kindIsFromTemplate(state, struct, st)) {
                   return Err(CallResultWasntExpectedType(st, result))
                 }
@@ -1137,7 +1138,7 @@ class CompilerRuleSolver(
                 })
                 Ok(())
               }
-              case CoordTemplataT(CoordT(OwnT | ShareT, instantiationStruct@StructTT(_))) => {
+              case CoordTemplataT(CoordT(OwnT | ShareT, _, instantiationStruct@StructTT(_))) => {
                 if (structTT != instantiationStruct) {
                   return Err(CallResultWasntExpectedType(it, result))
                 }

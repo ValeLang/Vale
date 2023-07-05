@@ -6,14 +6,14 @@ import dev.vale.postparsing.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.types._
-import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, StrI, vassert, vassertOne, vassertSome, vimpl}
+import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, StrI, vassert, vassertOne, vassertSome, vimpl, vregionmut}
 import dev.vale.typing.types._
 import dev.vale.typing.templata.{ITemplataT, _}
 import OverloadResolver.FindFunctionFailure
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.typing.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
-import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentBoxT, GlobalEnvironment, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox, PackageEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{IdT, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, RuntimeSizedArrayTemplateNameT, SelfNameT, StaticSizedArrayNameT, StaticSizedArrayTemplateNameT}
+import dev.vale.typing.env._
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.StructCompilerCore
@@ -204,15 +204,6 @@ class ArrayCompiler(
           }
         })
 
-        val resultCoord =
-          CoordT(
-            mutability match {
-              case MutabilityTemplataT(MutableT) => OwnT
-              case MutabilityTemplataT(ImmutableT) => ShareT
-              case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
-            },
-            rsaMT)
-
         NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
       }
       case MutabilityTemplataT(MutableT) => {
@@ -366,7 +357,7 @@ class ArrayCompiler(
         case PlaceholderTemplataT(_, MutabilityTemplataType()) => OwnT
       }
 
-    val ssaCoord = CoordT(ownership, staticSizedArrayType)
+    val ssaCoord = CoordT(ownership, GlobalRegionT(), staticSizedArrayType)
 
     val finalExpr =
       StaticArrayFromValuesTE(
@@ -383,7 +374,7 @@ class ArrayCompiler(
   DestroyStaticSizedArrayIntoFunctionTE = {
     val arrayTT =
       arrTE.result.coord match {
-        case CoordT(_, s @ contentsStaticSizedArrayTT(_, _, _, _)) => s
+        case CoordT(_, _, s @ contentsStaticSizedArrayTT(_, _, _, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
@@ -409,7 +400,7 @@ class ArrayCompiler(
   DestroyImmRuntimeSizedArrayTE = {
     val arrayTT =
       arrTE.result.coord match {
-        case CoordT(_, s @ contentsRuntimeSizedArrayTT(_, _)) => s
+        case CoordT(_, _, s @ contentsRuntimeSizedArrayTT(_, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
@@ -590,7 +581,7 @@ class ArrayCompiler(
     rsa: RuntimeSizedArrayTT
   ): RuntimeSizedArrayLookupTE = {
     val contentsRuntimeSizedArrayTT(mutability, memberType) = rsa
-    if (indexExpr2.result.coord != CoordT(ShareT, IntT(32))) {
+    if (indexExpr2.result.coord != CoordT(ShareT, GlobalRegionT(), IntT(32))) {
       throw CompileErrorExceptionT(IndexedArrayWithNonInteger(range :: parentRanges, indexExpr2.result.coord))
     }
     val variability =

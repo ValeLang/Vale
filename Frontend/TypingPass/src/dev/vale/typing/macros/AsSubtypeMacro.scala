@@ -35,8 +35,8 @@ class AsSubtypeMacro(
     val header =
       FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
 
-    val CoordTemplataT(CoordT(_, targetKind)) = vassertSome(env.id.localName.templateArgs.headOption)
-    val CoordT(incomingOwnership, _) = vassertSome(env.id.localName.parameters.headOption)
+    val CoordTemplataT(CoordT(_, _, targetKind)) = vassertSome(env.id.localName.templateArgs.headOption)
+    val CoordT(incomingOwnership, _, _) = vassertSome(env.id.localName.parameters.headOption)
 
     val incomingCoord = paramCoords(0).tyype
     val incomingKind = incomingCoord.kind
@@ -44,8 +44,8 @@ class AsSubtypeMacro(
     // Because we dont yet put borrows in structs
 //    val resultOwnership = incomingCoord.ownership
     val resultOwnership = incomingOwnership
-    val successCoord = CoordT(resultOwnership, targetKind)
-    val failCoord = CoordT(resultOwnership, incomingKind)
+    val successCoord = CoordT(resultOwnership, GlobalRegionT(), targetKind)
+    val failCoord = CoordT(resultOwnership, GlobalRegionT(), incomingKind)
     val (resultCoord, okConstructor, okResultImpl, errConstructor, errResultImpl) =
       expressionCompiler.getResult(coutputs, env, callRange, successCoord, failCoord)
     if (resultCoord != vassertSome(maybeRetCoord)) {

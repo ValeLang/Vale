@@ -62,7 +62,9 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/)
  * [Pierre Curto](https://github.com/pierrec)
  * [Love Jesus](https://github.com/loveJesus)
-
+ * [J. Ryan Stinnett](https://github.com/jryans)
+ * [Cristian Dinu](https://github.com/cdinu)
+ * [Florian Plattner](https://github.com/lasernoises)
 
 # Notes
 

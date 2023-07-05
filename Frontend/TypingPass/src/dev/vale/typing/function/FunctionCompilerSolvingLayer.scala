@@ -57,7 +57,7 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     originalCallingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT],
     verifyConclusions: Boolean):
   (IEvaluateFunctionResult) = {
@@ -94,8 +94,8 @@ class FunctionCompilerSolvingLayer(
       middleLayer.getOrEvaluateFunctionForHeader(
         outerEnv, runedEnv, coutputs, callRange, function)
 
-    coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
-    EvaluateFunctionSuccess(PrototypeTemplata(function.range, header.toPrototype), inferredTemplatas)
+    coutputs.addInstantiationBounds(header.toPrototype.id, runeToFunctionBound)
+    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, header.toPrototype), inferredTemplatas)
   }
 
   // Preconditions:
@@ -107,7 +107,7 @@ class FunctionCompilerSolvingLayer(
       coutputs: CompilerOutputs,
       originalCallingEnv: IEnvironment, // See CSSNCE
       callRange: List[RangeS],
-      alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
+      alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     val function = declaringEnv.function
@@ -144,7 +144,7 @@ class FunctionCompilerSolvingLayer(
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
         declaringEnv, runedEnv, coutputs, callRange, function)
 
-    coutputs.addInstantiationBounds(prototype.prototype.fullName, runeToFunctionBound)
+    coutputs.addInstantiationBounds(prototype.prototype.id, runeToFunctionBound)
 
     EvaluateFunctionSuccess(prototype, inferredTemplatas)
   }
@@ -158,7 +158,7 @@ class FunctionCompilerSolvingLayer(
       coutputs: CompilerOutputs,
     originalCallingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-      explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+      explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     val function = nearEnv.function
@@ -197,13 +197,13 @@ class FunctionCompilerSolvingLayer(
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
         nearEnv, runedEnv, coutputs, callRange, function)
 
-    coutputs.addInstantiationBounds(prototypeTemplata.prototype.fullName, runeToFunctionBound)
+    coutputs.addInstantiationBounds(prototypeTemplata.prototype.id, runeToFunctionBound)
     EvaluateFunctionSuccess(prototypeTemplata, inferences)
   }
 
   private def assembleKnownTemplatas(
     function: FunctionA,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   Vector[InitialKnown] = {
     function.genericParameters.zip(explicitTemplateArgs).map({
       case (genericParam, explicitArg) => {
@@ -231,11 +231,11 @@ class FunctionCompilerSolvingLayer(
   private def addRunedDataToNearEnv(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     identifyingRunes: Vector[IRuneS],
-    templatasByRune: Map[IRuneS, ITemplata[ITemplataType]],
-    reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplata]
+    templatasByRune: Map[IRuneS, ITemplataT[ITemplataType]],
+    reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplataT]
     // I suspect we'll eventually need some impl bounds here
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs = {
-    val BuildingFunctionEnvironmentWithClosureds(globalEnv, parentEnv, fullName, templatas, function, variables, isRootCompilingDenizen) = nearEnv
+    val BuildingFunctionEnvironmentWithClosureds(globalEnv, parentEnv, id, templatas, function, variables, isRootCompilingDenizen) = nearEnv
 
     val identifyingTemplatas = identifyingRunes.map(templatasByRune)
 
@@ -248,7 +248,7 @@ class FunctionCompilerSolvingLayer(
           .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) }))
 
     BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
-      globalEnv, parentEnv, fullName, identifyingTemplatas, newEntries, function, variables, isRootCompilingDenizen)
+      globalEnv, parentEnv, id, identifyingTemplatas, newEntries, function, variables, isRootCompilingDenizen)
   }
 
   // We would want only the prototype instead of the entire header if, for example,
@@ -263,7 +263,7 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[Option[CoordT]]):
   (IEvaluateFunctionResult) = {
     val function = outerEnv.function
@@ -305,9 +305,9 @@ class FunctionCompilerSolvingLayer(
       middleLayer.getGenericFunctionPrototypeFromCall(
         runedEnv, coutputs, callRange, function)
 
-    coutputs.addInstantiationBounds(prototype.fullName, runeToFunctionBound)
+    coutputs.addInstantiationBounds(prototype.id, runeToFunctionBound)
 
-    EvaluateFunctionSuccess(PrototypeTemplata(function.range, prototype), inferredTemplatas)
+    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, prototype), inferredTemplatas)
   }
 
   def evaluateGenericFunctionParentForPrototype(
@@ -380,7 +380,7 @@ class FunctionCompilerSolvingLayer(
             vimpl()
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, callingEnv, callingEnv.fullName, genericParam, index, function.runeToType, false)
+                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, false)
             Some(InitialKnown(genericParam.rune, templata))
           }
         }
@@ -408,7 +408,7 @@ class FunctionCompilerSolvingLayer(
 
     // Usually when we call a function, we add instantiation bounds. However, we're
     // not calling a function here, we're defining it.
-    EvaluateFunctionSuccess(PrototypeTemplata(function.range, prototype), inferences)
+    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, prototype), inferences)
   }
 
   // Preconditions:
@@ -425,8 +425,8 @@ class FunctionCompilerSolvingLayer(
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
 
-    val functionTemplateFullName =
-      nearEnv.parentEnv.fullName.addStep(
+    val functionTemplateId =
+      nearEnv.parentEnv.id.addStep(
         nameTranslator.translateGenericFunctionName(nearEnv.function.name))
 
     val definitionRules = function.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
@@ -451,7 +451,7 @@ class FunctionCompilerSolvingLayer(
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, nearEnv, functionTemplateFullName, genericParam, index, function.runeToType, true)
+                coutputs, nearEnv, functionTemplateId, genericParam, index, function.runeToType, true)
             solver.manualStep(Map(genericParam.rune.rune -> templata))
             true
           }
@@ -488,7 +488,7 @@ class FunctionCompilerSolvingLayer(
       .flatMap({
         case ((_, None), _) => None
         case ((paramRune, Some(argTemplata)), argIndex) => {
-          Some(InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplata(argTemplata)))
+          Some(InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplataT(argTemplata)))
         }
       })
   }

@@ -5,11 +5,11 @@ import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassert
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ConvertHelper, DeferredEvaluatingFunctionBody, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, LocationInFunctionEnvironment, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
+import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
 import dev.vale.typing.env._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names.{ExternFunctionNameT, IdT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, NameTranslator, RuneNameT}
-import dev.vale.typing.templata.CoordTemplata
+import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
 import dev.vale.highertyping._
 import dev.vale.typing.types._
@@ -37,7 +37,7 @@ class FunctionCompilerCore(
       coutputs: CompilerOutputs,
       startingNenv: NodeEnvironment,
       nenv: NodeEnvironmentBox,
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
@@ -47,7 +47,7 @@ class FunctionCompilerCore(
     override def translatePatternList(
       coutputs: CompilerOutputs,
       nenv: NodeEnvironmentBox,
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
@@ -69,14 +69,14 @@ class FunctionCompilerCore(
 //    opts.debugOut("Evaluating function " + fullEnv.fullName)
 
 //    val functionTemplateName = TemplataCompiler.getFunctionTemplate(fullEnv.fullName)
-    val functionTemplateName = fullEnv.fullName
+    val functionTemplateName = fullEnv.id
 
-    val life = LocationInFunctionEnvironment(Vector())
+    val life = LocationInFunctionEnvironmentT(Vector())
 
     val isDestructor =
       params2.nonEmpty &&
         params2.head.tyype.ownership == OwnT &&
-        (fullEnv.fullName.localName match {
+        (fullEnv.id.localName match {
           case FunctionNameT(humanName, _, _) if humanName == keywords.drop => true
           case _ => false
         })
@@ -84,7 +84,7 @@ class FunctionCompilerCore(
     val maybeExport =
       fullEnv.function.attributes.collectFirst { case e@ExportS(_) => e }
 
-    val signature2 = SignatureT(fullEnv.fullName);
+    val signature2 = SignatureT(fullEnv.id);
     val maybeRetTemplata =
       fullEnv.function.maybeRetCoordRune match {
         case None => (None)
@@ -95,7 +95,7 @@ class FunctionCompilerCore(
     val maybeRetCoord =
       maybeRetTemplata match {
         case None => (None)
-        case Some(CoordTemplata(retCoord)) => {
+        case Some(CoordTemplataT(retCoord)) => {
           coutputs.declareFunctionReturnType(signature2, retCoord)
           (Some(retCoord))
         }
@@ -140,12 +140,12 @@ class FunctionCompilerCore(
           val header =
             makeExternFunction(
               coutputs,
-              fullEnv.fullName,
+              fullEnv.id,
               fullEnv.function.range,
               translateFunctionAttributes(fullEnv.function.attributes),
               params2,
               retCoord,
-              Some(FunctionTemplata(fullEnv.parentEnv, fullEnv.function)))
+              Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)))
           (header)
         }
         case AbstractBodyS | GeneratedBodyS(_) => {
@@ -214,11 +214,11 @@ class FunctionCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          fullEnv.fullName.localName match {
+          fullEnv.id.localName match {
             case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
-        coutputs.addInstantiationBounds(header.toPrototype.fullName, InstantiationBoundArguments(Map(), Map()))
+        coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArguments(Map(), Map()))
         coutputs.addFunctionExport(
           fullEnv.function.range,
           header.toPrototype,
@@ -249,22 +249,22 @@ class FunctionCompilerCore(
       params2: Vector[ParameterT]):
   (PrototypeT) = {
     getFunctionPrototypeInnerForCall(
-      fullEnv, fullEnv.fullName)
+      fullEnv, fullEnv.id)
   }
 
   def getFunctionPrototypeInnerForCall(
     fullEnv: FunctionEnvironment,
-    fullName: IdT[IFunctionNameT]):
+    id: IdT[IFunctionNameT]):
   PrototypeT = {
     val retCoordRune = vassertSome(fullEnv.function.maybeRetCoordRune)
     val returnCoord =
       fullEnv.lookupNearestWithImpreciseName(
         interner.intern(RuneNameS(retCoordRune.rune)),
         Set(TemplataLookupContext))  match {
-        case Some(CoordTemplata(retCoord)) => retCoord
+        case Some(CoordTemplataT(retCoord)) => retCoord
         case other => vwat(other)
       }
-    PrototypeT(fullName, returnCoord)
+    PrototypeT(id, returnCoord)
   }
 
   def finalizeHeader(
@@ -273,7 +273,7 @@ class FunctionCompilerCore(
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
       returnCoord: CoordT) = {
-    val header = FunctionHeaderT(fullEnv.fullName, attributesT, paramsT, returnCoord, Some(FunctionTemplata(fullEnv.parentEnv, fullEnv.function)));
+    val header = FunctionHeaderT(fullEnv.id, attributesT, paramsT, returnCoord, Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)));
     coutputs.declareFunctionReturnType(header.toSignature, returnCoord)
     header
   }
@@ -283,7 +283,7 @@ class FunctionCompilerCore(
       coutputs: CompilerOutputs,
       fullEnvSnapshot: FunctionEnvironment,
       callRange: List[RangeS],
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
       isDestructor: Boolean,
@@ -335,27 +335,27 @@ class FunctionCompilerCore(
 
   def makeExternFunction(
       coutputs: CompilerOutputs,
-      fullName: IdT[IFunctionNameT],
+      id: IdT[IFunctionNameT],
       range: RangeS,
       attributes: Vector[IFunctionAttributeT],
       params2: Vector[ParameterT],
       returnType2: CoordT,
-      maybeOrigin: Option[FunctionTemplata]):
+      maybeOrigin: Option[FunctionTemplataT]):
   (FunctionHeaderT) = {
-    fullName.localName match {
+    id.localName match {
       case FunctionNameT(FunctionTemplateNameT(humanName, _), Vector(), params) => {
         val header =
           ast.FunctionHeaderT(
-            fullName,
+            id,
             Vector(ExternT(range.file.packageCoordinate)) ++ attributes,
             params2,
             returnType2,
             maybeOrigin)
 
-        val externFullName = IdT(fullName.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
-        val externPrototype = PrototypeT(externFullName, header.returnType)
-        coutputs.addFunctionExtern(range, externPrototype, fullName.packageCoord, humanName)
-        coutputs.addInstantiationBounds(externPrototype.fullName, InstantiationBoundArguments(Map(), Map()))
+        val externId = IdT(id.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
+        val externPrototype = PrototypeT(externId, header.returnType)
+        coutputs.addFunctionExtern(range, externPrototype, id.packageCoord, humanName)
+        coutputs.addInstantiationBounds(externPrototype.id, InstantiationBoundArguments(Map(), Map()))
 
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })

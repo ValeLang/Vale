@@ -4,7 +4,7 @@ import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
 import dev.vale.{Accumulator, CodeLocationS, Interner, Keywords, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vregionmut, vwat}
 import dev.vale.parsing.ast.{BorrowP, FinalP, OwnP, UseP}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.{SealedS, _}
+import dev.vale.postparsing._
 import dev.vale.postparsing.rules._
 import dev.vale.typing.{OverloadResolver, TypingPassOptions}
 import dev.vale.typing.citizen.StructCompiler
@@ -20,7 +20,7 @@ import dev.vale.typing.env.PackageEnvironment
 import dev.vale.typing.function.FunctionCompilerCore
 import dev.vale.typing.macros.citizen.StructDropMacro
 import dev.vale.typing.names.AnonymousSubstructImplNameT
-import dev.vale.typing.templata.ExternFunctionTemplata
+import dev.vale.typing.templata.ExternFunctionTemplataT
 import dev.vale.typing.ast
 import dev.vale.typing.types.CoordT
 

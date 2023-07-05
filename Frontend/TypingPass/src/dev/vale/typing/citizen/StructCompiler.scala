@@ -1,12 +1,12 @@
 package dev.vale.typing.citizen
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Interner, Keywords, Profiler, RangeS, vcurious, _}
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.{CompilerOutputs, IIncompleteOrFailedCompilerSolve, InferCompiler, TypingPassOptions, _}
+import dev.vale.typing._
 import dev.vale.typing.names.{IdT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceTemplateNameT, IStructTemplateNameT, ITemplateNameT, NameTranslator, PackageTopLevelNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -20,7 +20,7 @@ import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.ast._
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import dev.vale.typing.templata.ITemplata.expectMutability
+import dev.vale.typing.templata.ITemplataT.expectMutability
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -31,7 +31,7 @@ trait IStructCompilerDelegate {
   def evaluateGenericFunctionFromNonCallForHeader(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-    functionTemplata: FunctionTemplata,
+    functionTemplata: FunctionTemplataT,
     verifyConclusions: Boolean):
   FunctionHeaderT
 
@@ -77,8 +77,8 @@ class StructCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    structTemplata: StructDefinitionTemplata,
-    uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    structTemplata: StructDefinitionTemplataT,
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[StructTT] = {
     Profiler.frame(() => {
       templateArgsLayer.resolveStruct(
@@ -88,20 +88,20 @@ class StructCompiler(
 
   def precompileStruct(
     coutputs: CompilerOutputs,
-    structTemplata: StructDefinitionTemplata):
+    structTemplata: StructDefinitionTemplataT):
   Unit = {
-    val StructDefinitionTemplata(declaringEnv, structA) = structTemplata
+    val StructDefinitionTemplataT(declaringEnv, structA) = structTemplata
 
-    val structTemplateFullName = templataCompiler.resolveStructTemplate(structTemplata)
+    val structTemplateId = templataCompiler.resolveStructTemplate(structTemplata)
 
-    coutputs.declareType(structTemplateFullName)
+    coutputs.declareType(structTemplateId)
 
     structA.maybePredictedMutability match {
       case None =>
       case Some(predictedMutability) => {
         coutputs.declareTypeMutability(
-          structTemplateFullName,
-          MutabilityTemplata(Conversions.evaluateMutability(predictedMutability)))
+          structTemplateId,
+          MutabilityTemplataT(Conversions.evaluateMutability(predictedMutability)))
       }
     }
 
@@ -110,44 +110,44 @@ class StructCompiler(
       CitizenEnvironment(
         declaringEnv.globalEnv,
         declaringEnv,
-        structTemplateFullName,
-        structTemplateFullName,
-        TemplatasStore(structTemplateFullName, Map(), Map())
+        structTemplateId,
+        structTemplateId,
+        TemplatasStore(structTemplateId, Map(), Map())
           .addEntries(
             interner,
             // Merge in any things from the global environment that say they're part of this
             // structs's namespace (see IMRFDI and CODME).
             // StructFreeMacro will put a free function here.
             declaringEnv.globalEnv.nameToTopLevelEnvironment
-              .get(structTemplateFullName.addStep(interner.intern(PackageTopLevelNameT())))
+              .get(structTemplateId.addStep(interner.intern(PackageTopLevelNameT())))
               .toVector
               .flatMap(_.entriesByNameT)))
-    coutputs.declareTypeOuterEnv(structTemplateFullName, outerEnv)
+    coutputs.declareTypeOuterEnv(structTemplateId, outerEnv)
   }
 
   def precompileInterface(
     coutputs: CompilerOutputs,
-    interfaceTemplata: InterfaceDefinitionTemplata):
+    interfaceTemplata: InterfaceDefinitionTemplataT):
   Unit = {
-    val InterfaceDefinitionTemplata(declaringEnv, interfaceA) = interfaceTemplata
+    val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
 
-    val interfaceTemplateFullName = templataCompiler.resolveInterfaceTemplate(interfaceTemplata)
+    val interfaceTemplateId = templataCompiler.resolveInterfaceTemplate(interfaceTemplata)
 
-    coutputs.declareType(interfaceTemplateFullName)
+    coutputs.declareType(interfaceTemplateId)
 
     interfaceA.maybePredictedMutability match {
       case None =>
       case Some(predictedMutability) => {
         coutputs.declareTypeMutability(
-          interfaceTemplateFullName,
-          MutabilityTemplata(Conversions.evaluateMutability(predictedMutability)))
+          interfaceTemplateId,
+          MutabilityTemplataT(Conversions.evaluateMutability(predictedMutability)))
       }
     }
 
     // We do this here because we might compile a virtual function somewhere before we compile the interface.
     // The virtual function will need to know if the type is sealed to know whether it's allowed to be
     // virtual on this interface.
-    coutputs.declareTypeSealed(interfaceTemplateFullName, interfaceA.attributes.contains(SealedS))
+    coutputs.declareTypeSealed(interfaceTemplateId, interfaceA.attributes.contains(SealedS))
 
 
     // We declare the interface's outer environment this early because of MDATOEF.
@@ -155,9 +155,9 @@ class StructCompiler(
       CitizenEnvironment(
         declaringEnv.globalEnv,
         declaringEnv,
-        interfaceTemplateFullName,
-        interfaceTemplateFullName,
-        TemplatasStore(interfaceTemplateFullName, Map(), Map())
+        interfaceTemplateId,
+        interfaceTemplateId,
+        TemplatasStore(interfaceTemplateId, Map(), Map())
           .addEntries(
             interner,
             // TODO: Take those internal methods that were defined inside the interface, and move them to
@@ -170,16 +170,16 @@ class StructCompiler(
               // Merge in any things from the global environment that say they're part of this
               // interface's namespace (see IMRFDI and CODME).
               declaringEnv.globalEnv.nameToTopLevelEnvironment
-                .get(interfaceTemplateFullName.addStep(interner.intern(PackageTopLevelNameT())))
+                .get(interfaceTemplateId.addStep(interner.intern(PackageTopLevelNameT())))
                 .toVector
                 .flatMap(_.entriesByNameT)))
-    coutputs.declareTypeOuterEnv(interfaceTemplateFullName, outerEnv)
+    coutputs.declareTypeOuterEnv(interfaceTemplateId, outerEnv)
   }
 
   def compileStruct(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-    structTemplata: StructDefinitionTemplata):
+    structTemplata: StructDefinitionTemplataT):
   Unit = {
     Profiler.frame(() => {
       templateArgsLayer.compileStruct(coutputs, parentRanges, structTemplata)
@@ -193,8 +193,8 @@ class StructCompiler(
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
-    interfaceTemplata: InterfaceDefinitionTemplata,
-    uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    interfaceTemplata: InterfaceDefinitionTemplataT,
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   (InterfaceTT) = {
     templateArgsLayer.predictInterface(
       coutputs, callingEnv, callRange, interfaceTemplata, uncoercedTemplateArgs)
@@ -207,8 +207,8 @@ class StructCompiler(
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
-    structTemplata: StructDefinitionTemplata,
-    uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    structTemplata: StructDefinitionTemplataT,
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   (StructTT) = {
     templateArgsLayer.predictStruct(
       coutputs, callingEnv, callRange, structTemplata, uncoercedTemplateArgs)
@@ -220,8 +220,8 @@ class StructCompiler(
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
-    interfaceTemplata: InterfaceDefinitionTemplata,
-    uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    interfaceTemplata: InterfaceDefinitionTemplataT,
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[InterfaceTT] = {
     val success =
       templateArgsLayer.resolveInterface(
@@ -236,12 +236,12 @@ class StructCompiler(
     callRange: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
-    citizenTemplata: CitizenDefinitionTemplata,
-    uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+    citizenTemplata: CitizenDefinitionTemplataT,
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[ICitizenTT] = {
     citizenTemplata match {
-      case st @ StructDefinitionTemplata(_, _) => resolveStruct(coutputs, callingEnv, callRange, st, uncoercedTemplateArgs)
-      case it @ InterfaceDefinitionTemplata(_, _) => resolveInterface(coutputs, callingEnv, callRange, it, uncoercedTemplateArgs)
+      case st @ StructDefinitionTemplataT(_, _) => resolveStruct(coutputs, callingEnv, callRange, st, uncoercedTemplateArgs)
+      case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterface(coutputs, callingEnv, callRange, it, uncoercedTemplateArgs)
     }
   }
 
@@ -250,7 +250,7 @@ class StructCompiler(
     parentRanges: List[RangeS],
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
-    interfaceTemplata: InterfaceDefinitionTemplata):
+    interfaceTemplata: InterfaceDefinitionTemplataT):
   Unit = {
     templateArgsLayer.compileInterface(
       coutputs, parentRanges, interfaceTemplata)
@@ -264,7 +264,7 @@ class StructCompiler(
     name: IFunctionDeclarationNameS,
     functionS: FunctionA,
     members: Vector[NormalStructMemberT]):
-  (StructTT, MutabilityT, FunctionTemplata) = {
+  (StructTT, MutabilityT, FunctionTemplataT) = {
 //    Profiler.reentrant("StructCompiler-makeClosureUnderstruct", name.codeLocation.toString, () => {
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, coutputs, parentRanges, name, functionS, members)
 //    })
@@ -298,13 +298,13 @@ object StructCompiler {
     coutputs: CompilerOutputs,
     structTT: StructTT,
     boundArgumentsSource: IBoundArgumentsSource):
-  ITemplata[MutabilityTemplataType] = {
-    val definition = coutputs.lookupStruct(structTT.fullName)
+  ITemplataT[MutabilityTemplataType] = {
+    val definition = coutputs.lookupStruct(structTT.id)
     val transformer =
       TemplataCompiler.getPlaceholderSubstituter(
         interner, keywords,
-        structTT.fullName, boundArgumentsSource)
+        structTT.id, boundArgumentsSource)
     val result = transformer.substituteForTemplata(coutputs, definition.mutability)
-    ITemplata.expectMutability(result)
+    ITemplataT.expectMutability(result)
   }
 }

@@ -5,7 +5,7 @@ import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing.rules._
 import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
 import dev.vale.postparsing._
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment, FunctionEnvironmentBox, ReferenceLocalVariableT}
 import dev.vale.typing.{Compiler, CompilerOutputs, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, ast, env}
 import dev.vale.typing.expression.CallCompiler
@@ -17,7 +17,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.macros.IOnStructDefinedMacro
 import dev.vale.typing.names.INameT
 import dev.vale.typing.types._
-import dev.vale.typing.templata.{ITemplata, MutabilityTemplata, PlaceholderTemplata}
+import dev.vale.typing.templata.{ITemplataT, MutabilityTemplataT, PlaceholderTemplataT}
 
 import scala.collection.mutable
 
@@ -155,7 +155,7 @@ class StructDropMacro(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction1: Option[FunctionA],
     params2: Vector[ParameterT],
@@ -168,17 +168,17 @@ class StructDropMacro(
         case structTT @ StructTT(_) => structTT
         case other => vwat(other)
       }
-    val structDef = coutputs.lookupStruct(structTT.fullName)
+    val structDef = coutputs.lookupStruct(structTT.id)
     val structOwnership =
       structDef.mutability match {
-        case MutabilityTemplata(MutableT) => OwnT
-        case MutabilityTemplata(ImmutableT) => ShareT
-        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => OwnT
+        case MutabilityTemplataT(MutableT) => OwnT
+        case MutabilityTemplataT(ImmutableT) => ShareT
+        case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
       }
     val structType = CoordT(structOwnership, structTT)
 
     val ret = CoordT(ShareT, VoidT())
-    val header = ast.FunctionHeaderT(env.fullName, Vector.empty, params2, ret, Some(env.templata))
+    val header = ast.FunctionHeaderT(env.id, Vector.empty, params2, ret, Some(env.templata))
 
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
@@ -187,15 +187,15 @@ class StructDropMacro(
         Compiler.consecutive(
           Vector(
             structDef.mutability match {
-              case MutabilityTemplata(ImmutableT) => DiscardTE(ArgLookupTE(0, structType))
-              case MutabilityTemplata(MutableT) | PlaceholderTemplata(_, _) => {
+              case MutabilityTemplataT(ImmutableT) => DiscardTE(ArgLookupTE(0, structType))
+              case MutabilityTemplataT(MutableT) | PlaceholderTemplataT(_, _) => {
                 val memberLocalVariables =
                   structDef.members.flatMap({
                     case NormalStructMemberT(name, _, ReferenceMemberTypeT(unsubstitutedReference)) => {
                       val substituter =
                         TemplataCompiler.getPlaceholderSubstituter(
                           interner, keywords,
-                          structTT.fullName,
+                          structTT.id,
                           // We received an instance of this type, so we can use the bounds from it.
                           InheritBoundsFromTypeItself)
                       val reference = substituter.substituteForCoord(coutputs, unsubstitutedReference)

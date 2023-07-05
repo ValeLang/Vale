@@ -4,7 +4,7 @@ import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.IIncompleteOrFailedSolve
 import dev.vale.typing.infer.ITypingPassSolverError
-import dev.vale.typing.templata.ITemplata
+import dev.vale.typing.templata.ITemplataT
 import dev.vale.{PackageCoordinate, RangeS, vbreak, vcurious, vfail, vpass}
 import dev.vale.typing.types._
 import dev.vale.postparsing.RuneTypeSolveError
@@ -47,7 +47,7 @@ case class CantReconcileBranchesResults(range: List[RangeS], thenResult: CoordT,
 }
 case class IndexedArrayWithNonInteger(range: List[RangeS], types: CoordT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class WrongNumberOfDestructuresError(range: List[RangeS], actualNum: Int, expectedNum: Int) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class CantDowncastUnrelatedTypes(range: List[RangeS], sourceKind: KindT, targetKind: KindT, candidates: Vector[IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]]) extends ICompileErrorT {
+case class CantDowncastUnrelatedTypes(range: List[RangeS], sourceKind: KindT, targetKind: KindT, candidates: Vector[IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]]) extends ICompileErrorT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
@@ -118,8 +118,8 @@ case class TypingPassSolverError(range: List[RangeS], failedSolve: IIncompleteOr
   vpass()
 }
 //case class CompilerSolverConflict(range: List[RangeS], conclusions: Map[IRuneS, ITemplata[ITemplataType]], rune: IRuneS, conflictingNewConclusion: ITemplata[ITemplataType]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class CantImplNonInterface(range: List[RangeS], templata: ITemplata[ITemplataType]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class NonCitizenCantImpl(range: List[RangeS], templata: ITemplata[ITemplataType]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CantImplNonInterface(range: List[RangeS], templata: ITemplataT[ITemplataType]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class NonCitizenCantImpl(range: List[RangeS], templata: ITemplataT[ITemplataType]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 case class RangedInternalErrorT(range: List[RangeS], message: String) extends ICompileErrorT {

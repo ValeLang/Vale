@@ -3,7 +3,7 @@ package dev.vale.typing.macros.rsa
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerErrorHumanizer, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, NewImmRuntimeSizedArrayTE, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, NewImmRuntimeSizedArrayTE, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, TemplataLookupContext}
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.templata._
@@ -13,7 +13,7 @@ import dev.vale.postparsing.CodeRuneS
 import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.function.DestructorCompiler
-import dev.vale.typing.templata.PrototypeTemplata
+import dev.vale.typing.templata.PrototypeTemplataT
 import dev.vale.typing.types._
 
 
@@ -30,7 +30,7 @@ class RSAImmutableNewMacro(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     generatorId: StrI,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
@@ -38,16 +38,16 @@ class RSAImmutableNewMacro(
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
       FunctionHeaderT(
-        env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+        env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
-    val CoordTemplata(elementType) =
+    val CoordTemplataT(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
           interner.intern(RuneNameS(CodeRuneS(keywords.E))), Set(TemplataLookupContext)))
 
     val mutability =
-      ITemplata.expectMutability(
+      ITemplataT.expectMutability(
         vassertSome(
           env.lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(CodeRuneS(keywords.M))), Set(TemplataLookupContext))))

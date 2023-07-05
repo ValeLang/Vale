@@ -3,13 +3,13 @@ package dev.vale.typing.expression
 import dev.vale
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.highertyping.{CompileErrorExceptionA, CouldntSolveRulesA, FunctionA, PatternSUtils}
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat, _}
+import dev.vale._
 import dev.vale.parsing.ast.{LoadAsBorrowP, LoadAsP, LoadAsWeakP, MoveP, UseP}
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CannotSubscriptT, CantMoveFromGlobal, CantMutateFinalElement, CantMutateFinalMember, CantReconcileBranchesResults, CantUnstackifyOutsideLocalFromInsideWhile, CantUseUnstackifiedLocal, CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntConvertForMutateT, CouldntConvertForReturnT, CouldntFindIdentifierToLoadT, CouldntFindMemberT, HigherTypingInferError, IfConditionIsntBoolean, InferCompiler, OverloadResolver, RangedInternalErrorT, SequenceCompiler, TemplataCompiler, TypingPassOptions, ast, templata}
-import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReinterpretTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, VoidLiteralTE, WhileTE}
+import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironmentT, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReinterpretTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, VoidLiteralTE, WhileTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent, StructCompiler}
 import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, ExpressionLookupContext, FunctionEnvironment, IEnvironment, ILocalVariableT, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.function.DestructorCompiler
@@ -39,8 +39,8 @@ trait IExpressionCompilerDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT]):
   IEvaluateFunctionResult
 
@@ -48,8 +48,8 @@ trait IExpressionCompilerDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
-    functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+    functionTemplata: FunctionTemplataT,
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT]):
   IEvaluateFunctionResult
 
@@ -86,7 +86,7 @@ class ExpressionCompiler(
     override def evaluateAndCoerceToReferenceExpression(
       coutputs: CompilerOutputs,
       nenv: NodeEnvironmentBox,
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       expr1: IExpressionSE):
     (ReferenceExpressionTE, Set[CoordT]) = {
@@ -99,7 +99,7 @@ class ExpressionCompiler(
       startingNenv: NodeEnvironment,
       nenv: NodeEnvironmentBox,
       range: List[RangeS],
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       unresultifiedUndestructedExpressions: ReferenceExpressionTE):
     ReferenceExpressionTE = {
       ExpressionCompiler.this.dropSince(
@@ -110,7 +110,7 @@ class ExpressionCompiler(
   def evaluateAndCoerceToReferenceExpressions(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     exprs1: Vector[IExpressionSE]):
   (Vector[ReferenceExpressionTE], Set[CoordT]) = {
@@ -135,8 +135,8 @@ class ExpressionCompiler(
       }
       case None => {
         nenv.lookupNearestWithName(name, Set(TemplataLookupContext)) match {
-          case Some(IntegerTemplata(num)) => (Some(ConstantIntTE(IntegerTemplata(num), 32)))
-          case Some(BooleanTemplata(bool)) => (Some(ConstantBoolTE(bool)))
+          case Some(IntegerTemplataT(num)) => (Some(ConstantIntTE(IntegerTemplataT(num), 32)))
+          case Some(BooleanTemplataT(bool)) => (Some(ConstantBoolTE(bool)))
           case None => (None)
         }
       }
@@ -158,11 +158,11 @@ class ExpressionCompiler(
         Some(LocalLookupTE(loadRange, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
-        val closuredVarsStructFullName = closuredVarsStructRef.fullName
-        val closuredVarsStructTemplateFullName =
-          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructId = closuredVarsStructRef.id
+        val closuredVarsStructTemplateId =
+          TemplataCompiler.getStructTemplate(closuredVarsStructId)
         val closuredVarsStructTemplateName =
-          closuredVarsStructTemplateFullName.localName match {
+          closuredVarsStructTemplateId.localName match {
             case n @ LambdaCitizenTemplateNameT(_) => n
             case _ => vwat()
           }
@@ -170,9 +170,9 @@ class ExpressionCompiler(
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
-            case MutabilityTemplata(MutableT) => BorrowT
-            case MutabilityTemplata(ImmutableT) => ShareT
-            case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+            case MutabilityTemplataT(MutableT) => BorrowT
+            case MutabilityTemplataT(ImmutableT) => ShareT
+            case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
         val name2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
@@ -183,7 +183,7 @@ class ExpressionCompiler(
               loadRange,
               ReferenceLocalVariableT(name2, FinalT, closuredVarsStructRefRef)))
 
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.id)
         vassert(closuredVarsStructDef.members.exists(member => member.name == id))
 
         val index = closuredVarsStructDef.members.indexWhere(_.name == id)
@@ -192,11 +192,11 @@ class ExpressionCompiler(
         Some(lookup)
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
-        val closuredVarsStructFullName = closuredVarsStructRef.fullName
-        val closuredVarsStructTemplateFullName =
-          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructId = closuredVarsStructRef.id
+        val closuredVarsStructTemplateId =
+          TemplataCompiler.getStructTemplate(closuredVarsStructId)
         val closuredVarsStructTemplateName =
-          closuredVarsStructTemplateFullName.localName match {
+          closuredVarsStructTemplateId.localName match {
             case n @ LambdaCitizenTemplateNameT(_) => n
             case _ => vwat()
           }
@@ -204,9 +204,9 @@ class ExpressionCompiler(
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
-            case MutabilityTemplata(MutableT) => BorrowT
-            case MutabilityTemplata(ImmutableT) => ShareT
-            case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+            case MutabilityTemplataT(MutableT) => BorrowT
+            case MutabilityTemplataT(ImmutableT) => ShareT
+            case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
         val borrowExpr =
@@ -243,11 +243,11 @@ class ExpressionCompiler(
         Some(LocalLookupTE(ranges.head, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
-        val closuredVarsStructFullName = closuredVarsStructRef.fullName
-        val closuredVarsStructTemplateFullName =
-          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructId = closuredVarsStructRef.id
+        val closuredVarsStructTemplateId =
+          TemplataCompiler.getStructTemplate(closuredVarsStructId)
         val closuredVarsStructTemplateName =
-          closuredVarsStructTemplateFullName.localName match {
+          closuredVarsStructTemplateId.localName match {
             case n @ LambdaCitizenTemplateNameT(_) => n
             case _ => vwat()
           }
@@ -255,9 +255,9 @@ class ExpressionCompiler(
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
-            case MutabilityTemplata(MutableT) => BorrowT
-            case MutabilityTemplata(ImmutableT) => ShareT
-            case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+            case MutabilityTemplataT(MutableT) => BorrowT
+            case MutabilityTemplataT(ImmutableT) => ShareT
+            case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRef)
         val closureParamVarName2 = interner.intern(ClosureParamNameT(closuredVarsStructTemplateName.codeLocation))
@@ -268,7 +268,7 @@ class ExpressionCompiler(
             LocalLookupTE(
               ranges.head,
               ReferenceLocalVariableT(closureParamVarName2, FinalT, closuredVarsStructRefRef)))
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.id)
 
 //        vassert(closuredVarsStructRef.fullName.steps == id.steps.init)
 
@@ -277,23 +277,23 @@ class ExpressionCompiler(
         Some(lookup)
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
-        val closuredVarsStructFullName = closuredVarsStructRef.fullName
-        val closuredVarsStructTemplateFullName =
-          TemplataCompiler.getStructTemplate(closuredVarsStructFullName)
+        val closuredVarsStructId = closuredVarsStructRef.id
+        val closuredVarsStructTemplateId =
+          TemplataCompiler.getStructTemplate(closuredVarsStructId)
         val closuredVarsStructTemplateName =
-          closuredVarsStructTemplateFullName.localName match {
+          closuredVarsStructTemplateId.localName match {
             case n @ LambdaCitizenTemplateNameT(_) => n
             case _ => vwat()
           }
         val mutability = Compiler.getMutability(coutputs, closuredVarsStructRef)
         val ownership =
           mutability match {
-            case MutabilityTemplata(MutableT) => BorrowT
-            case MutabilityTemplata(ImmutableT) => ShareT
-            case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+            case MutabilityTemplataT(MutableT) => BorrowT
+            case MutabilityTemplataT(ImmutableT) => ShareT
+            case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.id)
 
         vassert(closuredVarsStructDef.members.map(_.name).contains(varName))
 
@@ -318,11 +318,11 @@ class ExpressionCompiler(
       range: List[RangeS],
       closureStructRef: StructTT):
   (ReferenceExpressionTE) = {
-    val closureStructDef = coutputs.lookupStruct(closureStructRef.fullName);
+    val closureStructDef = coutputs.lookupStruct(closureStructRef.id);
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
         interner, keywords,
-        closureStructRef.fullName,
+        closureStructRef.id,
         InheritBoundsFromTypeItself)
     // Note, this is where the unordered closuredNames set becomes ordered.
     val lookupExpressions2 =
@@ -360,9 +360,9 @@ class ExpressionCompiler(
       });
     val ownership =
       closureStructDef.mutability match {
-        case MutabilityTemplata(MutableT) => OwnT
-        case MutabilityTemplata(ImmutableT) => ShareT
-        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+        case MutabilityTemplataT(MutableT) => OwnT
+        case MutabilityTemplataT(ImmutableT) => ShareT
+        case PlaceholderTemplataT(idT, MutabilityTemplataType()) => vimpl()
       }
     val resultPointerType = CoordT(ownership, closureStructRef)
 
@@ -374,7 +374,7 @@ class ExpressionCompiler(
   def evaluateAndCoerceToReferenceExpression(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
@@ -403,7 +403,7 @@ class ExpressionCompiler(
   private def evaluateExpectedAddressExpression(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     expr1: IExpressionSE):
   (AddressExpressionTE, Set[CoordT]) = {
@@ -421,22 +421,22 @@ class ExpressionCompiler(
   private def evaluate(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     expr1: IExpressionSE):
   (ExpressionT, Set[CoordT]) = {
     Profiler.frame(() => {
       expr1 match {
         case VoidSE(range) => (VoidLiteralTE(), Set())
-        case ConstantIntSE(range, i, bits) => (ConstantIntTE(IntegerTemplata(i), bits), Set())
+        case ConstantIntSE(range, i, bits) => (ConstantIntTE(IntegerTemplataT(i), bits), Set())
         case ConstantBoolSE(range, i) => (ConstantBoolTE(i), Set())
         case ConstantStrSE(range, s) => (ConstantStrTE(s), Set())
         case ConstantFloatSE(range, f) => (ConstantFloatTE(f), Set())
         case ArgLookupSE(range, index) => {
           val paramCoordRune = nenv.function.params(index).pattern.coordRune.get
           val paramCoordTemplata = vassertOne(nenv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(paramCoordRune.rune)), Set(TemplataLookupContext)))
-          val CoordTemplata(paramCoord) = paramCoordTemplata
-          vassert(nenv.functionEnvironment.fullName.localName.parameters(index) == paramCoord)
+          val CoordTemplataT(paramCoord) = paramCoordTemplata
+          vassert(nenv.functionEnvironment.id.localName.parameters(index) == paramCoord)
           (ArgLookupTE(index, paramCoord), Set())
         }
         case FunctionCallSE(range, location, OutsideLoadSE(_, rules, name, maybeTemplateArgs, callableTargetOwnership), argsExprs1) => {
@@ -561,12 +561,12 @@ class ExpressionCompiler(
 
           val templataFromEnv =
             nenv.lookupAllWithImpreciseName(name, Set(ExpressionLookupContext)) match {
-              case Vector(BooleanTemplata(value)) => ConstantBoolTE(value)
-              case Vector(IntegerTemplata(value)) => ConstantIntTE(IntegerTemplata(value), 32)
-              case Vector(t @ PlaceholderTemplata(name, IntegerTemplataType())) => {
-                ConstantIntTE(PlaceholderTemplata(name, IntegerTemplataType()), 32)
+              case Vector(BooleanTemplataT(value)) => ConstantBoolTE(value)
+              case Vector(IntegerTemplataT(value)) => ConstantIntTE(IntegerTemplataT(value), 32)
+              case Vector(t @ PlaceholderTemplataT(name, IntegerTemplataType())) => {
+                ConstantIntTE(PlaceholderTemplataT(name, IntegerTemplataType()), 32)
               }
-              case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
+              case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplataT(_, _) => case ExternFunctionTemplataT(_) => }).size == templatas.size => {
                 if (targetOwnership == MoveP) {
                   throw CompileErrorExceptionT(CantMoveFromGlobal(range :: parentRanges, "Can't move from globals. Name: " + name))
                 }
@@ -719,7 +719,7 @@ class ExpressionCompiler(
           val expr2 =
             containerExpr2.result.coord.kind match {
               case structTT@StructTT(_) => {
-                val structDef = coutputs.lookupStruct(structTT.fullName)
+                val structDef = coutputs.lookupStruct(structTT.id)
                 val (structMember, memberIndex) =
                   structDef.getMemberAndIndex(memberName) match {
                     case None => throw CompileErrorExceptionT(CouldntFindMemberT(range :: parentRanges, memberName.name.str))
@@ -730,12 +730,12 @@ class ExpressionCompiler(
                 val memberType =
                   TemplataCompiler.getPlaceholderSubstituter(
                     interner, keywords,
-                    structTT.fullName,
+                    structTT.id,
                     // Use the bounds that we supplied to the struct
                     UseBoundsFromContainer(
                       structDef.runeToFunctionBound,
                       structDef.runeToImplBound,
-                      vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
+                      vassertSome(coutputs.getInstantiationBounds(structTT.id))))
                     .substituteForCoord(coutputs, unsubstitutedMemberType)
 
                 vassert(structDef.members.exists(_.name == memberName))
@@ -744,14 +744,14 @@ class ExpressionCompiler(
               }
               case as@contentsStaticSizedArrayTT(_, _, _, _) => {
                 if (memberNameStr.str.forall(Character.isDigit)) {
-                  arrayCompiler.lookupInStaticSizedArray(range, containerExpr2, ConstantIntTE(IntegerTemplata(memberNameStr.str.toLong), 32), as)
+                  arrayCompiler.lookupInStaticSizedArray(range, containerExpr2, ConstantIntTE(IntegerTemplataT(memberNameStr.str.toLong), 32), as)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Sequence has no member named " + memberNameStr))
                 }
               }
               case at@contentsRuntimeSizedArrayTT(_, _) => {
                 if (memberNameStr.str.forall(Character.isDigit)) {
-                  arrayCompiler.lookupInUnknownSizedArray(parentRanges, range, containerExpr2, ConstantIntTE(IntegerTemplata(memberNameStr.str.toLong), 32), at)
+                  arrayCompiler.lookupInUnknownSizedArray(parentRanges, range, containerExpr2, ConstantIntTE(IntegerTemplataT(memberNameStr.str.toLong), 32), at)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Array has no member named " + memberNameStr))
                 }
@@ -762,8 +762,8 @@ class ExpressionCompiler(
             }
 
           expr2.result.kind match {
-            case ICitizenTT(fullName) => {
-              vassert(coutputs.getInstantiationBounds(fullName).nonEmpty)
+            case ICitizenTT(id) => {
+              vassert(coutputs.getInstantiationBounds(id).nonEmpty)
             }
             case _ =>
           }
@@ -827,7 +827,7 @@ class ExpressionCompiler(
               override def lookup(range: RangeS, nameS: IImpreciseNameS):
               Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
                 nenv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
-                  case Some(CitizenDefinitionTemplata(environment, a)) => {
+                  case Some(CitizenDefinitionTemplataT(environment, a)) => {
                     Ok(CitizenRuneTypeSolverLookupResult(a.tyype, a.genericParameters))
                   }
                   case Some(x) => Ok(TemplataLookupResult(x.tyype))
@@ -865,9 +865,9 @@ class ExpressionCompiler(
         case r @ RuneLookupSE(range, runeA) => {
           val templata = vassertOne(nenv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(runeA)), Set(TemplataLookupContext)))
           templata match {
-            case IntegerTemplata(value) => (ConstantIntTE(IntegerTemplata(value), 32), Set())
-            case PlaceholderTemplata(name, IntegerTemplataType()) => (ConstantIntTE(PlaceholderTemplata(name, IntegerTemplataType()), 32), Set())
-            case pt @ PrototypeTemplata(_, _) => {
+            case IntegerTemplataT(value) => (ConstantIntTE(IntegerTemplataT(value), 32), Set())
+            case PlaceholderTemplataT(name, IntegerTemplataType()) => (ConstantIntTE(PlaceholderTemplataT(name, IntegerTemplataType()), 32), Set())
+            case pt @ PrototypeTemplataT(_, _) => {
               val tinyEnv =
                 nenv.functionEnvironment.makeChildNodeEnvironment(r, life)
                   .addEntries(interner, Vector(ArbitraryNameT() -> TemplataEnvEntry(pt)))
@@ -1034,7 +1034,7 @@ class ExpressionCompiler(
             nenv.snapshot
               .copy(templatas =
                 nenv.snapshot.templatas
-                  .addEntry(interner, interner.intern(RuneNameT(SelfRuneS())), TemplataEnvEntry(templata.CoordTemplata(elementRefT))))
+                  .addEntry(interner, interner.intern(RuneNameT(SelfRuneS())), TemplataEnvEntry(templata.CoordTemplataT(elementRefT))))
           val makeListTE =
             callCompiler.evaluatePrefixCall(
               coutputs,
@@ -1151,11 +1151,11 @@ class ExpressionCompiler(
           val destroy2 =
             innerExpr2.kind match {
               case structTT@StructTT(_) => {
-                val structDef = coutputs.lookupStruct(structTT.fullName)
+                val structDef = coutputs.lookupStruct(structTT.id)
                 val substituter =
                   TemplataCompiler.getPlaceholderSubstituter(
                     interner, keywords,
-                    structTT.fullName,
+                    structTT.id,
                     // This type is already phrased in terms of our placeholders, so it can use the
                     // bounds it already has.
                     InheritBoundsFromTypeItself)
@@ -1279,7 +1279,7 @@ class ExpressionCompiler(
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in an integer as its second param!"))
     }
     if (arrayMutability == ImmutableT &&
-      Compiler.getMutability(coutputs, elementCoord.kind) == MutabilityTemplata(MutableT)) {
+      Compiler.getMutability(coutputs, elementCoord.kind) == MutabilityTemplataT(MutableT)) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't have an immutable array of mutable elements!"))
     }
   }
@@ -1292,51 +1292,51 @@ class ExpressionCompiler(
   (CoordT, PrototypeT, PrototypeT, IdT[IImplNameT], IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Opt)), Set(TemplataLookupContext)).toList match {
-        case List(it@InterfaceDefinitionTemplata(_, _)) => it
+        case List(it@InterfaceDefinitionTemplataT(_, _)) => it
         case _ => vfail()
       }
     val optInterfaceRef =
       structCompiler.resolveInterface(
-        coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplata(containedCoord))).expect().kind
+        coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplataT(containedCoord))).expect().kind
     val ownOptCoord = CoordT(OwnT, optInterfaceRef)
 
     val someConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Some)), Set(ExpressionLookupContext)).toList match {
-        case List(ft@FunctionTemplata(_, _)) => ft
+        case List(ft@FunctionTemplataT(_, _)) => ft
         case _ => vwat();
       }
     val someConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
-        coutputs, nenv, range, someConstructorTemplata, Vector(CoordTemplata(containedCoord)), Vector(containedCoord)) match {
+        coutputs, nenv, range, someConstructorTemplata, Vector(CoordTemplataT(containedCoord)), Vector(containedCoord)) match {
         case fff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, fff.toString))
         case EvaluateFunctionSuccess(p, conclusions) => p.prototype
       }
 
     val noneConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.None)), Set(ExpressionLookupContext)).toList match {
-        case List(ft@FunctionTemplata(_, _)) => ft
+        case List(ft@FunctionTemplataT(_, _)) => ft
         case _ => vwat();
       }
     val noneConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
-        coutputs, nenv, range, noneConstructorTemplata, Vector(CoordTemplata(containedCoord)), Vector()) match {
+        coutputs, nenv, range, noneConstructorTemplata, Vector(CoordTemplataT(containedCoord)), Vector()) match {
         case fff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, fff.toString))
         case EvaluateFunctionSuccess(p, conclusions) => p.prototype
       }
 
-    val someImplFullName =
+    val someImplId =
       implCompiler.isParent(coutputs, nenv, range, someConstructor.returnType.kind.expectCitizen(), optInterfaceRef) match {
-        case IsParent(_, _, implFullName) => implFullName
+        case IsParent(_, _, implId) => implId
         case IsntParent(_) => vwat()
       }
 
-    val noneImplFullName =
+    val noneImplId =
       implCompiler.isParent(coutputs, nenv, range, noneConstructor.returnType.kind.expectCitizen(), optInterfaceRef) match {
-        case IsParent(_, _, implFullName) => implFullName
+        case IsParent(_, _, implId) => implId
         case IsntParent(_) => vwat()
       }
 
-    (ownOptCoord, someConstructor, noneConstructor, someImplFullName, noneImplFullName)
+    (ownOptCoord, someConstructor, noneConstructor, someImplId, noneImplId)
   }
 
   def getResult(
@@ -1348,46 +1348,46 @@ class ExpressionCompiler(
   (CoordT, PrototypeT, IdT[IImplNameT], PrototypeT, IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Result)), Set(TemplataLookupContext)).toList match {
-        case List(it@InterfaceDefinitionTemplata(_, _)) => it
+        case List(it@InterfaceDefinitionTemplataT(_, _)) => it
         case _ => vfail()
       }
     val resultInterfaceRef =
-      structCompiler.resolveInterface(coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord))).expect().kind
+      structCompiler.resolveInterface(coutputs, nenv, range, interfaceTemplata, Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord))).expect().kind
     val ownResultCoord = CoordT(OwnT, resultInterfaceRef)
 
     val okConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Ok)), Set(ExpressionLookupContext)).toList match {
-        case List(ft@FunctionTemplata(_, _)) => ft
+        case List(ft@FunctionTemplataT(_, _)) => ft
         case _ => vwat();
       }
     val okConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
-        coutputs, nenv, range, okConstructorTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), Vector(containedSuccessCoord)) match {
+        coutputs, nenv, range, okConstructorTemplata, Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord)), Vector(containedSuccessCoord)) match {
         case fff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, fff.toString))
         case EvaluateFunctionSuccess(p, conclusions) => p.prototype
       }
     val okKind = okConstructor.returnType.kind
     val okResultImpl =
       implCompiler.isParent(coutputs, nenv, range, okKind.expectStruct(), resultInterfaceRef) match {
-        case IsParent(templata, conclusions, implFullName) => implFullName
+        case IsParent(templata, conclusions, implId) => implId
         case IsntParent(candidates) => vfail()
       }
 
     val errConstructorTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Err)), Set(ExpressionLookupContext)).toList match {
-        case List(ft@FunctionTemplata(_, _)) => ft
+        case List(ft@FunctionTemplataT(_, _)) => ft
         case _ => vwat();
       }
     val errConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
-        coutputs, nenv, range, errConstructorTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), Vector(containedFailCoord)) match {
+        coutputs, nenv, range, errConstructorTemplata, Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord)), Vector(containedFailCoord)) match {
         case fff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, fff.toString))
         case EvaluateFunctionSuccess(p, conclusions) => p.prototype
       }
     val errKind = errConstructor.returnType.kind
     val errResultImpl =
       implCompiler.isParent(coutputs, nenv, range, errKind.expectStruct(), resultInterfaceRef) match {
-        case IsParent(templata, conclusions, implFullName) => implFullName
+        case IsParent(templata, conclusions, implId) => implId
         case IsntParent(candidates) => vfail()
       }
 
@@ -1397,7 +1397,7 @@ class ExpressionCompiler(
   def weakAlias(coutputs: CompilerOutputs, expr: ReferenceExpressionTE): ReferenceExpressionTE = {
     expr.kind match {
       case sr @ StructTT(_) => {
-        val structDef = coutputs.lookupStruct(sr.fullName)
+        val structDef = coutputs.lookupStruct(sr.id)
         vcheck(structDef.weakable, TookWeakRefOfNonWeakableError)
       }
       case ir @ InterfaceTT(_) => {
@@ -1420,7 +1420,7 @@ class ExpressionCompiler(
       coutputs: CompilerOutputs,
       nenv: NodeEnvironmentBox,
       range: List[RangeS],
-      life: LocationInFunctionEnvironment,
+      life: LocationInFunctionEnvironmentT,
       undecayedUnborrowedContainerExpr2: ExpressionT):
   (ReferenceExpressionTE) = {
     undecayedUnborrowedContainerExpr2 match {
@@ -1490,7 +1490,7 @@ class ExpressionCompiler(
     coutputs: CompilerOutputs,
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     block: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
@@ -1500,7 +1500,7 @@ class ExpressionCompiler(
   def translatePatternList(
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]
@@ -1585,7 +1585,7 @@ class ExpressionCompiler(
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
     range: List[RangeS],
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     exprTE: ReferenceExpressionTE):
   ReferenceExpressionTE = {
     val unreversedVariablesToDestruct = nenv.snapshot.getLiveVariablesIntroducedSince(startingNenv)
@@ -1640,7 +1640,7 @@ class ExpressionCompiler(
   // we dont have any special casing.
   def resultifyExpressions(
     nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
+    life: LocationInFunctionEnvironmentT,
     expr: ReferenceExpressionTE):
   (ReferenceExpressionTE, ReferenceLocalVariableT) = {
     val resultVarId = interner.intern(TypingPassBlockResultVarNameT(life))

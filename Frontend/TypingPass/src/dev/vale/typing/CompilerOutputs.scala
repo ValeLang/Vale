@@ -85,8 +85,8 @@ case class CompilerOutputs() {
   // This map is how we remember it.
   // Here, we'd remember: [drop<int>(Opt<int>), [Rune1337, drop(int)]].
   // We also do this for structs and interfaces too.
-  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArguments] =
-    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArguments]()
+  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT] =
+    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT]()
 
 //  // Only ArrayCompiler can make an RawArrayT2.
 //  private val staticSizedArrayTypes:
@@ -129,7 +129,7 @@ case class CompilerOutputs() {
     deferredFunctionCompiles -= name
   }
 
-  def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArguments] = {
+  def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT] = {
     instantiationNameToInstantiationBounds.toMap
   }
 
@@ -139,13 +139,13 @@ case class CompilerOutputs() {
 
   def getInstantiationBounds(
     instantiationId: IdT[IInstantiationNameT]):
-  Option[InstantiationBoundArguments] = {
+  Option[InstantiationBoundArgumentsT] = {
     instantiationNameToInstantiationBounds.get(instantiationId)
   }
 
   def addInstantiationBounds(
     instantiationId: IdT[IInstantiationNameT],
-    functionBoundToRune: InstantiationBoundArguments):
+    functionBoundToRune: InstantiationBoundArgumentsT):
   Unit = {
     // We'll do this when we can cache instantiations from StructTemplar etc.
     // // We should only add instantiation bounds in exactly one place: the place that makes the

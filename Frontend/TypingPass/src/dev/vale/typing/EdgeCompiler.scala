@@ -68,6 +68,7 @@ class EdgeCompiler(
                 val overrride =
                   lookForOverride(
                     coutputs,
+                    LocationInDenizen(Vector()),
                     overridingImpl,
                     interfaceTemplateId,
                     overridingCitizenTemplateId,
@@ -228,6 +229,7 @@ class EdgeCompiler(
 
   private def lookForOverride(
     coutputs: CompilerOutputs,
+    callLocation: LocationInDenizen,
     impl: ImplT,
     interfaceTemplateId: IdT[IInterfaceTemplateNameT],
     subCitizenTemplateId: IdT[ICitizenTemplateNameT],
@@ -327,6 +329,7 @@ class EdgeCompiler(
       functionCompiler.evaluateGenericLightFunctionParentForPrototype(
         coutputs,
         List(range, impl.templata.impl.range),
+        callLocation,
         dispatcherOuterEnv,
         originFunctionTemplata,
         abstractFunctionPrototype.paramTypes.indices.map(_ => None)
@@ -417,6 +420,7 @@ class EdgeCompiler(
       implCompiler.solveImplForCall(
         coutputs,
         List(range),
+        callLocation,
         dispatcherInnerEnv,
         // For example, if we're doing the Milano case:
         //   impl<I, J, K, L> ISpaceship<I, J, K> for Milano<I, J, K, L>;
@@ -489,6 +493,7 @@ class EdgeCompiler(
         dispatcherCaseEnv,
         coutputs,
         List(range, impl.templata.impl.range),
+        callLocation,
         overrideImpreciseName,
         Vector.empty,
         Vector.empty,

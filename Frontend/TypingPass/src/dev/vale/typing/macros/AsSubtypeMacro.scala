@@ -2,8 +2,9 @@ package dev.vale.typing.macros
 
 import dev.vale.{Keywords, RangeS, StrI, vassertSome, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
+import dev.vale.postparsing.LocationInDenizen
 import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
-import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent}
 import dev.vale.typing.env.FunctionEnvironmentT
 import dev.vale.typing.expression.ExpressionCompiler
@@ -28,6 +29,7 @@ class AsSubtypeMacro(
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -47,7 +49,7 @@ class AsSubtypeMacro(
     val successCoord = CoordT(resultOwnership, GlobalRegionT(), targetKind)
     val failCoord = CoordT(resultOwnership, GlobalRegionT(), incomingKind)
     val (resultCoord, okConstructor, okResultImpl, errConstructor, errResultImpl) =
-      expressionCompiler.getResult(coutputs, env, callRange, successCoord, failCoord)
+      expressionCompiler.getResult(coutputs, env, callRange, callLocation, successCoord, failCoord)
     if (resultCoord != vassertSome(maybeRetCoord)) {
       throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Bad result coord:\n" + resultCoord + "\nand\n" + vassertSome(maybeRetCoord)))
     }
@@ -56,7 +58,7 @@ class AsSubtypeMacro(
     val superKind = incomingKind match { case x : ISuperKindTT => x case other => vwat(other) }
 
     val implId =
-      implCompiler.isParent(coutputs, env, callRange, subKind, superKind) match {
+      implCompiler.isParent(coutputs, env, callRange, callLocation, subKind, superKind) match {
         case IsParent(_, _, implId) => implId
       }
 

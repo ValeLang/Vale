@@ -7,7 +7,7 @@ import dev.vale.postparsing.GlobalFunctionFamilyNameS
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
 import dev.vale.typing.ast.{FunctionCallTE, LocationInFunctionEnvironmentT, ReferenceExpressionTE}
-import dev.vale.typing.env.{FunctionEnvironmentBox, IEnvironment, NodeEnvironment, NodeEnvironmentBox}
+import dev.vale.typing.env.{FunctionEnvironmentBoxT, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox}
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -174,7 +174,7 @@ class CallCompiler(
 
   def checkTypes(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
     params: Vector[CoordT],
     args: Vector[CoordT],

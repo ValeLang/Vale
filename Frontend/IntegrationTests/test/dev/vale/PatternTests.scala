@@ -6,7 +6,7 @@ import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.types._
 import dev.vale.typing._
 import dev.vale.typing.ast.{NormalStructMemberT, ReferenceMemberTypeT}
-import dev.vale.typing.names.{IdT, PlaceholderNameT, PlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{IdT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.types.IntT
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}

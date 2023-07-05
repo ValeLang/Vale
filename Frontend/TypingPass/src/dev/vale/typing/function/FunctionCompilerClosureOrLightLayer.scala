@@ -12,7 +12,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
-import dev.vale.typing.env.{AddressibleClosureVariableT, BuildingFunctionEnvironmentWithClosureds, IEnvEntry, IEnvironment, IVariableT, ReferenceClosureVariableT, TemplataEnvEntry, TemplatasStore}
+import dev.vale.typing.env.{AddressibleClosureVariableT, BuildingFunctionEnvironmentWithClosuredsT, IEnvEntry, IInDenizenEnvironmentT, IVariableT, ReferenceClosureVariableT, TemplataEnvEntry, TemplatasStore}
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, TemplataCompiler, TypingPassOptions, env}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IFunctionTemplateNameT, INameT, NameTranslator}
 import dev.vale.typing.templata._
@@ -78,9 +78,9 @@ class FunctionCompilerClosureOrLightLayer(
 //  }
 
   def evaluateTemplatedClosureFunctionFromCallForBanner(
-      parentEnv: IEnvironment,
+      parentEnv: IEnvironmentT,
       coutputs: CompilerOutputs,
-      callingEnv: IEnvironment,
+      callingEnv: IInDenizenEnvironmentT,
       callRange: List[RangeS],
       closureStructRef: StructTT,
       function: FunctionA,
@@ -91,7 +91,7 @@ class FunctionCompilerClosureOrLightLayer(
     val name = parentEnv.id.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
 //    coutputs.declareType(name)
     val outerEnv =
-      BuildingFunctionEnvironmentWithClosureds(
+      BuildingFunctionEnvironmentWithClosuredsT(
         parentEnv.globalEnv,
         parentEnv,
         name,
@@ -106,9 +106,9 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   def evaluateTemplatedClosureFunctionFromCallForPrototype(
-    outerEnv: IEnvironment,
+    outerEnv: IEnvironmentT,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment,
+    callingEnv: IInDenizenEnvironmentT,
     callRange: List[RangeS],
     closureStructRef: StructTT,
     function: FunctionA,
@@ -119,7 +119,7 @@ class FunctionCompilerClosureOrLightLayer(
     val (variables, entries) = makeClosureVariablesAndEntries(coutputs, closureStructRef)
     val name = outerEnv.id.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
     val newEnv =
-      env.BuildingFunctionEnvironmentWithClosureds(
+      env.BuildingFunctionEnvironmentWithClosuredsT(
         outerEnv.globalEnv,
         outerEnv,
         name,
@@ -132,9 +132,9 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   def evaluateTemplatedLightFunctionFromCallForPrototype2(
-      parentEnv: IEnvironment,
+      parentEnv: IEnvironmentT,
       coutputs: CompilerOutputs,
-      callingEnv: IEnvironment, // See CSSNCE
+      callingEnv: IInDenizenEnvironmentT, // See CSSNCE
       callRange: List[RangeS],
       function: FunctionA,
       explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -150,9 +150,9 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   def evaluateGenericLightFunctionFromCallForPrototype2(
-    parentEnv: IEnvironment,
+    parentEnv: IEnvironmentT,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     function: FunctionA,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -167,9 +167,9 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   def evaluateGenericLightFunctionParentForPrototype2(
-    parentEnv: IEnvironment,
+    parentEnv: IEnvironmentT,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     function: FunctionA,
     args: Vector[Option[CoordT]]):
@@ -199,7 +199,7 @@ class FunctionCompilerClosureOrLightLayer(
 //  }
 
   def evaluateGenericLightFunctionFromNonCall(
-    parentEnv: IEnvironment,
+    parentEnv: IEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     function: FunctionA,
@@ -368,9 +368,9 @@ class FunctionCompilerClosureOrLightLayer(
   // are a lot of overloads available.
   // This assumes it met any type bound restrictions (or, will; not implemented yet)
   def evaluateTemplatedLightBannerFromCall(
-      parentEnv: IEnvironment,
+      parentEnv: IEnvironmentT,
       coutputs: CompilerOutputs,
-      callingEnv: IEnvironment, // See CSSNCE
+      callingEnv: IInDenizenEnvironmentT, // See CSSNCE
       callRange: List[RangeS],
       function: FunctionA,
       explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -385,9 +385,9 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   def evaluateTemplatedFunctionFromCallForBanner(
-      parentEnv: IEnvironment,
+      parentEnv: IInDenizenEnvironmentT,
       coutputs: CompilerOutputs,
-      callingEnv: IEnvironment, // See CSSNCE
+      callingEnv: IInDenizenEnvironmentT, // See CSSNCE
       function: FunctionA,
       callRange: List[RangeS],
       alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
@@ -400,12 +400,12 @@ class FunctionCompilerClosureOrLightLayer(
   }
 
   private def makeEnvWithoutClosureStuff(
-    outerEnv: IEnvironment,
+    outerEnv: IEnvironmentT,
     function: FunctionA,
     name: IdT[IFunctionTemplateNameT],
     isRootCompilingDenizen: Boolean
-  ): BuildingFunctionEnvironmentWithClosureds = {
-    env.BuildingFunctionEnvironmentWithClosureds(
+  ): BuildingFunctionEnvironmentWithClosuredsT = {
+    env.BuildingFunctionEnvironmentWithClosuredsT(
       outerEnv.globalEnv,
       outerEnv,
       name,

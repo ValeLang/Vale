@@ -57,6 +57,7 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[CoordT],
     verifyConclusions: Boolean):
@@ -72,11 +73,12 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, outerEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, outerEnv),
         coutputs,
         callSiteRules,
         function.runeToType,
         callRange,
+        callLocation,
         assembleKnownTemplatas(function, explicitTemplateArgs),
         initialSends,
         false,
@@ -92,7 +94,7 @@ class FunctionCompilerSolvingLayer(
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
-        outerEnv, runedEnv, coutputs, callRange, function)
+        outerEnv, runedEnv, coutputs, callRange, callLocation, function)
 
     coutputs.addInstantiationBounds(header.toPrototype.id, runeToFunctionBound)
     EvaluateFunctionSuccess(PrototypeTemplataT(function.range, header.toPrototype), inferredTemplatas)
@@ -107,6 +109,7 @@ class FunctionCompilerSolvingLayer(
       coutputs: CompilerOutputs,
       originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
       callRange: List[RangeS],
+      callLocation: LocationInDenizen,
       alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
@@ -121,11 +124,12 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, declaringEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv),
         coutputs,
         callSiteRules,
         function.runeToType,
         callRange,
+        callLocation,
         assembleKnownTemplatas(function, alreadySpecifiedTemplateArgs),
         initialSends,
         true,
@@ -142,7 +146,7 @@ class FunctionCompilerSolvingLayer(
 
     val prototype =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
-        declaringEnv, runedEnv, coutputs, callRange, function)
+        declaringEnv, runedEnv, coutputs, callRange, callLocation, function)
 
     coutputs.addInstantiationBounds(prototype.prototype.id, runeToFunctionBound)
 
@@ -158,6 +162,7 @@ class FunctionCompilerSolvingLayer(
       coutputs: CompilerOutputs,
     originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
       explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
@@ -176,11 +181,12 @@ class FunctionCompilerSolvingLayer(
     val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, nearEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, nearEnv),
         coutputs,
         callSiteRules,
         function.runeToType,
         callRange,
+        callLocation,
         initialKnowns,
         initialSends,
         true,
@@ -195,7 +201,7 @@ class FunctionCompilerSolvingLayer(
 
     val prototypeTemplata =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
-        nearEnv, runedEnv, coutputs, callRange, function)
+        nearEnv, runedEnv, coutputs, callRange, callLocation, function)
 
     coutputs.addInstantiationBounds(prototypeTemplata.prototype.id, runeToFunctionBound)
     EvaluateFunctionSuccess(prototypeTemplata, inferences)
@@ -263,6 +269,7 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     args: Vector[Option[CoordT]]):
   (IEvaluateFunctionResult) = {
@@ -284,11 +291,12 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args)
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(callingEnv, callRange, outerEnv),
+        InferEnv(callingEnv, callRange, callLocation, outerEnv),
         coutputs,
         callSiteRules,
         function.runeToType,
         callRange,
+        callLocation,
         assembleKnownTemplatas(function, explicitTemplateArgs),
         initialSends,
         true,
@@ -316,6 +324,7 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     args: Vector[Option[CoordT]]):
   IEvaluateFunctionResult = {
     val function = nearEnv.function
@@ -332,7 +341,7 @@ class FunctionCompilerSolvingLayer(
     //   func map<T, F>(self Opt<T>, f F, t T) { ... }
     // into a:
     //   func map<F>(self Opt<$0>, f F, t $0) { ... }
-    val preliminaryEnvs = InferEnv(callingEnv, callRange, nearEnv)
+    val preliminaryEnvs = InferEnv(callingEnv, callRange, callLocation, nearEnv)
     val preliminarySolver =
       inferCompiler.makeSolver(
         preliminaryEnvs,
@@ -353,6 +362,7 @@ class FunctionCompilerSolvingLayer(
           preliminaryEnvs,
           coutputs,
           function.range :: callRange,
+        callLocation,
           function.runeToType,
           functionDefinitionRules,
           false,
@@ -390,11 +400,12 @@ class FunctionCompilerSolvingLayer(
 
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveExpectComplete(
-        InferEnv(callingEnv, callRange, nearEnv),
+        InferEnv(callingEnv, callRange, callLocation, nearEnv),
         coutputs,
         functionDefinitionRules,
         function.runeToType,
         function.range :: callRange,
+        callLocation,
         placeholderInitialKnownsFromFunction,
         Vector(),
         true,
@@ -418,6 +429,7 @@ class FunctionCompilerSolvingLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     verifyConclusions: Boolean):
   (FunctionHeaderT) = {
     val function = nearEnv.function
@@ -435,7 +447,7 @@ class FunctionCompilerSolvingLayer(
     val paramRunes =
       function.params.flatMap(_.pattern.coordRune.map(_.rune)).distinct.toVector
 
-    val envs = InferEnv(nearEnv, parentRanges, nearEnv)
+    val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv)
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, definitionRules, function.runeToType, range, Vector(), Vector())
@@ -465,7 +477,7 @@ class FunctionCompilerSolvingLayer(
       }
     val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
       inferCompiler.expectCompleteSolve(
-        envs, coutputs, definitionRules, function.runeToType, range, true, true, paramRunes, solver)
+        envs, coutputs, definitionRules, function.runeToType, range, callLocation, true, true, paramRunes, solver)
 
     val runedEnv =
       addRunedDataToNearEnv(
@@ -473,7 +485,7 @@ class FunctionCompilerSolvingLayer(
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
-        nearEnv, runedEnv, coutputs, parentRanges, function)
+        nearEnv, runedEnv, coutputs, parentRanges, callLocation, function)
 
     // We don't add these here because we aren't instantiating anything here, we're compiling a function
     // not calling it.

@@ -38,6 +38,7 @@ class StructCompilerCore(
     structRunesEnv: CitizenEnvironmentT[IStructNameT, IStructTemplateNameT],
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     structA: StructA):
   Unit = {
     val templateArgs = structRunesEnv.id.localName.templateArgs
@@ -137,7 +138,7 @@ class StructCompilerCore(
             outerEnv.id.addStep(name),
             (coutputs) => {
               delegate.evaluateGenericFunctionFromNonCallForHeader(
-                coutputs, parentRanges, FunctionTemplataT(outerEnv, functionA), true)
+                coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA), true)
             }))
       }
       case _ => vcurious()
@@ -196,6 +197,7 @@ class StructCompilerCore(
     interfaceRunesEnv: CitizenEnvironmentT[IInterfaceNameT, IInterfaceTemplateNameT],
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     interfaceA: InterfaceA):
   (InterfaceDefinitionT) = {
     val templateArgs = interfaceRunesEnv.id.localName.templateArgs
@@ -276,7 +278,7 @@ class StructCompilerCore(
         case (name, FunctionEnvEntry(functionA)) => {
           val header =
             delegate.evaluateGenericFunctionFromNonCallForHeader(
-              coutputs, parentRanges, FunctionTemplataT(outerEnv, functionA), true)
+              coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA), true)
           header.toPrototype -> vassertSome(header.getVirtualIndex)
         }
       }).toVector
@@ -362,6 +364,7 @@ class StructCompilerCore(
     containingFunctionEnv: NodeEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     name: IFunctionDeclarationNameS,
     functionA: FunctionA,
     members: Vector[NormalStructMemberT]):
@@ -396,7 +399,7 @@ class StructCompilerCore(
       containingFunctionEnv.id.addStep(understructInstantiatedNameT)
 
     // Lambdas have no bounds, so we just supply Map()
-    coutputs.addInstantiationBounds(understructInstantiatedIdT, InstantiationBoundArguments(Map(), Map()))
+    coutputs.addInstantiationBounds(understructInstantiatedIdT, InstantiationBoundArgumentsT(Map(), Map()))
     val understructStructTT = interner.intern(StructTT(understructInstantiatedIdT))
 
     val dropFuncNameT =
@@ -471,6 +474,7 @@ class StructCompilerCore(
       delegate.evaluateGenericFunctionFromNonCallForHeader(
         coutputs,
         parentRanges,
+        callLocation,
         structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
           case Some(ft@FunctionTemplataT(_, _)) => ft
           case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))

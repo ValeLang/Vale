@@ -4,11 +4,11 @@ import dev.vale.{RangeS, StrI}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT}
 import dev.vale.typing.env.{FunctionEnvironmentT, IEnvEntry}
-import dev.vale.typing.names.{IdT, INameT}
+import dev.vale.typing.names.{INameT, IdT}
 import dev.vale.typing.types._
 import dev.vale.RangeS
 import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
-import dev.vale.postparsing.MutabilityTemplataType
+import dev.vale.postparsing.{LocationInDenizen, MutabilityTemplataType}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.IEnvEntry
 import dev.vale.typing.names.CitizenTemplateNameT
@@ -24,6 +24,7 @@ trait IFunctionBodyMacro {
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):

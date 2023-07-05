@@ -23,6 +23,7 @@ trait IConvertHelperDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     descendantCitizenRef: ISubKindTT,
     ancestorInterfaceRef: ISuperKindTT):
   IsParentResult
@@ -35,6 +36,7 @@ class ConvertHelper(
       env: IInDenizenEnvironmentT,
       coutputs: CompilerOutputs,
       range: List[RangeS],
+      callLocation: LocationInDenizen,
       sourceExprs: Vector[ReferenceExpressionTE],
       targetPointerTypes: Vector[CoordT]):
   (Vector[ReferenceExpressionTE]) = {
@@ -44,7 +46,7 @@ class ConvertHelper(
     (sourceExprs zip targetPointerTypes).foldLeft((Vector[ReferenceExpressionTE]()))({
       case ((previousRefExprs), (sourceExpr, targetPointerType)) => {
         val refExpr =
-          convert(env, coutputs, range, sourceExpr, targetPointerType)
+          convert(env, coutputs, range, callLocation, sourceExpr, targetPointerType)
         (previousRefExprs :+ refExpr)
       }
     })
@@ -54,6 +56,7 @@ class ConvertHelper(
       env: IInDenizenEnvironmentT,
       coutputs: CompilerOutputs,
       range: List[RangeS],
+      callLocation: LocationInDenizen,
       sourceExpr: ReferenceExpressionTE,
       targetPointerType: CoordT):
   (ReferenceExpressionTE) = {
@@ -101,7 +104,7 @@ class ConvertHelper(
       } else {
         (sourceType, targetType) match {
           case (s : ISubKindTT, i : ISuperKindTT) => {
-            convert(env, coutputs, range, sourceExpr, s, i)
+            convert(env, coutputs, range, callLocation, sourceExpr, s, i)
           }
           case _ => vfail()
         }
@@ -114,11 +117,12 @@ class ConvertHelper(
     callingEnv: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     range: List[RangeS],
+    callLocation: LocationInDenizen,
     sourceExpr: ReferenceExpressionTE,
     sourceSubKind: ISubKindTT,
     targetSuperKind: ISuperKindTT):
   (ReferenceExpressionTE) = {
-    delegate.isParent(coutputs, callingEnv, range, sourceSubKind, targetSuperKind) match {
+    delegate.isParent(coutputs, callingEnv, range, callLocation, sourceSubKind, targetSuperKind) match {
       case IsParent(_, _, implId) => {
         vassert(coutputs.getInstantiationBounds(implId).nonEmpty)
         UpcastTE(

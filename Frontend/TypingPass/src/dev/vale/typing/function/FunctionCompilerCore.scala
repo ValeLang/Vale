@@ -39,9 +39,10 @@ class FunctionCompilerCore(
       nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
       exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      delegate.evaluateBlockStatements(coutputs, startingNenv, nenv, life, parentRanges, exprs)
+      delegate.evaluateBlockStatements(coutputs, startingNenv, nenv, life, parentRanges, callLocation, exprs)
     }
 
     override def translatePatternList(
@@ -64,6 +65,7 @@ class FunctionCompilerCore(
     fullEnv: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     params2: Vector[ParameterT]):
   (FunctionHeaderT) = {
 //    opts.debugOut("Evaluating function " + fullEnv.fullName)
@@ -122,7 +124,7 @@ class FunctionCompilerCore(
                   header.toPrototype,
                   (coutputs) => {
                     finishFunctionMaybeDeferred(
-                      coutputs, fullEnv, callRange, life, attributesT, params2, isDestructor, Some(returnCoord))
+                      coutputs, fullEnv, callRange, callLocation, life, attributesT, params2, isDestructor, Some(returnCoord))
                   }))
 
               (header)
@@ -130,7 +132,7 @@ class FunctionCompilerCore(
             case None => {
               val header =
                 finishFunctionMaybeDeferred(
-                  coutputs, fullEnv, callRange, life, attributesT, params2, isDestructor, None)
+                  coutputs, fullEnv, callRange, callLocation, life, attributesT, params2, isDestructor, None)
               (header)
             }
           }
@@ -193,7 +195,7 @@ class FunctionCompilerCore(
           val generator = vassertSome(fullEnv.globalEnv.nameToFunctionBodyMacro.get(generatorId))
           val (header, body) =
             generator.generateFunctionBody(
-              fullEnv, coutputs, generatorId, life, callRange,
+              fullEnv, coutputs, generatorId, life, callRange, callLocation,
               Some(fullEnv.function), params2, maybeRetCoord)
 
           coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
@@ -218,7 +220,7 @@ class FunctionCompilerCore(
             case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
-        coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArguments(Map(), Map()))
+        coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
         coutputs.addFunctionExport(
           fullEnv.function.range,
           header.toPrototype,
@@ -283,6 +285,7 @@ class FunctionCompilerCore(
       coutputs: CompilerOutputs,
       fullEnvSnapshot: FunctionEnvironmentT,
       callRange: List[RangeS],
+      callLocation: LocationInDenizen,
       life: LocationInFunctionEnvironmentT,
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
@@ -292,7 +295,7 @@ class FunctionCompilerCore(
     val (maybeEvaluatedRetCoord, body2) =
       bodyCompiler.declareAndEvaluateFunctionBody(
         FunctionEnvironmentBoxT(fullEnvSnapshot),
-        coutputs, life, callRange, fullEnvSnapshot.function, maybeExplicitReturnCoord, paramsT, isDestructor)
+        coutputs, life, callRange, callLocation, fullEnvSnapshot.function, maybeExplicitReturnCoord, paramsT, isDestructor)
 
     val retCoord = vassertOne(maybeExplicitReturnCoord.toList ++ maybeEvaluatedRetCoord.toList)
     val header = finalizeHeader(fullEnvSnapshot, coutputs, attributesT, paramsT, retCoord)
@@ -355,7 +358,7 @@ class FunctionCompilerCore(
         val externId = IdT(id.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
         val externPrototype = PrototypeT(externId, header.returnType)
         coutputs.addFunctionExtern(range, externPrototype, id.packageCoord, humanName)
-        coutputs.addInstantiationBounds(externPrototype.id, InstantiationBoundArguments(Map(), Map()))
+        coutputs.addInstantiationBounds(externPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
 
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })

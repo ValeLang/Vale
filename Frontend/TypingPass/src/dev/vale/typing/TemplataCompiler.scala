@@ -26,7 +26,7 @@ case object InheritBoundsFromTypeItself extends IBoundArgumentsSource
 case class UseBoundsFromContainer(
   runeToFuncBound: Map[IRuneS, IdT[FunctionBoundNameT]],
   runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
-  instantiationBoundArguments: InstantiationBoundArguments
+  instantiationBoundArguments: InstantiationBoundArgumentsT
 ) extends IBoundArgumentsSource
 
 trait ITemplataCompilerDelegate {
@@ -35,6 +35,7 @@ trait ITemplataCompilerDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     subKindTT: ISubKindTT,
     superKindTT: ISuperKindTT):
   IsParentResult
@@ -43,6 +44,7 @@ trait ITemplataCompilerDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
     uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[StructTT]
@@ -51,6 +53,7 @@ trait ITemplataCompilerDelegate {
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
+    callLocation: LocationInDenizen,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
@@ -381,8 +384,8 @@ object TemplataCompiler {
     needleTemplateName: IdT[ITemplateNameT],
     newSubstitutingTemplatas: Vector[ITemplataT[ITemplataType]],
     boundArgumentsSource: IBoundArgumentsSource,
-    instantiationBoundArgs: InstantiationBoundArguments):
-  InstantiationBoundArguments = {
+    instantiationBoundArgs: InstantiationBoundArgumentsT):
+  InstantiationBoundArgumentsT = {
     boundArgumentsSource match {
       case InheritBoundsFromTypeItself => {
         val x =
@@ -423,7 +426,7 @@ object TemplataCompiler {
           containerInstantiationBoundArgs.runeToImplBoundArg.map({ case (rune, containerImplBoundArg) =>
             vassertSome(containerRuneToImplBound.get(rune)) -> containerImplBoundArg
           })
-        InstantiationBoundArguments(
+        InstantiationBoundArgumentsT(
           instantiationBoundArgs.runeToFunctionBoundArg.mapValues(funcBoundArg => {
             funcBoundArg.id match {
               case IdT(packageCoord, initSteps, fbn@FunctionBoundNameT(_, _, _)) => {
@@ -490,10 +493,10 @@ object TemplataCompiler {
     needleTemplateName: IdT[ITemplateNameT],
     newSubstitutingTemplatas: Vector[ITemplataT[ITemplataType]],
     boundArgumentsSource: IBoundArgumentsSource,
-    boundArgs: InstantiationBoundArguments):
-  InstantiationBoundArguments = {
-    val InstantiationBoundArguments(runeToFunctionBoundArg, runeToImplBoundArg) = boundArgs
-    InstantiationBoundArguments(
+    boundArgs: InstantiationBoundArgumentsT):
+  InstantiationBoundArgumentsT = {
+    val InstantiationBoundArgumentsT(runeToFunctionBoundArg, runeToImplBoundArg) = boundArgs
+    InstantiationBoundArgumentsT(
       runeToFunctionBoundArg.mapValues(funcBoundArg => {
         substituteTemplatasInPrototype(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, funcBoundArg)
       }),
@@ -586,7 +589,7 @@ object TemplataCompiler {
     prototype.id.localName match {
       case FunctionBoundNameT(template, templateArgs, parameters) => {
         // It's a function bound, it has no function bounds of its own.
-        coutputs.addInstantiationBounds(prototype.id, InstantiationBoundArguments(Map(), Map()))
+        coutputs.addInstantiationBounds(prototype.id, InstantiationBoundArgumentsT(Map(), Map()))
       }
       case _ => {
         // Not really sure if we're supposed to add bounds or something here.
@@ -615,7 +618,7 @@ object TemplataCompiler {
     val newId = IdT(packageCoord, initSteps, substitutedFuncName)
 
     // It's a function bound, it has no function bounds of its own.
-    coutputs.addInstantiationBounds(newId, InstantiationBoundArguments(Map(), Map()))
+    coutputs.addInstantiationBounds(newId, InstantiationBoundArgumentsT(Map(), Map()))
 
     newId
   }
@@ -792,6 +795,7 @@ class TemplataCompiler(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
   Boolean = {
@@ -808,7 +812,7 @@ class TemplataCompiler(
       case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | contentsRuntimeSizedArrayTT(_, _) | contentsStaticSizedArrayTT(_, _, _, _)) => return false
       case (_, StructTT(_)) => return false
       case (a : ISubKindTT, b : ISuperKindTT) => {
-        delegate.isParent(coutputs, callingEnv, parentRanges, a, b) match {
+        delegate.isParent(coutputs, callingEnv, parentRanges, callLocation, a, b) match {
           case IsParent(_, _, _) =>
           case IsntParent(_) => return false
         }

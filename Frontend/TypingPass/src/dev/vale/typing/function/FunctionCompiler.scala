@@ -271,7 +271,7 @@ class FunctionCompiler(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, GlobalRegionT(), reference.kind))
               case BorrowT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)
@@ -283,7 +283,7 @@ class FunctionCompiler(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, GlobalRegionT(), reference.kind))
               case BorrowT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)

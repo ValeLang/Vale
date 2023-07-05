@@ -215,11 +215,11 @@ class EdgeCompiler(
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
           KindTemplataT(KindPlaceholderT(placeholderId))
         }
-        case CoordTemplataT(CoordT(ownership, KindPlaceholderT(originalPlaceholderId))) => {
+        case CoordTemplataT(CoordT(ownership, _, KindPlaceholderT(originalPlaceholderId))) => {
           val originalPlaceholderTemplateId = TemplataCompiler.getPlaceholderTemplate(originalPlaceholderId)
           val mutability = coutputs.lookupMutability(originalPlaceholderTemplateId)
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-          CoordTemplataT(CoordT(ownership, KindPlaceholderT(placeholderId)))
+          CoordTemplataT(CoordT(ownership, GlobalRegionT(), KindPlaceholderT(placeholderId)))
         }
         case other => vwat(other)
       }
@@ -279,7 +279,7 @@ class EdgeCompiler(
     // have that ZZ.
     // Note that these placeholder indexes might not line up with the ones from the original impl.
     val implPlaceholderToDispatcherPlaceholder =
-      U.mapWithIndex[ITemplataT[ITemplataType], (IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])](
+      U.mapWithIndex[ITemplataT[ITemplataType], (IdT[IPlaceholderNameT], ITemplataT[ITemplataType])](
         impl.instantiatedId.localName.templateArgs.toVector
         .zip(impl.runeIndexToIndependence)
         .filter({ case (templata, independent) => !independent }) // Only grab dependent runes
@@ -289,7 +289,7 @@ class EdgeCompiler(
           // Sanity check we're in an impl template, we're about to replace it with a function template
           implPlaceholderId.initSteps.last match { case _: IImplTemplateNameT => case _ => vwat() }
 
-          val implRune = implPlaceholderId.localName.template.rune
+          val implRune = implPlaceholderId.localName.rune
           val dispatcherRune = DispatcherRuneFromImplS(implRune)
 
           val dispatcherPlaceholder =
@@ -359,7 +359,7 @@ class EdgeCompiler(
     // Step 3: Figure Out Dependent And Independent Runes, see FODAIR.
 
     val implRuneToImplPlaceholderAndCasePlaceholder =
-      U.mapWithIndex[(IRuneS, ITemplataT[ITemplataType]), (IRuneS, IdT[KindPlaceholderNameT], ITemplataT[ITemplataType])](
+      U.mapWithIndex[(IRuneS, ITemplataT[ITemplataType]), (IRuneS, IdT[IPlaceholderNameT], ITemplataT[ITemplataType])](
         impl.templata.impl.genericParams.map(_.rune.rune).toVector
           .zip(impl.instantiatedId.localName.templateArgs.toIterable)
           .zip(impl.runeIndexToIndependence)

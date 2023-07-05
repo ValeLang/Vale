@@ -233,12 +233,6 @@ case class CompilerOutputs() {
   // We can't declare the struct at the same time as we declare its mutability or environment,
   // see MFDBRE.
   def declareType(templateName: IdT[ITemplateNameT]): Unit = {
-    templateName match {
-      case IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))), LambdaCitizenTemplateNameT(_)),LambdaCallFunctionTemplateNameT(_,Vector(CoordT(BorrowT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))), CoordT(ShareT,IntT(32))))) => {
-        vpass()
-      }
-      case _ =>
-    }
     vassert(!typeDeclaredNames.contains(templateName))
     typeDeclaredNames += templateName
   }

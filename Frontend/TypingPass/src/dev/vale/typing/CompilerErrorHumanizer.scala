@@ -540,7 +540,7 @@ object CompilerErrorHumanizer {
       case PrototypeTemplataT(range, prototype) => {
         humanizeName(codeMap, prototype.id)
       }
-      case CoordTemplataT(CoordT(ownership, kind)) => {
+      case CoordTemplataT(CoordT(ownership, _, kind)) => {
         (ownership match {
           case OwnT => ""
           case ShareT => ""

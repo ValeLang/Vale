@@ -19,13 +19,6 @@ case class IdT[+T <: INameT](
   initSteps: Vector[INameT],
   localName: T
 )  {
-  this match {
-    case IdT(_,Vector(),ImplNameT(ImplTemplateNameT(_),Vector(CoordTemplataT(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),StructTT(IdT(_,Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("Bipedal"))),Vector(CoordTemplataT(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))))))) => {
-      vpass()
-    }
-    case _ =>
-  }
-
   // Placeholders should only be the last name, getPlaceholdersInKind assumes it
   initSteps.foreach({
     case KindPlaceholderNameT(_) => vfail()
@@ -151,6 +144,10 @@ sealed trait IImplTemplateNameT extends ITemplateNameT {
 sealed trait IImplNameT extends IInstantiationNameT {
   def template: IImplTemplateNameT
 }
+
+sealed trait IRegionNameT extends INameT
+// TODO(regions): Replace with RegionNameT/DenizenDefaultRegionNameT
+case class GlobalRegionNameT() extends IRegionNameT
 
 case class ExportTemplateNameT(codeLoc: CodeLocationS) extends ITemplateNameT
 case class ExportNameT(template: ExportTemplateNameT) extends IInstantiationNameT {

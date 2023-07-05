@@ -274,7 +274,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
-    val CoordT(OwnT, expectedContainerKind) = inputExpr.result.coord
+    val CoordT(OwnT, _, expectedContainerKind) = inputExpr.result.coord
     expectedContainerKind match {
       case StructTT(_) => {
         // Example:
@@ -362,7 +362,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
-    val CoordT(expectedContainerOwnership, expectedContainerKind) = expectedContainerCoord
+    val CoordT(expectedContainerOwnership, _, expectedContainerKind) = expectedContainerCoord
 
     listOfMaybeDestructureMemberPatterns match {
       case Nil => afterDestructureSuccessContinuation(coutputs, nenv, life + 0, liveCaptureLocals)
@@ -432,7 +432,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
-    val CoordT(_, structTT @ StructTT(_)) = inputStructExpr.result.coord
+    val CoordT(_, _, structTT @ StructTT(_)) = inputStructExpr.result.coord
     val structDefT = coutputs.lookupStruct(structTT.id)
     // We don't pattern match against closure structs.
 

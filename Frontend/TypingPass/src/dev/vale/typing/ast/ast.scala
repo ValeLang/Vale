@@ -62,7 +62,9 @@ case class ImplT(
 case class KindExportT(
   range: RangeS,
   tyype: KindT,
-  packageCoordinate: PackageCoordinate,
+  // Good for knowing the package of this export for later prefixing the exportedName, also good
+  // for getting its region.
+  id: IdT[ExportNameT],
   exportedName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -72,7 +74,7 @@ case class KindExportT(
 case class FunctionExportT(
   range: RangeS,
   prototype: PrototypeT,
-  packageCoordinate: PackageCoordinate,
+  exportId: IdT[ExportNameT],
   exportedName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -90,8 +92,8 @@ case class KindExternT(
 
 case class FunctionExternT(
   range: RangeS,
+  externPlaceholderedId: IdT[ExternNameT],
   prototype: PrototypeT,
-  packageCoordinate: PackageCoordinate,
   externName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -196,6 +198,8 @@ case class FunctionDefinitionT(
 
   // We always end a function with a ret, whose result is a Never.
   vassert(body.result.kind == NeverT(false))
+
+  def isPure: Boolean = header.isPure
 }
 
 object getFunctionLastName {
@@ -218,6 +222,7 @@ case class AbstractT()
 case class ParameterT(
   name: IVarNameT,
   virtuality: Option[AbstractT],
+  preChecked: Boolean,
   tyype: CoordT)  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
@@ -421,7 +426,7 @@ case class FunctionHeaderT(
   def getAbstractInterface: Option[InterfaceTT] = {
     val abstractInterfaces =
       params.collect({
-        case ParameterT(_, Some(AbstractT()), CoordT(_, _, ir @ InterfaceTT(_))) => ir
+        case ParameterT(_, Some(AbstractT()), _, CoordT(_, _, ir @ InterfaceTT(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption
@@ -430,7 +435,7 @@ case class FunctionHeaderT(
   def getVirtualIndex: Option[Int] = {
     val indices =
       params.zipWithIndex.collect({
-        case (ParameterT(_, Some(AbstractT()), _), index) => index
+        case (ParameterT(_, Some(AbstractT()), _, _), index) => index
       })
     vassert(indices.size <= 1)
     indices.headOption
@@ -458,6 +463,10 @@ case class FunctionHeaderT(
 
   def unapply(arg: FunctionHeaderT): Option[(IdT[IFunctionNameT], Vector[ParameterT], CoordT)] = {
     Some(id, params, returnType)
+  }
+
+  def isPure: Boolean = {
+    attributes.collectFirst({ case PureT => }).nonEmpty
   }
 }
 

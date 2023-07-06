@@ -49,7 +49,7 @@ class CompilerLambdaTests extends FunSuite with Matchers {
 
     // Make sure it inferred the param type and return type correctly
     Collector.only(coutputs.lookupLambdaIn("main"),
-      { case ParameterT(_, None, CoordT(ShareT, _, IntT.i32)) => })
+      { case ParameterT(_, None, _, CoordT(ShareT, _, IntT.i32)) => })
 
     coutputs.lookupLambdaIn("main").header.returnType shouldEqual
       CoordT(ShareT, GlobalRegionT(), IntT.i32)
@@ -128,7 +128,7 @@ class CompilerLambdaTests extends FunSuite with Matchers {
     val lambda = coutputs.lookupLambdaIn("main");
 
     // Check that the param type is right
-    Collector.only(lambda, { case ParameterT(CodeVarNameT(StrI("a")), None, CoordT(ShareT, _, IntT.i32)) => {} })
+    Collector.only(lambda, { case ParameterT(CodeVarNameT(StrI("a")), None, _, CoordT(ShareT, _, IntT.i32)) => {} })
     // Check the name is right
     vassert(coutputs.nameIsLambdaIn(lambda.header.id, "main"))
 

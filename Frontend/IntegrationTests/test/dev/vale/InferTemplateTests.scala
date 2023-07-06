@@ -23,7 +23,7 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     val moo = compile.expectCompilerOutputs().lookupFunction("moo")
     moo.header.params match {
-      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, CoordT(BorrowT,_, _))) =>
+      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, _, CoordT(BorrowT,_, _))) =>
     }
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {

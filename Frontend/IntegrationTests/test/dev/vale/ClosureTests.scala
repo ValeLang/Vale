@@ -242,12 +242,12 @@ class ClosureTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val closureStruct =
-      coutputs.structs.find(struct => {
+      vassertOne(coutputs.structs.filter(struct => {
         struct.instantiatedCitizen.id.localName match {
-          case LambdaCitizenNameT(_) => true
+          case LambdaCitizenNameT(LambdaCitizenTemplateNameT(CodeLocationS(FileCoordinate(PackageCoordinate(StrI("test"),Vector()), _), _))) => true
           case _ => false
         }
-      }).get
+      }))
     closureStruct.mutability match {
       case MutabilityTemplataT(MutableT) =>
     }

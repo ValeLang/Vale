@@ -354,21 +354,21 @@ case class CompilerOutputs() {
     superInterfaceTemplateToImpls.getOrElse(superInterfaceTemplate, Vector[ImplT]())
   }
 
-  def addKindExport(range: RangeS, kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
-    kindExports += KindExportT(range, kind, packageCoord, exportedName)
+  def addKindExport(range: RangeS, kind: KindT, id: IdT[ExportNameT], exportedName: StrI): Unit = {
+    kindExports += KindExportT(range, kind, id, exportedName)
   }
 
-  def addFunctionExport(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
+  def addFunctionExport(range: RangeS, function: PrototypeT, exportId: IdT[ExportNameT], exportedName: StrI): Unit = {
     vassert(getInstantiationBounds(function.id).nonEmpty)
-    functionExports += FunctionExportT(range, function, packageCoord, exportedName)
+    functionExports += FunctionExportT(range, function, exportId, exportedName)
   }
 
   def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
     kindExterns += KindExternT(kind, packageCoord, exportedName)
   }
 
-  def addFunctionExtern(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
-    functionExterns += FunctionExternT(range, function, packageCoord, exportedName)
+  def addFunctionExtern(range: RangeS, externPlaceholderedId: IdT[ExternNameT], function: PrototypeT, exportedName: StrI): Unit = {
+    functionExterns += FunctionExternT(range, externPlaceholderedId, function, exportedName)
   }
 
   def deferEvaluatingFunctionBody(devf: DeferredEvaluatingFunctionBody): Unit = {

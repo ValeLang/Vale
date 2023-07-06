@@ -7,7 +7,7 @@ import dev.vale.typing.types._
 import dev.vale._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.{IsParent, IsParentResult, IsntParent}
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function._
 //import dev.vale.astronomer.IRulexSR
 import dev.vale.typing.citizen.ImplCompiler
 import dev.vale.typing.env.IDenizenEnvironmentBoxT

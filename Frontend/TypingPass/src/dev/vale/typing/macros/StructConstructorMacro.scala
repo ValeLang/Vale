@@ -18,7 +18,6 @@ import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast._
 import dev.vale.typing.env.PackageEnvironmentT
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 import dev.vale.typing.function.{DestructorCompiler, FunctionCompilerCore}
 import dev.vale.typing.infer.CouldntFindFunction
 import dev.vale.typing.templata.ITemplataT.expectMutability
@@ -138,7 +137,7 @@ class StructConstructorMacro(
     val constructorId = env.id
     vassert(constructorId.localName.parameters.size == members.size)
     val constructorParams =
-      members.map({ case (name, coord) => ParameterT(name, None, coord) })
+      members.map({ case (name, coord) => ParameterT(name, None, false, coord) })
     val mutability =
       StructCompiler.getMutability(
         interner, keywords, coutputs, structTT,

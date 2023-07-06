@@ -142,7 +142,7 @@ class FunctionCompilerCore(
           val header =
             makeExternFunction(
               coutputs,
-              fullEnv.id,
+              fullEnv,
               fullEnv.function.range,
               translateFunctionAttributes(fullEnv.function.attributes),
               params2,
@@ -212,22 +212,22 @@ class FunctionCompilerCore(
         }
       }
 
-    maybeExport match {
-      case None =>
-      case Some(exportPackageCoord) => {
-        val exportedName =
-          fullEnv.id.localName match {
-            case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
-            case _ => vfail("Can't export something that doesn't have a human readable name!")
-          }
-        coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
-        coutputs.addFunctionExport(
-          fullEnv.function.range,
-          header.toPrototype,
-          exportPackageCoord.packageCoordinate,
-          exportedName)
-      }
-    }
+    // maybeExport match {
+    //   case None =>
+    //   case Some(exportPackageCoord) => {
+    //     val exportedName =
+    //       fullEnv.id.localName match {
+    //         case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
+    //         case _ => vfail("Can't export something that doesn't have a human readable name!")
+    //       }
+    //     coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
+    //     coutputs.addFunctionExport(
+    //       fullEnv.function.range,
+    //       header.toPrototype,
+    //       exportPackageCoord.packageCoordinate,
+    //       exportedName)
+    //   }
+    // }
 
     if (header.attributes.contains(PureT)) {
       //      header.params.foreach(param => {
@@ -338,26 +338,27 @@ class FunctionCompilerCore(
 
   def makeExternFunction(
       coutputs: CompilerOutputs,
-      id: IdT[IFunctionNameT],
+      env: FunctionEnvironmentT,
       range: RangeS,
       attributes: Vector[IFunctionAttributeT],
       params2: Vector[ParameterT],
       returnType2: CoordT,
       maybeOrigin: Option[FunctionTemplataT]):
   (FunctionHeaderT) = {
-    id.localName match {
+    env.id.localName match {
       case FunctionNameT(FunctionTemplateNameT(humanName, _), Vector(), params) => {
         val header =
           ast.FunctionHeaderT(
-            id,
-            Vector(ExternT(range.file.packageCoordinate)) ++ attributes,
+            env.id,
+            attributes,
+//            Vector(RegionT(env.defaultRegion.localName, true)),
             params2,
             returnType2,
             maybeOrigin)
 
-        val externId = IdT(id.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
-        val externPrototype = PrototypeT(externId, header.returnType)
-        coutputs.addFunctionExtern(range, externPrototype, id.packageCoord, humanName)
+        val externFunctionId = IdT(env.id.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
+        val externPrototype = PrototypeT(externFunctionId, header.returnType)
+
         coutputs.addInstantiationBounds(externPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
 
         val argLookups =
@@ -373,7 +374,9 @@ class FunctionCompilerCore(
         coutputs.addFunction(function2)
         (header)
       }
-      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(List(range), "Only human-named function can be extern!"))
+      case _ => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(List(range), "Only human-named function can be extern!"))
+      }
     }
   }
 

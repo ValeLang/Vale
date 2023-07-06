@@ -196,14 +196,14 @@ class Hammer(interner: Interner, keywords: Keywords) {
     //    val emptyPackStructRefH = structHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     //    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
-    kindExports.foreach({ case KindExportT(_, tyype, packageCoordinate, exportName) =>
+    kindExports.foreach({ case KindExportT(_, tyype, packageId, exportName) =>
       val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
-      hamuts.addKindExport(kindH, packageCoordinate, exportName)
+      hamuts.addKindExport(kindH, packageId.packageCoord, exportName)
     })
 
-    functionExports.foreach({ case FunctionExportT(_, prototype, packageCoordinate, exportName) =>
+    functionExports.foreach({ case FunctionExportT(_, prototype, packageId, exportName) =>
       val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
-      hamuts.addFunctionExport(prototypeH, packageCoordinate, exportName)
+      hamuts.addFunctionExport(prototypeH, packageId.packageCoord, exportName)
     })
 
     kindExterns.foreach({ case KindExternT(tyype, packageCoordinate, exportName) =>
@@ -211,9 +211,9 @@ class Hammer(interner: Interner, keywords: Keywords) {
       hamuts.addKindExtern(kindH, packageCoordinate, exportName)
     })
 
-    functionExterns.foreach({ case FunctionExternT(_, prototype, packageCoordinate, exportName) =>
+    functionExterns.foreach({ case FunctionExternT(_, externPlaceholderedId, prototype, exportName) =>
       val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
-      hamuts.addFunctionExtern(prototypeH, packageCoordinate, exportName)
+      hamuts.addFunctionExtern(prototypeH, externPlaceholderedId.packageCoord, exportName)
     })
 
     // We generate the names here first, so that externs get the first chance at having

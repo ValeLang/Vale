@@ -5,7 +5,7 @@ import dev.vale.postparsing._
 import dev.vale.postparsing.rules.{DefinitionFuncSR, IRulexSR, RuneParentEnvLookupSR}
 import dev.vale.solver.IIncompleteOrFailedSolve
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.function.FunctionCompiler
+import dev.vale.typing.function._
 import dev.vale.typing.infer.ITypingPassSolverError
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -14,7 +14,7 @@ import dev.vale.solver.FailedSolve
 import OverloadResolver.{Outscored, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend}
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, IValidCalleeCandidate, ParameterT, PrototypeT, ReferenceExpressionTE, ValidCalleeCandidate, ValidHeaderCalleeCandidate}
-import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentBoxT, IInDenizenEnvironmentT, IDenizenEnvironmentBoxT, TemplataLookupContext}
+import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentBoxT, IDenizenEnvironmentBoxT, IInDenizenEnvironmentT, TemplataLookupContext}
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.names.{CallEnvNameT, CodeVarNameT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, IdT}
@@ -29,7 +29,6 @@ import dev.vale.typing.templata._
 import dev.vale.postparsing.ExplicitTemplateArgRuneS
 import OverloadResolver.{IFindFunctionFailureReason, InferFailure, FindFunctionFailure, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import dev.vale.typing.env._
-import FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 //import dev.vale.typingpass.infer.infer.{InferSolveFailure, InferSolveSuccess}
 import dev.vale.Profiler
 

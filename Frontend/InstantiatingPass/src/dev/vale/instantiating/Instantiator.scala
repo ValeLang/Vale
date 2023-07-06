@@ -93,8 +93,8 @@ object Instantiator {
 
     val monouts = new InstantiatedOutputs()
 
-    kindExportsT.foreach({ case KindExportT(range, tyype, packageCoordinate, exportedName) =>
-      val packageName = IdT(packageCoordinate, Vector(), interner.intern(PackageTopLevelNameT()))
+    kindExportsT.foreach({ case KindExportT(range, tyype, packageId, exportedName) =>
+      val packageName = IdT(packageId.packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
       val exportName =
         packageName.addStep(interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(range.begin)))))
       val exportTemplateName = TemplataCompiler.getExportTemplate(exportName)
@@ -112,12 +112,12 @@ object Instantiator {
       KindExportT(
         range,
         instantiator.translateKind(tyype),
-        packageCoordinate,
+        packageId,
         exportedName)
     })
 
-    functionExportsT.foreach({ case FunctionExportT(range, prototype, packageCoordinate, exportedName) =>
-      val packageName = IdT(packageCoordinate, Vector(), interner.intern(PackageTopLevelNameT()))
+    functionExportsT.foreach({ case FunctionExportT(range, prototype, packageId, exportedName) =>
+      val packageName = IdT(packageId.packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
       val exportName =
         packageName.addStep(
           interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(range.begin)))))
@@ -136,7 +136,7 @@ object Instantiator {
       FunctionExportT(
         range,
         instantiator.translatePrototype(prototype),
-        packageCoordinate,
+        packageId,
         exportedName)
     })
 
@@ -1934,10 +1934,11 @@ class Instantiator(
   def translateParameter(
     param: ParameterT):
   ParameterT = {
-    val ParameterT(name, virtuality, tyype) = param
+    val ParameterT(name, virtuality, preChecked, tyype) = param
     ParameterT(
       translateVarName(name),
       virtuality,
+      preChecked,
       translateCoord(tyype))
   }
 

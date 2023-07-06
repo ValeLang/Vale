@@ -28,6 +28,8 @@ case class StructDefinitionT(
   runeToFunctionBound: Map[IRuneS, IdT[FunctionBoundNameT]],
   runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
 ) extends CitizenDefinitionT {
+  vpass()
+
   override def genericParamTypes: Vector[ITemplataType] = {
     instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
   }

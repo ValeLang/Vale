@@ -160,22 +160,6 @@ class StructCompilerCore(
         runeToImplBound)
 
     coutputs.addStruct(structDefT);
-
-    maybeExport match {
-      case None =>
-      case Some(exportPackageCoord) => {
-        val exportedName =
-          placeholderedIdT.localName match {
-            case StructNameT(StructTemplateNameT(humanName), _) => humanName
-            case _ => vfail("Can't export something that doesn't have a human readable name!")
-          }
-        coutputs.addKindExport(
-          structA.range,
-          placeholderedStructTT,
-          exportPackageCoord.packageCoordinate,
-          exportedName)
-      }
-    }
   }
 
   def translateCitizenAttributes(attrs: Vector[ICitizenAttributeS]): Vector[ICitizenAttributeT] = {
@@ -298,22 +282,6 @@ class StructCompilerCore(
         runeToImplBound,
         internalMethods)
     coutputs.addInterface(interfaceDef2)
-
-    maybeExport match {
-      case None =>
-      case Some(exportPackageCoord) => {
-        val exportedName =
-          placeholderedIdT.localName match {
-            case InterfaceNameT(InterfaceTemplateNameT(humanName), _) => humanName
-            case _ => vfail("Can't export something that doesn't have a human readable name!")
-          }
-        coutputs.addKindExport(
-          interfaceA.range,
-          placeholderedInterfaceTT,
-          exportPackageCoord.packageCoordinate,
-          exportedName)
-      }
-    }
 
     (interfaceDef2)
   }

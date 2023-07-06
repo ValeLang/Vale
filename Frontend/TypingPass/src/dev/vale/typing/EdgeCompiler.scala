@@ -11,7 +11,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.ImplCompiler
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
+import dev.vale.typing.function._
 import dev.vale.typing.names._
 import dev.vale.typing.templata.ITemplataT.{expectCoord, expectCoordTemplata, expectKindTemplata}
 import dev.vale.typing.templata.{CoordTemplataT, FunctionTemplataT, ITemplataT, KindTemplataT, MutabilityTemplataT, PlaceholderTemplataT}

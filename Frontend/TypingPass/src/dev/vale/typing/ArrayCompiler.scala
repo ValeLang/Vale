@@ -17,7 +17,7 @@ import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.StructCompilerCore
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 

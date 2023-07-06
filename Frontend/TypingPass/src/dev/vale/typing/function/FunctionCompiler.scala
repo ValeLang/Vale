@@ -14,7 +14,6 @@ import dev.vale.typing.OverloadResolver.IFindFunctionFailureReason
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
-import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, IFunctionGenerator, InferCompiler, TemplataCompiler, TypingPassOptions}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, ReferenceExpressionTE}
@@ -67,18 +66,18 @@ trait IFunctionCompilerDelegate {
   FunctionHeaderT
 }
 
-object FunctionCompiler {
-  trait IEvaluateFunctionResult
+object FunctionCompiler
 
-  case class EvaluateFunctionSuccess(
+trait IEvaluateFunctionResult
+
+case class EvaluateFunctionSuccess(
     prototype: PrototypeTemplataT,
     inferences: Map[IRuneS, ITemplataT[ITemplataType]]
-  ) extends IEvaluateFunctionResult
+) extends IEvaluateFunctionResult
 
-  case class EvaluateFunctionFailure(
+case class EvaluateFunctionFailure(
     reason: IFindFunctionFailureReason
-  ) extends IEvaluateFunctionResult
-}
+) extends IEvaluateFunctionResult
 
 // When typingpassing a function, these things need to happen:
 // - Spawn a local environment for the function

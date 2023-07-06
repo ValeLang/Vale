@@ -313,6 +313,16 @@ case class BuildingFunctionNameWithClosuredsT(
 
 }
 
+case class ExternTemplateNameT(
+  codeLoc: CodeLocationS,
+) extends ITemplateNameT
+
+case class ExternNameT(
+  template: ExternTemplateNameT
+) extends IInstantiationNameT {
+  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector()
+}
+
 case class ExternFunctionNameT(
   humanName: StrI,
   parameters: Vector[CoordT]

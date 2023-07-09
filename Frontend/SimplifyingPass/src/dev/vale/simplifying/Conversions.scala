@@ -1,15 +1,12 @@
 package dev.vale.simplifying
 
 import dev.vale.{CodeLocationS, finalast, vimpl}
-import dev.vale.finalast.{BorrowH, CodeLocation, Final, Immutable, InlineH, LocationH, Mutability, Mutable, OwnH, OwnershipH, ShareH, Variability, Varying, WeakH, YonderH}
+import dev.vale.finalast._
 import dev.vale.postparsing._
-import dev.vale.typing.types._
 import dev.vale.highertyping._
 import dev.vale.finalast._
+import dev.vale.instantiating.ast._
 import dev.vale.postparsing.rules._
-import dev.vale.typing.templata.{ITemplataT, IntegerTemplataT, MutabilityTemplataT, VariabilityTemplataT}
-import dev.vale.typing.types._
-import dev.vale.typing.{types => t}
 import dev.vale.{finalast => m, postparsing => s}
 
 object Conversions {
@@ -18,61 +15,49 @@ object Conversions {
     finalast.CodeLocation(line, col)
   }
 
-  def evaluateMutability(mutability: MutabilityT): Mutability = {
+  def evaluateMutability(mutability: MutabilityI): Mutability = {
     mutability match {
-      case MutableT => Mutable
-      case ImmutableT => Immutable
+      case MutableI => Mutable
+      case ImmutableI => Immutable
     }
   }
 
-  def evaluateMutabilityTemplata(mutability: ITemplataT[MutabilityTemplataType]): Mutability = {
+  def evaluateMutabilityTemplata(mutability: MutabilityI): Mutability = {
     mutability match {
-      case MutabilityTemplataT(MutableT) => Mutable
-      case MutabilityTemplataT(ImmutableT) => Immutable
+      case MutableI => Mutable
+      case ImmutableI => Immutable
     }
   }
 
-  def evaluateVariabilityTemplata(mutability: ITemplataT[VariabilityTemplataType]): Variability = {
+  def evaluateVariabilityTemplata(mutability: VariabilityI): Variability = {
     mutability match {
-      case VariabilityTemplataT(VaryingT) => Varying
-      case VariabilityTemplataT(FinalT) => Final
+      case VaryingI => Varying
+      case FinalI => Final
     }
   }
 
-  def evaluateIntegerTemplata(templata: ITemplataT[IntegerTemplataType]): Long = {
-    templata match {
-      case IntegerTemplataT(n) => n
-    }
-  }
-
-  def evaluateLocation(location: LocationT): LocationH = {
+  def evaluateLocation(location: LocationI): LocationH = {
     location match {
-      case InlineT => InlineH
-      case YonderT => YonderH
+      case InlineI => InlineH
+      case YonderI => YonderH
     }
   }
 
-  def evaluateVariability(variability: VariabilityT): Variability = {
+  def evaluateVariability(variability: VariabilityI): Variability = {
     variability match {
-      case FinalT => Final
-      case VaryingT => Varying
+      case FinalI => Final
+      case VaryingI => Varying
     }
   }
 
-  def evaluateOwnership(ownership: OwnershipT): OwnershipH = {
+  def evaluateOwnership(ownership: OwnershipI): OwnershipH = {
     ownership match {
-      case OwnT => OwnH
-      case BorrowT => BorrowH
-      case ShareT => ShareH
-      case WeakT => WeakH
-    }
-  }
-
-  def unevaluateOwnership(ownership: OwnershipH): OwnershipH = {
-    ownership match {
-      case OwnH => finalast.OwnH
-      case BorrowH => finalast.BorrowH
-      case ShareH => finalast.ShareH
+      case OwnI => OwnH
+      case ImmutableBorrowI => ImmutableBorrowH
+      case MutableBorrowI => MutableBorrowH
+      case ImmutableShareI => ImmutableShareH
+      case MutableShareI => MutableShareH
+      case WeakI => WeakH
     }
   }
 

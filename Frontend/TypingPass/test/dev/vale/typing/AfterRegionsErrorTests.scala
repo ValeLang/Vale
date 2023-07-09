@@ -17,7 +17,7 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import printutils.*;
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |
         |#!DeriveInterfaceDrop
         |sealed interface Opt<T> where T Ref { }

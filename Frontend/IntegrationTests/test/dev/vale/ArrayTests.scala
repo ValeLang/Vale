@@ -40,7 +40,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,_,_, _) => {
+      case StaticSizedArrayLookupTE(_,_,_,_,_, _) => {
       }
     })
 
@@ -150,7 +150,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })
@@ -163,7 +163,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(ImmutableT)
       }
     })
@@ -176,7 +176,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })
@@ -189,7 +189,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(ImmutableT)
       }
     })
@@ -202,7 +202,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })

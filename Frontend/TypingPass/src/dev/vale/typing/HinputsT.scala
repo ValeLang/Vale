@@ -16,7 +16,7 @@ case class InstantiationBoundArgumentsT(
   runeToFunctionBoundArg: Map[IRuneS, PrototypeT],
   runeToImplBoundArg: Map[IRuneS, IdT[IImplNameT]])
 
-case class Hinputs(
+case class HinputsT(
   interfaces: Vector[InterfaceDefinitionT],
   structs: Vector[StructDefinitionT],
 //  emptyPackStructRef: StructTT,

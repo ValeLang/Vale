@@ -1,4 +1,5 @@
 import printutils.*;
+import v.builtins.panicutils.*;
 import v.builtins.logic.*;
 
 func __pretend<T>() T { __vbi_panic() }

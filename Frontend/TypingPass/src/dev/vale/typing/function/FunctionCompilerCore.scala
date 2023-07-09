@@ -1,14 +1,14 @@
 package dev.vale.typing.function
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, U, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ConvertHelper, DeferredEvaluatingFunctionBody, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
+import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionDefinitionT, FunctionHeaderT, IFunctionAttributeT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
 import dev.vale.typing.env._
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{ExternFunctionNameT, IdT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, NameTranslator, RuneNameT}
+import dev.vale.typing.names.{ExternFunctionNameT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, IdT, NameTranslator, RuneNameT}
 import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -381,10 +381,10 @@ class FunctionCompilerCore(
   }
 
   def translateFunctionAttributes(a: Vector[IFunctionAttributeS]): Vector[IFunctionAttributeT] = {
-    a.map({
+    U.map[IFunctionAttributeS, IFunctionAttributeT](a, {
       case UserFunctionS => UserFunctionT
       case ExternS(packageCoord) => ExternT(packageCoord)
-      case x => vimpl(x.toString)
+      case x => vimpl(x)
     })
   }
 

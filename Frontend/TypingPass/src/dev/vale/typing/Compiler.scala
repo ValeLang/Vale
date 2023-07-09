@@ -704,7 +704,7 @@ class Compiler(
       opts, interner, keywords, nameTranslator, overloadResolver, structCompiler, structConstructorMacro, structDropMacro)
 
 
-  def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
+  def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[HinputsT, ICompileErrorT] = {
     try {
       Profiler.frame(() => {
         val nameToStructDefinedMacro =
@@ -1285,7 +1285,7 @@ class Compiler(
 //      val reachableImmKindToDestructor = reachableImmKinds.zip(reachableImmKinds.map(coutputs.findImmDestructor)).toMap
 
       val hinputs =
-          vale.typing.Hinputs(
+          vale.typing.HinputsT(
             reachableInterfaces.toVector,
             reachableStructs.toVector,
             reachableFunctions.toVector,

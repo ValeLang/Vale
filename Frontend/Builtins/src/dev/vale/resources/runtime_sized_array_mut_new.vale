@@ -1,0 +1,3 @@
+extern("vale_runtime_sized_array_mut_new")
+func Array<M Mutability, E Ref>(size int) []<M>E
+where M = mut;

@@ -15,13 +15,13 @@
     <orderEntry type="module" module-name="ParsingPass" />
     <orderEntry type="module" module-name="Tests" />
     <orderEntry type="module" module-name="PostParsingPass" />
-    <orderEntry type="module" module-name="TypingPass" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="module" module-name="Builtins" />
     <orderEntry type="module" module-name="CompileOptions" />
     <orderEntry type="module" module-name="LexingPass" />
     <orderEntry type="module" module-name="InstantiatingPass" />
+    <orderEntry type="module" module-name="TypingPass" />
     <orderEntry type="library" name="scala-sdk-2.12.17" level="application" />
   </component>
 </module>

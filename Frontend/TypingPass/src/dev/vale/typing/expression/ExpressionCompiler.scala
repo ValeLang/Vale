@@ -666,7 +666,7 @@ class ExpressionCompiler(
               case RuntimeSizedArrayLookupTE(range, arrayExpr, arrayType, _, _) => {
                 throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.coord))
               }
-              case StaticSizedArrayLookupTE(range, arrayExpr, arrayType, _, _) => {
+              case StaticSizedArrayLookupTE(range, arrayExpr, arrayType, _, _, _) => {
                 throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.coord))
               }
               case x => vimpl(x.toString)

@@ -913,7 +913,6 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.arrays.*;
         |import v.builtins.functor1.*;
         |import v.builtins.drop.*;
-        |import v.builtins.panic.*;
         |
         |struct Vec2 imm {
         |  x float;
@@ -932,7 +931,7 @@ class CompilerTests extends FunSuite with Matchers {
 
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |
         |exported struct Moo {}
         |exported func main() Moo {
@@ -1003,7 +1002,6 @@ class CompilerTests extends FunSuite with Matchers {
   test("Reports when exported function depends on non-exported return") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.panic.*;
         |import panicutils.*;
         |struct Firefly { }
         |exported func moo() &Firefly { __pretend<&Firefly>() }
@@ -1217,9 +1215,9 @@ class CompilerTests extends FunSuite with Matchers {
     val unrelatedCoord = CoordT(OwnT,region,unrelatedKind)
     val fireflyTemplateName = IdT(testPackageCoord, Vector(), interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)))
     val fireflySignature = ast.SignatureT(IdT(testPackageCoord, Vector(), interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector(fireflyCoord)))))
-    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(ExportTemplateNameT(tz.head.begin))))
+    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
     val fireflyExport = KindExportT(tz.head, fireflyKind, fireflyExportId, interner.intern(StrI("Firefly")));
-    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(ExportTemplateNameT(tz.head.begin))))
+    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
     val serenityExport = KindExportT(tz.head, fireflyKind, serenityExportId, interner.intern(StrI("Serenity")));
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
@@ -1433,7 +1431,7 @@ class CompilerTests extends FunSuite with Matchers {
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |import v.builtins.drop.*;
         |import panicutils.*;
         |sealed interface MyOption<T Ref> where func drop(T)void { }
@@ -1697,7 +1695,6 @@ class CompilerTests extends FunSuite with Matchers {
   test("Test MakeArray") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.panic.*;
         |import v.builtins.arith.*;
         |import array.make.*;
         |import v.builtins.arrays.*;

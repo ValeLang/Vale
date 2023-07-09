@@ -4,7 +4,7 @@ import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, RangeS, Result, vas
 import dev.vale.postparsing.rules.{EqualsSR, IRulexSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.env.{FunctionEnvironmentT, GeneralEnvironmentT, IEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, ExternNameT, ExternTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IPlaceholderNameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -94,7 +94,7 @@ object TemplataCompiler {
     IdT(id.packageCoord, initSteps, lastStep)
   }
 
-  def getPlaceholderTemplataId(implPlaceholder: ITemplataT[ITemplataType]) = {
+  def getPlaceholderTemplataId(implPlaceholder: ITemplataT[ITemplataType]): IdT[IPlaceholderNameT] = {
     implPlaceholder match {
       case PlaceholderTemplataT(n, _) => n
       case KindTemplataT(KindPlaceholderT(n)) => n
@@ -210,6 +210,14 @@ object TemplataCompiler {
     IdT(
       packageCoord,
       initSteps,//.map(getNameTemplate), // See GLIOGN for why we map the initSteps names too
+      last.template)
+  }
+
+  def getExternTemplate(id: IdT[ExternNameT]): IdT[ExternTemplateNameT] = {
+    val IdT(packageCoord, initSteps, last) = id
+    IdT(
+      packageCoord,
+      initSteps, //.map(getNameTemplate), // See GLIOGN for why we map the initSteps names too
       last.template)
   }
 

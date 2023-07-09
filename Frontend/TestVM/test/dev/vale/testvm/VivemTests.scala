@@ -1,7 +1,7 @@
 package dev.vale.testvm
 
 import dev.vale.{Interner, Keywords, PackageCoordinate, PackageCoordinateMap, StrI, finalast}
-import dev.vale.finalast.{BlockH, CallH, ConstantIntH, IdH, FunctionH, InlineH, IntHT, PackageH, ProgramH, PrototypeH, CoordH, ShareH, UserFunctionH}
+import dev.vale.finalast._
 import dev.vale.finalast._
 import dev.vale.von.{VonArray, VonInt, VonMember, VonObject, VonStr}
 import org.scalatest.{FunSuite, Matchers}
@@ -18,7 +18,7 @@ class VivemTests extends FunSuite with Matchers {
             PackageCoordinate.TEST_TLD(interner, keywords),
             "main",
             "main"),
-          Vector.empty,CoordH(ShareH,InlineH,IntHT.i32)),
+          Vector.empty,CoordH(MutableShareH,InlineH,IntHT.i32)),
         true,
         false,
         Vector(UserFunctionH),
@@ -45,8 +45,8 @@ class VivemTests extends FunSuite with Matchers {
           PackageCoordinate.BUILTIN(interner, keywords),
           "__vbi_addI32(i32, i32)",
           "__vbi_addI32(i32, i32)"),
-        Vector(CoordH(ShareH,InlineH,IntHT.i32), CoordH(ShareH,InlineH,IntHT.i32)),
-        CoordH(ShareH,InlineH,IntHT.i32))
+        Vector(CoordH(MutableShareH,InlineH,IntHT.i32), CoordH(MutableShareH,InlineH,IntHT.i32)),
+        CoordH(MutableShareH,InlineH,IntHT.i32))
     val main =
       FunctionH(
         PrototypeH(
@@ -55,7 +55,7 @@ class VivemTests extends FunSuite with Matchers {
             PackageCoordinate.TEST_TLD(interner, keywords),
             "main",
             "main"),
-          Vector.empty,CoordH(finalast.ShareH,InlineH,IntHT.i32)),
+          Vector.empty,CoordH(MutableShareH,InlineH,IntHT.i32)),
         true,
         false,
         Vector(UserFunctionH),
@@ -75,7 +75,11 @@ class VivemTests extends FunSuite with Matchers {
         false,
         true,
         Vector.empty,
-        BlockH(ConstantIntH(133337, 32)))
+        ExternCallH(
+          addPrototype,
+          Vector(
+            ArgumentH(CoordH(MutableShareH,InlineH,IntHT.i32), 0),
+            ArgumentH(CoordH(MutableShareH,InlineH,IntHT.i32), 1))))
 
     val packages = new PackageCoordinateMap[PackageH]()
     packages.put(PackageCoordinate.BUILTIN(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(addExtern), Vector.empty, Vector.empty, Map(), Map(), Map(interner.intern(StrI("__vbi_addI32")) -> addPrototype), Map()))

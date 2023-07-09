@@ -1,0 +1,9 @@
+
+extern func streq(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+bool;

@@ -1,6 +1,6 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{BoolHT, BorrowH, FloatHT, InlineH, IntHT, InterfaceHT, KindHT, Local, LocationH, OwnH, OwnershipH, ProgramH, PrototypeH, CoordH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, ShareH, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StrHT, StructDefinitionH, StructMemberH, StructHT, VoidHT, WeakH}
+import dev.vale.finalast._
 import dev.vale.{vassert, vassertSome, vfail, vimpl, von}
 
 import java.io.PrintStream
@@ -36,7 +36,7 @@ class AllocationMap(vivemDout: PrintStream) {
   private val objectsById = mutable.HashMap[AllocationId, Allocation]()
   private val STARTING_ID = 501
   private var nextId = STARTING_ID;
-  val void: ReferenceV = add(ShareH, InlineH, VoidV)
+  val void: ReferenceV = add(MutableShareH, InlineH, VoidV)
 
   private def newId() = {
     val id = nextId;
@@ -266,8 +266,8 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def isSameInstance(callId: CallId, left: ReferenceV, right: ReferenceV): ReferenceV = {
-    val ref = allocateTransient(ShareH, InlineH, BoolV(left.allocId == right.allocId))
-    incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
+    val ref = allocateTransient(MutableShareH, InlineH, BoolV(left.allocId == right.allocId))
+    incrementReferenceRefCount(RegisterToObjectReferrer(callId, MutableShareH), ref)
     ref
   }
 
@@ -327,7 +327,8 @@ class Heap(in_vivemDout: PrintStream) {
   def zero(reference: ReferenceV) = {
     val allocation = objectsById.get(reference.allocId)
     vassert(allocation.getTotalRefCount(Some(OwnH)) == 0)
-    vassert(allocation.getTotalRefCount(Some(BorrowH)) == 0)
+    vassert(allocation.getTotalRefCount(Some(ImmutableBorrowH)) == 0)
+    vassert(allocation.getTotalRefCount(Some(MutableBorrowH)) == 0)
     allocation.kind match {
       case si @ StructInstanceV(_, _) => si.zero()
       case _ =>
@@ -338,7 +339,8 @@ class Heap(in_vivemDout: PrintStream) {
   // This happens when the last owning and weak references disappear.
   def deallocateIfNoWeakRefs(reference: ReferenceV) = {
     val allocation = objectsById.get(reference.allocId)
-    if (reference.actualCoord.hamut.ownership == OwnH && allocation.getTotalRefCount(Some(BorrowH)) > 0) {
+    if (reference.actualCoord.hamut.ownership == OwnH &&
+      (allocation.getTotalRefCount(Some(MutableBorrowH)) + allocation.getTotalRefCount(Some(ImmutableBorrowH))) > 0) {
       throw ConstraintViolatedException("Constraint violated!")
     }
     if (allocation.getTotalRefCount(None) == 0) {
@@ -426,7 +428,9 @@ class Heap(in_vivemDout: PrintStream) {
     }
 
     val ReferenceV(actualKind, oldSeenAsType, oldOwnership, oldLocation, objectId) = reference
-    vassert((oldOwnership == ShareH) == (targetType.ownership == ShareH))
+    vassert(
+      (oldOwnership == MutableShareH || oldOwnership == ImmutableShareH) ==
+        (targetType.ownership == MutableShareH || targetType.ownership == ImmutableShareH))
     if (oldSeenAsType.hamut != expectedType.kind) {
       // not sure if the above .actualType is right
 
@@ -452,7 +456,7 @@ class Heap(in_vivemDout: PrintStream) {
     }
 
     val ReferenceV(actualKind, oldSeenAsType, oldOwnership, oldLocation, objectId) = reference
-    vassert((oldOwnership == ShareH) == (targetType.ownership == ShareH))
+    vassert((oldOwnership == MutableShareH) == (targetType.ownership == MutableShareH))
     if (oldSeenAsType.hamut != expectedType.kind) {
       // not sure if the above .actualType is right
 
@@ -557,7 +561,7 @@ class Heap(in_vivemDout: PrintStream) {
       case StrV(value) => vivemDout.print(value)
       case FloatV(value) => vivemDout.print(value)
       case StructInstanceV(structH, Some(members)) => {
-        vivemDout.print(structH.fullName + "{" + members.map("o" + _.allocId.num).mkString(", ") + "}")
+        vivemDout.print(structH.id + "{" + members.map("o" + _.allocId.num).mkString(", ") + "}")
       }
       case ArrayInstanceV(typeH, memberTypeH, capacity, elements) => vivemDout.print("array:" + capacity + ":" + memberTypeH + "{" + elements.map("o" + _.allocId.num).mkString(", ") + "}")
     }
@@ -648,7 +652,21 @@ class Heap(in_vivemDout: PrintStream) {
     } else {
       vassert(containsLiveObject(actualReference.allocId))
     }
-    if (actualReference.seenAsCoord.hamut != expectedType) {
+    if ((actualReference.seenAsCoord.hamut.ownership match {
+      case ImmutableShareH => MutableShareH
+      case ImmutableBorrowH => MutableBorrowH
+      case other => other
+    }) != (expectedType.ownership  match {
+      case ImmutableShareH => MutableShareH
+      case ImmutableBorrowH => MutableBorrowH
+      case other => other
+    })) {
+      vfail("Expected " + expectedType + " but was " + actualReference.seenAsCoord.hamut)
+    }
+    if (actualReference.seenAsCoord.hamut.location != expectedType.location) {
+      vfail("Expected " + expectedType + " but was " + actualReference.seenAsCoord.hamut)
+    }
+    if (actualReference.seenAsCoord.hamut.kind != expectedType.kind) {
       vfail("Expected " + expectedType + " but was " + actualReference.seenAsCoord.hamut)
     }
     val actualKind = dereference(actualReference, actualReference.ownership == WeakH)
@@ -769,7 +787,7 @@ class Heap(in_vivemDout: PrintStream) {
       case StructInstanceV(structH, Some(members)) => {
         vassert(members.size == structH.members.size)
         von.VonObject(
-          structH.fullName.toString,
+          structH.id.toString,
           None,
           structH.members.zip(members).zipWithIndex.map({ case ((memberH, memberV), index) =>
             VonMember(vimpl(memberH.name.toString), toVon(memberV))

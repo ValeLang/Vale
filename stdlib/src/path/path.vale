@@ -23,7 +23,7 @@ exported struct Path {
 }
 func resolve(self &Path) Path {
   if not self.exists() {
-    panic("Error: used resolve() on a non-existant path.")
+    panic("Error: used resolve() on a non-existent path.")
   }
   Path(resolve(self.str()))
 }

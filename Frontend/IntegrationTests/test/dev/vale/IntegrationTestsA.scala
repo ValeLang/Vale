@@ -7,8 +7,9 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing._
 import dev.vale.typing.ast._
-import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT}
-import dev.vale.typing.{Hinputs, ICompileErrorT, ast}
+import dev.vale.instantiating.ast._
+import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT}
+import dev.vale.typing.{HinputsT, ICompileErrorT, ast}
 import dev.vale.typing.types._
 import dev.vale.testvm.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
 import dev.vale.highertyping.ICompileErrorA
@@ -20,6 +21,7 @@ import dev.vale.testvm.ReferenceV
 import org.scalatest.{FunSuite, Matchers}
 import dev.vale.passmanager.FullCompilation
 import dev.vale.finalast.IdH
+import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ast._
@@ -67,9 +69,9 @@ class RunCompilation(
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getCompilerOutputs()
-  def expectCompilerOutputs(): Hinputs = fullCompilation.expectCompilerOutputs()
-  def getMonouts(): Hinputs = fullCompilation.getMonouts()
+  def getCompilerOutputs(): Result[HinputsT, ICompileErrorT] = fullCompilation.getCompilerOutputs()
+  def expectCompilerOutputs(): HinputsT = fullCompilation.expectCompilerOutputs()
+  def getMonouts(): HinputsI = fullCompilation.getMonouts()
   def getHamuts(): ProgramH = {
     val hamuts = fullCompilation.getHamuts()
     fullCompilation.getVonHammer().vonifyProgram(hamuts)
@@ -776,14 +778,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(
-      hinputs.functions.filter(func => func.header.id.localName match {
-        case FunctionNameT(FunctionTemplateNameT(StrI("bork"), _), _, _) => true
+      !hinputs.functions.exists(func => func.header.id.localName match {
+        case FunctionNameIX(FunctionTemplateNameI(StrI("bork"), _), _, _) => true
         case _ => false
-      }).isEmpty)
+      }))
 
     vassert(
       hinputs.functions.find(func => func.header.id.localName match {
-        case FunctionNameT(FunctionTemplateNameT(StrI("helperFunc"), _), _, _) => true
+        case FunctionNameIX(FunctionTemplateNameI(StrI("helperFunc"), _), _, _) => true
         case _ => false
       }).size == 1)
   }

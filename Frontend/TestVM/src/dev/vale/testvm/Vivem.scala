@@ -1,6 +1,6 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{InlineH, ProgramH, ShareH}
+import dev.vale.finalast._
 import dev.vale.{Result, vassert, vassertSome, vcurious, vfail, vpass}
 
 import java.io.PrintStream
@@ -28,7 +28,7 @@ object Vivem {
     val heap = new Heap(vivemDout)
     val argReferences =
       externalArgumentKinds.map(argKind => {
-        heap.add(ShareH, InlineH, argKind);
+        heap.add(MutableShareH, InlineH, argKind);
       });
     innerExecute(programH, argReferences, heap, vivemDout, stdin, stdout)
   }

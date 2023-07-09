@@ -5,13 +5,13 @@ import dev.vale.finalast.ProgramH
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing._
-import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassertSome, vcurious, vimpl}
 import dev.vale.highertyping.ICompileErrorA
+import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.instantiating.{InstantiatedCompilation, InstantiatorCompilationOptions}
 import dev.vale.postparsing.ICompileErrorS
-import dev.vale.typing.ICompileErrorT
+import dev.vale.typing.{HinputsT, ICompileErrorT}
 
 import scala.collection.immutable.List
 
@@ -47,9 +47,9 @@ class HammerCompilation(
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = instantiatedCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = instantiatedCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = instantiatedCompilation.getAstrouts()
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = instantiatedCompilation.getCompilerOutputs()
-  def getMonouts(): Hinputs = instantiatedCompilation.getMonouts()
-  def expectCompilerOutputs(): Hinputs = instantiatedCompilation.expectCompilerOutputs()
+  def getCompilerOutputs(): Result[HinputsT, ICompileErrorT] = instantiatedCompilation.getCompilerOutputs()
+  def getMonouts(): HinputsI = instantiatedCompilation.getMonouts()
+  def expectCompilerOutputs(): HinputsT = instantiatedCompilation.expectCompilerOutputs()
 
   def getHamuts(): ProgramH = {
     hamutsCache match {

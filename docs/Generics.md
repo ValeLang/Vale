@@ -799,7 +799,7 @@ Note how `{genFunc$0}` is still there, even in an instantiation name. See DMPOGN
   
 These all might be completely different functions, depending on what happened inside the body, what kind of metaprogramming it does, etc.
 
-Now the challenge: What is `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`'s original generic's name? We have to be careful because these look very similar:
+Now the challenge: What is `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`'s original generic's name? (Note from later: I think this challenge is because we need to know the original generic so we know what to start instantiating.) We have to be careful because these look very similar:
 
  * `mvtest/genFunc<genFunc$0>.lam:2:6.__call{genFunc$0}`
  * `mvtest/genFunc<genFunc$0>.lam:2:6.__call{int}`
@@ -811,6 +811,7 @@ We can find that second one by comparing all their generic full names. The gener
 `mvtest/genFunc<int>.lam:2:6.__call{int}<int>` becomes `mvtest/genFunc.lam:2:6.__call{int}`.
 
 The two candidates become:
+
  * `mvtest/genFunc.lam:2:6.__call{genFunc$0}`
  * `mvtest/genFunclam:2:6.__call{int}`
 

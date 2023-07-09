@@ -580,7 +580,7 @@ class ArrayCompiler(
         case PlaceholderTemplataT(_, _) => FinalT
         case VariabilityTemplataT(variability) => variability
       }
-    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, variability)
+    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, memberType,  variability)
   }
 
   def lookupInUnknownSizedArray(

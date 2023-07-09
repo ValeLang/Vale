@@ -2,16 +2,10 @@ package dev.vale.simplifying
 
 import dev.vale.{CodeLocationS, PackageCoordinate, RangeS, vimpl}
 import dev.vale.finalast._
-import dev.vale.typing.Hinputs
-import dev.vale.typing.names._
-import dev.vale.typing.templata._
 import dev.vale.finalast._
+import dev.vale.instantiating.ast._
 import dev.vale.{finalast => m}
 import dev.vale.postparsing._
-import dev.vale.typing.templata._
-import dev.vale.typing._
-import dev.vale.typing.names._
-import dev.vale.typing.types._
 import dev.vale.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
 
 class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
@@ -124,17 +118,18 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
   }
 
   def vonifyRegion(region: RegionH): IVonData = {
-    val RegionH(name, kinds) = region
+    val RegionH() = region
 
     VonObject(
       "Region",
       None,
-      Vector(
-        VonMember(
-          "kinds",
-          VonArray(
-            None,
-            kinds.map(vonifyKind).toVector))))
+      Vector())
+//      Vector(
+//        VonMember(
+//          "kinds",
+//          VonArray(
+//            None,
+//            kinds.map(vonifyKind).toVector))))
   }
 
   def vonifyStructH(ref: StructHT): IVonData = {
@@ -269,8 +264,10 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
   def vonifyOwnership(ownership: OwnershipH): IVonData = {
     ownership match {
       case OwnH => VonObject("Own", None, Vector())
-      case BorrowH => VonObject("Borrow", None, Vector())
-      case ShareH => VonObject("Share", None, Vector())
+      case ImmutableBorrowH => VonObject("ImmutableBorrow", None, Vector())
+      case MutableBorrowH => VonObject("MutableBorrow", None, Vector())
+      case ImmutableShareH => VonObject("ImmutableShare", None, Vector())
+      case MutableShareH => VonObject("MutableShare", None, Vector())
       case WeakH => VonObject("Weak", None, Vector())
     }
   }
@@ -473,6 +470,14 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceResultType", vonifyCoord(sourceExpr.resultType))))
       }
+      case PreCheckBorrowH(sourceExpr) => {
+        VonObject(
+          "PreCheckBorrow",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceResultType", vonifyCoord(sourceExpr.resultType))))
+      }
       case ArgumentH(resultReference, argumentIndex) => {
         VonObject(
           "Argument",
@@ -551,6 +556,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           None,
           Vector(
             VonMember("arrayExpr", vonifyExpression(structExpr)),
+            VonMember("arrayType", vonifyCoord(structExpr.resultType)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -841,6 +847,24 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           Vector(
             VonMember("exprs", VonArray(None, nodes.map(node => vonifyExpression(node)).toVector))))
       }
+      case m @ MutabilifyH(inner) => {
+        VonObject(
+          "Mutabilify",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(inner)),
+            VonMember("sourceType", vonifyCoord(inner.resultType)),
+            VonMember("resultType", vonifyCoord(m.resultType))))
+      }
+      case m @ ImmutabilifyH(inner) => {
+        VonObject(
+          "Immutabilify",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(inner)),
+            VonMember("sourceType", vonifyCoord(inner.resultType)),
+            VonMember("resultType", vonifyCoord(m.resultType))))
+      }
       case BlockH(inner) => {
         VonObject(
           "Block",
@@ -898,7 +922,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           vonifyOptional[IdH](maybeName, x => vonifyName(x)))))
   }
 
-  def vonifyOptional[T](opt: Option[T], func: (T) => IVonData): IVonData = {
+  def vonifyOptional[I](opt: Option[I], func: (I) => IVonData): IVonData = {
     opt match {
       case None => VonObject("None", None, Vector())
       case Some(value) => VonObject("Some", None, Vector(VonMember("value", func(value))))

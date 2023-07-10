@@ -3,30 +3,6 @@ package dev.vale.instantiating.ast
 import dev.vale._
 import dev.vale.postparsing._
 
-//trait IExpressionResultI  {
-//  def expectReference(): ReferenceResultI = {
-//    this match {
-//      case r @ ReferenceResultI(_) => r
-//      case AddressResultI(_) => vfail("Expected a reference as a result, but got an address!")
-//    }
-//  }
-//  def expectAddress(): AddressResultI = {
-//    this match {
-//      case a @ AddressResultI(_) => a
-//      case ReferenceResultI(_) => vfail("Expected an address as a result, but got a reference!")
-//    }
-//  }
-//  // DO NOT SUBMIT rename back to coord
-//  def collapsedCoord: CoordI[cI]
-//}
-//// This is only the collapsed coord, see HCCSCS.
-//case class ReferenceResultI(collapsedCoord: CoordI[cI]) extends IExpressionResultI {
-//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-//}
-//case class AddressResultI(collapsedCoord: CoordI[cI]) extends IExpressionResultI {
-//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-//}
-
 trait ExpressionI  {
   def result: CoordI[cI]
 }

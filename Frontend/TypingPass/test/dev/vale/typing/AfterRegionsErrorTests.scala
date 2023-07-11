@@ -9,7 +9,7 @@ import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.{Collector, Err, Ok, vwat, _}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class AfterRegionsErrorTests extends FunSuite with Matchers {
 
@@ -17,7 +17,7 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import printutils.*;
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |
         |#!DeriveInterfaceDrop
         |sealed interface Opt<T> where T Ref { }

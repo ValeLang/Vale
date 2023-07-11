@@ -9,7 +9,7 @@ import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionDefinitionT
 import dev.vale.typing.env.{FunctionEnvironmentT, TemplatasStore}
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function._
 import dev.vale.typing.templata.{FunctionTemplataT, PrototypeTemplataT}
 
 class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver: OverloadResolver) extends IFunctionBodyMacro {

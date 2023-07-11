@@ -8,8 +8,9 @@ import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResol
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
+import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
-import dev.vale.typing.{Hinputs, ICompileErrorT}
+import dev.vale.typing.{HinputsT, ICompileErrorT}
 import dev.vale.postparsing.PostParser
 import dev.vale.simplifying._
 import dev.vale.typing.ICompileErrorT
@@ -47,8 +48,8 @@ class FullCompilation(
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = hammerCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = hammerCompilation.getAstrouts()
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = hammerCompilation.getCompilerOutputs()
-  def expectCompilerOutputs(): Hinputs = hammerCompilation.expectCompilerOutputs()
+  def getCompilerOutputs(): Result[HinputsT, ICompileErrorT] = hammerCompilation.getCompilerOutputs()
+  def expectCompilerOutputs(): HinputsT = hammerCompilation.expectCompilerOutputs()
   def getHamuts(): ProgramH = hammerCompilation.getHamuts()
-  def getMonouts(): Hinputs = hammerCompilation.getMonouts()
+  def getMonouts(): HinputsI = hammerCompilation.getMonouts()
 }

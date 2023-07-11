@@ -7,7 +7,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.templata.simpleName
 import dev.vale.typing.types.StructTT
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class InferTemplateTests extends FunSuite with Matchers {
   test("Test inferring a borrowed argument") {
@@ -23,7 +23,7 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     val moo = compile.expectCompilerOutputs().lookupFunction("moo")
     moo.header.params match {
-      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, CoordT(BorrowT,_, _))) =>
+      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, _, CoordT(BorrowT,_, _))) =>
     }
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {

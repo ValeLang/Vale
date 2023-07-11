@@ -2,13 +2,13 @@ package dev.vale
 
 import dev.vale.testvm.PanicException
 import dev.vale.von.{VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ResultTests extends FunSuite with Matchers {
   test("Test borrow is_ok and expect for Ok") {
     val compile = RunCompilation.test(
         """
-          |import v.builtins.panic.*;
+          |import v.builtins.panicutils.*;
           |import v.builtins.result.*;
           |
           |exported func main() int {
@@ -24,7 +24,7 @@ class ResultTests extends FunSuite with Matchers {
   test("Test is_err and borrow expect_err for Err") {
     val compile = RunCompilation.test(
         """
-          |import v.builtins.panic.*;
+          |import v.builtins.panicutils.*;
           |import v.builtins.result.*;
           |
           |exported func main() str {
@@ -40,7 +40,7 @@ class ResultTests extends FunSuite with Matchers {
   test("Test owning expect") {
     val compile = RunCompilation.test(
       """
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |import v.builtins.result.*;
         |
         |exported func main() int {
@@ -55,7 +55,7 @@ class ResultTests extends FunSuite with Matchers {
   test("Test owning expect_err") {
     val compile = RunCompilation.test(
       """
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |import v.builtins.result.*;
         |
         |exported func main() str {
@@ -70,7 +70,7 @@ class ResultTests extends FunSuite with Matchers {
   test("Test expect() panics for Err") {
     val compile = RunCompilation.test(
         """
-          |import v.builtins.panic.*;
+          |import v.builtins.panicutils.*;
           |import v.builtins.result.*;
           |
           |exported func main() int {
@@ -90,7 +90,7 @@ class ResultTests extends FunSuite with Matchers {
   test("Test expect_err() panics for Ok") {
     val compile = RunCompilation.test(
       """
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |import v.builtins.result.*;
         |
         |exported func main() str {

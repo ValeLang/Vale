@@ -1,0 +1,2 @@
+extern("vale_runtime_sized_array_len")
+func len<M Mutability, E>(arr &[]<M>E) int;

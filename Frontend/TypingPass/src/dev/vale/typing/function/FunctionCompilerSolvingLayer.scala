@@ -4,7 +4,6 @@ import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, va
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.citizen.StructCompiler
-import dev.vale.typing.function.FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.postparsing.patterns._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -13,7 +12,7 @@ import dev.vale.typing.OverloadResolver.InferFailure
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
-import FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
+import dev.vale.typing.function._
 import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve, Solver}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsT, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT, TemplataEnvEntry, TemplataLookupContext}

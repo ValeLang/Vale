@@ -16,9 +16,7 @@ object ProgramH {
   val externRegionName = "host"
 }
 
-case class RegionH(
-  name: String,
-  kinds: Vector[KindHT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+case class RegionH() { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class Export(
   nameH: IdH,
@@ -64,7 +62,7 @@ case class PackageH(
     val matches =
       (Vector.empty ++
         exportNameToFunction.find(_._1.str == readableName).map(_._2).toVector ++
-        functions.filter(_.prototype.fullName.localName == readableName).map(_.prototype))
+        functions.filter(_.prototype.id.localName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
@@ -74,7 +72,7 @@ case class PackageH(
   // Convenience function for the tests to look up a struct.
   // Struct must be at the top level of the program.
   def lookupStruct(humanName: String) = {
-    val matches = structs.filter(_.fullName.localName == humanName)
+    val matches = structs.filter(_.id.localName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -82,7 +80,7 @@ case class PackageH(
   // Convenience function for the tests to look up an interface.
   // Interface must be at the top level of the program.
   def lookupInterface(humanName: String) = {
-    val matches = interfaces.filter(_.fullName.shortenedName == humanName)
+    val matches = interfaces.filter(_.id.shortenedName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -97,22 +95,22 @@ case class ProgramH(
     vassertSome(packages.get(packageCoordinate))
   }
   def lookupFunction(prototype: PrototypeH): FunctionH = {
-    val paackage = lookupPackage(prototype.fullName.packageCoordinate)
-    val result = vassertSome(paackage.functions.find(_.fullName == prototype.fullName))
+    val paackage = lookupPackage(prototype.id.packageCoordinate)
+    val result = vassertSome(paackage.functions.find(_.fullName == prototype.id))
     vassert(prototype == result.prototype)
     result
   }
   def lookupStruct(structRefH: StructHT): StructDefinitionH = {
-    val paackage = lookupPackage(structRefH.fullName.packageCoordinate)
+    val paackage = lookupPackage(structRefH.id.packageCoordinate)
     vassertSome(paackage.structs.find(_.getRef == structRefH))
   }
   def lookupInterface(interfaceRefH: InterfaceHT): InterfaceDefinitionH = {
-    val paackage = lookupPackage(interfaceRefH.fullName.packageCoordinate)
+    val paackage = lookupPackage(interfaceRefH.id.packageCoordinate)
     vassertSome(paackage.interfaces.find(_.getRef == interfaceRefH))
   }
   def lookupStaticSizedArray(ssaTH: StaticSizedArrayHT): StaticSizedArrayDefinitionHT = {
-    val paackage = lookupPackage(ssaTH.name.packageCoordinate)
-    vassertSome(paackage.staticSizedArrays.find(_.name == ssaTH.name))
+    val paackage = lookupPackage(ssaTH.id.packageCoordinate)
+    vassertSome(paackage.staticSizedArrays.find(_.name == ssaTH.id))
   }
   def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionHT = {
     val paackage = lookupPackage(rsaTH.name.packageCoordinate)
@@ -124,7 +122,7 @@ case class ProgramH(
 // There is only one of these per type of struct in the program.
 case class StructDefinitionH(
     // Name of the struct. Guaranteed to be unique in the entire program.
-    fullName: IdH,
+    id: IdH,
     // Whether we can take weak references to this object.
     // On native, this means an extra "weak ref count" will be included for the object.
     // On JVM/CLR/JS, this means the object will have an extra tiny object pointing
@@ -143,7 +141,7 @@ case class StructDefinitionH(
     // The members of the struct, in order.
     members: Vector[StructMemberH]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  def getRef: StructHT = StructHT(fullName)
+  def getRef: StructHT = StructHT(id)
 }
 
 // A member of a struct.
@@ -164,7 +162,7 @@ case class StructMemberH(
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
-  fullName: IdH,
+  id: IdH,
   // Whether we can take weak references to this interface.
   // On native, this means an extra "weak ref count" will be included for the object.
   // On JVM/CLR/JS, this means the object should extend the IWeakable interface,
@@ -182,7 +180,7 @@ case class InterfaceDefinitionH(
   // All the methods that we can call on this interface.
   methods: Vector[InterfaceMethodH]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  def getRef = InterfaceHT(fullName)
+  def getRef = InterfaceHT(id)
 }
 
 // A method in an interface.
@@ -218,7 +216,7 @@ case class FunctionH(
 
   // Whether this has a body. If true, the body will simply contain an InterfaceCallH instruction.
   isAbstract: Boolean,
-  // Whether this has a body. If true, the body will simply contain an ExternCallH instruction to the same
+  // Whether this is an extern. If true, the body will simply contain an ExternCallH instruction to the same
   // prototype describing this function.
   isExtern: Boolean,
 
@@ -226,14 +224,17 @@ case class FunctionH(
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[KindHT]) {
+
+  vpass()
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  def fullName = prototype.fullName
+  def fullName = prototype.id
   def isUserFunction = attributes.contains(UserFunctionH)
 }
 
 // A wrapper around a function's name, which also has its params and return type.
 case class PrototypeH(
-  fullName: IdH,
+  id: IdH,
   params: Vector[CoordH[KindHT]],
   returnType: CoordH[KindHT]
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
@@ -247,6 +248,8 @@ case class IdH(
   shortenedName: String,
   // Most precise name, without shortening.
   fullyQualifiedName: String) {
+  vpass()
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def equals(obj: Any): Boolean = {

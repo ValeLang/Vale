@@ -7,7 +7,7 @@ import dev.vale.typing.types.StrT
 import dev.vale.testvm.StructInstanceV
 import dev.vale.von.VonInt
 import dev.vale.{finalast => m}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class PureFunctionTests extends FunSuite with Matchers {
   test("Simple pure function") {

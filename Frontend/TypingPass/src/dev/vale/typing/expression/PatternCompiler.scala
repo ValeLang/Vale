@@ -51,6 +51,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     patternsA: Vector[AtomSP],
     patternInputsTE: Vector[ReferenceExpressionTE],
     // This would be a continuation-ish lambda that evaluates:
@@ -62,7 +63,7 @@ class PatternCompiler(
   ReferenceExpressionTE = {
     Profiler.frame(() => {
       iterateTranslateListAndMaybeContinue(
-        coutputs, nenv, life, parentRanges, Vector(), patternsA.toList, patternInputsTE.toList, afterPatternsSuccessContinuation)
+        coutputs, nenv, life, parentRanges, callLocation, Vector(), patternsA.toList, patternInputsTE.toList, afterPatternsSuccessContinuation)
     })
   }
 
@@ -71,6 +72,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     liveCaptureLocals: Vector[ILocalVariableT],
     patternsA: List[AtomSP],
     patternInputsTE: List[ReferenceExpressionTE],
@@ -87,12 +89,12 @@ class PatternCompiler(
       case (Nil, Nil) => afterPatternsSuccessContinuation(coutputs, nenv, liveCaptureLocals)
       case (headPatternA :: tailPatternsA, headPatternInputTE :: tailPatternInputsTE) => {
         innerTranslateSubPatternAndMaybeContinue(
-          coutputs, nenv, life + 0, parentRanges, headPatternA, liveCaptureLocals, headPatternInputTE,
+          coutputs, nenv, life + 0, parentRanges, callLocation, headPatternA, liveCaptureLocals, headPatternInputTE,
           (coutputs, nenv, life, liveCaptureLocals) => {
             vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
             iterateTranslateListAndMaybeContinue(
-              coutputs, nenv, life + 1, parentRanges, liveCaptureLocals, tailPatternsA, tailPatternInputsTE, afterPatternsSuccessContinuation)
+              coutputs, nenv, life + 1, parentRanges, callLocation, liveCaptureLocals, tailPatternsA, tailPatternInputsTE, afterPatternsSuccessContinuation)
           })
       }
       case _ => vfail("wat")
@@ -175,7 +177,7 @@ class PatternCompiler(
           }
         }
 
-      innerTranslateSubPatternAndMaybeContinue(coutputs, nenv, life, parentRanges, pattern, Vector(), convertedInputExpr, afterPatternsSuccessContinuation)
+      innerTranslateSubPatternAndMaybeContinue(coutputs, nenv, life, parentRanges, callLocation, pattern, Vector(), convertedInputExpr, afterPatternsSuccessContinuation)
     })
   }
 
@@ -184,6 +186,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     pattern: AtomSP,
     previousLiveCaptureLocals: Vector[ILocalVariableT],
     inputExpr: ReferenceExpressionTE,
@@ -197,6 +200,7 @@ class PatternCompiler(
     vassert(previousLiveCaptureLocals.map(_.name) == previousLiveCaptureLocals.map(_.name).distinct)
 
     val AtomSP(range, maybeCaptureLocalVarA, coordRuneA, maybeDestructure) = pattern
+    // DO NOT SUBMIT make test that we have the right type in there, cuz the coordRuneA seems to be unused
 
     // We make it here instead of down in the maybeDestructure clauses because whether we destructure it or not
     // is unrelated to whether we destructure it.
@@ -242,22 +246,39 @@ class PatternCompiler(
     vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
     Compiler.consecutive(
-      currentInstructions :+
+      currentInstructions ++
         (maybeDestructure match {
           case None => {
-            // Do nothing
-            afterSubPatternSuccessContinuation(coutputs, nenv, life + 0, liveCaptureLocals)
+            // If we get here, we aren't destructuring, or doing anything with the exprToDestructureOrDropOrPassTE.
+
+            (maybeCaptureLocalVarA match {
+              case None => {
+                // If we didn't store it, and we aren't destructuring it, then we're just ignoring it. Let's drop it.
+                List(
+                  destructorCompiler.drop(
+                    nenv.snapshot, coutputs, range :: parentRanges, callLocation, exprToDestructureOrDropOrPassTE))
+              }
+              case Some(_) => {
+                // We aren't destructuring it, but we stored it, so just do nothing.
+                List()
+              }
+            }) ++
+            List(
+              // ...and then continue on.
+              afterSubPatternSuccessContinuation(coutputs, nenv, life + 0, liveCaptureLocals))
           }
           case Some(listOfMaybeDestructureMemberPatterns) => {
             exprToDestructureOrDropOrPassTE.result.coord.ownership match {
               case OwnT => {
                 // We aren't capturing the var, so the destructuring should consume the incoming value.
-                destructureOwning(
-                  coutputs, nenv, life + 1, range :: parentRanges, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
+                List(
+                  destructureOwning(
+                    coutputs, nenv, life + 1, range :: parentRanges, callLocation, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation))
               }
               case BorrowT | ShareT => {
-                destructureNonOwningAndMaybeContinue(
-                  coutputs, nenv, life + 2, range :: parentRanges, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
+                List(
+                  destructureNonOwningAndMaybeContinue(
+                    coutputs, nenv, life + 2, range :: parentRanges, callLocation, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation))
               }
             }
           }
@@ -269,6 +290,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     initialLiveCaptureLocals: Vector[ILocalVariableT],
     inputExpr: ReferenceExpressionTE,
     listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
@@ -287,7 +309,7 @@ class PatternCompiler(
         // Since we're receiving an owning reference, and we're *not* capturing
         // it in a variable, it will be destroyed and we will harvest its parts.
         translateDestroyStructInnerAndMaybeContinue(
-          coutputs, nenv, life + 0, parentRanges, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
+          coutputs, nenv, life + 0, parentRanges, callLocation, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
       }
       case staticSizedArrayT @ contentsStaticSizedArrayTT(sizeTemplata, _, _, elementType) => {
         val size =
@@ -313,7 +335,7 @@ class PatternCompiler(
         }
         val lets =
           makeLetsForOwnAndMaybeContinue(
-            coutputs, nenv, life + 4, parentRanges, liveCaptureLocals, elementLocals.toList, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)
+            coutputs, nenv, life + 4, parentRanges, callLocation, liveCaptureLocals, elementLocals.toList, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)
         Compiler.consecutive(Vector(destroyTE, lets))
       }
       case rsa @ contentsRuntimeSizedArrayTT(_, _) => {
@@ -331,6 +353,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironmentT,
       range: List[RangeS],
+      callLocation: LocationInDenizen,
       liveCaptureLocals: Vector[ILocalVariableT],
       containerTE: ReferenceExpressionTE,
       listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
@@ -347,7 +370,7 @@ class PatternCompiler(
       Vector(
         letTE,
         iterateDestructureNonOwningAndMaybeContinue(
-          coutputs, nenv, life + 1, range, liveCaptureLocals, containerTE.result.coord, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
+          coutputs, nenv, life + 1, range, callLocation, liveCaptureLocals, containerTE.result.coord, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
   }
 
   private def iterateDestructureNonOwningAndMaybeContinue(
@@ -355,6 +378,7 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     liveCaptureLocals: Vector[ILocalVariableT],
     expectedContainerCoord: CoordT,
     containerAliasingExprTE: ReferenceExpressionTE,
@@ -401,7 +425,7 @@ class PatternCompiler(
 
         val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership)
         innerTranslateSubPatternAndMaybeContinue(
-          coutputs, nenv, life + 1, parentRanges, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
+          coutputs, nenv, life + 1, parentRanges, callLocation, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
           (coutputs, nenv, life, liveCaptureLocals) => {
             vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
@@ -411,6 +435,7 @@ class PatternCompiler(
               nenv,
               life,
               parentRanges,
+              callLocation,
               liveCaptureLocals,
               expectedContainerCoord,
               containerAliasingExprTE,
@@ -427,8 +452,9 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     initialLiveCaptureLocals: Vector[ILocalVariableT],
-    innerPatternMaybes: Vector[AtomSP],
+    innerPatterns: Vector[AtomSP],
     inputStructExpr: ReferenceExpressionTE,
     afterDestroySuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironmentT, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
@@ -460,8 +486,8 @@ class PatternCompiler(
     val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
     vassert(liveCaptureLocals.map(_.name) == liveCaptureLocals.map(_.name).distinct)
 
-    if (memberLocals.size != innerPatternMaybes.size) {
-      throw CompileErrorExceptionT(WrongNumberOfDestructuresError(parentRanges, innerPatternMaybes.size, memberLocals.size))
+    if (memberLocals.size != innerPatterns.size) {
+      throw CompileErrorExceptionT(WrongNumberOfDestructuresError(parentRanges, innerPatterns.size, memberLocals.size))
     }
     val restTE =
       makeLetsForOwnAndMaybeContinue(
@@ -469,9 +495,10 @@ class PatternCompiler(
         nenv,
         life + 0,
         parentRanges,
+        callLocation,
         liveCaptureLocals,
         memberLocals.toList,
-        innerPatternMaybes.toList,
+        innerPatterns.toList,
         afterDestroySuccessContinuation)
     Compiler.consecutive(Vector(destroyTE, restTE))
   }
@@ -481,16 +508,17 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     initialLiveCaptureLocals: Vector[ILocalVariableT],
     memberLocalVariables: List[ILocalVariableT],
-    innerPatternMaybes: List[AtomSP],
+    innerPatterns: List[AtomSP],
     afterLetsSuccessContinuation: (CompilerOutputs, NodeEnvironmentBox, LocationInFunctionEnvironmentT, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
-    vassert(memberLocalVariables.size == innerPatternMaybes.size)
+    vassert(memberLocalVariables.size == innerPatterns.size)
 
-    (memberLocalVariables, innerPatternMaybes) match {
+    (memberLocalVariables, innerPatterns) match {
       case (Nil, Nil) => {
         afterLetsSuccessContinuation(coutputs, nenv, life + 0, initialLiveCaptureLocals)
       }
@@ -500,12 +528,12 @@ class PatternCompiler(
         vassert(liveCaptureLocals.size == initialLiveCaptureLocals.size - 1)
 
         innerTranslateSubPatternAndMaybeContinue(
-          coutputs, nenv, life + 1, headInnerPattern.range :: parentRanges, headInnerPattern, liveCaptureLocals, unletExpr,
+          coutputs, nenv, life + 1, headInnerPattern.range :: parentRanges, callLocation, headInnerPattern, liveCaptureLocals, unletExpr,
           (coutputs, nenv, life, liveCaptureLocals) => {
             vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
             makeLetsForOwnAndMaybeContinue(
-              coutputs, nenv, life, parentRanges, liveCaptureLocals, tailMemberLocalVariables, tailInnerPatternMaybes, afterLetsSuccessContinuation)
+              coutputs, nenv, life, parentRanges, callLocation, liveCaptureLocals, tailMemberLocalVariables, tailInnerPatternMaybes, afterLetsSuccessContinuation)
           })
       }
     }

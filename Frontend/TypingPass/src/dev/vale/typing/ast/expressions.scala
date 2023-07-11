@@ -466,13 +466,17 @@ case class StaticSizedArrayLookupTE(
     arrayExpr: ReferenceExpressionTE,
     arrayType: StaticSizedArrayTT,
     indexExpr: ReferenceExpressionTE,
+  // See RMLRMO for why this is the same ownership as the original field.
+    elementType: CoordT,
     // See RMLRMO for why we dont have a targetOwnership field here.
     variability: VariabilityT
 ) extends AddressExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  vassert(arrayExpr.result.coord.kind == arrayType)
 
-  override def result = AddressResultT(arrayType.elementType)
+  override def result = {
+    // See RMLRMO why we just return the element type.
+    AddressResultT(elementType)
+  }
 }
 
 case class RuntimeSizedArrayLookupTE(
@@ -487,8 +491,8 @@ case class RuntimeSizedArrayLookupTE(
   vassert(arrayExpr.result.coord.kind == arrayType)
 
   override def result = {
-    val CoordT(ownership, _, kind) = arrayType.elementType
-    AddressResultT(CoordT(ownership, GlobalRegionT(), kind))
+    // See RMLRMO why we just return the element type.
+    AddressResultT(arrayType.elementType)
   }
 }
 
@@ -501,6 +505,9 @@ case class ReferenceMemberLookupTE(
     range: RangeS,
     structExpr: ReferenceExpressionTE,
     memberName: IVarNameT,
+  // We include this so the instantiator doesn't have to translate the entire struct definition to
+  // figure out what type it's pulling out.
+  // See RMLRMO for why this is the same ownership as the original field.
     memberReference: CoordT,
     // See RMLRMO for why we dont have a targetOwnership field here.
     variability: VariabilityT) extends AddressExpressionTE {

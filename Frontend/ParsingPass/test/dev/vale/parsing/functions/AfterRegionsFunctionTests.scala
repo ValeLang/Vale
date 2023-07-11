@@ -4,7 +4,7 @@ import dev.vale.lexing.{BadFunctionBodyError, LightFunctionMustHaveParamTypes}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.{Collector, StrI, vassertOne, vimpl}
-import org.scalatest.FunSuite
+import org.scalatest._
 
 
 class AfterRegionsFunctionTests extends FunSuite with Collector with TestParseUtils {

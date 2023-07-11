@@ -17,7 +17,7 @@ import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.citizen.StructCompilerCore
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 
@@ -580,7 +580,7 @@ class ArrayCompiler(
         case PlaceholderTemplataT(_, _) => FinalT
         case VariabilityTemplataT(variability) => variability
       }
-    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, variability)
+    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, memberType,  variability)
   }
 
   def lookupInUnknownSizedArray(

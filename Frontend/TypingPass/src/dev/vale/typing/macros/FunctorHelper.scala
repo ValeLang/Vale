@@ -12,7 +12,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
+import dev.vale.typing.function._
 import dev.vale.typing.names.RuneNameT
 import dev.vale.typing.templata.PrototypeTemplataT
 import dev.vale.typing.types.CoordT

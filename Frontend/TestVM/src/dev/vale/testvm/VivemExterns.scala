@@ -1,10 +1,9 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{InlineH, ShareH, YonderH}
+import dev.vale.finalast._
 import dev.vale.{vassert, vfail}
 
 import java.lang.ArithmeticException
-import dev.vale.finalast.YonderH
 import dev.vale.vfail
 
 object VivemExterns {
@@ -19,7 +18,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, FloatV(aValue + bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(aValue + bValue))
       }
     }
   }
@@ -30,7 +29,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, FloatV(aValue * bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(aValue * bValue))
       }
     }
   }
@@ -41,7 +40,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, FloatV(aValue / bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(aValue / bValue))
       }
     }
   }
@@ -52,7 +51,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, FloatV(aValue - bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(aValue - bValue))
       }
     }
   }
@@ -65,14 +64,14 @@ object VivemExterns {
     val StrV(bStr) = memory.dereference(args(3))
     val IntV(bBegin, 32) = memory.dereference(args(4))
     val IntV(bLength, 32) = memory.dereference(args(5))
-    memory.addAllocationForReturn(ShareH, YonderH, StrV(aStr.substring(aBegin.toInt, aBegin.toInt + aLength.toInt) + bStr.substring(bBegin.toInt, bBegin.toInt + bLength.toInt)))
+    memory.addAllocationForReturn(MutableShareH, YonderH, StrV(aStr.substring(aBegin.toInt, aBegin.toInt + aLength.toInt) + bStr.substring(bBegin.toInt, bBegin.toInt + bLength.toInt)))
   }
 
   def getch(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.isEmpty)
     val next = memory.stdin()
     val code = if (next.isEmpty) { 0 } else { next.charAt(0).charValue().toInt }
-    memory.addAllocationForReturn(ShareH, InlineH, IntV(code, 32))
+    memory.addAllocationForReturn(MutableShareH, InlineH, IntV(code, 32))
   }
 
   def lessThanFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -81,7 +80,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue < bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue < bValue))
       }
     }
   }
@@ -92,7 +91,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue > bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue > bValue))
       }
     }
   }
@@ -103,7 +102,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (FloatV(aValue), FloatV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue == bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue == bValue))
       }
     }
   }
@@ -117,7 +116,7 @@ object VivemExterns {
     val IntV(rightStrStart, 32) = memory.dereference(args(4))
     val IntV(rightStrLen, 32) = memory.dereference(args(5))
     val result = BoolV(leftStr.slice(leftStrStart.toInt, leftStrLen.toInt) == rightStr.slice(rightStrStart.toInt, rightStrLen.toInt))
-    memory.addAllocationForReturn(ShareH, InlineH, result)
+    memory.addAllocationForReturn(MutableShareH, InlineH, result)
   }
 
   def eqBoolBool(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -126,7 +125,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (BoolV(aValue), BoolV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue == bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue == bValue))
       }
     }
   }
@@ -137,7 +136,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (BoolV(aValue), BoolV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue && bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue && bValue))
       }
     }
   }
@@ -148,7 +147,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (BoolV(aValue), BoolV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue || bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue || bValue))
       }
     }
   }
@@ -156,31 +155,31 @@ object VivemExterns {
   def not(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val BoolV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, BoolV(!value))
+    memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(!value))
   }
 
   def sqrt(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, FloatV(Math.sqrt(value).toFloat))
+    memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(Math.sqrt(value).toFloat))
   }
 
   def strLength(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val StrV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, IntV(value.length, 32))
+    memory.addAllocationForReturn(MutableShareH, InlineH, IntV(value.length, 32))
   }
 
   def castFloatStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
+    memory.addAllocationForReturn(MutableShareH, YonderH, StrV(value.toString))
   }
 
   def negateFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, FloatV(-value))
+    memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(-value))
   }
 
   def print(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -198,7 +197,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue.toInt + bValue.toInt, 32))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue.toInt + bValue.toInt, 32))
       }
     }
   }
@@ -209,7 +208,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue.toInt * bValue.toInt, 32))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue.toInt * bValue.toInt, 32))
       }
     }
   }
@@ -220,7 +219,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue.toInt / bValue.toInt, 32))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue.toInt / bValue.toInt, 32))
       }
     }
   }
@@ -232,7 +231,7 @@ object VivemExterns {
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
         try {
-          memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue.toInt % bValue.toInt, 32))
+          memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue.toInt % bValue.toInt, 32))
         } catch {
           case _ : ArithmeticException => vfail()
         }
@@ -246,7 +245,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue.toInt - bValue.toInt, 32))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue.toInt - bValue.toInt, 32))
       }
     }
   }
@@ -257,7 +256,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue < bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue < bValue))
       }
     }
   }
@@ -268,7 +267,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue <= bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue <= bValue))
       }
     }
   }
@@ -279,7 +278,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue > bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue > bValue))
       }
     }
   }
@@ -290,7 +289,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue >= bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue >= bValue))
       }
     }
   }
@@ -301,7 +300,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 32), IntV(bValue, 32)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue == bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue == bValue))
       }
     }
   }
@@ -309,19 +308,19 @@ object VivemExterns {
   def castI32Str(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val IntV(value, 32) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
+    memory.addAllocationForReturn(MutableShareH, YonderH, StrV(value.toString))
   }
 
   def castFloatI32(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, IntV(value.toInt, 32))
+    memory.addAllocationForReturn(MutableShareH, InlineH, IntV(value.toInt, 32))
   }
 
   def castI32Float(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val IntV(value, 32) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, FloatV(value.toFloat))
+    memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(value.toFloat))
   }
 
   def addI64(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -330,7 +329,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue + bValue, 64))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue + bValue, 64))
       }
     }
   }
@@ -341,7 +340,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue * bValue, 64))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue * bValue, 64))
       }
     }
   }
@@ -352,7 +351,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue / bValue, 64))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue / bValue, 64))
       }
     }
   }
@@ -361,7 +360,7 @@ object VivemExterns {
     vassert(args.size == 1)
     val IntV(value, 64) = memory.dereference(args(0))
     val result = value & 0xFFFFFFFFL
-    memory.addAllocationForReturn(ShareH, InlineH, IntV(result, 32))
+    memory.addAllocationForReturn(MutableShareH, InlineH, IntV(result, 32))
   }
 
   def modI64(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -371,7 +370,7 @@ object VivemExterns {
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
         try {
-          memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue % bValue, 64))
+          memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue % bValue, 64))
         } catch {
           case _ : ArithmeticException => vfail()
         }
@@ -385,7 +384,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue - bValue, 64))
+        memory.addAllocationForReturn(MutableShareH, InlineH, IntV(aValue - bValue, 64))
       }
     }
   }
@@ -396,7 +395,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue < bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue < bValue))
       }
     }
   }
@@ -407,7 +406,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue <= bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue <= bValue))
       }
     }
   }
@@ -418,7 +417,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue > bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue > bValue))
       }
     }
   }
@@ -429,7 +428,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue >= bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue >= bValue))
       }
     }
   }
@@ -440,7 +439,7 @@ object VivemExterns {
     val bKind = memory.dereference(args(1))
     (aKind, bKind) match {
       case (IntV(aValue, 64), IntV(bValue, 64)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue == bValue))
+        memory.addAllocationForReturn(MutableShareH, InlineH, BoolV(aValue == bValue))
       }
     }
   }
@@ -448,18 +447,18 @@ object VivemExterns {
   def castI64Str(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val IntV(value, 64) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
+    memory.addAllocationForReturn(MutableShareH, YonderH, StrV(value.toString))
   }
 
   def castFloatI64(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, IntV(value.toInt, 64))
+    memory.addAllocationForReturn(MutableShareH, InlineH, IntV(value.toInt, 64))
   }
 
   def castI64Float(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val IntV(value, 64) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, FloatV(value.toFloat))
+    memory.addAllocationForReturn(MutableShareH, InlineH, FloatV(value.toFloat))
   }
 }

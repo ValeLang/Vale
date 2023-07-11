@@ -4,7 +4,7 @@ import dev.vale.{Collector, Interner, StrI}
 import dev.vale.parsing.ast._
 import dev.vale.lexing.{Lexer, LexingIterator}
 import dev.vale.options.GlobalOptions
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 class WhileTests extends FunSuite with Collector with TestParseUtils {

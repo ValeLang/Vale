@@ -102,8 +102,12 @@ class TypeHammer(
         val variability = Conversions.evaluateVariabilityTemplata(variabilityI)
         val size = ssaIT.size
         val definition = StaticSizedArrayDefinitionHT(name, size, mutability, variability, memberReferenceH)
-        hamuts.addStaticSizedArray(ssaIT, definition)
-        StaticSizedArrayHT(name)
+        val result = StaticSizedArrayHT(name)
+        hamuts.staticSizedArrays.find(_._2.kind == result) match {
+          case Some(x) => vwat(x)
+          case None => hamuts.addStaticSizedArray(ssaIT, definition)
+        }
+        result
       }
     }
   }
@@ -120,11 +124,8 @@ class TypeHammer(
         //    val variability = Conversions.evaluateVariability(variabilityI)
         val definition = RuntimeSizedArrayDefinitionHT(nameH, mutability, memberReferenceH)
         val result = RuntimeSizedArrayHT(nameH)
-        // DO NOT SUBMIT a few options:
-        // - do this for SSAs too
-        // - nuke the way we were doing names for hamuts, make proper names finally
         hamuts.runtimeSizedArrays.values.find(_.kind == result) match {
-          case Some(x) =>
+          case Some(x) => vwat(x)
           case None => hamuts.addRuntimeSizedArray(rsaIT, definition)
         }
         result

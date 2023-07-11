@@ -18,7 +18,7 @@ import java.io.FileNotFoundException
 import dev.vale.typing.ast
 import dev.vale.{finalast => m}
 import dev.vale.testvm.ReferenceV
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 import dev.vale.passmanager.FullCompilation
 import dev.vale.finalast.IdH
 import dev.vale.instantiating.ast.HinputsI
@@ -109,8 +109,6 @@ class RunCompilation(
 }
 
 class IntegrationTestsA extends FunSuite with Matchers {
-
-
   //  test("Scratch scratch") {
   //    val compile =
   //      RunCompilation.test(

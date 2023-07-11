@@ -44,6 +44,7 @@ trait IFunctionCompilerDelegate {
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
+    callLocation: LocationInDenizen,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE

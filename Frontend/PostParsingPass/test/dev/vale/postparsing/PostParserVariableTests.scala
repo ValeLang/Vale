@@ -3,7 +3,7 @@ package dev.vale.postparsing
 import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, SourceCodeUtils, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.runtime.Nothing$
 

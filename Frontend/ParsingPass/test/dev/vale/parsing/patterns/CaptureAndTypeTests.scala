@@ -6,7 +6,7 @@ import dev.vale.parsing.ast.Patterns.{capturedWithType, capturedWithTypeRune}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.Collector
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class CaptureAndTypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
 //  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {

@@ -1,7 +1,7 @@
 package dev.vale
 
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {

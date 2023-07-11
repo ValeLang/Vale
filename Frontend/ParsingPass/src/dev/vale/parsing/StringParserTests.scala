@@ -4,8 +4,9 @@ import dev.vale.lexing.{Lexer, LexingIterator}
 import dev.vale.parsing.ast._
 import dev.vale.{Collector, Interner, Keywords, StrI, vimpl}
 import dev.vale.parsing.ast.{ConstantIntPE, ConstantStrPE, FunctionCallPE, LookupNameP, LookupPE, NameP, StrInterpolatePE}
-import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper
+import org.scalatest._
+import org.scalatest._
 
 class StringParserTests extends FunSuite with Collector with TestParseUtils {
   test("Simple string") {

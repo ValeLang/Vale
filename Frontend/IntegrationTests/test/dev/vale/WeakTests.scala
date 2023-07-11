@@ -13,7 +13,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.names.CodeVarNameT
 import dev.vale.typing.types._
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class WeakTests extends FunSuite with Matchers {
   test("Make and lock weak ref then destroy own, with struct") {

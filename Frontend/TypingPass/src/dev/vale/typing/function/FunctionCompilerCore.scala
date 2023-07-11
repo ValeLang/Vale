@@ -50,10 +50,11 @@ class FunctionCompilerCore(
       nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      delegate.translatePatternList(coutputs, nenv, life, parentRanges, patterns1, patternInputExprs2)
+      delegate.translatePatternList(coutputs, nenv, life, parentRanges, callLocation, patterns1, patternInputExprs2)
     }
   })
 

@@ -1,6 +1,6 @@
 package dev.vale
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class PrintTests extends FunSuite with Matchers {
   test("Println'ing an int") {

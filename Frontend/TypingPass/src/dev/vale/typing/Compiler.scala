@@ -577,10 +577,11 @@ class Compiler(
       nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironmentT,
       ranges: List[RangeS],
+      callLocation: LocationInDenizen,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      expressionCompiler.translatePatternList(coutputs, nenv, life, ranges, patterns1, patternInputExprs2)
+      expressionCompiler.translatePatternList(coutputs, nenv, life, ranges, callLocation, patterns1, patternInputExprs2)
     }
 
 //    override def evaluateParent(env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], sparkHeader: FunctionHeaderT): Unit = {
@@ -869,7 +870,7 @@ class Compiler(
                         coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          vimpl() // DO NOT SUBMIT
+                          throw CompileErrorExceptionT(CouldntEvaluateStruct(range, reason))
                         }
                       }
 
@@ -910,7 +911,7 @@ class Compiler(
                         coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          vimpl() // DO NOT SUBMIT
+                          throw CompileErrorExceptionT(CouldntEvaluateInterface(range, reason))
                         }
                       }
 

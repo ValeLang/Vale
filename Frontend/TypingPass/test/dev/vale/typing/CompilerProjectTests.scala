@@ -6,7 +6,7 @@ import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionN
 import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
 import dev.vale.typing.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.List
 

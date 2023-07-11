@@ -6,7 +6,7 @@ import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, O
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
 import dev.vale.parsing._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.Map
 

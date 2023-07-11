@@ -6,7 +6,7 @@ import dev.vale.parsing.ast.FileP
 import dev.vale.highertyping.ICompileErrorA
 import dev.vale.Result
 import dev.vale.typing._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 import dev.vale.finalast.VariableIdH
 import dev.vale.postparsing.ICompileErrorS
 

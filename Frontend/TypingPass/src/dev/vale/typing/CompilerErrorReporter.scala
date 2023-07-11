@@ -82,6 +82,14 @@ case class CouldntEvaluatImpl(range: List[RangeS], eff: IIncompleteOrFailedCompi
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
+case class CouldntEvaluateStruct(range: List[RangeS], eff: IIncompleteOrFailedCompilerSolve) extends ICompileErrorT {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+}
+case class CouldntEvaluateInterface(range: List[RangeS], eff: IIncompleteOrFailedCompilerSolve) extends ICompileErrorT {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+}
 case class CouldntFindOverrideT(range: List[RangeS], fff: FindFunctionFailure) extends ICompileErrorT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()

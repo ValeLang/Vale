@@ -38,6 +38,7 @@ trait IBodyCompilerDelegate {
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
@@ -164,7 +165,7 @@ class BodyCompiler(
     val startingEnv = env.snapshot
 
     val patternsTE =
-      evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, params1, params2);
+      evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, callLocation, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
       delegate.evaluateBlockStatements(
@@ -224,10 +225,11 @@ class BodyCompiler(
 
   // Produce the lets at the start of a function.
   private def evaluateLets(
-    nenv: NodeEnvironmentBox,
+      nenv: NodeEnvironmentBox,
       coutputs: CompilerOutputs,
-    life: LocationInFunctionEnvironmentT,
-    range: List[RangeS],
+      life: LocationInFunctionEnvironmentT,
+      range: List[RangeS],
+      callLocation: LocationInDenizen,
       params1: Vector[ParameterS],
       params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
@@ -235,7 +237,7 @@ class BodyCompiler(
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.translatePatternList(
-        coutputs, nenv, life, range, params1.map(_.pattern), paramLookups2);
+        coutputs, nenv, life, range, callLocation, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment
     // for everything inside the body to use

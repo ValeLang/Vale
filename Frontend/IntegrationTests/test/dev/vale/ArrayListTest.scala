@@ -6,7 +6,7 @@ import dev.vale.typing.names.{CodeVarNameT, IdT}
 import dev.vale.typing.types.VaryingT
 import dev.vale.typing.names.CodeVarNameT
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {

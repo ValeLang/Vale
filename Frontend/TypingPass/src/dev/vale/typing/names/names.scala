@@ -281,7 +281,9 @@ case class OverrideDispatcherCaseNameT(
 sealed trait IVarNameT extends INameT
 case class TypingPassBlockResultVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
 case class TypingPassFunctionResultVarNameT() extends IVarNameT
-case class TypingPassTemporaryVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
+case class TypingPassTemporaryVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT {
+  vpass()
+}
 case class TypingPassPatternMemberNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
 case class TypingIgnoredParamNameT(num: Int) extends IVarNameT
 case class TypingPassPatternDestructureeNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT

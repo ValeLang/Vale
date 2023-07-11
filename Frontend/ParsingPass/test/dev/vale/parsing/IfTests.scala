@@ -4,7 +4,7 @@ import dev.vale.{Collector, StrI, vimpl}
 import dev.vale.parsing.ast.{AugmentPE, BinaryCallPE, BlockPE, BorrowP, ConsecutorPE, ConstantBoolPE, ConstantIntPE, DestructureP, FunctionCallPE, IfPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MethodCallPE, NameP, NotPE, PatternPP, VoidPE}
 import dev.vale.parsing.ast._
 import dev.vale.options.GlobalOptions
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 class IfTests extends FunSuite with Matchers with Collector with TestParseUtils {

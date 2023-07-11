@@ -5,7 +5,7 @@ import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.types.BoolT
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class BlockTests extends FunSuite with Matchers {
   test("Empty block") {

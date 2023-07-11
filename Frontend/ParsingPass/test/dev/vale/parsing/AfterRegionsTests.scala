@@ -3,7 +3,7 @@ package dev.vale.parsing
 import dev.vale.lexing.{BadExpressionEnd, BadStartOfStatementError, ForgotSetKeyword}
 import dev.vale.parsing.ast._
 import dev.vale.{Collector, StrI}
-import org.scalatest.FunSuite
+import org.scalatest._
 
 class AfterRegionsTests extends FunSuite with Collector with TestParseUtils {
 

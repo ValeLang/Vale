@@ -6,7 +6,7 @@ import dev.vale.parsing.{ParserCompilation, ast}
 import dev.vale.{Err, FileCoordinateMap, Interner, Keywords, Ok, PackageCoordinate}
 import dev.vale.parsing.ast.FileP
 import dev.vale.parsing.{ast, _}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {

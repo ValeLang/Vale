@@ -10,7 +10,7 @@ import dev.vale.typing.ast.{NormalStructMemberT, ReferenceMemberTypeT}
 import dev.vale.typing.names.{IdT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.types.IntT
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class PatternTests extends FunSuite with Matchers {
   // To get something like this to work would be rather involved.

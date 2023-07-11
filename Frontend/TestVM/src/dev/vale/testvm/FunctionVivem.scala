@@ -54,7 +54,7 @@ object FunctionVivem {
       // of pulling it all in as one giant namespace. In that case, it prefixes things such as
       // v::builtins::arith. We can add other prefixes here too as needed.
       .replaceAllLiterally("v::builtins::arith", "") match {
-      case """__vbi_addI32(i32, i32)""" => VivemExterns.addI32
+      case """__vbi_addI32""" => VivemExterns.addI32
       case """__vbi_addFloatFloat""" => VivemExterns.addFloatFloat
       case """__vbi_panic""" => VivemExterns.panic
       case """__vbi_multiplyI32""" => VivemExterns.multiplyI32

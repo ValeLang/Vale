@@ -6,7 +6,7 @@ import dev.vale.parsing.ast.{AbstractP, DestructureP, IgnoredLocalNameDeclaratio
 import dev.vale.parsing.ast.Patterns._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class PatternParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {

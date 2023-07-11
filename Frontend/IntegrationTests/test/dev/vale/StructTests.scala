@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.testvm.PanicException
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class StructTests extends FunSuite with Matchers {
   test("Make empty imm struct") {
@@ -97,6 +97,24 @@ class StructTests extends FunSuite with Matchers {
       """.stripMargin)
 
     compile.evalForKind(Vector()) match { case VonInt(7) => }
+  }
+
+  test("Ignore destructure") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine {
+        |  hp int;
+        |}
+        |exported func main() int {
+        |  m = Marine(4);
+        |  Marine[_] = m;
+        |  return 42;
+        |}
+    """.stripMargin)
+
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Sugar destructure") {

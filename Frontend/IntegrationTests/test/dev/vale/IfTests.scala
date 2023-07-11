@@ -8,7 +8,7 @@ import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.types._
 import dev.vale.von.{VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {

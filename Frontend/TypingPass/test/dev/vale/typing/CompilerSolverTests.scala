@@ -20,7 +20,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.io.Source
 

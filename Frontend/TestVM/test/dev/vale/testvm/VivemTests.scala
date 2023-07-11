@@ -4,7 +4,7 @@ import dev.vale.{Interner, Keywords, PackageCoordinate, PackageCoordinateMap, St
 import dev.vale.finalast._
 import dev.vale.finalast._
 import dev.vale.von.{VonArray, VonInt, VonMember, VonObject, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class VivemTests extends FunSuite with Matchers {
   test("Return 7") {
@@ -41,10 +41,10 @@ class VivemTests extends FunSuite with Matchers {
     val addPrototype =
       PrototypeH(
         IdH(
-          "__vbi_addI32(i32, i32)",
+          "__vbi_addI32",
           PackageCoordinate.BUILTIN(interner, keywords),
-          "__vbi_addI32(i32, i32)",
-          "__vbi_addI32(i32, i32)"),
+          "__vbi_addI32",
+          "__vbi_addI32"),
         Vector(CoordH(MutableShareH,InlineH,IntHT.i32), CoordH(MutableShareH,InlineH,IntHT.i32)),
         CoordH(MutableShareH,InlineH,IntHT.i32))
     val main =

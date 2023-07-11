@@ -5,7 +5,7 @@ import dev.vale.parsing.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsP
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale.parsing._
 import dev.vale.parsing.ast.PatternPP
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class CoordRuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {

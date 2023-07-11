@@ -7,7 +7,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.templata.simpleName
 import dev.vale.typing.types.StructTT
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class InferTemplateTests extends FunSuite with Matchers {
   test("Test inferring a borrowed argument") {

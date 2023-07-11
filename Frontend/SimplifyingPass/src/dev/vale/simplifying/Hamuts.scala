@@ -130,17 +130,16 @@ case class Hamuts(
 
   def addStructOriginatingFromTypingPass(structTT: StructIT[cI], structDefH: StructDefinitionH): Hamuts = {
     vassert(structTToStructH.contains(structTT))
-    structTToStructDefH.get(structTT) match {
-      case Some(existingDef) => {
-        // DO NOT SUBMIT
-        // Added all this to help VmdSiteGen. Apparently it calls this method twice with the same structs sometimes?
-        vassert(existingDef.id == structDefH.id)
-        vassert(existingDef.members.map(_.name) == structDefH.members.map(_.name))
-        vassert(existingDef.members.map(_.tyype) == structDefH.members.map(_.tyype))
-        vassert(structDefs.exists(_.id == structDefH.id))
-        this
-      }
-      case None => {
+    // structTToStructDefH.get(structTT) match {
+    //   case Some(existingDef) => {
+    //     // Added all this to help VmdSiteGen. Apparently it calls this method twice with the same structs sometimes?
+    //     vassert(existingDef.id == structDefH.id)
+    //     vassert(existingDef.members.map(_.name) == structDefH.members.map(_.name))
+    //     vassert(existingDef.members.map(_.tyype) == structDefH.members.map(_.tyype))
+    //     vassert(structDefs.exists(_.id == structDefH.id))
+    //     this
+    //   }
+    //   case None => {
         Hamuts(
           humanNameToFullNameToId,
           structTToStructH,
@@ -156,8 +155,8 @@ case class Hamuts(
           packageCoordToExportNameToKind,
           packageCoordToExternNameToFunction,
           packageCoordToExternNameToKind)
-      }
-    }
+      // }
+    // }
   }
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {

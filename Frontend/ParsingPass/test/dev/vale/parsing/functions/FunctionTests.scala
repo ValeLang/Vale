@@ -4,8 +4,8 @@ import dev.vale.{Collector, StrI, vassertOne, vimpl}
 import dev.vale.parsing.ast._
 import dev.vale.parsing._
 import dev.vale.lexing.{BadFunctionBodyError, LightFunctionMustHaveParamTypes}
-import org.scalatest.Matchers.convertToAnyShouldWrapper
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
+import org.scalatest._
 
 
 class FunctionTests extends FunSuite with Collector with TestParseUtils {

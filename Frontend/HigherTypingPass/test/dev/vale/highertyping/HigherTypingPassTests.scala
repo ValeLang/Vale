@@ -5,7 +5,7 @@ import dev.vale.postparsing._
 import dev.vale.parsing.Parser
 import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class HigherTypingPassTests extends FunSuite with Matchers  {
   def compileProgramForError(compilation: HigherTypingCompilation): ICompileErrorA = {

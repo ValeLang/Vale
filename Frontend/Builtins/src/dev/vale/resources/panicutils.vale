@@ -1,0 +1,13 @@
+import v.builtins.print.*;
+import v.builtins.str.*;
+import v.builtins.panic.*;
+
+func panic() __Never {
+  return __vbi_panic();
+}
+
+func panic(msg str) __Never {
+  print(msg);
+  print("\n");
+  return __vbi_panic();
+}

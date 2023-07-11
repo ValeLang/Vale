@@ -4,7 +4,7 @@ import dev.vale.passmanager.FullCompilationOptions
 import dev.vale.finalast._
 import dev.vale.von.VonInt
 import dev.vale.{finalast => m}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.List
 

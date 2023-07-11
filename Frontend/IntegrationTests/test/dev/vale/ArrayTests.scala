@@ -13,7 +13,7 @@ import dev.vale.typing.names.CodeVarNameT
 import dev.vale.typing.templata.MutabilityTemplataT
 import dev.vale.typing.types._
 import dev.vale.von.{VonBool, VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ArrayTests extends FunSuite with Matchers {
   test("Returning static array from function and dotting it") {
@@ -21,9 +21,12 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |func makeArray() [#5]int { return [#](2, 3, 4, 5, 6); }
         |exported func main() int {
-        |  return makeArray().3;
+        |  a = makeArray();
+        |  x = a.3;
+        |  [_, _, _, _, _] = a;
+        |  return x;
         |}
-      """.stripMargin)
+      """.stripMargin, false)
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
@@ -40,7 +43,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,_,_, _) => {
+      case StaticSizedArrayLookupTE(_,_,_,_,_, _) => {
       }
     })
 
@@ -150,7 +153,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })
@@ -163,7 +166,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(ImmutableT)
       }
     })
@@ -176,7 +179,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })
@@ -189,7 +192,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(ImmutableT)
       }
     })
@@ -202,7 +205,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _,_, _) => {
         arrayType.mutability shouldEqual MutabilityTemplataT(MutableT)
       }
     })

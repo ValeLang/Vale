@@ -9,7 +9,7 @@ import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 

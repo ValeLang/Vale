@@ -14,9 +14,9 @@ import dev.vale.typing.expression.TookWeakRefOfNonWeakableError
 import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT}
 import dev.vale.typing.templata.MutabilityTemplataT
 import dev.vale.typing.types._
-import dev.vale.typing.{Hinputs, ICompileErrorT}
+import dev.vale.typing.{HinputsT, ICompileErrorT}
 import dev.vale.von.{IVonData, VonBool, VonFloat, VonInt}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 class AfterRegionsIntegrationTests extends FunSuite with Matchers {

@@ -450,6 +450,9 @@ object Spanner {
 
   def forCapture(c: INameDeclarationP): Span = {
     c match {
+      case IgnoredLocalNameDeclarationP(nameRange) => {
+        makeSpan(CaptureName, nameRange, Vector.empty)
+      }
       case LocalNameDeclarationP(NameP(nameRange, _)) => {
         makeSpan(CaptureName, nameRange, Vector.empty)
       }

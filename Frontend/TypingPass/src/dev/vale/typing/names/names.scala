@@ -281,7 +281,9 @@ case class OverrideDispatcherCaseNameT(
 sealed trait IVarNameT extends INameT
 case class TypingPassBlockResultVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
 case class TypingPassFunctionResultVarNameT() extends IVarNameT
-case class TypingPassTemporaryVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
+case class TypingPassTemporaryVarNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT {
+  vpass()
+}
 case class TypingPassPatternMemberNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
 case class TypingIgnoredParamNameT(num: Int) extends IVarNameT
 case class TypingPassPatternDestructureeNameT(life: LocationInFunctionEnvironmentT) extends IVarNameT
@@ -311,6 +313,16 @@ case class BuildingFunctionNameWithClosuredsT(
 
 
 
+}
+
+case class ExternTemplateNameT(
+  codeLoc: CodeLocationS,
+) extends ITemplateNameT
+
+case class ExternNameT(
+  template: ExternTemplateNameT
+) extends IInstantiationNameT {
+  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector()
 }
 
 case class ExternFunctionNameT(

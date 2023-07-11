@@ -2,7 +2,7 @@ package dev.vale.highertyping
 
 import dev.vale.postparsing.{CodeNameS, PostParser, RuneTypeSolveError, RuneTypingCouldntFindType}
 import dev.vale.{Err, Ok, SourceCodeUtils, StrI, vassert, vfail}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 import dev.vale.solver._
 
 class ErrorTests extends FunSuite with Matchers  {

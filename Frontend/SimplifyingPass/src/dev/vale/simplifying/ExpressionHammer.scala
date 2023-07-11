@@ -1,15 +1,9 @@
 package dev.vale.simplifying
 
 import dev.vale.finalast._
-import dev.vale.typing.Hinputs
-import dev.vale.typing.ast._
-import dev.vale.typing.env.AddressibleLocalVariableT
-import dev.vale.typing.types._
-import dev.vale.{Keywords, vassert, vcurious, vfail, vimpl, finalast => m}
+import dev.vale.{Keywords, vassert, vcurious, vfail, vimpl, vregionmut, finalast => m}
 import dev.vale.finalast._
-import dev.vale.typing._
-import dev.vale.typing.ast._
-import dev.vale.typing.types._
+import dev.vale.instantiating.ast._
 
 import scala.collection.immutable.Map
 
@@ -19,7 +13,7 @@ class ExpressionHammer(
     nameHammer: NameHammer,
     structHammer: StructHammer,
     functionHammer: FunctionHammer) {
-  val blockHammer = new BlockHammer(this)
+  val blockHammer = new BlockHammer(this, typeHammer)
   val loadHammer = new LoadHammer(keywords, typeHammer, nameHammer, structHammer, this)
   val letHammer = new LetHammer(typeHammer, nameHammer, structHammer, this, loadHammer)
   val mutateHammer = new MutateHammer(keywords, typeHammer, nameHammer, structHammer, this)
@@ -31,46 +25,46 @@ class ExpressionHammer(
   // - result register id
   // - deferred expressions, to move to after the enclosing call. head is put first after call.
   def translate(
-      hinputs: Hinputs,
+      hinputs: HinputsI,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeaderT,
+      currentFunctionHeader: FunctionHeaderI,
       locals: LocalsBox,
-      expr2: ExpressionT
-  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
+      expr2: ExpressionI
+  ): (ExpressionH[KindHT], Vector[ExpressionI]) = {
     expr2 match {
-      case ConstantIntTE(numTemplata, bits) => {
-        val num = Conversions.evaluateIntegerTemplata(numTemplata)
+      case ConstantIntIE(numTemplata, bits) => {
+        val num = numTemplata
         (ConstantIntH(num, bits), Vector.empty)
       }
-      case VoidLiteralTE() => {
+      case VoidLiteralIE() => {
         val constructH = ConstantVoidH()
         (constructH, Vector.empty)
       }
-      case ConstantStrTE(value) => {
+      case ConstantStrIE(value) => {
         (ConstantStrH(value), Vector.empty)
       }
-      case ConstantFloatTE(value) => {
+      case ConstantFloatIE(value) => {
         (ConstantF64H(value), Vector.empty)
       }
-      case ConstantBoolTE(value) => {
+      case ConstantBoolIE(value) => {
         (ConstantBoolH(value), Vector.empty)
       }
-      case let2 @ LetNormalTE(_, _) => {
+      case let2 @ LetNormalIE(_, _, _) => {
         val letH =
           letHammer.translateLet(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (letH, Vector.empty)
       }
-      case let2 @ RestackifyTE(_, _) => {
+      case let2 @ RestackifyIE(_, _, _) => {
         val letH =
           letHammer.translateRestackify(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (letH, Vector.empty)
       }
-      case let2 @ LetAndLendTE(_, _, _) => {
+      case let2 @ LetAndLendIE(_, _, _, _) => {
         val borrowAccess =
           letHammer.translateLetAndPoint(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (borrowAccess, Vector.empty)
       }
-      case des2 @ DestroyTE(_, _, _) => {
+      case des2 @ DestroyIE(_, _, _) => {
         val destroyH =
             letHammer.translateDestroy(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Compiler destructures put things in local variables (even though hammer itself
@@ -79,7 +73,7 @@ class ExpressionHammer(
         // return a void.
         (destroyH, Vector.empty)
       }
-      case des2 @ DestroyStaticSizedArrayIntoLocalsTE(_, _, _) => {
+      case des2 @ DestroyStaticSizedArrayIntoLocalsIE(_, _, _) => {
         val destructureH =
             letHammer.translateDestructureStaticSizedArray(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Compiler destructures put things in local variables (even though hammer itself
@@ -88,47 +82,61 @@ class ExpressionHammer(
         // return a void.
         (destructureH, Vector.empty)
       }
-      case unlet2 @ UnletTE(_) => {
+      case unlet2 @ UnletIE(_, _) => {
         val valueAccess =
           letHammer.translateUnlet(
             hinputs, hamuts, currentFunctionHeader, locals, unlet2)
         (valueAccess, Vector.empty)
       }
-      case mutate2 @ MutateTE(_, _) => {
+      case mutate2 @ MutateIE(_, _, _) => {
         val newEmptyPackStructNodeHE =
           mutateHammer.translateMutate(hinputs, hamuts, currentFunctionHeader, locals, mutate2)
         (newEmptyPackStructNodeHE, Vector.empty)
       }
-      case b @ BlockTE(_) => {
+      case b @ MutabilifyIE(_, _) => {
+        val pureH =
+          blockHammer.translateMutabilify(hinputs, hamuts, currentFunctionHeader, locals, b)
+        (pureH, Vector.empty)
+      }
+      case b@ImmutabilifyIE(_, _) => {
+        val pureH =
+          blockHammer.translateImmutabilify(hinputs, hamuts, currentFunctionHeader, locals, b)
+        (pureH, Vector.empty)
+      }
+      case b @ BlockIE(_, _) => {
         val blockH =
           blockHammer.translateBlock(hinputs, hamuts, currentFunctionHeader, locals, b)
         (blockH, Vector.empty)
       }
-      case call2 @ FunctionCallTE(callableExpr, args) => {
+      case call2 @ FunctionCallIE(callableExpr, args, _) => {
         val access =
           translateFunctionPointerCall(
-            hinputs, hamuts, currentFunctionHeader, locals, callableExpr, args, call2.result.coord)
+            hinputs, hamuts, currentFunctionHeader, locals, callableExpr, args, call2.result)
         (access, Vector.empty)
       }
-
-      case InterfaceFunctionCallTE(superFunctionPrototype, virtualParamIndex, resultType2, argsExprs2) => {
+      case PreCheckBorrowIE(inner) => {
+        val (innerHE, deferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, inner)
+        (PreCheckBorrowH(innerHE), deferreds)
+      }
+      case InterfaceFunctionCallIE(superFunctionPrototype, virtualParamIndex, argsExprs2, resultType2) => {
         val access =
           translateInterfaceFunctionCall(
             hinputs, hamuts, currentFunctionHeader, locals, superFunctionPrototype, virtualParamIndex, resultType2, argsExprs2)
         (access, Vector.empty)
       }
 
-      case ConsecutorTE(exprsTE) => {
+      case ConsecutorIE(exprsIE, _) => {
         // If there's an expression returning a Never, then remove all the expressions after that.
         // See BRCOBS.
         val exprsHE =
-          exprsTE.foldLeft(Vector[ExpressionH[KindHT]]())({
-            case (previousHE, nextTE) => {
+          exprsIE.foldLeft(Vector[ExpressionH[KindHT]]())({
+            case (previousHE, nextIE) => {
               previousHE.lastOption.map(_.resultType.kind) match {
                 case Some(NeverHT(_)) => previousHE
                 case _ => {
                   val (nextHE, nextDeferreds) =
-                    translate(hinputs, hamuts, currentFunctionHeader, locals, nextTE);
+                    translate(hinputs, hamuts, currentFunctionHeader, locals, nextIE);
                   val nextExprWithDeferredsHE =
                     translateDeferreds(
                       hinputs, hamuts, currentFunctionHeader, locals, nextHE, nextDeferreds)
@@ -147,7 +155,7 @@ class ExpressionHammer(
         (Hammer.consecutive(exprsHE), Vector.empty)
       }
 
-      case ArrayLengthTE(arrayExpr2) => {
+      case ArrayLengthIE(arrayExpr2) => {
         val (resultHE, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
 
@@ -159,7 +167,7 @@ class ExpressionHammer(
         (arrayLengthAndDeferredsExprH, Vector.empty)
       }
 
-      case RuntimeSizedArrayCapacityTE(arrayExpr2) => {
+      case RuntimeSizedArrayCapacityIE(arrayExpr2) => {
         val (resultHE, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
 
@@ -171,7 +179,7 @@ class ExpressionHammer(
         (arrayLengthAndDeferredsExprH, Vector.empty)
       }
 
-      case LockWeakTE(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor, _, _) => {
+      case LockWeakIE(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor, _, _, _) => {
         val (resultHE, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr2);
         val (resultOptBorrowTypeH) =
@@ -191,7 +199,7 @@ class ExpressionHammer(
         (resultNode, deferreds)
       }
 
-      case TupleTE(exprs, resultType) => {
+      case TupleIE(exprs, resultType) => {
         val (resultsHE, deferreds) =
           translateExpressionsUntilNever(
             hinputs, hamuts, currentFunctionHeader, locals, exprs);
@@ -203,14 +211,14 @@ class ExpressionHammer(
           case _ =>
         }
 
-        val resultStructT = resultType.kind match { case s @ StructTT(_) => s }
+        val resultStructI = resultType.kind match { case s @ StructIT(_) => s }
         val (underlyingStructRefH) =
-          structHammer.translateStructT(hinputs, hamuts, resultStructT);
+          structHammer.translateStructI(hinputs, hamuts, resultStructI);
         val (resultReference) =
           typeHammer.translateCoord(hinputs, hamuts, resultType)
         vassert(resultReference.kind == underlyingStructRefH)
 
-        val structDefH = hamuts.structTToStructDefH(resultStructT)
+        val structDefH = hamuts.structTToStructDefH(resultStructI)
         vassert(resultsHE.size == structDefH.members.size)
         val newStructNode =
           NewStructH(
@@ -225,7 +233,7 @@ class ExpressionHammer(
         (newStructAndDeferredsExprH, Vector.empty)
       }
 
-      case StaticArrayFromValuesTE(exprs, arrayReference2, arrayType2) => {
+      case StaticArrayFromValuesIE(exprs, arrayReference2, arrayType2) => {
         val (resultsHE, deferreds) =
           translateExpressionsUntilNever(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         // Don't evaluate anything that can't ever be run, see BRCOBS
@@ -253,7 +261,7 @@ class ExpressionHammer(
         (newStructAndDeferredsExprH, Vector.empty)
       }
 
-      case ConstructTE(structTT, resultType2, memberExprs) => {
+      case ConstructIE(structIT, resultType2, memberExprs) => {
         val (membersHE, deferreds) =
           translateExpressionsUntilNever(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
         // Don't evaluate anything that can't ever be run, see BRCOBS
@@ -268,7 +276,7 @@ class ExpressionHammer(
           typeHammer.translateCoord(hinputs, hamuts, resultType2)
 
 
-        val structDefH = hamuts.structTToStructDefH(structTT)
+        val structDefH = hamuts.structTToStructDefH(structIT)
         vassert(membersHE.size == structDefH.members.size)
         membersHE.zip(structDefH.members).foreach({ case (memberHE, memberH ) =>
           vassert(memberHE.resultType == memberH.tyype)
@@ -285,43 +293,44 @@ class ExpressionHammer(
         (newStructAndDeferredsExprH, Vector.empty)
       }
 
-      case load2 @ SoftLoadTE(_, _) => {
+      case load2 @ SoftLoadIE(_, _, _) => {
         val (loadedAccessH, deferreds) =
           loadHammer.translateLoad(hinputs, hamuts, currentFunctionHeader, locals, load2)
         (loadedAccessH, deferreds)
       }
 
-      case lookup2 @ LocalLookupTE(_,AddressibleLocalVariableT(_, _, _)) => {
+      case lookup2 @ LocalLookupIE(AddressibleLocalVariableI(_, _, _), _) => {
+        vregionmut()
         val loadBoxAccess =
           loadHammer.translateLocalAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, Vector.empty)
       }
 
-      case lookup2 @ AddressMemberLookupTE(_,_, _, _, _) => {
+      case lookup2 @ AddressMemberLookupIE(_, _, _, _) => {
         val (loadBoxAccess, deferreds) =
           loadHammer.translateMemberAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, deferreds)
       }
 
-      case if2 @ IfTE(_, _, _) => {
+      case if2 @ IfIE(_, _, _, _) => {
         val maybeAccess =
           translateIf(hinputs, hamuts, currentFunctionHeader, locals, if2)
         (maybeAccess, Vector.empty)
       }
 
-      case prsaTE @ PushRuntimeSizedArrayTE(_, _) => {
+      case prsaIE @ PushRuntimeSizedArrayIE(_, _) => {
 
-        val PushRuntimeSizedArrayTE(arrayTE, newcomerTE) = prsaTE;
+        val PushRuntimeSizedArrayIE(arrayIE, newcomerIE) = prsaIE;
 
         val (arrayHE, arrayDeferreds) =
           translate(
-            hinputs, hamuts, currentFunctionHeader, locals, arrayTE);
+            hinputs, hamuts, currentFunctionHeader, locals, arrayIE);
         val rsaHE = arrayHE.expectRuntimeSizedArrayAccess()
         val rsaDefH = hamuts.getRuntimeSizedArray(rsaHE.resultType.kind)
 
         val (newcomerHE, newcomerDeferreds) =
           translate(
-            hinputs, hamuts, currentFunctionHeader, locals, newcomerTE);
+            hinputs, hamuts, currentFunctionHeader, locals, newcomerIE);
 
         vassert(newcomerHE.resultType == rsaDefH.elementType)
 
@@ -334,12 +343,12 @@ class ExpressionHammer(
         (access, Vector.empty)
       }
 
-      case prsaTE @ PopRuntimeSizedArrayTE(_) => {
-        val PopRuntimeSizedArrayTE(arrayTE) = prsaTE;
+      case prsaIE @ PopRuntimeSizedArrayIE(_, _) => {
+        val PopRuntimeSizedArrayIE(arrayIE, _) = prsaIE;
 
         val (arrayHE, arrayDeferreds) =
           translate(
-            hinputs, hamuts, currentFunctionHeader, locals, arrayTE);
+            hinputs, hamuts, currentFunctionHeader, locals, arrayIE);
         val rsaHE = arrayHE.expectRuntimeSizedArrayAccess()
         val rsaDefH = hamuts.getRuntimeSizedArray(rsaHE.resultType.kind)
 
@@ -352,30 +361,30 @@ class ExpressionHammer(
         (access, Vector.empty)
       }
 
-      case nmrsaTE @ NewMutRuntimeSizedArrayTE(_, _) => {
+      case nmrsaIE @ NewMutRuntimeSizedArrayIE(_, _, _) => {
         val access =
           translateNewMutRuntimeSizedArray(
-            hinputs, hamuts, currentFunctionHeader, locals, nmrsaTE)
+            hinputs, hamuts, currentFunctionHeader, locals, nmrsaIE)
         (access, Vector.empty)
       }
 
-      case nirsaTE @ NewImmRuntimeSizedArrayTE(_, _, _, _) => {
+      case nirsaIE @ NewImmRuntimeSizedArrayIE(_, _, _, _, _) => {
         val access =
           translateNewImmRuntimeSizedArray(
-            hinputs, hamuts, currentFunctionHeader, locals, nirsaTE)
+            hinputs, hamuts, currentFunctionHeader, locals, nirsaIE)
         (access, Vector.empty)
       }
 
-      case ca2 @ StaticArrayFromCallableTE(_, _, _) => {
+      case ca2 @ StaticArrayFromCallableIE(_, _, _, _) => {
         val access =
           translateStaticArrayFromCallable(
             hinputs, hamuts, currentFunctionHeader, locals, ca2)
         (access, Vector.empty)
       }
 
-      case ReinterpretTE(innerExpr, resultType2) => {
+      case ReinterpretIE(innerExpr, resultType2, _) => {
         // Check types; it's overkill because reinterprets are rather scary.
-        val innerExprResultType2 = innerExpr.result.coord
+        val innerExprResultType2 = innerExpr.result
         val (innerExprResultTypeH) = typeHammer.translateCoord(hinputs, hamuts, innerExprResultType2);
         val (resultTypeH) = typeHammer.translateCoord(hinputs, hamuts, resultType2);
         innerExprResultTypeH.kind match {
@@ -413,9 +422,9 @@ class ExpressionHammer(
         (innerExprHE, deferreds)
       }
 
-      case up @ InterfaceToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
-        val targetPointerType2 = up.result.coord;
-        val sourcePointerType2 = innerExpr.result.coord
+      case up @ InterfaceToInterfaceUpcastIE(innerExpr, targetInterfaceRef2, _) => {
+        val targetPointerType2 = up.result;
+        val sourcePointerType2 = innerExpr.result
 
         val (sourcePointerTypeH) =
           typeHammer.translateCoord(hinputs, hamuts, sourcePointerType2);
@@ -436,9 +445,9 @@ class ExpressionHammer(
         (upcastNode, innerDeferreds)
       }
 
-      case up @ UpcastTE(innerExpr, targetInterfaceRef2, _) => {
-        val targetPointerType2 = up.result.coord;
-        val sourcePointerType2 = innerExpr.result.coord
+      case up @ UpcastIE(innerExpr, targetInterfaceRef2, _, _) => {
+        val targetPointerType2 = up.result;
+        val sourcePointerType2 = innerExpr.result
 
         val (sourcePointerTypeH) =
           typeHammer.translateCoord(hinputs, hamuts, sourcePointerType2);
@@ -460,25 +469,25 @@ class ExpressionHammer(
         (upcastNode, innerDeferreds)
       }
 
-      case ExternFunctionCallTE(prototype2, argsExprs2) => {
+      case ExternFunctionCallIE(prototype2, argsExprs2, _) => {
         val access =
           translateExternFunctionCall(hinputs, hamuts, currentFunctionHeader, locals, prototype2, argsExprs2)
         (access, Vector.empty)
       }
 
-      case while2 @ WhileTE(_) => {
+      case while2 @ WhileIE(_, _) => {
         val whileH =
             translateWhile(hinputs, hamuts, currentFunctionHeader, locals, while2)
         (whileH, Vector.empty)
       }
 
-      case DeferTE(innerExpr, deferredExpr) => {
+      case DeferIE(innerExpr, deferredExpr, _) => {
         val (innerExprHE, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (innerExprHE, Vector(deferredExpr) ++ innerDeferreds)
       }
 
-      case DiscardTE(innerExpr) => {
+      case DiscardIE(innerExpr) => {
         val (undiscardedInnerExprH, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         vassert(innerDeferreds.isEmpty) // BMHD, probably need to translate them here.
@@ -487,10 +496,10 @@ class ExpressionHammer(
           translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprH, innerDeferreds)
         (innerWithDeferredsExprH, Vector.empty)
       }
-      case ReturnTE(innerExpr) => {
+      case ReturnIE(innerExpr) => {
         vassert(
-          innerExpr.result.coord.kind == NeverT(false) ||
-          innerExpr.result.coord == currentFunctionHeader.returnType)
+          innerExpr.result.kind == NeverIT[cI](false) ||
+          innerExpr.result == currentFunctionHeader.returnType)
 
         val (innerExprHE, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
@@ -509,10 +518,10 @@ class ExpressionHammer(
           case _ =>
         }
 
-        vassert(innerExpr.result.coord == currentFunctionHeader.returnType)
+        vassert(innerExpr.result == currentFunctionHeader.returnType)
         (ReturnH(innerWithDeferreds), Vector.empty)
       }
-      case ArgLookupTE(paramIndex, type2) => {
+      case ArgLookupIE(paramIndex, type2) => {
         val typeH = typeHammer.translateCoord(hinputs, hamuts, type2)
         vassert(currentFunctionHeader.paramTypes(paramIndex) == type2)
         vassert(typeHammer.translateCoord(hinputs, hamuts, currentFunctionHeader.paramTypes(paramIndex)) == typeH)
@@ -520,21 +529,21 @@ class ExpressionHammer(
         (argNode, Vector.empty)
       }
 
-      case das2 @ DestroyStaticSizedArrayIntoFunctionTE(_, _, _, _) => {
+      case das2 @ DestroyStaticSizedArrayIntoFunctionIE(_, _, _, _) => {
         val dasH =
             translateDestroyStaticSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
         (dasH, Vector.empty)
       }
 
-      case das2 @ DestroyImmRuntimeSizedArrayTE(_, _, _, _) => {
+      case das2 @ DestroyImmRuntimeSizedArrayIE(_, _, _, _) => {
         val drsaH =
             translateDestroyImmRuntimeSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
         (drsaH, Vector.empty)
       }
 
-//      case UnreachableMootTE(innerExpr) => {
+//      case UnreachableMootIE(innerExpr) => {
 //        val (innerExprHE, innerDeferreds) =
 //          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
 //        val innerWithDeferredsH =
@@ -549,26 +558,26 @@ class ExpressionHammer(
 //        (void, Vector.empty)
 //      }
 
-      case BorrowToWeakTE(innerExpr) => {
+      case BorrowToWeakIE(innerExpr, _) => {
         val (innerExprHE, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (BorrowToWeakH(innerExprHE), innerDeferreds)
       }
 
-      case IsSameInstanceTE(leftExprT, rightExprT) => {
+      case IsSameInstanceIE(leftExprI, rightExprI) => {
         val (leftExprHE, leftDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprI);
         val (rightExprHE, rightDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, rightExprT);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, rightExprI);
         val resultHE = IsSameInstanceH(leftExprHE, rightExprHE)
 
         val expr = translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, resultHE, leftDeferreds ++ rightDeferreds)
         (expr, Vector.empty)
       }
 
-      case AsSubtypeTE(leftExprT, targetSubtype, resultOptType, someConstructor, noneConstructor, _, _, _) => {
+      case AsSubtypeIE(leftExprI, targetSubtype, resultOptType, someConstructor, noneConstructor, _, _, _, _) => {
         val (resultHE, deferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprI);
         val (targetSubtypeH) =
           typeHammer.translateCoord(hinputs, hamuts, targetSubtype).kind
         val (resultOptTypeH) =
@@ -589,9 +598,9 @@ class ExpressionHammer(
         (resultNode, deferreds)
       }
 
-      case DestroyMutRuntimeSizedArrayTE(rsaTE) => {
+      case DestroyMutRuntimeSizedArrayIE(rsaIE) => {
         val (rsaHE, rsaDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, rsaTE);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, rsaIE);
 
         val destroyHE =
           DestroyMutRuntimeSizedArrayH(rsaHE.expectRuntimeSizedArrayAccess())
@@ -600,7 +609,7 @@ class ExpressionHammer(
         (expr, Vector.empty)
       }
 
-      case BreakTE() => {
+      case BreakIE() => {
         (BreakH(), Vector.empty)
       }
 
@@ -611,12 +620,12 @@ class ExpressionHammer(
   }
 
   def translateDeferreds(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
     originalExpr: ExpressionH[KindHT],
-    deferreds: Vector[ExpressionT]):
+    deferreds: Vector[ExpressionI]):
   ExpressionH[KindHT] = {
     if (deferreds.isEmpty) {
       return originalExpr
@@ -663,13 +672,13 @@ class ExpressionHammer(
   }
 
   def translateExpressionsUntilNever(
-    hinputs: Hinputs, hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    hinputs: HinputsI, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    exprsTE: Vector[ExpressionT]):
-  (Vector[ExpressionH[KindHT]], Vector[ExpressionT]) = {
+    exprsIE: Vector[ExpressionI]):
+  (Vector[ExpressionH[KindHT]], Vector[ExpressionI]) = {
     val (exprsHE, deferreds) =
-      exprsTE.foldLeft((Vector[ExpressionH[KindHT]](), Vector[ExpressionT]()))({
+      exprsIE.foldLeft((Vector[ExpressionH[KindHT]](), Vector[ExpressionI]()))({
         // If we previously saw a Never, stop there, don't proceed, don't even waste
         // time compiling the rest.
         case ((prevExprsHE, _), _)
@@ -678,9 +687,9 @@ class ExpressionHammer(
             }) => {
           (prevExprsHE, Vector())
         }
-        case ((prevExprsHE, prevDeferreds), nextTE) => {
+        case ((prevExprsHE, prevDeferreds), nextIE) => {
           val (nextHE, nextDeferreds) =
-            translate(hinputs, hamuts, currentFunctionHeader, locals, nextTE);
+            translate(hinputs, hamuts, currentFunctionHeader, locals, nextIE);
           (prevExprsHE :+ nextHE, prevDeferreds ++ nextDeferreds)
         }
       })
@@ -693,11 +702,11 @@ class ExpressionHammer(
   }
 
   def translateExpressionsAndDeferreds(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    exprs2: Vector[ExpressionT]):
+    exprs2: Vector[ExpressionI]):
   ExpressionH[KindHT] = {
     val exprs =
       exprs2.map({ case expr2 =>
@@ -711,12 +720,12 @@ class ExpressionHammer(
   }
 
   def translateExternFunctionCall(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    prototype2: PrototypeT,
-    argsExprs2: Vector[ReferenceExpressionTE]):
+    prototype2: PrototypeI[cI],
+    argsExprs2: Vector[ReferenceExpressionIE]):
   (ExpressionH[KindHT]) = {
     val (argsHE, argsDeferreds) =
       translateExpressionsUntilNever(
@@ -741,13 +750,13 @@ class ExpressionHammer(
   }
 
   def translateFunctionPointerCall(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    function: PrototypeT,
-    args: Vector[ExpressionT],
-    resultType2: CoordT):
+    function: PrototypeI[cI],
+    args: Vector[ExpressionI],
+    resultType2: CoordI[cI]):
   ExpressionH[KindHT] = {
     val returnType2 = function.returnType
     val paramTypes = function.paramTypes
@@ -782,12 +791,12 @@ class ExpressionHammer(
   }
 
   def translateNewMutRuntimeSizedArray(
-    hinputs: Hinputs, hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    hinputs: HinputsI, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    constructArray2: NewMutRuntimeSizedArrayTE):
+    constructArray2: NewMutRuntimeSizedArrayIE):
   (ExpressionH[KindHT]) = {
-    val NewMutRuntimeSizedArrayTE(arrayType2, capacityExpr2) = constructArray2;
+    val NewMutRuntimeSizedArrayIE(arrayType2, capacityExpr2, _) = constructArray2;
 
     val (capacityRegisterId, capacityDeferreds) =
       translate(
@@ -795,7 +804,7 @@ class ExpressionHammer(
 
     val (arrayRefTypeH) =
       typeHammer.translateCoord(
-        hinputs, hamuts, constructArray2.result.coord)
+        hinputs, hamuts, constructArray2.result)
 
     val (arrayTypeH) =
       typeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
@@ -814,12 +823,12 @@ class ExpressionHammer(
   }
 
   def translateNewImmRuntimeSizedArray(
-    hinputs: Hinputs, hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    hinputs: HinputsI, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    constructArray2: NewImmRuntimeSizedArrayTE):
+    constructArray2: NewImmRuntimeSizedArrayIE):
   (ExpressionH[KindHT]) = {
-    val NewImmRuntimeSizedArrayTE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
+    val NewImmRuntimeSizedArrayIE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod, _) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
       translate(
@@ -831,7 +840,7 @@ class ExpressionHammer(
 
     val (arrayRefTypeH) =
       typeHammer.translateCoord(
-        hinputs, hamuts, constructArray2.result.coord)
+        hinputs, hamuts, constructArray2.result)
 
     val (arrayTypeH) =
       typeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
@@ -855,13 +864,13 @@ class ExpressionHammer(
   }
 
   def translateStaticArrayFromCallable(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    exprTE: StaticArrayFromCallableTE):
+    exprIE: StaticArrayFromCallableIE):
   (ExpressionH[KindHT]) = {
-    val StaticArrayFromCallableTE(arrayType2, generatorExpr2, generatorMethod) = exprTE;
+    val StaticArrayFromCallableIE(arrayType2, generatorExpr2, generatorMethod, _) = exprIE;
 
     val (generatorRegisterId, generatorDeferreds) =
       translate(
@@ -869,7 +878,7 @@ class ExpressionHammer(
 
     val (arrayRefTypeH) =
       typeHammer.translateCoord(
-        hinputs, hamuts, exprTE.result.coord)
+        hinputs, hamuts, exprIE.result)
 
     val (arrayTypeH) =
       typeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2)
@@ -892,18 +901,18 @@ class ExpressionHammer(
   }
 
   def translateDestroyStaticSizedArray(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    das2: DestroyStaticSizedArrayIntoFunctionTE):
+    das2: DestroyStaticSizedArrayIntoFunctionIE):
   ExpressionH[KindHT] = {
-    val DestroyStaticSizedArrayIntoFunctionTE(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
+    val DestroyStaticSizedArrayIntoFunctionIE(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
 
     val (arrayTypeH) =
       typeHammer.translateStaticSizedArray(hinputs, hamuts, staticSizedArrayType)
     val (arrayRefTypeH) =
-      typeHammer.translateCoord(hinputs, hamuts, arrayExpr2.result.coord)
+      typeHammer.translateCoord(hinputs, hamuts, arrayExpr2.result)
     vassert(arrayRefTypeH.expectStaticSizedArrayCoord().kind == arrayTypeH)
 
     val (arrayExprResultHE, arrayExprDeferreds) =
@@ -932,20 +941,20 @@ class ExpressionHammer(
   }
 
   def translateDestroyImmRuntimeSizedArray(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    das2: DestroyImmRuntimeSizedArrayTE):
+    das2: DestroyImmRuntimeSizedArrayIE):
   ExpressionH[KindHT] = {
-    val DestroyImmRuntimeSizedArrayTE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
+    val DestroyImmRuntimeSizedArrayIE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
     //    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
 
     val (arrayTypeH) =
       typeHammer.translateRuntimeSizedArray(hinputs, hamuts, runtimeSizedArrayType2)
     val (arrayRefTypeH) =
-      typeHammer.translateCoord(hinputs, hamuts, arrayExpr2.result.coord)
+      typeHammer.translateCoord(hinputs, hamuts, arrayExpr2.result)
     vassert(arrayRefTypeH.expectRuntimeSizedArrayCoord().kind == arrayTypeH)
 
     val (arrayExprResultHE, arrayExprDeferreds) =
@@ -976,17 +985,17 @@ class ExpressionHammer(
   }
 
   def translateIf(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     parentLocals: LocalsBox,
-    if2: IfTE):
+    if2: IfIE):
   ExpressionH[KindHT] = {
-    val IfTE(condition2, thenBlock2, elseBlock2) = if2
+    val IfIE(condition2, thenBlock2, elseBlock2, _) = if2
 
     val (conditionBlockH, Vector()) =
       translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
-    vassert(conditionBlockH.resultType == CoordH(ShareH, InlineH, BoolHT()))
+    vassert(conditionBlockH.resultType == CoordH(MutableShareH, InlineH, BoolHT()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
     val (thenBlockH, Vector()) =
@@ -1001,7 +1010,7 @@ class ExpressionHammer(
     parentLocals.setNextLocalIdNumber(elseLocals.nextLocalIdNumber)
 
     val commonSupertypeH =
-      typeHammer.translateCoord(hinputs, hamuts, if2.result.coord)
+      typeHammer.translateCoord(hinputs, hamuts, if2.result)
 
     val ifCallNode = IfH(conditionBlockH.expectBoolAccess(), thenBlockH, elseBlockH, commonSupertypeH)
 
@@ -1045,13 +1054,13 @@ class ExpressionHammer(
   }
 
   def translateWhile(
-    hinputs: Hinputs, hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    hinputs: HinputsI, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    while2: WhileTE):
+    while2: WhileIE):
   WhileH = {
 
-    val WhileTE(bodyExpr2) = while2
+    val WhileIE(bodyExpr2, _) = while2
 
     val (exprWithoutDeferreds, deferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, bodyExpr2);
@@ -1063,14 +1072,14 @@ class ExpressionHammer(
   }
 
   def translateInterfaceFunctionCall(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
+    currentFunctionHeader: FunctionHeaderI,
     locals: LocalsBox,
-    superFunctionPrototype: PrototypeT,
+    superFunctionPrototype: PrototypeI[cI],
     virtualParamIndex: Int,
-    resultType2: CoordT,
-    argsExprs2: Vector[ExpressionT]):
+    resultType2: CoordI[cI],
+    argsExprs2: Vector[ExpressionI]):
   ExpressionH[KindHT] = {
     val (argsHE, argsDeferreds) =
       translateExpressionsUntilNever(
@@ -1081,12 +1090,12 @@ class ExpressionHammer(
     }
 
 //    val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val CoordT(_, _,interfaceTT @ InterfaceTT(_)) =
+    val CoordI(_, interfaceIT @ InterfaceIT(_)) =
       superFunctionPrototype.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
-      structHammer.translateInterface(hinputs, hamuts, interfaceTT)
-    val edge = hinputs.interfaceToEdgeBlueprints(interfaceTT.id)
-    vassert(edge.interface == interfaceTT.id)
+      structHammer.translateInterface(hinputs, hamuts, interfaceIT)
+    val edge = hinputs.interfaceToEdgeBlueprints(interfaceIT.id)
+    vassert(edge.interface == interfaceIT.id)
     val indexInEdge = edge.superFamilyRootHeaders.indexWhere(x => superFunctionPrototype.toSignature == x._1.toSignature)
     vassert(indexInEdge >= 0)
 

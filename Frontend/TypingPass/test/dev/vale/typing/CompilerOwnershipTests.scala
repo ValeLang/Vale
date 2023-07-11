@@ -9,7 +9,7 @@ import dev.vale.typing.names.CodeVarNameT
 import dev.vale.vassert
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.List
 import scala.io.Source

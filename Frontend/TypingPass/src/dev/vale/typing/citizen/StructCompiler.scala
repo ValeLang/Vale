@@ -19,7 +19,7 @@ import dev.vale.postparsing.rules._
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.ast._
-import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionSuccess, IEvaluateFunctionResult}
+import dev.vale.typing.function._
 import dev.vale.typing.templata.ITemplataT.expectMutability
 
 import scala.collection.immutable.List

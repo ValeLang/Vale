@@ -1,23 +1,18 @@
 package dev.vale.simplifying
 
 import dev.vale.{Builtins, FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Profiler, Result, finalast, vassert, vcurious, vfail, vwat}
-import dev.vale.finalast.{ConsecutorH, ConstantVoidH, ExpressionH, Final, IdH, KindHT, Local, NeverHT, PackageH, ProgramH, PrototypeH, CoordH, StackifyH, Variability, VariableIdH, VoidHT}
-import dev.vale.typing.Hinputs
-import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
-import dev.vale.typing.names.{IdT, IVarNameT}
+import dev.vale.finalast.{ConsecutorH, ConstantVoidH, CoordH, ExpressionH, Final, IdH, KindHT, Local, NeverHT, PackageH, ProgramH, PrototypeH, StackifyH, Variability, VariableIdH, VoidHT}
 import dev.vale.highertyping.ICompileErrorA
 import dev.vale.finalast._
+import dev.vale.instantiating.ast._
 import dev.vale.postparsing.ICompileErrorS
-import dev.vale.typing.ast._
-import dev.vale.typing.names.IVarNameT
-import dev.vale.typing.{types => t}
 
 import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   //  def functionType = prototype.functionType
-  def fullName = prototype.fullName
+  def fullName = prototype.id
 }
 
 case class LocalsBox(var inner: Locals) {
@@ -25,18 +20,18 @@ case class LocalsBox(var inner: Locals) {
 
   def snapshot = inner
 
-  def typingPassLocals: Map[IVarNameT, VariableIdH] = inner.typingPassLocals
+  def typingPassLocals: Map[IVarNameI[cI], VariableIdH] = inner.typingPassLocals
   def unstackifiedVars: Set[VariableIdH] = inner.unstackifiedVars
   def locals: Map[VariableIdH, Local] = inner.locals
   def nextLocalIdNumber: Int = inner.nextLocalIdNumber
 
-  def get(id: IVarNameT) = inner.get(id)
+  def get(id: IVarNameI[cI]) = inner.get(id)
   def get(id: VariableIdH) = inner.get(id)
 
-  def markUnstackified(varId2: IVarNameT): Unit = {
+  def markUnstackified(varId2: IVarNameI[cI]): Unit = {
     inner = inner.markUnstackified(varId2)
   }
-  def markRestackified(varId2: IVarNameT): Unit = {
+  def markRestackified(varId2: IVarNameI[cI]): Unit = {
     inner = inner.markRestackified(varId2)
   }
 
@@ -57,7 +52,7 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addTypingPassLocal(
-    varId2: IVarNameT,
+    varId2: IVarNameI[cI],
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -75,7 +70,7 @@ case class LocalsBox(var inner: Locals) {
 case class Locals(
      // This doesn't have all the locals that are in the locals list, this just
      // has any locals added by typingpass.
-     typingPassLocals: Map[IVarNameT, VariableIdH],
+     typingPassLocals: Map[IVarNameI[cI], VariableIdH],
 
      unstackifiedVars: Set[VariableIdH],
 
@@ -86,7 +81,7 @@ case class Locals(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def addCompilerLocal(
-    varId2: IVarNameT,
+    varId2: IVarNameI[cI],
     varIdNameH: IdH,
     variability: Variability,
     tyype: CoordH[KindHT]):
@@ -126,11 +121,11 @@ case class Locals(
     (newLocals, newLocal)
   }
 
-  def markUnstackified(varId2: IVarNameT): Locals = {
+  def markUnstackified(varId2: IVarNameI[cI]): Locals = {
     markUnstackified(typingPassLocals(varId2))
   }
 
-  def markRestackified(varId2: IVarNameT): Locals = {
+  def markRestackified(varId2: IVarNameI[cI]): Locals = {
     markRestackified(typingPassLocals(varId2))
   }
 
@@ -152,7 +147,7 @@ case class Locals(
     Locals(typingPassLocals, unstackifiedVars - varIdH, locals, nextLocalIdNumber)
   }
 
-  def get(varId: IVarNameT): Option[Local] = {
+  def get(varId: IVarNameI[cI]): Option[Local] = {
     typingPassLocals.get(varId) match {
       case None => None
       case Some(index) => Some(locals(index))
@@ -171,24 +166,22 @@ class Hammer(interner: Interner, keywords: Keywords) {
       interner,
       keywords,
       nameHammer,
-      (hinputs, hamuts, prototypeT) => typeHammer.translatePrototype(hinputs, hamuts, prototypeT),
-      (hinputs, hamuts, referenceT) => typeHammer.translateCoord(hinputs, hamuts, referenceT))
+      (hinputs, hamuts, prototypeI) => typeHammer.translatePrototype(hinputs, hamuts, prototypeI),
+      (hinputs, hamuts, referenceI) => typeHammer.translateCoord(hinputs, hamuts, referenceI))
   val typeHammer: TypeHammer = new TypeHammer(interner, keywords, nameHammer, structHammer)
   val functionHammer = new FunctionHammer(keywords, typeHammer, nameHammer, structHammer)
   val vonHammer = new VonHammer(nameHammer, typeHammer)
 
-  def translate(hinputs: Hinputs): ProgramH = {
-    val Hinputs(
+  def translate(hinputs: HinputsI): ProgramH = {
+    val HinputsI(
     interfaces,
     structs,
     functions,
 //    kindToDestructor,
     interfaceToEdgeBlueprints,
     edges,
-    _,
     kindExports,
     functionExports,
-    kindExterns,
     functionExterns) = hinputs
 
 
@@ -196,24 +189,24 @@ class Hammer(interner: Interner, keywords: Keywords) {
     //    val emptyPackStructRefH = structHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     //    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
-    kindExports.foreach({ case KindExportT(_, tyype, packageCoordinate, exportName) =>
+    kindExports.foreach({ case KindExportI(_, tyype, exportId, exportName) =>
       val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
-      hamuts.addKindExport(kindH, packageCoordinate, exportName)
+      hamuts.addKindExport(kindH, exportId.packageCoord, exportName)
     })
 
-    functionExports.foreach({ case FunctionExportT(_, prototype, packageCoordinate, exportName) =>
+    functionExports.foreach({ case FunctionExportI(_, prototype, exportId, exportName) =>
       val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
-      hamuts.addFunctionExport(prototypeH, packageCoordinate, exportName)
+      hamuts.addFunctionExport(prototypeH, exportId.packageCoord, exportName)
     })
 
-    kindExterns.foreach({ case KindExternT(tyype, packageCoordinate, exportName) =>
-      val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
-      hamuts.addKindExtern(kindH, packageCoordinate, exportName)
-    })
+//    kindExterns.foreach({ case KindExternI(tyype, packageCoordinate, exportName) =>
+//      val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
+//      hamuts.addKindExtern(kindH, packageCoordinate, exportName)
+//    })
 
-    functionExterns.foreach({ case FunctionExternT(_, prototype, packageCoordinate, exportName) =>
+    functionExterns.foreach({ case FunctionExternI(prototype, exportName) =>
       val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
-      hamuts.addFunctionExtern(prototypeH, packageCoordinate, exportName)
+      hamuts.addFunctionExtern(prototypeH, exportName)
     })
 
     // We generate the names here first, so that externs get the first chance at having
@@ -255,7 +248,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
 //    })
 
     val packageToInterfaceDefs = hamuts.interfaceTToInterfaceDefH.groupBy(_._1.id.packageCoord)
-    val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
+    val packageToStructDefs = hamuts.structDefs.groupBy(_.id.packageCoordinate)
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.id.packageCoord).mapValues(_.values.toVector)
     val packageToStaticSizedArrays = hamuts.staticSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
     val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)

@@ -16,7 +16,7 @@ import dev.vale.typing.templata._
 import dev.vale.typing._
 import dev.vale.typing.ast.{CitizenDefinitionT, ImplT, InterfaceDefinitionT}
 import dev.vale.typing.env._
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionFailure
+import dev.vale.typing.function._
 import dev.vale.typing.infer.ITypingPassSolverError
 
 import scala.collection.immutable.Set

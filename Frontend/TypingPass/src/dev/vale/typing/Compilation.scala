@@ -28,7 +28,7 @@ class TypingPassCompilation(
   var higherTypingCompilation =
     new HigherTypingCompilation(
       options.globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
-  var hinputsCache: Option[Hinputs] = None
+  var hinputsCache: Option[HinputsT] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = higherTypingCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = higherTypingCompilation.getParseds()
@@ -37,7 +37,7 @@ class TypingPassCompilation(
 
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = higherTypingCompilation.getAstrouts()
 
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = {
+  def getCompilerOutputs(): Result[HinputsT, ICompileErrorT] = {
     hinputsCache match {
       case Some(coutputs) => Ok(coutputs)
       case None => {
@@ -57,7 +57,7 @@ class TypingPassCompilation(
     }
   }
 
-  def expectCompilerOutputs(): Hinputs = {
+  def expectCompilerOutputs(): HinputsT = {
     getCompilerOutputs() match {
       case Err(err) => {
 

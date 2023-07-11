@@ -1,14 +1,9 @@
 package dev.vale.simplifying
 
-import dev.vale.finalast.{FunctionH, Local, NeverHT, PureH, UserFunctionH, VariableIdH}
-import dev.vale.typing.Hinputs
-import dev.vale.typing.ast.{ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, PrototypeT, PureT, UserFunctionT}
-import dev.vale.typing.names.{IdT, IVarNameT}
+import dev.vale.finalast.{FunctionH, Local, PureH, UserFunctionH, VariableIdH}
 import dev.vale.{Keywords, vassert, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
-import dev.vale.typing._
-import dev.vale.typing.ast._
-import dev.vale.typing.names.IVarNameT
+import dev.vale.instantiating.ast._
 
 class FunctionHammer(
     keywords: Keywords,
@@ -19,9 +14,9 @@ class FunctionHammer(
     new ExpressionHammer(keywords, typeHammer, nameHammer, structHammer, this)
 
   def translateFunctions(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    functions2: Vector[FunctionDefinitionT]):
+    functions2: Vector[FunctionDefinitionI]):
   (Vector[FunctionRefH]) = {
     functions2.foldLeft((Vector[FunctionRefH]()))({
       case ((previousFunctionsH), function2) => {
@@ -32,16 +27,16 @@ class FunctionHammer(
   }
 
   def translateFunction(
-    hinputs: Hinputs,
+    hinputs: HinputsI,
     hamuts: HamutsBox,
-    function2: FunctionDefinitionT):
+    function2: FunctionDefinitionI):
   (FunctionRefH) = {
 //    opts.debugOut("Translating function " + function2.header.fullName)
     hamuts.functionRefs.get(function2.header.toPrototype) match {
       case Some(functionRefH) => functionRefH
       case None => {
-        val FunctionDefinitionT(
-            header @ FunctionHeaderT(humanName, attrs2, params2, returnType2, _),
+        val FunctionDefinitionI(
+            header @ FunctionHeaderI(humanName, attrs2, params2, returnType2),
             _,
             _,
             body) = function2;
@@ -53,7 +48,7 @@ class FunctionHammer(
         val locals =
           LocalsBox(
             Locals(
-              Map[IVarNameT, VariableIdH](),
+              Map[IVarNameI[cI], VariableIdH](),
               Set[VariableIdH](),
               Map[VariableIdH,Local](),
               1));
@@ -74,8 +69,8 @@ class FunctionHammer(
         }
 
         val isAbstract = header.getAbstractInterface.nonEmpty
-        val isExtern = header.attributes.exists({ case ExternT(packageCoord) => true case _ => false })
-        val attrsH = translateFunctionAttributes(attrs2.filter(a => !a.isInstanceOf[ExternT]))
+        val isExtern = header.attributes.exists({ case ExternI(packageCoord) => true case _ => false })
+        val attrsH = translateFunctionAttributes(attrs2.filter(a => !a.isInstanceOf[ExternI]))
         val functionH = FunctionH(prototypeH, isAbstract, isExtern, attrsH, bodyH);
         hamuts.addFunction(header.toPrototype, functionH)
 
@@ -84,20 +79,20 @@ class FunctionHammer(
     }
   }
 
-  def translateFunctionAttributes(attributes: Vector[IFunctionAttributeT]) = {
+  def translateFunctionAttributes(attributes: Vector[IFunctionAttributeI]) = {
     attributes.map({
-      case UserFunctionT => UserFunctionH
-      case PureT => PureH
-      case ExternT(_) => vwat() // Should have been filtered out, hammer cares about extern directly
+      case UserFunctionI => UserFunctionH
+      case PureI => PureH
+      case ExternI(_) => vwat() // Should have been filtered out, hammer cares about extern directly
       case x => vimpl(x.toString)
     })
   }
 
   def translateFunctionRef(
-      hinputs: Hinputs,
+      hinputs: HinputsI,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeaderT,
-      prototype2: PrototypeT):
+    currentFunctionHeader: FunctionHeaderI,
+      prototype2: PrototypeI[cI]):
   (FunctionRefH) = {
     val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, prototype2);
     val functionRefH = FunctionRefH(prototypeH);

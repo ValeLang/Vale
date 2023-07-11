@@ -20,7 +20,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
-import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function._
 import dev.vale.typing.names.PackageTopLevelNameT
 
 import scala.collection.immutable.List

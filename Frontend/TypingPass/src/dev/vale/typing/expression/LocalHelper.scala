@@ -159,7 +159,7 @@ class LocalHelper(
               }
               // See CSHROOR for why these aren't just Readwrite.
               case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
-              case l @ StaticSizedArrayLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, BorrowT)
               case l @ ReferenceMemberLookupTE(_,_, _, _, _) => SoftLoadTE(l, BorrowT)
               case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
             }

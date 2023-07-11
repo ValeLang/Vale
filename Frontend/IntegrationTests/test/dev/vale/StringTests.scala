@@ -3,7 +3,7 @@ package dev.vale
 import dev.vale.typing.ast.ConstantStrTE
 import dev.vale.typing._
 import dev.vale.von.{VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class StringTests extends FunSuite with Matchers {
   test("Simple string") {

@@ -5,7 +5,7 @@ import dev.vale.parsing.ast.{DestinationLocalP, DestructureP, LocalNameDeclarati
 import dev.vale.parsing._
 import dev.vale.parsing.ast.Patterns.capturedWithType
 import dev.vale.parsing.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, TuplePT}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class CaptureAndDestructureTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {

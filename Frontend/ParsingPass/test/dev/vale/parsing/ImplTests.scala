@@ -4,7 +4,7 @@ import dev.vale.lexing.Lexer
 import dev.vale.{Collector, Interner, StrI, vassertOne, vimpl}
 import dev.vale.parsing.ast.{CallPT, IDenizenP, GenericParameterP, GenericParametersP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP, TopLevelImplP}
 import dev.vale.options.GlobalOptions
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 class ImplTests extends FunSuite with Matchers with Collector with TestParseUtils {

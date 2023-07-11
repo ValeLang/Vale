@@ -1,14 +1,13 @@
 package dev.vale
 
 import dev.vale.passmanager.FullCompilationOptions
-import dev.vale.finalast.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntHT, NeverHT, PrototypeH, CoordH, ShareH}
+import dev.vale.finalast._
 import dev.vale.typing.types.ShareT
 import dev.vale.testvm.PanicException
 import dev.vale.simplifying._
-import dev.vale.finalast.VariableIdH
 import dev.vale.von.VonInt
 import dev.vale.{finalast => m}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.List
 
@@ -23,7 +22,7 @@ class HammerTests extends FunSuite with Matchers {
 
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     vassert(testPackage.getAllUserFunctions.size == 1)
-    testPackage.getAllUserFunctions.head.prototype.fullName.fullyQualifiedName shouldEqual """main"""
+    testPackage.getAllUserFunctions.head.prototype.id.fullyQualifiedName shouldEqual """main"""
   }
 
 //  // Make sure a ListNode struct made it out
@@ -59,14 +58,14 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     vassertSome(
       packageH.interfaces.find(interface => {
-        interface.fullName.fullyQualifiedName == """MyOption<i32>"""
+        interface.id.fullyQualifiedName == """MyOption<i32>"""
       }))
 
-    val mySome = packageH.structs.find(_.fullName.fullyQualifiedName == """MySome<i32>""").get;
+    val mySome = packageH.structs.find(_.id.fullyQualifiedName == """MySome<i32>""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == CoordH[IntHT](ShareH, InlineH, IntHT.i32))
+    vassert(mySome.members.head.tyype == CoordH[IntHT](MutableShareH, InlineH, IntHT.i32))
 
-    val myNone = packageH.structs.find(_.fullName.fullyQualifiedName == """MyNone<i32>""").get;
+    val myNone = packageH.structs.find(_.id.fullyQualifiedName == """MyNone<i32>""").get;
     vassert(myNone.members.isEmpty);
   }
 

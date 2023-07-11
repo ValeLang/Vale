@@ -32,15 +32,6 @@ extern func substring(
   end int)
 str;
 
-extern func streq(
-  aContainerStr str,
-  aBegin int,
-  aEnd int,
-  bContainerStr str,
-  bBegin int,
-  bEnd int)
-bool;
-
 extern func strcmp(
   aContainerStr str,
   aBegin int,

@@ -11,7 +11,7 @@ import dev.vale.typing.templata.{CoordTemplataT, IntegerTemplataT, KindTemplataT
 import dev.vale.typing.types.{BoolT, BorrowT, CoordT, ImmutableT, IntT, InterfaceTT, OwnT, KindPlaceholderT, RuntimeSizedArrayTT, ShareT, StructTT, VoidT}
 import dev.vale.{Collector, Err, Ok, PackageCoordinate, StrI, Tests, vassert, vassertOne, vfail, vimpl, vwat}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.io.Source
 

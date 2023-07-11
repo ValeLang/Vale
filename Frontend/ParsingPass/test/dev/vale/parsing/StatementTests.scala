@@ -5,7 +5,7 @@ import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, Constant
 import dev.vale.parsing.ast._
 import dev.vale.lexing.{CantUseThatLocalName, BadExpressionEnd, BadStartOfStatementError, ForgotSetKeyword}
 import dev.vale.options.GlobalOptions
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class StatementTests extends FunSuite with Collector with TestParseUtils {
 

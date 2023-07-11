@@ -1,7 +1,7 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BlockH, BoolHT, BorrowH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, FloatHT, IfH, InlineH, IntHT, InterfaceCallH, InterfaceHT, IsSameInstanceH, KindHT, LocalLoadH, LocalStoreH, LocationH, LockWeakH, MemberLoadH, MemberStoreH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, OwnH, PopRuntimeSizedArrayH, ProgramH, PrototypeH, PushRuntimeSizedArrayH, CoordH, ReturnH, RuntimeSizedArrayHT, RuntimeSizedArrayLoadH, RuntimeSizedArrayStoreH, ShareH, StackifyH, StaticArrayFromCallableH, StaticSizedArrayHT, StaticSizedArrayLoadH, StaticSizedArrayStoreH, StrHT, StructHT, StructToInterfaceUpcastH, UnstackifyH, VoidHT, WeakH, WhileH, YonderH}
-import dev.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat, finalast => m}
+import dev.vale.finalast._
+import dev.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat, finalast => m}
 import dev.vale.finalast._
 
 import scala.collection.mutable
@@ -18,8 +18,8 @@ object ExpressionVivem {
 
   def makePrimitive(heap: Heap, callId: CallId, location: LocationH, kind: KindV) = {
     vassert(kind != VoidV)
-    val ref = heap.allocateTransient(ShareH, location, kind)
-    heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
+    val ref = heap.allocateTransient(MutableShareH, location, kind)
+    heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, MutableShareH), ref)
     ref
   }
 
@@ -69,10 +69,20 @@ object ExpressionVivem {
     val callId = expressionId.callId
 
     node match {
+      case PreCheckBorrowH(innerExpr) => {
+        val innerRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), innerExpr) match {
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
+            case NodeContinue(r) => r
+          }
+        return NodeContinue(innerRef)
+      }
       case DiscardH(sourceExpr) => {
         sourceExpr.resultType.ownership match {
-          case ShareH =>
-          case BorrowH =>
+          case MutableShareH =>
+          case ImmutableShareH =>
+          case ImmutableBorrowH =>
+          case MutableBorrowH =>
           case WeakH =>
         }
         val sourceRef =
@@ -87,6 +97,39 @@ object ExpressionVivem {
       case ConstantVoidH() => {
         val ref = heap.void
         NodeContinue(ref)
+      }
+      case ExternCallH(prototypeH, argsExprs) => {
+        val externFunction = FunctionVivem.getExternFunction(programH, prototypeH)
+
+        val argRefs =
+          argsExprs.zipWithIndex.map({ case (argExpr, i) =>
+            executeNode(programH, stdin, stdout, heap, expressionId.addStep(i), argExpr) match {
+              case NodeBreak() | NodeReturn(_) => {
+                // This shouldnt be possible because break and return can only
+                // be statements, not expressions, see BRCOBS.
+                vwat()
+              }
+              case NodeContinue(r) => r
+            }
+          })
+
+        val resultRef =
+          externFunction(
+            new AdapterForExterns(
+              programH,
+              heap,
+              CallId(expressionId.callId.callDepth + 1, prototypeH),
+              stdin,
+              stdout),
+            argRefs.toVector)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultRef.ownership), resultRef)
+
+        // Special case for externs; externs arent allowed to change ref counts at all.
+        // So, we just drop these normally.
+        argRefs.zip(argsExprs.map(_.resultType))
+          .foreach({ case (r, expectedType) => discard(programH, heap, stdout, stdin, callId, expectedType, r) })
+
+        NodeContinue(resultRef)
       }
       case ConstantIntH(value, bits) => {
         val ref = makePrimitive(heap, callId, InlineH, IntV(value, bits))
@@ -151,6 +194,43 @@ object ExpressionVivem {
 
         NodeContinue(ref)
       }
+      case MutabilifyH(inner) => {
+        val sourceRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), inner) match {
+            case r@(NodeReturn(_) | NodeBreak()) => return r
+            case NodeContinue(r) => r
+          }
+        val resultRef =
+          sourceRef.copy(
+            ownership =
+            sourceRef.ownership match {
+              case ImmutableShareH => MutableShareH
+              case ImmutableBorrowH => MutableBorrowH
+              case other => vwat()
+            })
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultRef.ownership), resultRef)
+        heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, sourceRef.ownership), sourceRef)
+        NodeContinue(resultRef)
+      }
+      case ImmutabilifyH(inner) => {
+        val sourceRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), inner) match {
+            case r@(NodeReturn(_) | NodeBreak()) => return r
+            case NodeContinue(r) => r
+          }
+        val resultRef =
+          sourceRef.copy(
+            ownership =
+              sourceRef.ownership match {
+                case MutableShareH => ImmutableShareH
+                case MutableBorrowH => ImmutableBorrowH
+                case other => vwat()
+              })
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultRef.ownership), resultRef)
+        heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, sourceRef.ownership), sourceRef)
+
+        NodeContinue(resultRef)
+      }
       case BlockH(sourceExpr) => {
         executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr)
       }
@@ -186,7 +266,7 @@ object ExpressionVivem {
           structReference)
 
         // DDSOT
-        heap.ensureRefCount(structReference, Some(Set(OwnH, BorrowH)), 0)
+        heap.ensureRefCount(structReference, Some(Set(OwnH, MutableBorrowH, ImmutableBorrowH)), 0)
 
         val oldMemberReferences = heap.destructure(structReference)
 
@@ -264,7 +344,7 @@ object ExpressionVivem {
             case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
-        vassert(constraintRef.ownership == BorrowH)
+        vassert(constraintRef.ownership == MutableBorrowH || constraintRef.ownership == ImmutableBorrowH)
 
         val weakRef = heap.transmute(constraintRef, sourceExpr.resultType, waH.resultType)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, weakRef.ownership), weakRef)
@@ -325,7 +405,7 @@ object ExpressionVivem {
         vassert(weakRef.ownership == WeakH)
 
         if (heap.containsLiveObject(weakRef)) {
-          val expectedRef = CoordH(BorrowH, YonderH, sourceExpr.resultType.kind)
+          val expectedRef = CoordH(vregionmut(MutableBorrowH), YonderH, sourceExpr.resultType.kind)
           val constraintRef = heap.transmute(weakRef, sourceExpr.resultType, expectedRef)
 
           heap.vivemDout.println()
@@ -508,27 +588,27 @@ object ExpressionVivem {
           })
 
         val functionH = programH.lookupFunction(prototypeH)
-        if (functionH.isExtern) {
-          val externFunction = FunctionVivem.getExternFunction(programH, prototypeH)
-
-          val resultRef =
-            externFunction(
-              new AdapterForExterns(
-                programH,
-                heap,
-                CallId(expressionId.callId.callDepth + 1, prototypeH),
-                stdin,
-                stdout),
-              argRefs.toVector)
-          heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultRef.ownership), resultRef)
-
-          // Special case for externs; externs arent allowed to change ref counts at all.
-          // So, we just drop these normally.
-          argRefs.zip(argsExprs.map(_.resultType))
-            .foreach({ case (r, expectedType) => discard(programH, heap, stdout, stdin, callId, expectedType, r) })
-
-          NodeContinue(resultRef)
-        } else {
+//        if (functionH.isExtern) {
+//          val externFunction = FunctionVivem.getExternFunction(programH, prototypeH)
+//
+//          val resultRef =
+//            externFunction(
+//              new AdapterForExterns(
+//                programH,
+//                heap,
+//                CallId(expressionId.callId.callDepth + 1, prototypeH),
+//                stdin,
+//                stdout),
+//              argRefs.toVector)
+//          heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultRef.ownership), resultRef)
+//
+//          // Special case for externs; externs arent allowed to change ref counts at all.
+//          // So, we just drop these normally.
+//          argRefs.zip(argsExprs.map(_.resultType))
+//            .foreach({ case (r, expectedType) => discard(programH, heap, stdout, stdin, callId, expectedType, r) })
+//
+//          NodeContinue(resultRef)
+//        } else {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (call)")
 
@@ -542,7 +622,7 @@ object ExpressionVivem {
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
           NodeContinue(returnRef)
-        }
+//        }
       }
       case InterfaceCallH(argsExprs, virtualParamIndex, interfaceRefH, indexInEdge, functionType) => {
         // undeviewed = not deviewed = the virtual param is still a view and we want it to
@@ -1015,7 +1095,7 @@ object ExpressionVivem {
       heap.vivemDout.println()
       heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
 
-      val indexReference = heap.allocateTransient(ShareH, InlineH, IntV(i, 32))
+      val indexReference = heap.allocateTransient(MutableShareH, InlineH, IntV(i, 32))
 
       heap.vivemDout.println()
 
@@ -1130,8 +1210,8 @@ object ExpressionVivem {
         case WeakH => {
           heap.deallocateIfNoWeakRefs(actualReference)
         }
-        case BorrowH => // Do nothing.
-        case ShareH => {
+        case MutableBorrowH | ImmutableBorrowH => // Do nothing.
+        case MutableShareH | ImmutableShareH => {
           expectedReference.kind match {
             case VoidHT() | IntHT(_) | BoolHT() | StrHT() | FloatHT() => {
               heap.zero(actualReference)

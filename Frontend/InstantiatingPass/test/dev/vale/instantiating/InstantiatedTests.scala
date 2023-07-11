@@ -2,7 +2,7 @@ package dev.vale.instantiating
 
 import dev.vale.options.GlobalOptions
 import dev.vale.{Builtins, FileCoordinateMap, Interner, Keywords, PackageCoordinate, Tests}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 object InstantiatingCompilation {
   def test(code: String*): InstantiatedCompilation = {

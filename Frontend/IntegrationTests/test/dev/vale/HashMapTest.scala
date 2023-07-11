@@ -4,7 +4,7 @@ import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing._
 import dev.vale.typing.types._
 import dev.vale.von.VonInt
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class HashMapTest extends FunSuite with Matchers {
   test("Monomorphize problem") {

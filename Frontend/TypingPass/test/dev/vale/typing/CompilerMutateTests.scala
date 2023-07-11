@@ -14,7 +14,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.List
 import scala.io.Source
@@ -167,7 +167,6 @@ class CompilerMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |import v.builtins.drop.*;
-        |import v.builtins.panic.*;
         |
         |exported func main() int {
         |  arr = #[#10]({_});
@@ -220,7 +219,6 @@ class CompilerMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |import v.builtins.drop.*;
-        |import v.builtins.panic.*;
         |
         |exported func main() int {
         |  arr = Array<mut, int>(3);

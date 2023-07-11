@@ -7,6 +7,9 @@ extern func castFloatI32(x float) int;
 
 extern func TruncateI64ToI32(x i64) int;
 
+func i64(x int) i64 { __vbi_ExtendI32ToI64(x) }
+extern func __vbi_ExtendI32ToI64(x int) i64;
+
 func -(x int) int { return __vbi_negateI32(x); }
 extern func __vbi_negateI32(x int) int;
 

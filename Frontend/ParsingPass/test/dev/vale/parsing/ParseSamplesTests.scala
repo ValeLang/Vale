@@ -2,7 +2,7 @@ package dev.vale.parsing
 
 import dev.vale.{Collector, Err, Interner, Keywords, Ok, Tests, vfail}
 import dev.vale.options.GlobalOptions
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 

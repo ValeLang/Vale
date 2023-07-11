@@ -6,7 +6,7 @@ import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
 import dev.vale.{Collector, StrI, Tests, vassert}
 import dev.vale.typing.types.InterfaceTT
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.Set
 

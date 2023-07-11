@@ -1,12 +1,13 @@
 package dev.vale.instantiating
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
+import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Result, vassertSome, vcurious}
-import dev.vale.typing.{Hinputs, ICompileErrorT, TypingPassCompilation, TypingPassOptions}
+import dev.vale.typing.{HinputsT, ICompileErrorT, TypingPassCompilation, TypingPassOptions}
 
 case class InstantiatorCompilationOptions(
   globalOptions: GlobalOptions = GlobalOptions(),
@@ -30,17 +31,17 @@ class InstantiatedCompilation(
       TypingPassOptions(
         options.globalOptions,
         options.debugOut))
-  var monoutsCache: Option[Hinputs] = None
+  var monoutsCache: Option[HinputsI] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = typingPassCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = typingPassCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = typingPassCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = typingPassCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = typingPassCompilation.getAstrouts()
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = typingPassCompilation.getCompilerOutputs()
-  def expectCompilerOutputs(): Hinputs = typingPassCompilation.expectCompilerOutputs()
+  def getCompilerOutputs(): Result[HinputsT, ICompileErrorT] = typingPassCompilation.getCompilerOutputs()
+  def expectCompilerOutputs(): HinputsT = typingPassCompilation.expectCompilerOutputs()
 
-  def getMonouts(): Hinputs = {
+  def getMonouts(): HinputsI = {
     monoutsCache match {
       case Some(monouts) => monouts
       case None => {

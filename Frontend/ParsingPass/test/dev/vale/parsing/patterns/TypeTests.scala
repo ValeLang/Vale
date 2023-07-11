@@ -6,7 +6,7 @@ import dev.vale.parsing.ast.{AnonymousRunePT, BorrowP, CallPT, FinalP, IgnoredLo
 import dev.vale.parsing.ast.Patterns.{fromEnv, withType}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class TypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {

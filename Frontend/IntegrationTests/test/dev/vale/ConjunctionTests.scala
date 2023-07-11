@@ -1,7 +1,7 @@
 package dev.vale
 
 import dev.vale.von.VonBool
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ConjunctionTests extends FunSuite with Matchers {
   test("And") {

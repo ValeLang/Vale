@@ -1,15 +1,16 @@
 package dev.vale
 
+import dev.vale.instantiating.ast._
 import dev.vale.typing.{ast, types}
 import dev.vale.typing.ast.{AbstractT, SignatureT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.testvm.IntV
 import dev.vale.typing.ast._
 import dev.vale.typing.templata.ITemplataT.{expectCoord, expectCoordTemplata}
 import dev.vale.typing.types._
 import dev.vale.von.{VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class VirtualTests extends FunSuite with Matchers {
 
@@ -355,14 +356,14 @@ class VirtualTests extends FunSuite with Matchers {
       val moo = compile.getMonouts().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
+          case LetNormalIE(destVar, FunctionCallIE(PrototypeI(IdI(_, _, FunctionNameIX(FunctionTemplateNameI(StrI("as"), _), _, _)), returnType), _, _), _) => {
             (destVar, returnType)
           }
         })
-      vassert(destVar.coord == returnType)
+      vassert(destVar.collapsedCoord == returnType)
       val Vector(successType, failType) = returnType.kind.expectInterface().id.localName.templateArgs
-      vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
-      vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
+      vassert(successType.expectCoordTemplata().coord.ownership == MutableBorrowI)
+      vassert(failType.expectCoordTemplata().coord.ownership == MutableBorrowI)
     }
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }

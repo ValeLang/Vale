@@ -33,8 +33,8 @@ case class CoordH[+T <: KindHT](
 
   (ownership, location) match {
     case (OwnH, YonderH) =>
-    case (ShareH, _) =>
-    case (BorrowH, YonderH) =>
+    case (ImmutableShareH | MutableShareH, _) =>
+    case (MutableBorrowH | ImmutableBorrowH, YonderH) =>
     case (WeakH, YonderH) =>
     case _ => vfail()
   }
@@ -42,19 +42,21 @@ case class CoordH[+T <: KindHT](
   kind match {
     case IntHT(_) | BoolHT() | FloatHT() | NeverHT(_) => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
-      vassert(ownership == ShareH)
+      // We don't want any ImmutableShareH, it's better to only ever have one ownership for
+      // primitives.
+      vassert(ownership == MutableShareH)
       vassert(location == InlineH)
     }
     case StrHT() => {
       // Strings need to be yonder because Midas needs to do refcounting for them.
-      vassert(ownership == ShareH)
+      vassert(ownership == ImmutableShareH || ownership == MutableShareH)
       vassert(location == YonderH)
     }
     case StructHT(name) => {
       val isBox = name.fullyQualifiedName.startsWith("__Box")
 
       if (isBox) {
-        vassert(ownership == OwnH || ownership == BorrowH)
+        vassert(ownership == OwnH || ownership == ImmutableBorrowH || ownership == MutableBorrowH)
       }
     }
     case _ =>
@@ -130,28 +132,28 @@ case class NeverHT(fromBreak: Boolean) extends KindHT {
 
 case class InterfaceHT(
   // Unique identifier for the interface.
-  fullName: IdH
+  id: IdH
 ) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = id.packageCoordinate
 }
 
 case class StructHT(
   // Unique identifier for the interface.
-  fullName: IdH
+  id: IdH
 ) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = id.packageCoordinate
 }
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
 case class StaticSizedArrayHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
-  name: IdH,
+  id: IdH,
 ) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = name.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = id.packageCoordinate
 }
 
 // An array whose size is known at compile time, and therefore doesn't need to
@@ -197,9 +199,11 @@ case class CodeLocation(
 // ReferenceH for explanation.
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
-case object BorrowH extends OwnershipH
+case object MutableBorrowH extends OwnershipH
+case object ImmutableBorrowH extends OwnershipH
+case object MutableShareH extends OwnershipH
+case object ImmutableShareH extends OwnershipH
 case object WeakH extends OwnershipH
-case object ShareH extends OwnershipH
 
 // Location says whether a reference contains the kind's location (yonder) or
 // contains the kind itself (inline).

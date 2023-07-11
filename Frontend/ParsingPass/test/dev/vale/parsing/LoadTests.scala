@@ -7,7 +7,7 @@ import dev.vale.{Collector, Interner, Keywords, vassert, vimpl}
 import net.liftweb.json._
 import dev.vale.parsing.ast.ConstantStrPE
 import dev.vale.von.{JsonSyntax, VonPrinter}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import java.nio.charset.Charset
 

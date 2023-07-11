@@ -251,13 +251,17 @@ class PatternCompiler(
           case None => {
             // If we get here, we aren't destructuring, or doing anything with the exprToDestructureOrDropOrPassTE.
 
-            // If it's an own, we should drop it immediately, instead of waiting for the containing block to drop it.
-            (if (exprToDestructureOrDropOrPassTE.result.coord.ownership == OwnT) {
-              List(
-                destructorCompiler.drop(
-                  nenv.snapshot, coutputs, range :: parentRanges, callLocation, exprToDestructureOrDropOrPassTE))
-            } else {
-              List()
+            (maybeCaptureLocalVarA match {
+              case None => {
+                // If we didn't store it, and we aren't destructuring it, then we're just ignoring it. Let's drop it.
+                List(
+                  destructorCompiler.drop(
+                    nenv.snapshot, coutputs, range :: parentRanges, callLocation, exprToDestructureOrDropOrPassTE))
+              }
+              case Some(_) => {
+                // We aren't destructuring it, but we stored it, so just do nothing.
+                List()
+              }
             }) ++
             List(
               // ...and then continue on.

@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.testvm.PanicException
 import dev.vale.von.{VonInt, VonStr}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ResultTests extends FunSuite with Matchers {
   test("Test borrow is_ok and expect for Ok") {

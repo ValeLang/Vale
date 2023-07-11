@@ -8,7 +8,7 @@ import dev.vale.typing.types.StrT
 import dev.vale.testvm.StructInstanceV
 import dev.vale.von.VonInt
 import dev.vale.{finalast => m}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class ArithmeticTestsA extends FunSuite with Matchers {
   test("Dividing") {

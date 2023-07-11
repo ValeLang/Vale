@@ -6,7 +6,7 @@ import dev.vale.parsing.ast.{BorrowP, BuiltinCallPR, EqualsPR, IRulexPR, Immutab
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 class RulesEnumsTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {

@@ -1,6 +1,6 @@
 package dev.vale.von
 
-import org.scalatest.{FunSuite, Matchers, _}
+import org.scalatest._
 
 class VonTest extends FunSuite with Matchers {
 

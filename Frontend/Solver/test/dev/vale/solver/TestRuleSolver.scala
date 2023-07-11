@@ -1,7 +1,7 @@
 package dev.vale.solver
 
 import dev.vale.{Err, Interner, Ok, RangeS, Result, vassert, vassertSome, vfail, vimpl, vwat}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 import scala.collection.immutable.Map
 

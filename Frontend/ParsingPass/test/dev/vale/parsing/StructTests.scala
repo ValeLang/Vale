@@ -5,7 +5,7 @@ import dev.vale.options.GlobalOptions
 import dev.vale.{Collector, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, PackageCoordinate, StrI, vassertOne, vassertSome}
 import dev.vale.parsing.ast.{BorrowP, CallPT, ExportAttributeP, FinalP, GenericParameterP, GenericParametersP, ImmutableP, IntTypePR, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, NormalStructMemberP, OwnP, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StructMembersP, StructP, TemplateRulesP, TopLevelStructP, TypedPR, VariabilityPT, VariadicStructMemberP, VaryingP, WeakP}
 import dev.vale.parsing.ast._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 
 
 class StructTests extends FunSuite with Collector with TestParseUtils {

@@ -11,7 +11,7 @@ import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest._
 import dev.vale.typing.templata.MutabilityTemplataT
 import dev.vale.von.VonInt
 

@@ -259,12 +259,6 @@ case class NodeEnvironmentT(
     restackifiedLocals.toVector
   }
 
-  def addVariables(newVars: Vector[IVariableT]): NodeEnvironmentT = {
-    NodeEnvironmentT(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals ++ newVars, unstackifiedLocals, restackifiedLocals)
-  }
-  def addVariable(newVar: IVariableT): NodeEnvironmentT = {
-    NodeEnvironmentT(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals :+ newVar, unstackifiedLocals, restackifiedLocals)
-  }
   def markLocalUnstackified(newUnstackified: IVarNameT): NodeEnvironmentT = {
     vassert(getAllLocals().exists(_.name == newUnstackified))
     vassert(!getAllUnstackifiedLocals().contains(newUnstackified))

@@ -95,7 +95,6 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        function.defaultRegionRune,
         reachableBounds)
 
     val header =
@@ -152,7 +151,6 @@ class FunctionCompilerSolvingLayer(
         declaringEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        function.defaultRegionRune,
         reachableBounds)
 
     val prototype =
@@ -214,7 +212,6 @@ class FunctionCompilerSolvingLayer(
         nearEnv,
         function.genericParameters.map(_.rune.rune),
         inferences,
-        function.defaultRegionRune,
         reachableBounds)
 
     val prototypeTemplata =
@@ -313,7 +310,7 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args)
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(callingEnv, callRange, callLocation, outerEnv),
+        InferEnv(callingEnv, callRange, callLocation, outerEnv, RegionT()),
         coutputs,
         callSiteRules,
         function.runeToType,
@@ -334,7 +331,6 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        function.defaultRegionRune,
         reachableBounds)
 
     val prototype =
@@ -419,7 +415,7 @@ class FunctionCompilerSolvingLayer(
             vimpl()
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, RegionT(), false)
+                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, false)
             Some(InitialKnown(genericParam.rune, templata))
           }
         }
@@ -459,9 +455,8 @@ class FunctionCompilerSolvingLayer(
   // Preconditions:
   // - either no closured vars, or they were already added to the env.
   def evaluateGenericFunctionFromNonCall(
-    // The environment the function was defined in.
-    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     coutputs: CompilerOutputs,
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     verifyConclusions: Boolean
@@ -481,7 +476,7 @@ class FunctionCompilerSolvingLayer(
     val paramRunes =
       function.params.flatMap(_.pattern.coordRune.map(_.rune)).distinct.toVector
 
-    val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv)
+    val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv, RegionT())
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, definitionRules, function.runeToType, range, Vector(), Vector())
@@ -515,7 +510,7 @@ class FunctionCompilerSolvingLayer(
 
     val runedEnv =
       addRunedDataToNearEnv(
-        nearEnv, function.genericParameters.map(_.rune.rune), inferences, function.defaultRegionRune, reachableBoundsFromParamsAndReturn)
+        nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBoundsFromParamsAndReturn)
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(

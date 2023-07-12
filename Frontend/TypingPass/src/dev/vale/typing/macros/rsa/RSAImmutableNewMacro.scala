@@ -65,7 +65,7 @@ class RSAImmutableNewMacro(
 //        case MutabilityTemplata(MutableT) => VaryingT
 //      }
 
-    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability)
+    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, RegionT())
 
     val generatorArgCoord =
       paramCoords(1).tyype match {
@@ -83,6 +83,7 @@ class RSAImmutableNewMacro(
         interner.intern(CodeNameS(keywords.underscoresCall)),
         Vector(),
         Vector(),
+        RegionT(),
         Vector(generatorArgCoord, CoordT(ShareT, RegionT(), IntT(32))),
         Vector(),
         false,
@@ -101,6 +102,7 @@ class RSAImmutableNewMacro(
         ReturnTE(
           NewImmRuntimeSizedArrayTE(
             arrayTT,
+            RegionT(),
             sizeTE,
             generatorTE,
             generatorPrototype.prototype.prototype)))

@@ -830,7 +830,7 @@ class CompilerRuleSolver(
             }
           }
           case Some(kind) => {
-            val coerced = delegate.coerceToCoord(env, state, range :: env.parentRanges, kind)
+            val coerced = delegate.coerceToCoord(env, state, range :: env.parentRanges, kind, RegionT())
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, coordRune.rune, coerced)
             Ok(())
           }
@@ -1021,7 +1021,7 @@ class CompilerRuleSolver(
         template match {
           case RuntimeSizedArrayTemplateTemplataT() => {
             result match {
-              case CoordTemplataT(CoordT(ShareT | OwnT, _, contentsRuntimeSizedArrayTT(mutability, memberType))) => {
+              case CoordTemplataT(CoordT(ShareT | OwnT, _, contentsRuntimeSizedArrayTT(mutability, memberType, _))) => {
                 if (argRunes.size != 2) {
                   return Err(WrongNumberOfTemplateArgs(2, 2))
                 }
@@ -1030,7 +1030,7 @@ class CompilerRuleSolver(
                 stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, elementRune.rune, CoordTemplataT(memberType))
                 Ok(())
               }
-              case KindTemplataT(contentsRuntimeSizedArrayTT(mutability, memberType)) => {
+              case KindTemplataT(contentsRuntimeSizedArrayTT(mutability, memberType, _)) => {
                 val Vector(mutabilityRune, elementRune) = argRunes
                 stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, mutabilityRune.rune, mutability)
                 stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, elementRune.rune, CoordTemplataT(memberType))

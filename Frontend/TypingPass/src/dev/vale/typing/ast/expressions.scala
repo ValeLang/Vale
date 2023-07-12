@@ -73,7 +73,7 @@ case class LetAndLendTE(
   }
 
   expr match {
-    case BreakTE() | ReturnTE(_) => vwat() // See BRCOBS
+    case BreakTE(_) | ReturnTE(_) => vwat() // See BRCOBS
     case _ =>
   }
 

@@ -18,8 +18,8 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, IFunctionGenerator, InferCompiler, TemplataCompiler, TypingPassOptions}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.citizen.StructCompiler
-import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, FunctionEnvironmentT, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataLookupContext}
-import dev.vale.typing.names.{LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator}
+import dev.vale.typing.env._
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.names.LambdaCitizenNameT
@@ -36,6 +36,7 @@ trait IFunctionCompilerDelegate {
     life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -45,6 +46,7 @@ trait IFunctionCompilerDelegate {
     life: LocationInFunctionEnvironmentT,
     ranges: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
@@ -79,6 +81,21 @@ case class EvaluateFunctionSuccess(
 case class EvaluateFunctionFailure(
     reason: IFindFunctionFailureReason
 ) extends IEvaluateFunctionResult
+
+
+trait IStampFunctionResult
+
+case class StampFunctionSuccess(
+  pure: Boolean,
+  maybeNewRegion: Option[RegionT],
+  prototype: PrototypeTemplataT,
+  inferences: Map[IRuneS, ITemplataT[ITemplataType]]
+) extends IStampFunctionResult
+
+case class StampFunctionFailure(
+  reason: IFindFunctionFailureReason
+) extends IStampFunctionResult
+
 
 // When typingpassing a function, these things need to happen:
 // - Spawn a local environment for the function
@@ -129,6 +146,7 @@ class FunctionCompiler(
     callLocation: LocationInDenizen,
     functionTemplata: FunctionTemplataT,
     alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
@@ -137,7 +155,7 @@ class FunctionCompiler(
         declaringEnv,
         coutputs,
         callingEnv, // See CSSNCE
-        callRange, callLocation, function, alreadySpecifiedTemplateArgs, argTypes)
+        callRange, callLocation, function, alreadySpecifiedTemplateArgs, contextRegion, argTypes)
     })
   }
 
@@ -148,6 +166,7 @@ class FunctionCompiler(
     callLocation: LocationInDenizen,
     functionTemplata: FunctionTemplataT,
     alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
@@ -157,7 +176,7 @@ class FunctionCompiler(
           declaringEnv,
           coutputs,
           callingEnv, // See CSSNCE
-          callRange, callLocation, function, alreadySpecifiedTemplateArgs, argTypes)
+          callRange, callLocation, function, alreadySpecifiedTemplateArgs, contextRegion, argTypes)
       } else {
         val lambdaCitizenName2 =
           functionTemplata.function.name match {
@@ -173,7 +192,7 @@ class FunctionCompiler(
         val banner =
           closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForBanner(
             declaringEnv, coutputs, callingEnv, callRange, callLocation, closureStructRef, function,
-            alreadySpecifiedTemplateArgs, argTypes)
+            alreadySpecifiedTemplateArgs, contextRegion, argTypes)
         (banner)
       }
     })
@@ -187,6 +206,7 @@ class FunctionCompiler(
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     argTypes: Vector[CoordT],
     verifyConclusions: Boolean):
   IEvaluateFunctionResult = {
@@ -194,7 +214,7 @@ class FunctionCompiler(
       val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight()) {
         closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
-          env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs, argTypes, verifyConclusions)
+          env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs, contextRegion, argTypes, verifyConclusions)
       } else {
         val lambdaCitizenName2 =
           function.name match {
@@ -207,7 +227,8 @@ class FunctionCompiler(
               lambdaCitizenName2,
               Set(TemplataLookupContext)))
         closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForPrototype(
-          env, coutputs, callingEnv, callRange, callLocation, closureStructRef, function, explicitTemplateArgs, argTypes, verifyConclusions)
+          env, coutputs, callingEnv, callRange, callLocation, closureStructRef, function, explicitTemplateArgs,
+          contextRegion, argTypes, verifyConclusions)
       }
     })
 
@@ -235,12 +256,14 @@ class FunctionCompiler(
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     args: Vector[CoordT]):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericLightFunctionFromCallForPrototype2(
-        env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs, args.map(Some(_)))
+        env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs,
+        contextRegion, args.map(Some(_)))
     })
   }
 
@@ -275,24 +298,24 @@ class FunctionCompiler(
     name: IVarNameS) = {
     val (variability2, memberType) =
       env.getVariable(nameTranslator.translateVarNameStep(name)).get match {
-        case ReferenceLocalVariableT(_, variability, reference) => {
+        case ReferenceLocalVariableT(_, variability, coord@CoordT(ownership, region, kind)) => {
           // See "Captured own is borrow" test for why we do this
           val tyype =
-            reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, GlobalRegionT(), reference.kind))
-              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
+            ownership match {
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, region, kind))
+              case BorrowT | ShareT => ReferenceMemberTypeT(coord)
             }
           (variability, tyype)
         }
         case AddressibleLocalVariableT(_, variability, reference) => {
           (variability, AddressMemberTypeT(reference))
         }
-        case ReferenceClosureVariableT(_, _, variability, reference) => {
+        case ReferenceClosureVariableT(_, _, variability, coord@CoordT(ownership, region, kind)) => {
           // See "Captured own is borrow" test for why we do this
           val tyype =
-            reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, GlobalRegionT(), reference.kind))
-              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
+            ownership match {
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, region, kind))
+              case BorrowT | ShareT => ReferenceMemberTypeT(coord)
             }
           (variability, tyype)
         }

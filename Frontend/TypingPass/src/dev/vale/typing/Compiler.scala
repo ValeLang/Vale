@@ -14,10 +14,12 @@ import dev.vale.typing.infer.IInfererDelegate
 import dev.vale.typing.types._
 import dev.vale.highertyping._
 import OverloadResolver.FindFunctionFailure
+import dev.vale.typing.function._
 import dev.vale
 import dev.vale.highertyping.{ExportAsA, FunctionA, InterfaceA, ProgramA, StructA}
+import dev.vale.typing.Compiler.isPrimitive
 import dev.vale.typing.ast.{ConsecutorTE, EdgeT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, ReferenceExpressionTE, VoidLiteralTE}
-import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironmentT, GlobalEnvironment, IEnvEntry, IInDenizenEnvironmentT, ImplEnvEntry, InterfaceEnvEntry, NodeEnvironmentT, NodeEnvironmentBox, PackageEnvironmentT, StructEnvEntry, TemplataEnvEntry, TemplatasStore}
+import dev.vale.typing.env._
 import dev.vale.typing.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, IOnImplDefinedMacro, IOnInterfaceDefinedMacro, IOnStructDefinedMacro, LockWeakMacro, SameInstanceMacro, StructConstructorMacro}
 import dev.vale.typing.macros.citizen._
 import dev.vale.typing.macros.rsa.{RSADropIntoMacro, RSAImmutableNewMacro, RSALenMacro, RSAMutableCapacityMacro, RSAMutableNewMacro, RSAMutablePopMacro, RSAMutablePushMacro}
@@ -100,43 +102,47 @@ class Compiler(
           callRange: List[RangeS],
           callLocation: LocationInDenizen,
           structTemplata: StructDefinitionTemplataT,
-          uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+          uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+          // Context region is the only implicit generic parameter, see DROIGP.
+          contextRegion: RegionT):
         IResolveOutcome[StructTT] = {
           structCompiler.resolveStruct(
-            coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
+            coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs, contextRegion)
         }
 
         override def resolveInterface(
             coutputs: CompilerOutputs,
             callingEnv: IInDenizenEnvironmentT, // See CSSNCE
             callRange: List[RangeS],
-          callLocation: LocationInDenizen,
+            callLocation: LocationInDenizen,
             interfaceTemplata: InterfaceDefinitionTemplataT,
-            uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+            uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+            // Context region is the only implicit generic parameter, see DROIGP.
+            contextRegion: RegionT):
         IResolveOutcome[InterfaceTT] = {
           structCompiler.resolveInterface(
-            coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
+            coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs, contextRegion)
         }
 
-        override def resolveStaticSizedArrayKind(
-            env: IInDenizenEnvironmentT,
-            coutputs: CompilerOutputs,
-            mutability: ITemplataT[MutabilityTemplataType],
-            variability: ITemplataT[VariabilityTemplataType],
-            size: ITemplataT[IntegerTemplataType],
-            type2: CoordT
-        ): StaticSizedArrayTT = {
-          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, type2)
-        }
-
-        override def resolveRuntimeSizedArrayKind(
-            env: IInDenizenEnvironmentT,
-            state: CompilerOutputs,
-            element: CoordT,
-            arrayMutability: ITemplataT[MutabilityTemplataType]):
-        RuntimeSizedArrayTT = {
-          arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
-        }
+        // override def resolveStaticSizedArrayKind(
+        //     env: IInDenizenEnvironmentT,
+        //     coutputs: CompilerOutputs,
+        //     mutability: ITemplataT[MutabilityTemplataType],
+        //     variability: ITemplataT[VariabilityTemplataType],
+        //     size: ITemplataT[IntegerTemplataType],
+        //     type2: CoordT
+        // ): StaticSizedArrayTT = {
+        //   arrayCompiler.resolveStaticSizedArray(mutability, variability, size, type2)
+        // }
+        //
+        // override def resolveRuntimeSizedArrayKind(
+        //     env: IInDenizenEnvironmentT,
+        //     state: CompilerOutputs,
+        //     element: CoordT,
+        //     arrayMutability: ITemplataT[MutabilityTemplataType]):
+        // RuntimeSizedArrayTT = {
+        //   arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
+        // }
       })
   val inferCompiler: InferCompiler =
     new InferCompiler(
@@ -158,7 +164,7 @@ class Compiler(
             case KindTemplataT(kind) => getPlaceholdersInKind(accum, kind)
             case CoordTemplataT(CoordT(_, _, kind)) => getPlaceholdersInKind(accum, kind)
             case CoordTemplataT(CoordT(_, _, _)) =>
-            case PlaceholderTemplataT(idT, _) => accum.add(idT)
+            case PlaceholderTemplataT(id, _) => accum.add(id)
             case IntegerTemplataT(_) =>
             case BooleanTemplataT(_) =>
             case StringTemplataT(_) =>
@@ -192,11 +198,11 @@ class Compiler(
             case VoidT() =>
             case NeverT(_) =>
             case StrT() =>
-            case contentsRuntimeSizedArrayTT(mutability, elementType) => {
+            case contentsRuntimeSizedArrayTT(mutability, elementType, selfRegion) => {
               getPlaceholdersInTemplata(accum, mutability)
               getPlaceholdersInKind(accum, elementType.kind)
             }
-            case contentsStaticSizedArrayTT(size, mutability, variability, elementType) => {
+            case contentsStaticSizedArrayTT(size, mutability, variability, elementType, selfRegion) => {
               getPlaceholdersInTemplata(accum, size)
               getPlaceholdersInTemplata(accum, mutability)
               getPlaceholdersInTemplata(accum, variability)
@@ -257,10 +263,10 @@ class Compiler(
         Boolean = {
           kind match {
             case p @ KindPlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, p, false)
-            case contentsRuntimeSizedArrayTT(_, _) => false
+            case contentsRuntimeSizedArrayTT(_, _, _) => false
             case OverloadSetT(_, _) => false
             case NeverT(fromBreak) => true
-            case contentsStaticSizedArrayTT(_, _, _, _) => false
+            case contentsStaticSizedArrayTT(_, _, _, _, _) => false
             case s @ StructTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, s, false)
             case i @ InterfaceTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, i, false)
             case IntT(_) | BoolT() | FloatT() | StrT() | VoidT() => false
@@ -292,8 +298,14 @@ class Compiler(
           }
         }
 
-        def coerceToCoord(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], templata: ITemplataT[ITemplataType]): ITemplataT[ITemplataType] = {
-          templataCompiler.coerceToCoord(state, envs.originalCallingEnv, range, templata)
+        def coerceToCoord(
+          envs: InferEnv,
+          state: CompilerOutputs,
+          range: List[RangeS],
+          templata: ITemplataT[ITemplataType],
+          region: RegionT):
+        ITemplataT[ITemplataType] = {
+          templataCompiler.coerceToCoord(state, envs.originalCallingEnv, range, templata, region)
         }
 
         override def lookupTemplataImprecise(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], name: IImpreciseNameS): Option[ITemplataT[ITemplataType]] = {
@@ -304,32 +316,49 @@ class Compiler(
             Compiler.getMutability(state, kind)
         }
 
-        override def predictStaticSizedArrayKind(envs: InferEnv, state: CompilerOutputs, mutability: ITemplataT[MutabilityTemplataType], variability: ITemplataT[VariabilityTemplataType], size: ITemplataT[IntegerTemplataType], element: CoordT): (StaticSizedArrayTT) = {
-            arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element)
+        override def predictStaticSizedArrayKind(
+          envs: InferEnv,
+          state: CompilerOutputs,
+          mutability: ITemplataT[MutabilityTemplataType],
+          variability: ITemplataT[VariabilityTemplataType],
+          size: ITemplataT[IntegerTemplataType],
+          element: CoordT,
+          region: RegionT):
+        StaticSizedArrayTT = {
+          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element, region)
         }
 
-        override def predictRuntimeSizedArrayKind(envs: InferEnv, state: CompilerOutputs, element: CoordT, arrayMutability: ITemplataT[MutabilityTemplataType]): RuntimeSizedArrayTT = {
-            arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
+        override def predictRuntimeSizedArrayKind(
+          envs: InferEnv,
+          state: CompilerOutputs,
+          element: CoordT,
+          arrayMutability: ITemplataT[MutabilityTemplataType],
+          region: RegionT):
+        RuntimeSizedArrayTT = {
+            arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability, region)
         }
 
         override def predictInterface(
           env: InferEnv,
           state: CompilerOutputs,
           templata: InterfaceDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]]):
+          templateArgs: Vector[ITemplataT[ITemplataType]],
+          // Context region is the only implicit generic parameter, see DROIGP.
+          contextRegion: RegionT):
         (KindT) = {
             structCompiler.predictInterface(
-              state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs)
+              state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs, contextRegion)
         }
 
         override def predictStruct(
           env: InferEnv,
           state: CompilerOutputs,
           templata: StructDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]]):
+          templateArgs: Vector[ITemplataT[ITemplataType]],
+          contextRegion: RegionT):
         (KindT) = {
           structCompiler.predictStruct(
-            state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs)
+            state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs, contextRegion)
         }
 
         override def kindIsFromTemplate(
@@ -339,8 +368,8 @@ class Compiler(
         Boolean = {
           actualCitizenRef match {
             case s : ICitizenTT => templataCompiler.citizenIsFromTemplate(s, expectedCitizenTemplata)
-            case contentsRuntimeSizedArrayTT(_, _) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplataT())
-            case contentsStaticSizedArrayTT(_, _, _, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplataT())
+            case contentsRuntimeSizedArrayTT(_, _, _) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplataT())
+            case contentsStaticSizedArrayTT(_, _, _, _, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplataT())
             case _ => false
           }
         }
@@ -428,10 +457,12 @@ class Compiler(
           callLocation: LocationInDenizen,
           templata: InterfaceDefinitionTemplataT,
           templateArgs: Vector[ITemplataT[ITemplataType]],
+          // Context region is the only implicit generic parameter, see DROIGP.
+          contextRegion: RegionT,
           verifyConclusions: Boolean):
         IResolveOutcome[InterfaceTT] = {
           vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
-          structCompiler.resolveInterface(state, callingEnv, callRange, callLocation, templata, templateArgs)
+          structCompiler.resolveInterface(state, callingEnv, callRange, callLocation, templata, templateArgs, contextRegion)
         }
 
         override def resolveStruct(
@@ -441,10 +472,12 @@ class Compiler(
           callLocation: LocationInDenizen,
           templata: StructDefinitionTemplataT,
           templateArgs: Vector[ITemplataT[ITemplataType]],
+          // Context region is the only implicit generic parameter, see DROIGP.
+          contextRegion: RegionT,
           verifyConclusions: Boolean):
         IResolveOutcome[StructTT] = {
           vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
-          structCompiler.resolveStruct(state, callingEnv, callRange, callLocation, templata, templateArgs)
+          structCompiler.resolveStruct(state, callingEnv, callRange,callLocation, templata, templateArgs, contextRegion)
         }
 
         override def resolveFunction(
@@ -454,6 +487,7 @@ class Compiler(
           callLocation: LocationInDenizen,
           name: StrI,
           coords: Vector[CoordT],
+          contextRegion: RegionT,
           verifyConclusions: Boolean):
         Result[EvaluateFunctionSuccess, FindFunctionFailure] = {
           overloadResolver.findFunction(
@@ -464,18 +498,31 @@ class Compiler(
             interner.intern(CodeNameS(interner.intern(name))),
             Vector.empty,
             Vector.empty,
+            contextRegion,
             coords,
             Vector.empty,
             true,
             verifyConclusions)
         }
 
-        override def resolveStaticSizedArrayKind(coutputs: CompilerOutputs, mutability: ITemplataT[MutabilityTemplataType], variability: ITemplataT[VariabilityTemplataType], size: ITemplataT[IntegerTemplataType], element: CoordT): StaticSizedArrayTT = {
-          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element)
+        override def resolveStaticSizedArrayKind(
+          coutputs: CompilerOutputs,
+          mutability: ITemplataT[MutabilityTemplataType],
+          variability: ITemplataT[VariabilityTemplataType],
+          size: ITemplataT[IntegerTemplataType],
+          element: CoordT,
+          region: RegionT):
+        StaticSizedArrayTT = {
+          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element, region)
         }
 
-        override def resolveRuntimeSizedArrayKind(coutputs: CompilerOutputs, element: CoordT, arrayMutability: ITemplataT[MutabilityTemplataType]): RuntimeSizedArrayTT = {
-          arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
+        override def resolveRuntimeSizedArrayKind(
+          coutputs: CompilerOutputs,
+          element: CoordT,
+          arrayMutability: ITemplataT[MutabilityTemplataType],
+          region: RegionT):
+        RuntimeSizedArrayTT = {
+          arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability, region)
         }
 
         override def resolveImpl(
@@ -534,7 +581,11 @@ class Compiler(
           functionName: IImpreciseNameS,
           explicitTemplateArgRulesS: Vector[IRulexSR],
           explicitTemplateArgRunesS: Vector[IRuneS],
-          args: Vector[CoordT], extraEnvsToLookIn: Vector[IInDenizenEnvironmentT], exact: Boolean, verifyConclusions: Boolean):
+          contextRegion: RegionT,
+          args: Vector[CoordT],
+          extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
+          exact: Boolean,
+          verifyConclusions: Boolean):
         EvaluateFunctionSuccess = {
           overloadResolver.findFunction(
             env,
@@ -544,6 +595,7 @@ class Compiler(
             functionName,
             explicitTemplateArgRulesS,
             explicitTemplateArgRunesS,
+            contextRegion,
             args,
             extraEnvsToLookIn,
             exact,
@@ -567,9 +619,11 @@ class Compiler(
         life: LocationInFunctionEnvironmentT,
       ranges: List[RangeS],
       callLocation: LocationInDenizen,
+        region: RegionT,
         exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      expressionCompiler.evaluateBlockStatements(coutputs, startingNenv, nenv, life, ranges, callLocation, exprs)
+      expressionCompiler.evaluateBlockStatements(
+        coutputs, startingNenv, nenv, life, ranges, callLocation, region, exprs)
     }
 
     override def translatePatternList(
@@ -578,10 +632,11 @@ class Compiler(
       life: LocationInFunctionEnvironmentT,
       ranges: List[RangeS],
       callLocation: LocationInDenizen,
+      region: RegionT,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      expressionCompiler.translatePatternList(coutputs, nenv, life, ranges, callLocation, patterns1, patternInputExprs2)
+      expressionCompiler.translatePatternList(coutputs, nenv, life, ranges, callLocation, patterns1, patternInputExprs2, region)
     }
 
 //    override def evaluateParent(env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], sparkHeader: FunctionHeaderT): Unit = {
@@ -645,10 +700,11 @@ class Compiler(
           callLocation: LocationInDenizen,
             functionTemplata: FunctionTemplataT,
             explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+          contextRegion: RegionT,
             args: Vector[CoordT]):
         IEvaluateFunctionResult = {
           functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, args, true)
+            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args, true)
         }
 
         override def evaluateGenericFunctionFromCallForPrototype(
@@ -658,10 +714,11 @@ class Compiler(
           callLocation: LocationInDenizen,
           functionTemplata: FunctionTemplataT,
           explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+          contextRegion: RegionT,
           args: Vector[CoordT]):
         IEvaluateFunctionResult = {
           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, args)
+            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args)
         }
 
         override def evaluateClosureStruct(
@@ -821,6 +878,8 @@ class Compiler(
         arrayCompiler.compileRuntimeSizedArray(globalEnv, coutputs)
 
 
+        // Indexing phase
+
         globalEnv.nameToTopLevelEnvironment.foreach({ case (packageId, templatas) =>
           val env = PackageEnvironmentT.makeTopLevelEnvironment(globalEnv, packageId)
           templatas.entriesByNameT.map({ case (name, entry) =>
@@ -838,7 +897,7 @@ class Compiler(
           })
         })
 
-        // Indexing phase
+        // Compiling phase
 
         globalEnv.nameToTopLevelEnvironment.foreach({ case (packageId, templatas) =>
           val packageEnv = PackageEnvironmentT.makeTopLevelEnvironment(globalEnv, packageId)
@@ -859,15 +918,17 @@ class Compiler(
                       ExportEnvironmentT(
                         globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
 
+                    val regionPlaceholder = RegionT()
+
                     val placeholderedExportName = interner.intern(ExportNameT(templateName))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
                         globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
-                    val exportPlaceholderedKind =
+                    val exportPlaceholderedStruct =
                       structCompiler.resolveStruct(
-                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
+                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector(), regionPlaceholder) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
                           throw CompileErrorExceptionT(CouldntEvaluateStruct(range, reason))
@@ -881,7 +942,7 @@ class Compiler(
                       }
 
                     coutputs.addKindExport(
-                      structA.range, exportPlaceholderedKind, placeholderedExportId, exportName)
+                      structA.range, exportPlaceholderedStruct, placeholderedExportId, exportName)
                   }
                 }
               }
@@ -955,9 +1016,9 @@ class Compiler(
                   functionCompiler.evaluateGenericFunctionFromNonCall(
                       coutputs, List(), LocationInDenizen(Vector()), templata, true)
 
-                  functionA.attributes.collectFirst({ case e @ ExternS(_) => e }) match {
+                  functionA.attributes.collectFirst({ case e @ ExternS(_, _) => e }) match {
                     case None =>
-                    case Some(ExternS(packageCoord)) => {
+                    case Some(ExternS(packageCoord, defaultRegionRune)) => {
                       val externName =
                         functionA.name match {
                           case FunctionNameS(name, range) => name
@@ -967,6 +1028,7 @@ class Compiler(
                       val templateName = interner.intern(ExternTemplateNameT(functionA.range.begin))
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
 
+                      val regionPlaceholder = RegionT()
                       val placeholderedExternName = interner.intern(ExternNameT(templateName))
                       val placeholderedExternId = templateId.copy(localName = placeholderedExternName)
                       val externEnv =
@@ -984,6 +1046,7 @@ class Compiler(
                           externEnv,
                           templata,
                           Vector(),
+                          regionPlaceholder,
                           Vector()) match {
                           case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
                           case EvaluateFunctionFailure(reason) => {
@@ -1048,17 +1111,19 @@ class Compiler(
                   }
 
                   val maybeExport =
-                    functionA.attributes.collectFirst { case e@ExportS(_) => e }
+                    functionA.attributes.collectFirst { case e@ExportS(_, _) => e }
                   maybeExport match {
                     case None =>
-                    case Some(ExportS(packageCoordinate)) => {
+                    case Some(ExportS(packageCoordinate, defaultRegionRune)) => {
                       val templateName = interner.intern(ExportTemplateNameT(functionA.range.begin))
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                       val exportOuterEnv =
                         ExportEnvironmentT(
                           globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
 
-                      val placeholderedExportName = interner.intern(ExportNameT(templateName))
+                      val regionPlaceholder = RegionT()
+
+                      val placeholderedExportName = interner.intern(ExportNameT(templateName, regionPlaceholder))
                       val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                       val exportEnv =
                         ExportEnvironmentT(
@@ -1066,7 +1131,7 @@ class Compiler(
 
                       val exportPlaceholderedPrototype =
                         functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-                          coutputs, List(functionA.range), LocationInDenizen(Vector()), exportEnv, templata, Vector(), Vector()) match {
+                          coutputs, List(functionA.range), LocationInDenizen(Vector()), exportEnv, templata, Vector(), regionPlaceholder, Vector()) match {
                           case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
                           case EvaluateFunctionFailure(reason) => {
                             throw CompileErrorExceptionT(CouldntEvaluateFunction(List(functionA.range), reason))
@@ -1106,7 +1171,9 @@ class Compiler(
               ExportEnvironmentT(
                 globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
 
-            val placeholderedExportName = interner.intern(ExportNameT(templateName))
+            val regionPlaceholder = RegionT()
+
+            val placeholderedExportName = interner.intern(ExportNameT(templateName, regionPlaceholder))
             val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
             val exportEnv =
               ExportEnvironmentT(
@@ -1114,7 +1181,7 @@ class Compiler(
 
             val CompleteCompilerSolve(_, templataByRune, _, Vector()) =
               inferCompiler.solveExpectComplete(
-                InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv),
+                InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv, regionPlaceholder),
                 coutputs, rules, runeToType, List(range),
                 LocationInDenizen(Vector()), Vector(), Vector(), true, true, Vector())
               templataByRune.get(typeRuneT.rune) match {
@@ -1440,14 +1507,14 @@ class Compiler(
               }
             })
           }
-          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind)) => {
+          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind), _) => {
             if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
                   List(export.range), packageCoord, exportedKind, elementKind))
             }
           }
-          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind)) => {
+          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind), _) => {
             if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
@@ -1467,20 +1534,20 @@ class Compiler(
       case _ =>
     }
     functionA.attributes.exists({
-      case ExportS(_) => true
-      case ExternS(_) => true
+      case ExportS(_, _) => true
+      case ExternS(_, _) => true
       case _ => false
     })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootStruct(structA: StructA): Boolean = {
-    structA.attributes.exists({ case ExportS(_) => true case _ => false })
+    structA.attributes.exists({ case ExportS(_, _) => true case _ => false })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootInterface(interfaceA: InterfaceA): Boolean = {
-    interfaceA.attributes.exists({ case ExportS(_) => true case _ => false })
+    interfaceA.attributes.exists({ case ExportS(_, _) => true case _ => false })
   }
 }
 
@@ -1500,7 +1567,7 @@ object Compiler {
 
         val withoutInitVoids =
           flattened.init
-            .filter({ case VoidLiteralTE() => false case _ => true }) :+
+            .filter({ case VoidLiteralTE(_) => false case _ => true }) :+
             flattened.last
 
         withoutInitVoids match {
@@ -1519,8 +1586,8 @@ object Compiler {
       case KindPlaceholderT(_) => false
       case StructTT(_) => false
       case InterfaceTT(_) => false
-      case contentsStaticSizedArrayTT(_, _, _, _) => false
-      case contentsRuntimeSizedArrayTT(_, _) => false
+      case contentsStaticSizedArrayTT(_, _, _, _, _) => false
+      case contentsRuntimeSizedArrayTT(_, _, _) => false
     }
   }
 
@@ -1539,8 +1606,8 @@ object Compiler {
       case BoolT() => MutabilityTemplataT(ImmutableT)
       case StrT() => MutabilityTemplataT(ImmutableT)
       case VoidT() => MutabilityTemplataT(ImmutableT)
-      case contentsRuntimeSizedArrayTT(mutability, _) => mutability
-      case contentsStaticSizedArrayTT(_, mutability, _, _) => mutability
+      case contentsRuntimeSizedArrayTT(mutability, _, _) => mutability
+      case contentsStaticSizedArrayTT(_, mutability, _, _, _) => mutability
       case sr @ StructTT(name) => coutputs.lookupMutability(TemplataCompiler.getStructTemplate(name))
       case ir @ InterfaceTT(name) => coutputs.lookupMutability(TemplataCompiler.getInterfaceTemplate(name))
 //      case PackTT(_, sr) => coutputs.lookupMutability(sr)

@@ -1,19 +1,19 @@
 package dev.vale.typing
 
-import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, RangeS, Result, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
+import dev.vale._
 import dev.vale.postparsing.rules.{EqualsSR, IRulexSR, RuneUsage}
 import dev.vale.postparsing._
-import dev.vale.typing.env.{FunctionEnvironmentT, GeneralEnvironmentT, IEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, ExportNameT, ExportTemplateNameT, ExternNameT, ExternTemplateNameT, FunctionBoundNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, IImplNameT, IImplTemplateNameT, IInstantiationNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IPlaceholderNameT, IStructNameT, IStructTemplateNameT, ISubKindNameT, ISubKindTemplateNameT, ISuperKindNameT, ISuperKindTemplateNameT, ITemplateNameT, IdT, ImplBoundNameT, ImplNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RawArrayNameT, RuneNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.env._
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
-import dev.vale.parsing.ast.ImmutableRuneAttributeP
+import dev.vale.parsing.ast._
 import dev.vale.postparsing._
 import dev.vale.typing._
-import dev.vale.typing.ast.{PrototypeT, SignatureT}
-import dev.vale.typing.citizen.{IResolveOutcome, ImplCompiler, IsParent, IsParentResult, IsntParent, ResolveSuccess}
-import dev.vale.typing.templata.ITemplataT.{expectInteger, expectKindTemplata, expectMutability, expectVariability}
+import dev.vale.typing.ast._
+import dev.vale.typing.citizen._
+import dev.vale.typing.templata.ITemplataT._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 
@@ -46,7 +46,10 @@ trait ITemplataCompilerDelegate {
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only implicit generic parameter, see DROIGP.
+    contextRegion: RegionT
+  ):
   IResolveOutcome[StructTT]
 
   def resolveInterface(
@@ -57,28 +60,20 @@ trait ITemplataCompilerDelegate {
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only implicit generic parameter, see DROIGP.
+    contextRegion: RegionT
+  ):
   IResolveOutcome[InterfaceTT]
-
-  def resolveStaticSizedArrayKind(
-    env: IInDenizenEnvironmentT,
-    coutputs: CompilerOutputs,
-    mutability: ITemplataT[MutabilityTemplataType],
-    variability: ITemplataT[VariabilityTemplataType],
-    size: ITemplataT[IntegerTemplataType],
-    type2: CoordT):
-  StaticSizedArrayTT
-
-  def resolveRuntimeSizedArrayKind(env: IInDenizenEnvironmentT, state: CompilerOutputs, element: CoordT, arrayMutability: ITemplataT[MutabilityTemplataType]): RuntimeSizedArrayTT
 }
 
 object TemplataCompiler {
   def getTopLevelDenizenId(
     id: IdT[INameT],
   ): IdT[IInstantiationNameT] = {
-    // That said, some things are namespaced inside templates. If we have a `struct Marine` then we'll
-    // also have a func drop within its namespace; we'll have a free function instance under a Marine
-    // struct template. We want to grab the instance.
+    // That said, some things are namespaced inside templates. If we have a `struct Marine` then
+    // we'll also have a func drop within its namespace; we'll have a free function instance under
+    // a Marine struct template. We want to grab the instance.
     val index =
     id.steps.indexWhere({
       case x : IInstantiationNameT => true
@@ -264,10 +259,11 @@ object TemplataCompiler {
     boundArgumentsSource: IBoundArgumentsSource,
     coord: CoordT):
   CoordT = {
-    val CoordT(ownership, _, kind) = coord
+    val CoordT(ownership, originalRegion, kind) = coord
+    val resultRegion = vregionmut(originalRegion)
     substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, kind) match {
-      case KindTemplataT(kind) => CoordT(ownership, GlobalRegionT(), kind)
-      case CoordTemplataT(CoordT(innerOwnership, _, kind)) => {
+      case KindTemplataT(kind) => CoordT(ownership, resultRegion, kind)
+      case CoordTemplataT(CoordT(innerOwnership, innerRegion, kind)) => {
         val resultOwnership =
           (ownership, innerOwnership) match {
             case (ShareT, _) => ShareT
@@ -278,7 +274,7 @@ object TemplataCompiler {
             case (BorrowT, BorrowT) => BorrowT
             case _ => vimpl()
           }
-        CoordT(resultOwnership, GlobalRegionT(), kind)
+        CoordT(resultOwnership, resultRegion, kind)
       }
     }
 
@@ -306,7 +302,10 @@ object TemplataCompiler {
       case FloatT() => KindTemplataT(kind)
       case VoidT() => KindTemplataT(kind)
       case NeverT(_) => KindTemplataT(kind)
-      case RuntimeSizedArrayTT(IdT(packageCoord, initSteps, RuntimeSizedArrayNameT(template, RawArrayNameT(mutability, elementType)))) => {
+      case RuntimeSizedArrayTT(IdT(
+      packageCoord,
+      initSteps,
+      RuntimeSizedArrayNameT(template, RawArrayNameT(mutability, elementType, region)))) => {
         KindTemplataT(
           interner.intern(RuntimeSizedArrayTT(
             IdT(
@@ -316,9 +315,10 @@ object TemplataCompiler {
                 template,
                 interner.intern(RawArrayNameT(
                   expectMutability(substituteTemplatasInTemplata(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
-                  substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType)))))))))
+                  substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType),
+                  RegionT()))))))))
       }
-      case StaticSizedArrayTT(IdT(packageCoord, initSteps, StaticSizedArrayNameT(template, size, variability, RawArrayNameT(mutability, elementType)))) => {
+      case StaticSizedArrayTT(IdT(packageCoord, initSteps, StaticSizedArrayNameT(template, size, variability, RawArrayNameT(mutability, elementType, region)))) => {
         KindTemplataT(
           interner.intern(StaticSizedArrayTT(
             IdT(
@@ -330,7 +330,8 @@ object TemplataCompiler {
                 expectVariability(substituteTemplatasInTemplata(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, variability)),
                 interner.intern(RawArrayNameT(
                   expectMutability(substituteTemplatasInTemplata(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
-                  substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType)))))))))
+                  substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType),
+                  RegionT()))))))))
       }
       case p @ KindPlaceholderT(id @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune)))) => {
         if (id.initId(interner) == needleTemplateName) {
@@ -861,31 +862,31 @@ class TemplataCompiler(
       }
     kind match {
       case a @ contentsRuntimeSizedArrayTT(_, _) => {
-        CoordT(ownership, GlobalRegionT(), a)
+        CoordT(ownership, RegionT(), a)
       }
       case a @ contentsStaticSizedArrayTT(_, _, _, _) => {
-        CoordT(ownership, GlobalRegionT(), a)
+        CoordT(ownership, RegionT(), a)
       }
       case s @ StructTT(_) => {
-        CoordT(ownership, GlobalRegionT(), s)
+        CoordT(ownership, RegionT(), s)
       }
       case i @ InterfaceTT(_) => {
-        CoordT(ownership, GlobalRegionT(), i)
+        CoordT(ownership, RegionT(), i)
       }
       case VoidT() => {
-        CoordT(ShareT, GlobalRegionT(), VoidT())
+        CoordT(ShareT, RegionT(), VoidT())
       }
       case i @ IntT(_) => {
-        CoordT(ShareT, GlobalRegionT(), i)
+        CoordT(ShareT, RegionT(), i)
       }
       case FloatT() => {
-        CoordT(ShareT, GlobalRegionT(), FloatT())
+        CoordT(ShareT, RegionT(), FloatT())
       }
       case BoolT() => {
-        CoordT(ShareT, GlobalRegionT(), BoolT())
+        CoordT(ShareT, RegionT(), BoolT())
       }
       case StrT() => {
-        CoordT(ShareT, GlobalRegionT(), StrT())
+        CoordT(ShareT, RegionT(), StrT())
       }
     }
   }
@@ -974,7 +975,7 @@ class TemplataCompiler(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, tyype) => OwnT
       },
-      GlobalRegionT(),
+      RegionT(),
       kind)
   }
 
@@ -982,7 +983,8 @@ class TemplataCompiler(
     coutputs: CompilerOutputs,
     env: IInDenizenEnvironmentT,
     range: List[RangeS],
-    templata: ITemplataT[ITemplataType]):
+    templata: ITemplataT[ITemplataType],
+    region: RegionT):
   (ITemplataT[ITemplataType]) = {
     if (templata.tyype == CoordTemplataType()) {
       vcurious()
@@ -990,7 +992,7 @@ class TemplataCompiler(
     } else {
       templata match {
         case KindTemplataT(kind) => {
-          CoordTemplataT(coerceKindToCoord(coutputs, kind))
+          CoordTemplataT(coerceKindToCoord(coutputs, kind, region))
         }
         case st@StructDefinitionTemplataT(declaringEnv, structA) => {
           vcurious()
@@ -1132,7 +1134,7 @@ class TemplataCompiler(
           } else {
             OwnT
           }
-        CoordTemplataT(CoordT(ownership, GlobalRegionT(), placeholderKindT))
+        CoordTemplataT(CoordT(ownership, RegionT(), placeholderKindT))
       }
       case _ => PlaceholderTemplataT(placeholderId, runeType)
     }

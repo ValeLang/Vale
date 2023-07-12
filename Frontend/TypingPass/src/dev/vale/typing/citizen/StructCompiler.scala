@@ -7,7 +7,7 @@ import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing._
-import dev.vale.typing.names.{IdT, ICitizenNameT, ICitizenTemplateNameT, IInterfaceTemplateNameT, IStructTemplateNameT, ITemplateNameT, NameTranslator, PackageTopLevelNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -17,9 +17,8 @@ import dev.vale.parsing._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules._
 import dev.vale.typing.env._
-import dev.vale.typing.function.FunctionCompiler
-import dev.vale.typing.ast._
 import dev.vale.typing.function._
+import dev.vale.typing.ast._
 import dev.vale.typing.templata.ITemplataT.expectMutability
 
 import scala.collection.immutable.List
@@ -44,6 +43,7 @@ trait IStructCompilerDelegate {
     functionName: IImpreciseNameS,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
+    contextRegion: RegionT,
     args: Vector[CoordT],
     extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
     exact: Boolean,
@@ -81,11 +81,13 @@ class StructCompiler(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only implicit generic parameter, see DROIGP.
+    contextRegion: RegionT):
   IResolveOutcome[StructTT] = {
     Profiler.frame(() => {
       templateArgsLayer.resolveStruct(
-        coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
+        coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs, contextRegion)
     })
   }
 
@@ -199,10 +201,12 @@ class StructCompiler(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only impicit generic parameter, see DROIGP.
+    contextRegion: RegionT):
   (InterfaceTT) = {
     templateArgsLayer.predictInterface(
-      coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
+      coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs, contextRegion)
   }
 
   // See SFWPRL for how this is different from resolveStruct.
@@ -214,10 +218,12 @@ class StructCompiler(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     structTemplata: StructDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // The default region is the only implicit generic param, see DROIGP.
+    defaultRegion: RegionT):
   (StructTT) = {
     templateArgsLayer.predictStruct(
-      coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
+      coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs, defaultRegion)
   }
 
   def resolveInterface(
@@ -228,11 +234,13 @@ class StructCompiler(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only impicit generic parameter, see DROIGP.
+    contextRegion: RegionT):
   IResolveOutcome[InterfaceTT] = {
     val success =
       templateArgsLayer.resolveInterface(
-        coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
+        coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs, contextRegion)
 
     success
   }
@@ -245,11 +253,13 @@ class StructCompiler(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     citizenTemplata: CitizenDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only impicit generic parameter, see DROIGP.
+    contextRegion: RegionT):
   IResolveOutcome[ICitizenTT] = {
     citizenTemplata match {
-      case st @ StructDefinitionTemplataT(_, _) => resolveStruct(coutputs, callingEnv, callRange, callLocation, st, uncoercedTemplateArgs)
-      case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterface(coutputs, callingEnv, callRange, callLocation, it, uncoercedTemplateArgs)
+      case st @ StructDefinitionTemplataT(_, _) => resolveStruct(coutputs, callingEnv, callRange, callLocation, st, uncoercedTemplateArgs, contextRegion)
+      case it @ InterfaceDefinitionTemplataT(_, _) => resolveInterface(coutputs, callingEnv, callRange, callLocation, it, uncoercedTemplateArgs, contextRegion)
     }
   }
 
@@ -306,6 +316,7 @@ object StructCompiler {
     interner: Interner,
     keywords: Keywords,
     coutputs: CompilerOutputs,
+    region: RegionT,
     structTT: StructTT,
     boundArgumentsSource: IBoundArgumentsSource):
   ITemplataT[MutabilityTemplataType] = {

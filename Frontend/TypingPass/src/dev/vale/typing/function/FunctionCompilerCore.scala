@@ -1,15 +1,15 @@
 package dev.vale.typing.function
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, U, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ConvertHelper, DeferredEvaluatingFunctionBody, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionDefinitionT, FunctionHeaderT, IFunctionAttributeT, LocationInFunctionEnvironmentT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
+import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{ExternFunctionNameT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, IdT, NameTranslator, RuneNameT}
-import dev.vale.typing.templata.CoordTemplataT
+import dev.vale.typing.names._
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.highertyping._
 import dev.vale.typing.types._
@@ -40,9 +40,11 @@ class FunctionCompilerCore(
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
+      region: RegionT,
       exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      delegate.evaluateBlockStatements(coutputs, startingNenv, nenv, life, parentRanges, callLocation, exprs)
+      delegate.evaluateBlockStatements(
+        coutputs, startingNenv, nenv, life, parentRanges, callLocation, region, exprs)
     }
 
     override def translatePatternList(
@@ -51,10 +53,11 @@ class FunctionCompilerCore(
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
+        region: RegionT,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      delegate.translatePatternList(coutputs, nenv, life, parentRanges, callLocation, patterns1, patternInputExprs2)
+      delegate.translatePatternList(coutputs, nenv, life, parentRanges, callLocation, region, patterns1, patternInputExprs2)
     }
   })
 
@@ -275,8 +278,16 @@ class FunctionCompilerCore(
       coutputs: CompilerOutputs,
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
-      returnCoord: CoordT) = {
-    val header = FunctionHeaderT(fullEnv.id, attributesT, paramsT, returnCoord, Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)));
+    returnCoord: CoordT):
+  FunctionHeaderT = {
+    val header =
+      FunctionHeaderT(
+        fullEnv.id,
+        attributesT,
+//        vimpl(),
+        paramsT,
+        returnCoord,
+        Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)));
     coutputs.declareFunctionReturnType(header.toSignature, returnCoord)
     header
   }
@@ -329,7 +340,7 @@ class FunctionCompilerCore(
     header
   }
 
-  def translateAttributes(attributesA: Vector[IFunctionAttributeS]) = {
+  def translateAttributes(attributesA: Vector[IFunctionAttributeS]): Vector[IFunctionAttributeT] = {
     attributesA.map({
       //      case ExportA(packageCoord) => Export2(packageCoord)
       case UserFunctionS => UserFunctionT

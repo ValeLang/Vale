@@ -7,7 +7,7 @@ import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionH
 import dev.vale.typing.env.{FunctionEnvironmentBoxT, FunctionEnvironmentT}
 import dev.vale.typing.{ArrayCompiler, CompilerOutputs}
 import dev.vale.typing.macros.IFunctionBodyMacro
-import dev.vale.typing.types.CoordT
+import dev.vale.typing.types.{CoordT, RegionT}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.ast
@@ -39,7 +39,8 @@ class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
             callRange,
             callLocation,
             ArgLookupTE(0, paramCoords(0).tyype),
-            ArgLookupTE(1, paramCoords(1).tyype))))
+            ArgLookupTE(1, paramCoords(1).tyype),
+            RegionT())))
     (header, body)
   }
 }

@@ -9,7 +9,7 @@ import dev.vale.{PackageCoordinate, RangeS, vbreak, vcurious, vfail, vpass}
 import dev.vale.typing.types._
 import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale.solver.FailedSolve
-import OverloadResolver.{EvaluateFunctionFailure, FindFunctionFailure, IFindFunctionFailureReason}
+import OverloadResolver._
 import dev.vale.typing.ast.{KindExportT, SignatureT}
 import dev.vale.typing.names.{IdT, IFunctionNameT, IFunctionTemplateNameT, INameT, IVarNameT}
 import dev.vale.typing.ast._

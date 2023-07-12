@@ -3,19 +3,19 @@ package dev.vale.typing.expression
 //import dev.vale.astronomer.{BlockSE, IExpressionSE}
 import dev.vale.RangeS
 import dev.vale.postparsing._
-import dev.vale.typing.{TypingPassOptions, CompilerOutputs}
+import dev.vale.typing._
 import dev.vale.typing.ast.{BlockTE, LocationInFunctionEnvironmentT, ReferenceExpressionTE}
-import dev.vale.typing.env.{FunctionEnvironmentBoxT, NodeEnvironmentT, NodeEnvironmentBox}
+import dev.vale.typing.env._
 import dev.vale.typing.function.DestructorCompiler
-import dev.vale.typing.names.{IdT, IVarNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.types.CoordT
 import dev.vale.postparsing.ExpressionScout
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
-import dev.vale.typing.names.TypingPassBlockResultVarNameT
 import dev.vale.typing.types._
 import dev.vale.RangeS
+import dev.vale.typing.templata._
 
 import scala.collection.immutable.{List, Set}
 
@@ -26,6 +26,7 @@ trait IBlockCompilerDelegate {
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -36,6 +37,7 @@ trait IBlockCompilerDelegate {
     range: List[RangeS],
     callLocation: LocationInDenizen,
     life: LocationInFunctionEnvironmentT,
+    region: RegionT,
     unresultifiedUndestructedExpressions: ReferenceExpressionTE):
   ReferenceExpressionTE
 }
@@ -62,6 +64,7 @@ class BlockCompiler(
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     block1: BlockSE):
   (BlockTE, Set[IVarNameT], Set[IVarNameT], Set[CoordT]) = {
     val nenv = NodeEnvironmentBox(parentFate.makeChildNodeEnvironment(block1, life))
@@ -69,7 +72,7 @@ class BlockCompiler(
 
     val (expressionsWithResult, returnsFromExprs) =
       evaluateBlockStatements(
-        coutputs, startingNenv, nenv, parentRanges, callLocation, life, block1)
+        coutputs, startingNenv, nenv, parentRanges, callLocation, life, region, block1)
 
     val block2 = BlockTE(expressionsWithResult)
 
@@ -85,12 +88,13 @@ class BlockCompiler(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     life: LocationInFunctionEnvironmentT,
+    region: RegionT,
     blockSE: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedRootExpression, returnsFromExprs) =
       delegate.evaluateAndCoerceToReferenceExpression(
         coutputs, nenv, life + 0, parentRanges,
-        callLocation, blockSE.expr);
+        callLocation, region, blockSE.expr);
 
     val unneveredUnresultifiedUndestructedExpressions =
       unneveredUnresultifiedUndestructedRootExpression
@@ -125,6 +129,7 @@ class BlockCompiler(
         RangeS(blockSE.range.end, blockSE.range.end) :: parentRanges,
         callLocation,
         life,
+        region,
         unresultifiedUndestructedExpressions)
 
     (newExpr, returnsFromExprs)

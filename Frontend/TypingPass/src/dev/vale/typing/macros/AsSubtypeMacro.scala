@@ -46,10 +46,10 @@ class AsSubtypeMacro(
     // Because we dont yet put borrows in structs
 //    val resultOwnership = incomingCoord.ownership
     val resultOwnership = incomingOwnership
-    val successCoord = CoordT(resultOwnership, GlobalRegionT(), targetKind)
-    val failCoord = CoordT(resultOwnership, GlobalRegionT(), incomingKind)
+    val successCoord = CoordT(resultOwnership, RegionT(), targetKind)
+    val failCoord = CoordT(resultOwnership, RegionT(), incomingKind)
     val (resultCoord, okConstructor, okResultImpl, errConstructor, errResultImpl) =
-      expressionCompiler.getResult(coutputs, env, callRange, callLocation, successCoord, failCoord)
+      expressionCompiler.getResult(coutputs, env, callRange, callLocation, RegionT(), successCoord, failCoord)
     if (resultCoord != vassertSome(maybeRetCoord)) {
       throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Bad result coord:\n" + resultCoord + "\nand\n" + vassertSome(maybeRetCoord)))
     }

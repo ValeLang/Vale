@@ -35,8 +35,8 @@ class CompilerLambdaTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
 
     // Make sure it inferred the param type and return type correctly
-    coutputs.lookupLambdaIn("main").header.returnType shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32)
-    coutputs.lookupFunction("main").header.returnType shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32)
+    coutputs.lookupLambdaIn("main").header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
+    coutputs.lookupFunction("main").header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
   }
 
   test("Lambda with one magic arg") {
@@ -52,7 +52,7 @@ class CompilerLambdaTests extends FunSuite with Matchers {
       { case ParameterT(_, None, _, CoordT(ShareT, _, IntT.i32)) => })
 
     coutputs.lookupLambdaIn("main").header.returnType shouldEqual
-      CoordT(ShareT, GlobalRegionT(), IntT.i32)
+      CoordT(ShareT, RegionT(), IntT.i32)
   }
 
   test("Lambda is reused") {

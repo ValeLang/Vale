@@ -8,7 +8,7 @@ import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, DeferTE,
 import dev.vale.typing.env.{AddressibleLocalVariableT, ILocalVariableT, NodeEnvironmentBox, ReferenceLocalVariableT}
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.names.{NameTranslator, TypingPassTemporaryVarNameT}
-import dev.vale.typing.templata.{Conversions, ITemplataT, MutabilityTemplataT, PlaceholderTemplataT}
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
@@ -46,6 +46,7 @@ class LocalHelper(
     range: List[RangeS],
     callLocation: LocationInDenizen,
     life: LocationInFunctionEnvironmentT,
+    contextRegion: RegionT,
     r: ReferenceExpressionTE,
     targetOwnership: OwnershipT):
   (DeferTE) = {
@@ -58,7 +59,7 @@ class LocalHelper(
 
     val unlet = unletLocalWithoutDropping(nenv, rlv)
     val destructExpr2 =
-      destructorCompiler.drop(nenv.snapshot, coutputs, range, callLocation, unlet)
+      destructorCompiler.drop(nenv.snapshot, coutputs, range, callLocation, contextRegion, unlet)
     vassert(destructExpr2.kind == VoidT())
 
     // No Discard here because the destructor already returns void.
@@ -77,12 +78,13 @@ class LocalHelper(
     nenv: NodeEnvironmentBox,
     range: List[RangeS],
     callLocation: LocationInDenizen,
+    contextRegion: RegionT,
     variables: Vector[ILocalVariableT]):
   (Vector[ReferenceExpressionTE]) = {
     variables.map({ case variable =>
       val unlet = unletLocalWithoutDropping(nenv, variable)
       val maybeHeadExpr2 =
-        destructorCompiler.drop(nenv.snapshot, coutputs, range, callLocation, unlet)
+        destructorCompiler.drop(nenv.snapshot, coutputs, range, callLocation, contextRegion, unlet)
       maybeHeadExpr2
     })
   }
@@ -143,7 +145,8 @@ class LocalHelper(
       nenv: NodeEnvironmentBox,
       loadRange: List[RangeS],
       a: AddressExpressionTE,
-      loadAsP: LoadAsP):
+    loadAsP: LoadAsP,
+    region: RegionT):
   ReferenceExpressionTE = {
     a.result.coord.ownership match {
       case ShareT => {
@@ -215,14 +218,14 @@ class LocalHelper(
       case FloatT() => ShareT
       case StrT() => ShareT
       case VoidT() => ShareT
-      case contentsStaticSizedArrayTT(_, mutability, _, _) => {
+      case contentsStaticSizedArrayTT(_, mutability, _, _, _) => {
         mutability match {
           case MutabilityTemplataT(MutableT) => BorrowT
           case MutabilityTemplataT(ImmutableT) => ShareT
           case PlaceholderTemplataT(idT, MutabilityTemplataType()) => BorrowT
         }
       }
-      case contentsRuntimeSizedArrayTT(mutability, _) => {
+      case contentsRuntimeSizedArrayTT(mutability, _, _) => {
         mutability match {
           case MutabilityTemplataT(MutableT) => BorrowT
           case MutabilityTemplataT(ImmutableT) => ShareT

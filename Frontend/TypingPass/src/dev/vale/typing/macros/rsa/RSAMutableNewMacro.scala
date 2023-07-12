@@ -52,13 +52,14 @@ class RSAMutableNewMacro(
           env.lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(CodeRuneS(keywords.M))), Set(TemplataLookupContext))))
 
-    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability)
+    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, RegionT())
 
     val body =
       BlockTE(
         ReturnTE(
           NewMutRuntimeSizedArrayTE(
             arrayTT,
+            RegionT(),
             ArgLookupTE(0, paramCoords(0).tyype))))
 //            freePrototype)))
     (header, body)

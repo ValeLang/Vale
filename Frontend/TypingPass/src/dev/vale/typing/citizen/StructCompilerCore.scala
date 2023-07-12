@@ -18,11 +18,10 @@ import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.parsing.ast.DontCallMacroP
 import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvEntry, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructImplNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionTemplateNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, SelfNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
-import dev.vale.typing.templata.ITemplataT.expectMutabilityTemplata
 
 import scala.collection.immutable.List
 
@@ -57,9 +56,6 @@ class StructCompilerCore(
         case MacroCallS(range, dontCall, macroName) => false
         case _ => true
       })
-
-    val maybeExport =
-      structA.attributes.collectFirst { case e@ExportS(_) => e }
 
     val mutability =
       structRunesEnv.lookupNearestWithImpreciseName(
@@ -211,52 +207,6 @@ class StructCompilerCore(
             interner.intern(RuneNameS(interfaceA.mutabilityRune.rune)),
             Set(TemplataLookupContext))))
 
-//    val defaultCalledMacros =
-//      Vector(
-//        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceDrop),
-//        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceFree))
-//    val macrosToCall =
-//      interfaceA.attributes.foldLeft(defaultCalledMacros)({
-//        case (macrosToCall, mc @ MacroCallS(_, CallMacroP, _)) => macrosToCall :+ mc
-//        case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
-//        case (macrosToCall, _) => macrosToCall
-//      })
-
-//    val envEntriesFromMacros =
-//      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
-//        val maacro =
-//          interfaceRunesEnv.globalEnv.nameToInterfaceDefinedMacro.get(macroName) match {
-//            case None => {
-//              throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Macro not found: " + macroName))
-//            }
-//            case Some(m) => m
-//          }
-//        val newEntriesList = maacro.getInterfaceSiblingEntries(placeholderedIdT, interfaceA)
-//        val newEntries =
-//          newEntriesList.map({ case (entryName, value) =>
-//            vcurious(placeholderedIdT.steps.size + 1 == entryName.steps.size)
-//            val last = entryName.last
-//            last -> value
-//          })
-//        newEntries
-//      })
-//
-//    val interfaceInnerEnv =
-//      CitizenEnvironment(
-//        interfaceRunesEnv.globalEnv,
-//        interfaceRunesEnv,
-//        templateIdT,
-//        placeholderedIdT,
-//        TemplatasStore(placeholderedIdT, Map(), Map())
-//          .addEntries(interner, envEntriesFromMacros)
-//          .addEntries(
-//            interner,
-//            interfaceA.genericParameters.zip(interfaceRunesEnv.fullName.last.templateArgs)
-//              .map({ case (genericParam, templata) => (interner.intern(RuneNameT(genericParam.rune.rune)), TemplataEnvEntry(templata)) }))
-//          .addEntries(
-//            interner,
-//            Vector(interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplata(placeholderedInterfaceTT)))))
-
     val internalMethods =
       outerEnv.templatas.entriesByNameT.collect({
         case (name, FunctionEnvEntry(functionA)) => {
@@ -357,18 +307,18 @@ class StructCompilerCore(
 
     val understructTemplateNameT =
       interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(functionA.range.begin)))
-    val understructTemplatedIdT =
+    val understructTemplatedId =
       containingFunctionEnv.id
         .addStep(understructTemplateNameT)
 
     val understructInstantiatedNameT =
       understructTemplateNameT.makeStructName(interner, Vector())
-    val understructInstantiatedIdT =
+    val understructInstantiatedId =
       containingFunctionEnv.id.addStep(understructInstantiatedNameT)
 
     // Lambdas have no bounds, so we just supply Map()
-    coutputs.addInstantiationBounds(understructInstantiatedIdT, InstantiationBoundArgumentsT(Map(), Map()))
-    val understructStructTT = interner.intern(StructTT(understructInstantiatedIdT))
+    coutputs.addInstantiationBounds(understructInstantiatedId, InstantiationBoundArgumentsT(Map(), Map()))
+    val understructStructTT = interner.intern(StructTT(understructInstantiatedId))
 
     val dropFuncNameT =
       interner.intern(FunctionTemplateNameT(keywords.drop, functionA.range.begin))
@@ -381,9 +331,9 @@ class StructCompilerCore(
       CitizenEnvironmentT(
         containingFunctionEnv.globalEnv,
         containingFunctionEnv,
-        understructTemplatedIdT,
-        understructTemplatedIdT,
-        TemplatasStore(understructTemplatedIdT, Map(), Map())
+        understructTemplatedId,
+        understructTemplatedId,
+        TemplatasStore(understructTemplatedId, Map(), Map())
           .addEntries(
             interner,
             Vector(
@@ -400,9 +350,9 @@ class StructCompilerCore(
       CitizenEnvironmentT(
         structOuterEnv.globalEnv,
         structOuterEnv,
-        understructTemplatedIdT,
-        understructInstantiatedIdT,
-        TemplatasStore(understructInstantiatedIdT, Map(), Map())
+        understructTemplatedId,
+        understructInstantiatedId,
+        TemplatasStore(understructInstantiatedId, Map(), Map())
           // There are no inferences we'd need to add, because it's a lambda and they don't have
           // any rules or anything.
           .addEntries(interner, Vector()))
@@ -411,14 +361,14 @@ class StructCompilerCore(
     // if it's not a template).
     val functionTemplata = FunctionTemplataT(structInnerEnv, functionA)
 
-    coutputs.declareType(understructTemplatedIdT)
-    coutputs.declareTypeOuterEnv(understructTemplatedIdT, structOuterEnv)
-    coutputs.declareTypeInnerEnv(understructTemplatedIdT, structInnerEnv)
-    coutputs.declareTypeMutability(understructTemplatedIdT, MutabilityTemplataT(mutability))
+    coutputs.declareType(understructTemplatedId)
+    coutputs.declareTypeOuterEnv(understructTemplatedId, structOuterEnv)
+    coutputs.declareTypeInnerEnv(understructTemplatedId, structInnerEnv)
+    coutputs.declareTypeMutability(understructTemplatedId, MutabilityTemplataT(mutability))
 
     val closureStructDefinition =
       StructDefinitionT(
-        understructTemplatedIdT,
+        understructTemplatedId,
         understructStructTT,
         Vector.empty,
         false,

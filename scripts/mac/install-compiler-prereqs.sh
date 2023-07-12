@@ -33,7 +33,15 @@ curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0
 unzip /tmp/BootstrappingValec.zip -d $BOOTSTRAPPING_VALEC_DIR
 
 # Install misc dependencies
-echo "Downloading and unzipping depdendencies and LLVM..."
-brew install llvm@16 sbt cmake coreutils
+echo "Downloading and installing depdendencies and LLVM..."
+# Remove these redundant printouts when we know what's causing the brew install steps on github CI to fail on mac
+echo "Downloading and installing coreutils"
+brew install coreutils
+echo "Downloading and installing CMake"
+brew install cmake
+echo "Downloading and installing SBT"
+brew install sbt
+echo "Downloading and installing LLVM"
+brew install llvm@16
 # coreutils is for greadlink which we use in build-compiler.sh
 

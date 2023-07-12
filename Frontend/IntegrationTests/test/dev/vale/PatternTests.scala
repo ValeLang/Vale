@@ -27,7 +27,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test( "exported func main() int { [x, y] = (4, 5); return y; }")
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
-    main.header.returnType shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32)
+    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
@@ -40,7 +40,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
-    main.header.returnType shouldEqual CoordT(ShareT, GlobalRegionT(), IntT.i32)
+    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -52,7 +52,7 @@ class PatternTests extends FunSuite with Matchers {
         |exported func main() int { [x, y] = (7, Marine(8)); return y.hp; }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.functions.head.header.returnType == CoordT(ShareT, GlobalRegionT(), IntT.i32)
+    coutputs.functions.head.header.returnType == CoordT(ShareT, RegionT(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -68,7 +68,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.functions.head.header.returnType == CoordT(ShareT, GlobalRegionT(), IntT.i32)
+    coutputs.functions.head.header.returnType == CoordT(ShareT, RegionT(), IntT.i32)
 
     val monouts = compile.getMonouts()
     val tupDef = monouts.lookupStruct("Tup")

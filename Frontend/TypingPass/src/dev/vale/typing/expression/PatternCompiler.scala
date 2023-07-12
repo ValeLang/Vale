@@ -311,7 +311,7 @@ class PatternCompiler(
         translateDestroyStructInnerAndMaybeContinue(
           coutputs, nenv, life + 0, parentRanges, callLocation, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
       }
-      case staticSizedArrayT @ contentsStaticSizedArrayTT(sizeTemplata, _, _, elementType) => {
+      case staticSizedArrayT @ contentsStaticSizedArrayTT(sizeTemplata, _, _, elementType, _) => {
         val size =
           sizeTemplata match {
             case PlaceholderTemplataT(_, IntegerTemplataType()) => {
@@ -412,7 +412,7 @@ class PatternCompiler(
                 structTT,
                 memberIndex)
             }
-            case staticSizedArrayT@contentsStaticSizedArrayTT(size, _, _, elementType) => {
+            case staticSizedArrayT@contentsStaticSizedArrayTT(size, _, _, elementType, _) => {
               loadFromStaticSizedArray(headMaybeDestructureMemberPattern.range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, containerAliasingExprTE, memberIndex)
             }
             case other => {

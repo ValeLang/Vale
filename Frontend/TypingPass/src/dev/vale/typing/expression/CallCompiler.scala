@@ -1,18 +1,20 @@
 package dev.vale.typing.expression
 
-import dev.vale.{Err, Interner, Keywords, Ok, RangeS, vassert, vfail, vimpl, vwat}
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.GlobalFunctionFamilyNameS
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
-import dev.vale.typing.{CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{FunctionCallTE, LocationInFunctionEnvironmentT, ReferenceExpressionTE}
-import dev.vale.typing.env.{FunctionEnvironmentBoxT, IInDenizenEnvironmentT, NodeEnvironmentT, NodeEnvironmentBox}
+import dev.vale.typing._
+import dev.vale.typing.ast._
+import dev.vale.typing.env._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
+import dev.vale.typing.function._
 import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
+import dev.vale.typing.names._
 
 import scala.collection.immutable.List
 
@@ -31,11 +33,12 @@ class CallCompiler(
     life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
     callLocation: LocationInDenizen,
+    contextRegion: RegionT,
     callableExpr: ReferenceExpressionTE,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
     givenArgsExprs2: Vector[ReferenceExpressionTE]):
-  (FunctionCallTE) = {
+  (ReferenceExpressionTE) = {
     callableExpr.result.coord.kind match {
       case NeverT(true) => vwat()
       case NeverT(false) | BoolT() => {
@@ -60,6 +63,7 @@ class CallCompiler(
             functionName,
             explicitTemplateArgRulesS,
             explicitTemplateArgRunesS,
+            contextRegion,
             unconvertedArgsPointerTypes2,
             Vector.empty,
             false,
@@ -90,6 +94,7 @@ class CallCompiler(
           life,
           range,
           callLocation,
+          contextRegion,
           callableExpr.result.coord.kind,
           explicitTemplateArgRulesS,
           explicitTemplateArgRunesS,
@@ -119,6 +124,7 @@ class CallCompiler(
     life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
     callLocation: LocationInDenizen,
+    contextRegion: RegionT,
     kind: KindT,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
@@ -136,6 +142,7 @@ class CallCompiler(
             range,
             callLocation,
             life,
+            contextRegion,
             givenCallableUnborrowedExpr2,
             BorrowT)
         }
@@ -149,7 +156,7 @@ class CallCompiler(
 //      }
 
     val argsTypes2 = givenArgsExprs2.map(_.result.coord)
-    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, GlobalRegionT(), kind)
+    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, RegionT(), kind)
     val paramFilters = Vector(closureParamType) ++ argsTypes2
     val resolved =
       overloadCompiler.findFunction(
@@ -160,6 +167,7 @@ class CallCompiler(
         interner.intern(CodeNameS(keywords.underscoresCall)),
         explicitTemplateArgRulesS,
         explicitTemplateArgRunesS,
+        contextRegion,
         paramFilters,
         Vector.empty,
         false,
@@ -246,6 +254,7 @@ class CallCompiler(
     life: LocationInFunctionEnvironmentT,
     range: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     callableReferenceExpr2: ReferenceExpressionTE,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
@@ -259,6 +268,7 @@ class CallCompiler(
         life,
         range,
         callLocation,
+        region,
         callableReferenceExpr2,
         explicitTemplateArgRulesS,
         explicitTemplateArgRunesS,

@@ -5,7 +5,7 @@ import dev.vale.typing.citizen.WeakableImplingMismatch
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.expression.TookWeakRefOfNonWeakableError
 import dev.vale.typing.names.{CodeVarNameT, IdT}
-import dev.vale.typing.templata.simpleName
+import dev.vale.typing.templata.simpleNameT
 import dev.vale.typing.types._
 import dev.vale.testvm.ConstraintViolatedException
 import dev.vale.typing._
@@ -24,7 +24,7 @@ class WeakTests extends FunSuite with Matchers {
     Collector.only(main, {
       case LetNormalTE(ReferenceLocalVariableT(CodeVarNameT(StrI("weakMuta")),FinalT,CoordT(WeakT, _, _)),refExpr) => {
         refExpr.result.coord match {
-          case CoordT(WeakT, _, StructTT(simpleName("Muta"))) =>
+          case CoordT(WeakT, _, StructTT(simpleNameT("Muta"))) =>
         }
       }
     })
@@ -96,7 +96,7 @@ class WeakTests extends FunSuite with Matchers {
     Collector.only(main, {
       case LetNormalTE(ReferenceLocalVariableT(CodeVarNameT(StrI("weakUnit")),FinalT,CoordT(WeakT, _, _)),refExpr) => {
         refExpr.result.coord match {
-          case CoordT(WeakT, _, InterfaceTT(simpleName("IUnit"))) =>
+          case CoordT(WeakT, _, InterfaceTT(simpleNameT("IUnit"))) =>
         }
       }
     })

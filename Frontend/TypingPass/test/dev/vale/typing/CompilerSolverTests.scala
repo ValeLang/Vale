@@ -112,9 +112,9 @@ class CompilerSolverTests extends FunSuite with Matchers {
             _,
             FunctionNameT(
               FunctionTemplateNameT(StrI("bork"), _),
-              Vector(CoordTemplataT(CoordT(ShareT,GlobalRegionT(), IntT(32)))),
-              Vector(CoordT(ShareT,GlobalRegionT(), IntT(32))))),
-          CoordT(ShareT,GlobalRegionT(), IntT(32))),
+              Vector(CoordTemplataT(CoordT(ShareT,RegionT(), IntT(32)))),
+              Vector(CoordT(ShareT,RegionT(), IntT(32))))),
+          CoordT(ShareT,RegionT(), IntT(32))),
         Vector(ConstantIntTE(IntegerTemplataT(3),32))) =>
     }
   }
@@ -179,7 +179,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
               FunctionTemplateNameT(StrI("bork"), _),
               Vector(CoordTemplataT(templateArgCoord)),
               Vector(arg))),
-          CoordT(ShareT,GlobalRegionT(), VoidT())) => {
+          CoordT(ShareT,RegionT(), VoidT())) => {
 
         templateArgCoord match {
           case CoordT(
@@ -205,7 +205,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val funcTemplateId = IdT(testPackageCoord, Vector(), funcTemplateName)
     val funcName = IdT(testPackageCoord, Vector(), FunctionNameT(FunctionTemplateNameT(interner.intern(StrI("main")), tzCodeLoc), Vector(), Vector()))
     val regionName = funcTemplateId.addStep(interner.intern(KindPlaceholderNameT(interner.intern(KindPlaceholderTemplateNameT(0, DenizenDefaultRegionRuneS(FunctionNameS(funcTemplateName.humanName, funcTemplateName.codeLocation)))))))
-    val region = GlobalRegionT()
+    val region = RegionT()
 
 
     val fireflyKind = StructTT(IdT(testPackageCoord, Vector(), StructNameT(StructTemplateNameT(StrI("Firefly")), Vector())))
@@ -357,7 +357,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case FunctionCallTE(PrototypeT(simpleName("moo"), _), _) =>
+      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _) =>
     })
   }
 
@@ -375,7 +375,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case FunctionCallTE(PrototypeT(simpleName("moo"), _), _) =>
+      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _) =>
     })
   }
 
@@ -592,7 +592,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("bork").header.id.localName.templateArgs.last shouldEqual CoordTemplataT(CoordT(ShareT, GlobalRegionT(), IntT(32)))
+    coutputs.lookupFunction("bork").header.id.localName.templateArgs.last shouldEqual CoordTemplataT(CoordT(ShareT, RegionT(), IntT(32)))
   }
 
   test("Can destructure and assemble static sized array") {

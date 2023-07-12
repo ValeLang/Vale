@@ -415,7 +415,7 @@ class StructCompilerGenericArgsLayer(
 
       val definitionRules = interfaceA.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      val envs = InferEnv(outerEnv, List(interfaceA.range), callLocation, outerEnv)
+      val envs = InferEnv(outerEnv, List(interfaceA.range), callLocation, outerEnv, RegionT())
       val solver =
         inferCompiler.makeSolver(
           envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, Vector(), Vector())

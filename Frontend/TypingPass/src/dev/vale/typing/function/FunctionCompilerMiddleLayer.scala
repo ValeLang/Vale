@@ -474,7 +474,8 @@ class FunctionCompilerMiddleLayer(
       templatas,
       function,
       variables,
-      isRootCompilingDenizen) = runedEnv
+      isRootCompilingDenizen,
+      defaultRegion) = runedEnv
     val id = assembleName(templateId, templateArgs, paramTypes)
     FunctionEnvironmentT(
       globalEnv,
@@ -485,6 +486,7 @@ class FunctionCompilerMiddleLayer(
       function,
       maybeReturnType,
       variables,
-      isRootCompilingDenizen)
+      isRootCompilingDenizen,
+      defaultRegion)
   }
 }

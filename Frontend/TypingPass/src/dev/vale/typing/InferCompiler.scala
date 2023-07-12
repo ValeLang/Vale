@@ -424,13 +424,13 @@ class InferCompiler(
     // Check all template calls
     rules.foreach({
       case MaybeCoercingCallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
+        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }
       }
       case CallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
+        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }

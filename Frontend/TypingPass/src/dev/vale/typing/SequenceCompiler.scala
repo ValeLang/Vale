@@ -1,11 +1,11 @@
 package dev.vale.typing
 
 import dev.vale.postparsing.LocationInDenizen
-import dev.vale.typing.ast.{ProgramT, ReferenceExpressionTE, TupleTE}
+import dev.vale.typing.ast._
 import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vimpl}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{IInDenizenEnvironmentT, TemplataLookupContext}
-import dev.vale.typing.names.{CitizenTemplateNameT, StructTemplateNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
@@ -21,16 +21,7 @@ class SequenceCompiler(
   keywords: Keywords,
     structCompiler: StructCompiler,
     templataCompiler: TemplataCompiler) {
-  def makeEmptyTuple(
-    env: IInDenizenEnvironmentT,
-    coutputs: CompilerOutputs,
-    parentRanges: List[RangeS],
-    callLocation: LocationInDenizen):
-  (ReferenceExpressionTE) = {
-    evaluate(env, coutputs, parentRanges, callLocation, Vector())
-  }
-
-  def evaluate(
+  def resolveTuple(
     env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
@@ -38,7 +29,8 @@ class SequenceCompiler(
     exprs2: Vector[ReferenceExpressionTE]):
   (ReferenceExpressionTE) = {
     val types2 = exprs2.map(_.result.expectReference().coord)
-    val finalExpr = TupleTE(exprs2, makeTupleCoord(env, coutputs, parentRanges, callLocation, types2))
+    val region = RegionT()
+    val finalExpr = TupleTE(exprs2, makeTupleCoord(env, coutputs, parentRanges, callLocation, region, types2))
     (finalExpr)
   }
 
@@ -60,7 +52,8 @@ class SequenceCompiler(
       callLocation,
       tupleTemplate,
 //      Vector(CoordListTemplata(types2))).kind
-      types2.map(CoordTemplataT)).expect().kind
+      types2.map(CoordTemplataT),
+      RegionT()).expect().kind
   }
 
   def makeTupleCoord(
@@ -68,8 +61,10 @@ class SequenceCompiler(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
+    region: RegionT,
     types2: Vector[CoordT]):
   CoordT = {
-    templataCompiler.coerceKindToCoord(coutputs, makeTupleKind(env, coutputs, parentRanges, callLocation, types2))
+    templataCompiler.coerceKindToCoord(
+      coutputs, makeTupleKind(env, coutputs, parentRanges, callLocation, types2), region)
   }
 }

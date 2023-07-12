@@ -41,7 +41,7 @@ class SSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
           Vector(
             DiscardTE(ArgLookupTE(0, paramCoords(0).tyype)),
             ReturnTE(
-              ConstantIntTE(len, 32)))))
+              ConstantIntTE(len, 32, RegionT())))))
     (header, body)
   }
 }

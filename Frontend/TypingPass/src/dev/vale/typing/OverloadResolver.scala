@@ -68,7 +68,7 @@ object OverloadResolver {
     override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   }
 
-  case class EvaluateFunctionFailure(
+  case class EvaluateFunctionFailure2(
     name: IImpreciseNameS,
     args: Vector[CoordT],
     // All the banners we rejected, and the reason why
@@ -360,7 +360,7 @@ class OverloadResolver(
                         } else {
                           // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
                           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-                            coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, args) match {
+                            coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, RegionT(), args) match {
                             case (EvaluateFunctionFailure(reason)) => Err(reason)
                             case (EvaluateFunctionSuccess(prototype, conclusions)) => {
                               paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {

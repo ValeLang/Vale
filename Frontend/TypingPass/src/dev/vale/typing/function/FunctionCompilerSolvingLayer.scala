@@ -15,10 +15,11 @@ import dev.vale.typing.env._
 import dev.vale.typing.function._
 import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve, Solver}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
-import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsT, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.env._
 import dev.vale.typing.infer.ITypingPassSolverError
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, InitialKnown, InitialSend, TemplataCompiler, TypingPassOptions}
-import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT, NameTranslator, KindPlaceholderNameT, KindPlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names._
+import dev.vale.typing.templata.ITemplataT._
 import dev.vale.typing.templata._
 import dev.vale.typing.types.CoordT
 //import dev.vale.typingpass.infer.{InferSolveFailure, InferSolveSuccess}
@@ -58,6 +59,7 @@ class FunctionCompilerSolvingLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     args: Vector[CoordT],
     verifyConclusions: Boolean):
   (IEvaluateFunctionResult) = {
@@ -72,7 +74,7 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, callLocation, outerEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, outerEnv, contextRegion),
         coutputs,
         callSiteRules,
         function.runeToType,
@@ -89,7 +91,12 @@ class FunctionCompilerSolvingLayer(
       }
 
     val runedEnv =
-      addRunedDataToNearEnv(outerEnv, function.genericParameters.map(_.rune.rune), inferredTemplatas, reachableBounds)
+      addRunedDataToNearEnv(
+        outerEnv,
+        function.genericParameters.map(_.rune.rune),
+        inferredTemplatas,
+        function.defaultRegionRune,
+        reachableBounds)
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
@@ -110,6 +117,7 @@ class FunctionCompilerSolvingLayer(
       callRange: List[RangeS],
       callLocation: LocationInDenizen,
       alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     val function = declaringEnv.function
@@ -123,7 +131,7 @@ class FunctionCompilerSolvingLayer(
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
         coutputs,
         callSiteRules,
         function.runeToType,
@@ -141,7 +149,11 @@ class FunctionCompilerSolvingLayer(
 
     val runedEnv =
       addRunedDataToNearEnv(
-        declaringEnv, function.genericParameters.map(_.rune.rune), inferredTemplatas, reachableBounds)
+        declaringEnv,
+        function.genericParameters.map(_.rune.rune),
+        inferredTemplatas,
+        function.defaultRegionRune,
+        reachableBounds)
 
     val prototype =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
@@ -163,6 +175,7 @@ class FunctionCompilerSolvingLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
       explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
       args: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     val function = nearEnv.function
@@ -180,7 +193,7 @@ class FunctionCompilerSolvingLayer(
     val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveComplete(
-        InferEnv(originalCallingEnv, callRange, callLocation, nearEnv),
+        InferEnv(originalCallingEnv, callRange, callLocation, nearEnv, contextRegion),
         coutputs,
         callSiteRules,
         function.runeToType,
@@ -196,7 +209,13 @@ class FunctionCompilerSolvingLayer(
     }
 
     // See FunctionCompiler doc for what outer/runes/inner envs are.
-    val runedEnv = addRunedDataToNearEnv(nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBounds)
+    val runedEnv =
+      addRunedDataToNearEnv(
+        nearEnv,
+        function.genericParameters.map(_.rune.rune),
+        inferences,
+        function.defaultRegionRune,
+        reachableBounds)
 
     val prototypeTemplata =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
@@ -252,8 +271,18 @@ class FunctionCompilerSolvingLayer(
         templatasByRune.toVector
           .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) }))
 
+    val defaultRegion = RegionT()
+
     BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT(
-      globalEnv, parentEnv, id, identifyingTemplatas, newEntries, function, variables, isRootCompilingDenizen)
+      globalEnv,
+      parentEnv,
+      id,
+      identifyingTemplatas,
+      newEntries,
+      function,
+      variables,
+      isRootCompilingDenizen,
+      defaultRegion)
   }
 
   // We would want only the prototype instead of the entire header if, for example,
@@ -270,6 +299,7 @@ class FunctionCompilerSolvingLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    contextRegion: RegionT,
     args: Vector[Option[CoordT]]):
   (IEvaluateFunctionResult) = {
     val function = outerEnv.function
@@ -279,13 +309,6 @@ class FunctionCompilerSolvingLayer(
     val callSiteRules =
         TemplataCompiler.assembleCallSiteRules(
             function.rules, function.genericParameters, explicitTemplateArgs.size)
-
-    function.name match {
-      case FunctionNameS(StrI("len"), _) => {
-        vpass()
-      }
-      case _ =>
-    }
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args)
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
@@ -306,7 +329,13 @@ class FunctionCompilerSolvingLayer(
         case Ok(i) => (i)
       }
 
-    val runedEnv = addRunedDataToNearEnv(outerEnv, function.genericParameters.map(_.rune.rune), inferredTemplatas, reachableBounds)
+    val runedEnv =
+      addRunedDataToNearEnv(
+        outerEnv,
+        function.genericParameters.map(_.rune.rune),
+        inferredTemplatas,
+        function.defaultRegionRune,
+        reachableBounds)
 
     val prototype =
       middleLayer.getGenericFunctionPrototypeFromCall(
@@ -340,7 +369,7 @@ class FunctionCompilerSolvingLayer(
     //   func map<T, F>(self Opt<T>, f F, t T) { ... }
     // into a:
     //   func map<F>(self Opt<$0>, f F, t $0) { ... }
-    val preliminaryEnvs = InferEnv(callingEnv, callRange, callLocation, nearEnv)
+    val preliminaryEnvs = InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT())
     val preliminarySolver =
       inferCompiler.makeSolver(
         preliminaryEnvs,
@@ -374,7 +403,8 @@ class FunctionCompilerSolvingLayer(
         case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => incompleteConclusions
         case CompleteCompilerSolve(_, conclusions, _, Vector()) => conclusions
       }
-    // Now we can use preliminaryInferences to know whether or not we need a placeholder for an identifying rune.
+    // Now we can use preliminaryInferences to know whether or not we need a placeholder for an
+    // identifying rune.
     // Our
     //   func map<F>(self Opt<$0>, f F) { ... }
     // will need one placeholder, for F.
@@ -389,7 +419,7 @@ class FunctionCompilerSolvingLayer(
             vimpl()
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, false)
+                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, RegionT(), false)
             Some(InitialKnown(genericParam.rune, templata))
           }
         }
@@ -399,7 +429,7 @@ class FunctionCompilerSolvingLayer(
 
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveExpectComplete(
-        InferEnv(callingEnv, callRange, callLocation, nearEnv),
+        InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT()),
         coutputs,
         functionDefinitionRules,
         function.runeToType,
@@ -410,7 +440,12 @@ class FunctionCompilerSolvingLayer(
         true,
         true,
         Vector())
-    val runedEnv = addRunedDataToNearEnv(nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBounds)
+    val runedEnv =
+      addRunedDataToNearEnv(
+        nearEnv,
+        function.genericParameters.map(_.rune.rune),
+        inferences,
+        reachableBounds)
 
     val prototype =
       middleLayer.getGenericFunctionPrototypeFromCall(
@@ -429,8 +464,8 @@ class FunctionCompilerSolvingLayer(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
-    verifyConclusions: Boolean):
-  (FunctionHeaderT) = {
+    verifyConclusions: Boolean
+  ): FunctionHeaderT = {
     val function = nearEnv.function
     val range = function.range :: parentRanges
     // Check preconditions
@@ -480,7 +515,7 @@ class FunctionCompilerSolvingLayer(
 
     val runedEnv =
       addRunedDataToNearEnv(
-        nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBoundsFromParamsAndReturn)
+        nearEnv, function.genericParameters.map(_.rune.rune), inferences, function.defaultRegionRune, reachableBoundsFromParamsAndReturn)
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(

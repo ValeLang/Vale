@@ -169,7 +169,7 @@ case class HinputsT(
   def lookupUserFunction(humanName: String): FunctionDefinitionT = {
     val matches =
       functions
-        .filter(function => simpleName.unapply(function.header.id).contains(humanName))
+        .filter(function => simpleNameT.unapply(function.header.id).contains(humanName))
         .filter(_.header.isUserFunction)
     if (matches.size == 0) {
       vfail("Not found!")

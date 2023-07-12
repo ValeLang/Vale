@@ -3,6 +3,7 @@ package dev.vale.typing.function
 import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
+import dev.vale.postparsing.patterns._
 import dev.vale.typing.{AbstractMethodOutsideOpenInterface, CompileErrorExceptionT, CompilerOutputs, ConvertHelper, FunctionAlreadyExists, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast, env}
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionDefinitionT, ParameterT, PrototypeT, SealedT, SignatureT}
 import dev.vale.typing.citizen.StructCompiler

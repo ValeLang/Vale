@@ -153,7 +153,7 @@ class StructConstructorMacro(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
       }
-    val constructorReturnType = CoordT(constructorReturnOwnership, GlobalRegionT(), structTT)
+    val constructorReturnType = CoordT(constructorReturnOwnership, RegionT(), structTT)
 
     // not virtual because how could a constructor be virtual
     val header =

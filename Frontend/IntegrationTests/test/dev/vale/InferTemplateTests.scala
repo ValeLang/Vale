@@ -4,7 +4,7 @@ import dev.vale.typing.ast.{FunctionCallTE, ParameterT, PrototypeT}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
-import dev.vale.typing.templata.simpleName
+import dev.vale.typing.templata.simpleNameT
 import dev.vale.typing.types.StructTT
 import dev.vale.von.VonInt
 import org.scalatest._

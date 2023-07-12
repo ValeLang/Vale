@@ -6,10 +6,10 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.parsing.ast.INameDeclarationP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing._
-import dev.vale.typing.{BodyResultDoesntMatch, CompileErrorExceptionT, ConvertHelper, CouldntConvertForReturnT, RangedInternalErrorT, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
+import dev.vale.typing._
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironmentT, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentBoxT, NodeEnvironmentT, NodeEnvironmentBox}
-import dev.vale.typing.names.NameTranslator
+import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -30,6 +30,7 @@ trait IBodyCompilerDelegate {
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
+    region: RegionT,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -39,6 +40,7 @@ trait IBodyCompilerDelegate {
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
+    region: RegionT,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
@@ -81,6 +83,7 @@ class BodyCompiler(
               coutputs,
               life,
               parentRanges,
+              funcOuterEnv.functionEnvironment.defaultRegion,
               callLocation,
               function1.params,
               params2,
@@ -116,6 +119,7 @@ class BodyCompiler(
                 coutputs,
                 life,
                 parentRanges,
+              funcOuterEnv.functionEnvironment.defaultRegion,
               callLocation,
                 function1.params,
                 params2,
@@ -130,7 +134,7 @@ class BodyCompiler(
 
           if (returns == Set(explicitRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(CoordT(ShareT, GlobalRegionT(), NeverT(false)))) {
+          } else if (returns == Set(CoordT(ShareT, RegionT(), NeverT(false)))) {
             // Let it through, it returns a never but we expect something else, that's fine
           } else if (returns == Set() && body2.result.kind == NeverT(false)) {
             // Let it through, it doesn't return anything yet it results in a never, which means
@@ -154,6 +158,7 @@ class BodyCompiler(
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
+    region: RegionT,
       callLocation: LocationInDenizen,
     params1: Vector[ParameterS],
     params2: Vector[ParameterT],
@@ -165,11 +170,11 @@ class BodyCompiler(
     val startingEnv = env.snapshot
 
     val patternsTE =
-      evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, callLocation, params1, params2);
+      evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, callLocation, region, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
       delegate.evaluateBlockStatements(
-        coutputs, startingEnv, env, life + 1, parentRanges, callLocation, body1.block);
+        coutputs, startingEnv, env, life + 1, parentRanges, callLocation, startingEnv.defaultRegion, body1.block);
 
     val unconvertedBodyWithoutReturn = Compiler.consecutive(Vector(patternsTE, statementsFromBlock))
 
@@ -202,8 +207,8 @@ class BodyCompiler(
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, GlobalRegionT(), NeverT(false)))) {
-        returnsMaybeWithNever - CoordT(ShareT, GlobalRegionT(), NeverT(false))
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, RegionT(), NeverT(false)))) {
+        returnsMaybeWithNever - CoordT(ShareT, RegionT(), NeverT(false))
       } else {
         returnsMaybeWithNever
       }
@@ -230,6 +235,7 @@ class BodyCompiler(
       life: LocationInFunctionEnvironmentT,
       range: List[RangeS],
       callLocation: LocationInDenizen,
+      region: RegionT,
       params1: Vector[ParameterS],
       params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
@@ -237,7 +243,7 @@ class BodyCompiler(
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.translatePatternList(
-        coutputs, nenv, life, range, callLocation, params1.map(_.pattern), paramLookups2);
+        coutputs, nenv, life, range, callLocation, region, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment
     // for everything inside the body to use

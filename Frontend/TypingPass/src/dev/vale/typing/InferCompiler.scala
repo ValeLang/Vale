@@ -1,7 +1,7 @@
 package dev.vale.typing
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, Result, StrI, typing, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules._
 import dev.vale.solver._
@@ -13,8 +13,8 @@ import dev.vale.typing.env.{CitizenEnvironmentT, EnvironmentHelper, GeneralEnvir
 import dev.vale.typing.function._
 import dev.vale.typing.infer.{CompilerSolver, CouldntFindFunction, CouldntFindImpl, CouldntResolveKind, IInfererDelegate, ITypingPassSolverError, ReturnTypeConflict}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IImplNameT, INameT, ITemplateNameT, IdT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
-import dev.vale.typing.templata.{CoordListTemplataT, CoordTemplataT, ITemplataT, InterfaceDefinitionTemplataT, KindTemplataT, PrototypeTemplataT, RuntimeSizedArrayTemplateTemplataT, StaticSizedArrayTemplateTemplataT, StructDefinitionTemplataT}
-import dev.vale.typing.types.{CoordT, ICitizenTT, ISubKindTT, ISuperKindTT, InterfaceTT, KindT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
+import dev.vale.typing.templata._
+import dev.vale.typing.types.{CoordT, ICitizenTT, ISubKindTT, ISuperKindTT, InterfaceTT, KindT, RegionT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
 
 import scala.collection.immutable.{List, Set}
 
@@ -69,6 +69,8 @@ case class InferEnv(
 
 
   // Sometimes these can be all equal.
+
+  contextRegion: RegionT
 )
 
 case class InitialSend(
@@ -88,6 +90,8 @@ trait IInferCompilerDelegate {
     callLocation: LocationInDenizen,
     templata: StructDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only implicit generic parameter, see DROIGP.
+    contextRegion: RegionT,
     verifyConclusions: Boolean):
   IResolveOutcome[StructTT]
 
@@ -98,6 +102,8 @@ trait IInferCompilerDelegate {
     callLocation: LocationInDenizen,
     templata: InterfaceDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]],
+    // Context region is the only implicit generic parameter, see DROIGP.
+    contextRegion: RegionT,
     verifyConclusions: Boolean):
   IResolveOutcome[InterfaceTT]
 
@@ -106,13 +112,15 @@ trait IInferCompilerDelegate {
     mutability: ITemplataT[MutabilityTemplataType],
     variability: ITemplataT[VariabilityTemplataType],
     size: ITemplataT[IntegerTemplataType],
-    element: CoordT):
+    element: CoordT,
+    region: RegionT):
   StaticSizedArrayTT
 
   def resolveRuntimeSizedArrayKind(
     coutputs: CompilerOutputs,
     type2: CoordT,
-    arrayMutability: ITemplataT[MutabilityTemplataType]):
+    arrayMutability: ITemplataT[MutabilityTemplataType],
+    region: RegionT):
   RuntimeSizedArrayTT
 
   def resolveFunction(
@@ -122,6 +130,7 @@ trait IInferCompilerDelegate {
     callLocation: LocationInDenizen,
     name: StrI,
     coords: Vector[CoordT],
+    contextRegion: RegionT,
     verifyConclusions: Boolean):
   Result[EvaluateFunctionSuccess, FindFunctionFailure]
 
@@ -386,7 +395,7 @@ class InferCompiler(
           }))
 
       checkTemplateInstantiationsForEnv(
-        originalCallingEnvWithBoundsAndUnverifiedConclusions, state, ranges, callLocation, rules, conclusions)
+        originalCallingEnvWithBoundsAndUnverifiedConclusions, state, ranges, callLocation, envs.contextRegion, rules, conclusions)
     } else {
       val envWithBounds =
         GeneralEnvironmentT.childOf(
@@ -399,7 +408,7 @@ class InferCompiler(
           }).toVector)
 
       checkTemplateInstantiationsForEnv(
-        envWithBounds, state, ranges, callLocation, rules, conclusions)
+        envWithBounds, state, ranges, callLocation, envs.contextRegion, rules, conclusions)
     }
   }
 
@@ -408,19 +417,20 @@ class InferCompiler(
     state: CompilerOutputs,
     ranges: List[RangeS],
     callLocation: LocationInDenizen,
+    contextRegion: RegionT,
     rules: Vector[IRulexSR],
     conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
   Result[Option[InstantiationBoundArgumentsT], ISolverError[IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]] = {
     // Check all template calls
     rules.foreach({
       case MaybeCoercingCallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
+        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }
       }
       case CallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
+        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }
@@ -431,7 +441,7 @@ class InferCompiler(
     val maybeRunesAndPrototypes =
       rules.collect({
         case r@ResolveSR(_, _, _, _, _) => {
-          checkFunctionCall(env, state, ranges, callLocation, r, conclusions) match {
+          checkFunctionCall(env, state, ranges, callLocation, r, conclusions, contextRegion) match {
             case Ok(maybeRuneAndPrototype) => maybeRuneAndPrototype
             case Err(e) => return Err(e)
           }
@@ -473,7 +483,8 @@ class InferCompiler(
     ranges: List[RangeS],
     callLocation: LocationInDenizen,
     c: ResolveSR,
-    conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
+    conclusions: Map[IRuneS, ITemplataT[ITemplataType]],
+    contextRegion: RegionT):
   Result[Option[(IRuneS, PrototypeT)], ISolverError[IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]] = {
     val ResolveSR(range, resultRune, name, paramsListRune, returnRune) = c
 
@@ -490,7 +501,7 @@ class InferCompiler(
       }
 
     val funcSuccess =
-      delegate.resolveFunction(callingEnv, state, range :: ranges, callLocation, name, paramCoords, true) match {
+      delegate.resolveFunction(callingEnv, state, range :: ranges, callLocation, name, paramCoords, contextRegion, true) match {
         case Err(e) => return Err(RuleError(CouldntFindFunction(range :: ranges, e)))
         case Ok(x) => x
       }
@@ -542,6 +553,7 @@ class InferCompiler(
   // like in the case of an incomplete solve.
   def checkTemplateCall(
     callingEnv: IInDenizenEnvironmentT,
+    contextRegion: RegionT, // DO NOT SUBMIT remove this
     state: CompilerOutputs,
     ranges: List[RangeS],
       callLocation: LocationInDenizen,
@@ -571,7 +583,8 @@ class InferCompiler(
       case RuntimeSizedArrayTemplateTemplataT() => {
         val Vector(m, CoordTemplataT(coord)) = args
         val mutability = ITemplataT.expectMutability(m)
-        delegate.resolveRuntimeSizedArrayKind(state, coord, mutability)
+        val contextRegion = RegionT()
+        delegate.resolveRuntimeSizedArrayKind(state, coord, mutability, contextRegion)
         Ok(())
       }
       case StaticSizedArrayTemplateTemplataT() => {
@@ -579,18 +592,21 @@ class InferCompiler(
         val size = ITemplataT.expectInteger(s)
         val mutability = ITemplataT.expectMutability(m)
         val variability = ITemplataT.expectVariability(v)
-        delegate.resolveStaticSizedArrayKind(state, mutability, variability, size, coord)
+        val contextRegion = RegionT()
+        delegate.resolveStaticSizedArrayKind(state, mutability, variability, size, coord, contextRegion)
         Ok(())
       }
       case it @ StructDefinitionTemplataT(_, _) => {
-        delegate.resolveStruct(callingEnv, state, range :: ranges, callLocation, it, args.toVector, true) match {
+        val contextRegion = RegionT()
+        delegate.resolveStruct(callingEnv, state, range :: ranges, callLocation, it, args.toVector, contextRegion, true) match {
           case ResolveSuccess(kind) => kind
           case rf @ ResolveFailure(_, _) => return Err(rf)
         }
         Ok(())
       }
       case it @ InterfaceDefinitionTemplataT(_, _) => {
-        delegate.resolveInterface(callingEnv, state, range :: ranges, callLocation, it, args.toVector, true) match {
+        val contextRegion = RegionT()
+        delegate.resolveInterface(callingEnv, state, range :: ranges, callLocation, it, args.toVector, contextRegion, true) match {
           case ResolveSuccess(kind) => kind
           case rf @ ResolveFailure(_, _) => return Err(rf)
         }

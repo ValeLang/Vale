@@ -7,7 +7,7 @@ import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, ast}
 import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, InterfaceFunctionCallTE, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentT, TemplatasStore}
-import dev.vale.typing.types.CoordT
+import dev.vale.typing.types.{CoordT, RegionT}
 import dev.vale.typing.ast._
 import dev.vale.typing.function._
 import dev.vale.typing.templata.{FunctionTemplataT, PrototypeTemplataT}
@@ -48,6 +48,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
         vassertSome(TemplatasStore.getImpreciseName(interner, env.id.localName)),
         Vector(),
         Vector(),
+        RegionT(),
         params2.map(_.tyype),
         Vector(),
         true,

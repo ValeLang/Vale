@@ -6,7 +6,7 @@ import dev.vale.typing.templata.FunctionTemplataT
 import dev.vale.{PackageCoordinate, RangeS, vassert, vcurious, vfail}
 import dev.vale.typing.types._
 import dev.vale._
-import dev.vale.postparsing.{IRuneS, ITemplataType}
+import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.env.IInDenizenEnvironmentT
 import dev.vale.typing.templata._
@@ -179,14 +179,6 @@ case class EdgeT(
       }
     }
   }
-}
-
-object ProgramT {
-//  val emptyTupleTT =
-//    StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector(), CitizenNameT(CitizenTemplateNameT(tupleHumanName), Vector(CoordListTemplata(Vector())))))
-
-  val intType = CoordT(ShareT, GlobalRegionT(), IntT.i32)
-  val boolType = CoordT(ShareT, GlobalRegionT(), BoolT())
 }
 
 case class FunctionDefinitionT(

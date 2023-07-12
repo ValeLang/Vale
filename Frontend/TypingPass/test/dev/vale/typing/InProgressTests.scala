@@ -7,7 +7,7 @@ import dev.vale.typing.ast.{AsSubtypeTE, DestroyTE, DiscardTE, FunctionCallTE, F
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.infer.OwnershipDidntMatch
 import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
-import dev.vale.typing.templata.{CoordTemplataT, IntegerTemplataT, KindTemplataT, MutabilityTemplataT, functionName, simpleName}
+import dev.vale.typing.templata.{CoordTemplataT, IntegerTemplataT, KindTemplataT, MutabilityTemplataT, functionNameT, simpleNameT}
 import dev.vale.typing.types.{BoolT, BorrowT, CoordT, ImmutableT, IntT, InterfaceTT, OwnT, KindPlaceholderT, RuntimeSizedArrayTT, ShareT, StructTT, VoidT}
 import dev.vale.{Collector, Err, Ok, PackageCoordinate, StrI, Tests, vassert, vassertOne, vfail, vimpl, vwat}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError

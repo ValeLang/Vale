@@ -3,7 +3,7 @@ package dev.vale.typing
 //import dev.vale.astronomer.{GlobalFunctionFamilyNameS, INameS, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameS}
 //import dev.vale.astronomer.VirtualFreeImpreciseNameS
 import dev.vale.postparsing.rules.RuneUsage
-import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, U, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{InterfaceEdgeBlueprintT, PrototypeT}
 import dev.vale.typing.env.{GeneralEnvironmentT, IInDenizenEnvironmentT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
@@ -14,7 +14,7 @@ import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.function._
 import dev.vale.typing.names._
 import dev.vale.typing.templata.ITemplataT.{expectCoord, expectCoordTemplata, expectKindTemplata}
-import dev.vale.typing.templata.{CoordTemplataT, FunctionTemplataT, ITemplataT, KindTemplataT, MutabilityTemplataT, PlaceholderTemplataT}
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
 import scala.collection.mutable
@@ -220,7 +220,7 @@ class EdgeCompiler(
           val originalPlaceholderTemplateId = TemplataCompiler.getPlaceholderTemplate(originalPlaceholderId)
           val mutability = coutputs.lookupMutability(originalPlaceholderTemplateId)
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-          CoordTemplataT(CoordT(ownership, GlobalRegionT(), KindPlaceholderT(placeholderId)))
+          CoordTemplataT(CoordT(ownership, RegionT(), KindPlaceholderT(placeholderId)))
         }
         case other => vwat(other)
       }
@@ -497,6 +497,7 @@ class EdgeCompiler(
         overrideImpreciseName,
         Vector.empty,
         Vector.empty,
+        RegionT(),
         overrideFunctionParamTypes,
         Vector(
           coutputs.getOuterEnvForType(List(range, impl.templata.impl.range), interfaceTemplateId),

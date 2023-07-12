@@ -87,7 +87,8 @@ class ImplCompiler(
         callingEnv,
         range :: parentRanges,
         callLocation,
-        outerEnv)
+        outerEnv,
+        RegionT())
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
@@ -161,7 +162,8 @@ class ImplCompiler(
           callingEnv,
           range :: parentRanges,
           callLocation,
-          outerEnv),
+          outerEnv,
+          RegionT()),
         coutputs,
         definitionRules,
         runeToType,

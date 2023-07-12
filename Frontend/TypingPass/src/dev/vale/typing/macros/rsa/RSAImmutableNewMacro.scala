@@ -65,12 +65,12 @@ class RSAImmutableNewMacro(
 //        case MutabilityTemplata(MutableT) => VaryingT
 //      }
 
-    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability)
+    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, RegionT())
 
     val generatorArgCoord =
       paramCoords(1).tyype match {
-        case CoordT(ShareT, _, kind) => CoordT(ShareT, GlobalRegionT(), kind)
-        case CoordT(BorrowT, _, kind) => CoordT(BorrowT, GlobalRegionT(), kind)
+        case CoordT(ShareT, _, kind) => CoordT(ShareT, RegionT(), kind)
+        case CoordT(BorrowT, _, kind) => CoordT(BorrowT, RegionT(), kind)
         case CoordT(OwnT, _, kind) => vwat() // shouldnt happen, signature takes in an &
       }
 
@@ -83,7 +83,8 @@ class RSAImmutableNewMacro(
         interner.intern(CodeNameS(keywords.underscoresCall)),
         Vector(),
         Vector(),
-        Vector(generatorArgCoord, CoordT(ShareT, GlobalRegionT(), IntT(32))),
+        RegionT(),
+        Vector(generatorArgCoord, CoordT(ShareT, RegionT(), IntT(32))),
         Vector(),
         false,
         true) match {
@@ -101,6 +102,7 @@ class RSAImmutableNewMacro(
         ReturnTE(
           NewImmRuntimeSizedArrayTE(
             arrayTT,
+            RegionT(),
             sizeTE,
             generatorTE,
             generatorPrototype.prototype.prototype)))

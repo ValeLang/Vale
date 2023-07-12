@@ -218,11 +218,12 @@ class StructDropMacro(
                         coutputs,
                         originFunction1.map(_.range).toList ++ callRange,
                         callLocation,
+                        RegionT(),
                         UnletTE(v))
                     }))
               }
             },
-            ReturnTE(VoidLiteralTE()))))
+            ReturnTE(VoidLiteralTE(RegionT())))))
     (header, body)
   }
 }

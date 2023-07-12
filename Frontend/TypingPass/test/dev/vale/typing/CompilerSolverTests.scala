@@ -115,7 +115,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
               Vector(CoordTemplataT(CoordT(ShareT,RegionT(), IntT(32)))),
               Vector(CoordT(ShareT,RegionT(), IntT(32))))),
           CoordT(ShareT,RegionT(), IntT(32))),
-        Vector(ConstantIntTE(IntegerTemplataT(3),32))) =>
+        Vector(ConstantIntTE(IntegerTemplataT(3),32, _))) =>
     }
   }
 
@@ -169,7 +169,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
             ReturnTE(
               ConsecutorTE(
                 Vector(FunctionCallTE(prototype, _),
-                VoidLiteralTE())))) => prototype
+                VoidLiteralTE(_))))) => prototype
       }
     prototype match {
       case PrototypeT(
@@ -217,9 +217,9 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val unrelatedKind = StructTT(IdT(testPackageCoord, Vector(), StructNameT(StructTemplateNameT(StrI("Spoon")), Vector())))
     val unrelatedCoord = CoordT(OwnT,region,unrelatedKind)
     val fireflySignature = SignatureT(IdT(testPackageCoord, Vector(), interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector(fireflyCoord)))))
-    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
+    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)), RegionT())))
     val fireflyExport = KindExportT(tz.head, fireflyKind, fireflyExportId, interner.intern(StrI("Firefly")));
-    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
+    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)), RegionT())))
     val serenityExport = KindExportT(tz.head, fireflyKind, serenityExportId, interner.intern(StrI("Serenity")));
 
     val codeStr = "Hello I am A large piece Of code [that has An error]"
@@ -295,7 +295,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32) => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32, _) => })
   }
 
   test("Equals transitive") {
@@ -308,7 +308,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32) => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32, _) => })
   }
 
   test("OneOf") {
@@ -321,7 +321,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32) => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantIntTE(IntegerTemplataT(3), 32, _) => })
   }
 
   test("Components") {

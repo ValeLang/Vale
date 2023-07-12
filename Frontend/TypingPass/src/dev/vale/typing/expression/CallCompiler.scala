@@ -260,7 +260,7 @@ class CallCompiler(
     explicitTemplateArgRunesS: Vector[IRuneS],
     argsExprs2: Vector[ReferenceExpressionTE]
   ):
-  (FunctionCallTE) = {
+  (ReferenceExpressionTE) = {
     val callExpr =
       evaluateCall(
         coutputs,

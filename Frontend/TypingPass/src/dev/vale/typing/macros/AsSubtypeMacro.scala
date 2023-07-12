@@ -49,7 +49,7 @@ class AsSubtypeMacro(
     val successCoord = CoordT(resultOwnership, RegionT(), targetKind)
     val failCoord = CoordT(resultOwnership, RegionT(), incomingKind)
     val (resultCoord, okConstructor, okResultImpl, errConstructor, errResultImpl) =
-      expressionCompiler.getResult(coutputs, env, callRange, callLocation, successCoord, failCoord)
+      expressionCompiler.getResult(coutputs, env, callRange, callLocation, RegionT(), successCoord, failCoord)
     if (resultCoord != vassertSome(maybeRetCoord)) {
       throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Bad result coord:\n" + resultCoord + "\nand\n" + vassertSome(maybeRetCoord)))
     }

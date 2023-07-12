@@ -140,7 +140,7 @@ class StructConstructorMacro(
       members.map({ case (name, coord) => ParameterT(name, None, false, coord) })
     val mutability =
       StructCompiler.getMutability(
-        interner, keywords, coutputs, structTT,
+        interner, keywords, coutputs, RegionT(), structTT,
         // Not entirely sure if this is right, but it's consistent with using it for the return kind
         // and its the more conservative option so we'll go with it for now.
         UseBoundsFromContainer(

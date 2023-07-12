@@ -126,7 +126,7 @@ class Instantiator(
         val exportIdS =
           translateId[ExportNameT, ExportNameI[sI]](
             exportPlaceholderedIdT,
-            { case ExportNameT(ExportTemplateNameT(codeLoc)) =>
+            { case ExportNameT(ExportTemplateNameT(codeLoc), _) =>
               ExportNameI(ExportTemplateNameI(codeLoc), RegionTemplataI(0))
             })
         val exportIdC =
@@ -161,7 +161,7 @@ class Instantiator(
         val exportIdS =
           translateId[ExportNameT, ExportNameI[sI]](
             exportPlaceholderedIdT,
-            { case ExportNameT(ExportTemplateNameT(codeLoc)) =>
+            { case ExportNameT(ExportTemplateNameT(codeLoc), _) =>
               ExportNameI(ExportTemplateNameI(codeLoc), RegionTemplataI(0))
             })
         val exportIdC =
@@ -197,7 +197,7 @@ class Instantiator(
         val externIdS =
           translateId[ExternNameT, ExternNameI[sI]](
             externPlaceholderedIdT,
-            { case ExternNameT(ExternTemplateNameT(codeLoc)) =>
+            { case ExternNameT(ExternTemplateNameT(codeLoc), _) =>
               ExternNameI(ExternTemplateNameI(codeLoc), RegionTemplataI(0))
             })
         val externIdC =
@@ -339,7 +339,7 @@ class Instantiator(
     perspectiveRegionT: RegionT,
     exportNameT: ExportNameT):
   ExportNameI[sI] = {
-    val ExportNameT(ExportTemplateNameT(codeLoc)) = exportNameT
+    val ExportNameT(ExportTemplateNameT(codeLoc), _) = exportNameT
     ExportNameI(
       ExportTemplateNameI(codeLoc),
       RegionTemplataI(0))
@@ -2045,7 +2045,7 @@ class Instantiator(
           val resultCE = ConsecutorIE(innersCE, RegionCollapserIndividual.collapseCoord(resultIT))
           (resultIT, resultCE)
         }
-        case ConstantIntTE(value, bits) => {
+        case ConstantIntTE(value, bits, _) => {
           val resultCE =
             ConstantIntIE(
               ITemplataI.expectIntegerTemplata(
@@ -2053,15 +2053,15 @@ class Instantiator(
               bits)
           (CoordI[sI](MutableShareI, IntIT(bits)), resultCE)
         }
-        case ConstantStrTE(value) => {
+        case ConstantStrTE(value, _) => {
           val resultCE = ConstantStrIE(value)
           (CoordI[sI](MutableShareI, StrIT()), resultCE)
         }
-        case ConstantBoolTE(value) => {
+        case ConstantBoolTE(value, _) => {
           val resultCE = ConstantBoolIE(value)
           (CoordI[sI](MutableShareI, BoolIT()), resultCE)
         }
-        case ConstantFloatTE(value) => {
+        case ConstantFloatTE(value, _) => {
           val resultCE = ConstantFloatIE(value)
           (CoordI[sI](MutableShareI, BoolIT()), resultCE)
         }
@@ -2081,7 +2081,7 @@ class Instantiator(
           val resultCE = DiscardIE(innerCE)
           (CoordI[sI](MutableShareI, VoidIT()), resultCE)
         }
-        case VoidLiteralTE() => {
+        case VoidLiteralTE(_) => {
           (CoordI[sI](MutableShareI, VoidIT()), VoidLiteralIE())
         }
         case FunctionCallTE(prototypeT, args) => {
@@ -2498,7 +2498,7 @@ class Instantiator(
               RegionCollapserIndividual.collapseCoord(resultIT))
           (resultIT, resultCE)
         }
-        case BreakTE() => {
+        case BreakTE(_) => {
           val resultCE = BreakIE()
           (CoordI[sI](MutableShareI, NeverIT(true)), resultCE)
         }
@@ -2548,7 +2548,7 @@ class Instantiator(
               arrayCE, RegionCollapserIndividual.collapseStaticSizedArray(ssaIT), consumerCE, consumerPrototypeC)
           (CoordI[sI](MutableShareI, VoidIT()), resultCE)
         }
-        case NewImmRuntimeSizedArrayTE(arrayType, sizeExpr, generator, generatorMethod) => {
+        case NewImmRuntimeSizedArrayTE(arrayType, _, sizeExpr, generator, generatorMethod) => {
           //          val freePrototype = translatePrototype(freePrototypeT)
 
           val rsaIT =
@@ -2590,7 +2590,7 @@ class Instantiator(
           //          }
 
         }
-        case StaticArrayFromCallableTE(arrayType, generator, generatorMethod) => {
+        case StaticArrayFromCallableTE(arrayType, _, generator, generatorMethod) => {
           //          val freePrototype = translatePrototype(freePrototypeT)
 
           val ssaIT =
@@ -2690,7 +2690,7 @@ class Instantiator(
           val resultCE = DestroyMutRuntimeSizedArrayIE(arrayCE)
           (CoordI.void[sI], resultCE)
         }
-        case NewMutRuntimeSizedArrayTE(arrayTT, capacityExpr) => {
+        case NewMutRuntimeSizedArrayTE(arrayTT, _, capacityExpr) => {
           val arrayIT =
             translateRuntimeSizedArray(
               denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, arrayTT)
@@ -3326,7 +3326,7 @@ class Instantiator(
     IdT(
     packageCoord,
     initSteps,
-    StaticSizedArrayNameT(StaticSizedArrayTemplateNameT(), sizeT, variabilityT, RawArrayNameT(mutabilityT, elementTypeT)))) = ssaTT
+    StaticSizedArrayNameT(StaticSizedArrayTemplateNameT(), sizeT, variabilityT, RawArrayNameT(mutabilityT, elementTypeT, _)))) = ssaTT
 
     val newPerspectiveRegionT = RegionT()
       // ssaRegionT match {
@@ -3374,7 +3374,7 @@ class Instantiator(
       IdT(
       packageCoord,
       initSteps,
-      RuntimeSizedArrayNameT(RuntimeSizedArrayTemplateNameT(), RawArrayNameT(mutabilityT, elementTypeT)))) = rsaTT
+      RuntimeSizedArrayNameT(RuntimeSizedArrayTemplateNameT(), RawArrayNameT(mutabilityT, elementTypeT, _)))) = rsaTT
 
     val newPerspectiveRegionT = RegionT()
       // rsaRegionT match {
@@ -3442,8 +3442,8 @@ class Instantiator(
             denizenName, denizenBoundToDenizenCallerSuppliedThing,
             substitutions, perspectiveRegionT, hinputs.getInstantiationBoundArgs(s.id)))
       }
-      case a @ contentsStaticSizedArrayTT(_, _, _, _) => translateStaticSizedArray(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, a)
-      case a @ contentsRuntimeSizedArrayTT(_, _) => translateRuntimeSizedArray(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, a)
+      case a @ contentsStaticSizedArrayTT(_, _, _, _, _) => translateStaticSizedArray(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, a)
+      case a @ contentsRuntimeSizedArrayTT(_, _, _) => translateRuntimeSizedArray(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, a)
       case other => vimpl(other)
     }
   }

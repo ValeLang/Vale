@@ -15,7 +15,7 @@ class StringTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle") => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle", _) => })
 
     compile.evalForKind(Vector()) match { case VonStr("sprogwoggle") => }
   }
@@ -29,7 +29,7 @@ class StringTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("") => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("", _) => })
 
     compile.evalForKind(Vector()) match { case VonStr("") => }
   }
@@ -43,7 +43,7 @@ class StringTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val coutputs = compile.expectCompilerOutputs()
-    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle") => })
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle", _) => })
 
     compile.evalForKind(Vector()) match { case VonStr("sprog\nwoggle") => }
   }
@@ -59,7 +59,7 @@ class StringTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case ConstantStrTE(x) => {
+      case ConstantStrTE(x, _) => {
         x shouldEqual "sprog\u001bwoggle"
       }
     })

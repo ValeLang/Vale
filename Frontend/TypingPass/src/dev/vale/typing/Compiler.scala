@@ -920,7 +920,7 @@ class Compiler(
 
                     val regionPlaceholder = RegionT()
 
-                    val placeholderedExportName = interner.intern(ExportNameT(templateName))
+                    val placeholderedExportName = interner.intern(ExportNameT(templateName, RegionT()))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
@@ -961,7 +961,7 @@ class Compiler(
                       ExportEnvironmentT(
                         globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
 
-                    val placeholderedExportName = interner.intern(ExportNameT(templateName))
+                    val placeholderedExportName = interner.intern(ExportNameT(templateName, RegionT()))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
@@ -969,7 +969,7 @@ class Compiler(
 
                     val exportPlaceholderedKind =
                       structCompiler.resolveInterface(
-                        coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector()) match {
+                        coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector(), RegionT()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
                           throw CompileErrorExceptionT(CouldntEvaluateInterface(range, reason))
@@ -1016,9 +1016,9 @@ class Compiler(
                   functionCompiler.evaluateGenericFunctionFromNonCall(
                       coutputs, List(), LocationInDenizen(Vector()), templata, true)
 
-                  functionA.attributes.collectFirst({ case e @ ExternS(_, _) => e }) match {
+                  functionA.attributes.collectFirst({ case e @ ExternS(_) => e }) match {
                     case None =>
-                    case Some(ExternS(packageCoord, defaultRegionRune)) => {
+                    case Some(ExternS(packageCoord)) => {
                       val externName =
                         functionA.name match {
                           case FunctionNameS(name, range) => name
@@ -1029,7 +1029,7 @@ class Compiler(
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
 
                       val regionPlaceholder = RegionT()
-                      val placeholderedExternName = interner.intern(ExternNameT(templateName))
+                      val placeholderedExternName = interner.intern(ExternNameT(templateName, RegionT()))
                       val placeholderedExternId = templateId.copy(localName = placeholderedExternName)
                       val externEnv =
                         ExternEnvironmentT(
@@ -1111,10 +1111,10 @@ class Compiler(
                   }
 
                   val maybeExport =
-                    functionA.attributes.collectFirst { case e@ExportS(_, _) => e }
+                    functionA.attributes.collectFirst { case e@ExportS(_) => e }
                   maybeExport match {
                     case None =>
-                    case Some(ExportS(packageCoordinate, defaultRegionRune)) => {
+                    case Some(ExportS(packageCoordinate)) => {
                       val templateName = interner.intern(ExportTemplateNameT(functionA.range.begin))
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                       val exportOuterEnv =
@@ -1534,20 +1534,20 @@ class Compiler(
       case _ =>
     }
     functionA.attributes.exists({
-      case ExportS(_, _) => true
-      case ExternS(_, _) => true
+      case ExportS(_) => true
+      case ExternS(_) => true
       case _ => false
     })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootStruct(structA: StructA): Boolean = {
-    structA.attributes.exists({ case ExportS(_, _) => true case _ => false })
+    structA.attributes.exists({ case ExportS(_) => true case _ => false })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootInterface(interfaceA: InterfaceA): Boolean = {
-    interfaceA.attributes.exists({ case ExportS(_, _) => true case _ => false })
+    interfaceA.attributes.exists({ case ExportS(_) => true case _ => false })
   }
 }
 

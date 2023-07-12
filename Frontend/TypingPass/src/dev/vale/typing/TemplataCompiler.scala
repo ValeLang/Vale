@@ -809,16 +809,32 @@ class TemplataCompiler(
     targetPointerType: CoordT):
   Boolean = {
 
-    val CoordT(targetOwnership, _, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, _, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetRegion, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourceRegion, sourceType) = sourcePointerType;
 
     // Note the Never case will short-circuit a true, regardless of the other checks (ownership)
 
     (sourceType, targetType) match {
       case (NeverT(_), _) => return true
       case (a, b) if a == b =>
-      case (VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | contentsRuntimeSizedArrayTT(_, _) | contentsStaticSizedArrayTT(_, _, _, _), _) => return false
-      case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | contentsRuntimeSizedArrayTT(_, _) | contentsStaticSizedArrayTT(_, _, _, _)) => return false
+      case (VoidT() |
+            IntT(_) |
+            BoolT() |
+            StrT() |
+            FloatT() |
+            contentsRuntimeSizedArrayTT(_, _, _) |
+            contentsStaticSizedArrayTT(_, _, _, _, _), _) => {
+        return false
+      }
+      case (_, VoidT() |
+               IntT(_) |
+               BoolT() |
+               StrT() |
+               FloatT() |
+               contentsRuntimeSizedArrayTT(_, _, _) |
+               contentsStaticSizedArrayTT(_, _, _, _, _)) => {
+        return false
+      }
       case (_, StructTT(_)) => return false
       case (a : ISubKindTT, b : ISuperKindTT) => {
         delegate.isParent(coutputs, callingEnv, parentRanges, callLocation, a, b) match {
@@ -829,6 +845,10 @@ class TemplataCompiler(
       case _ => {
         vfail("Dont know if we can convert from " + sourceType + " to " + targetType)
       }
+    }
+
+    if (sourceRegion != targetRegion) {
+      return false
     }
 
     (sourceOwnership, targetOwnership) match {
@@ -852,7 +872,12 @@ class TemplataCompiler(
     true
   }
 
-  def pointifyKind(coutputs: CompilerOutputs, kind: KindT, ownershipIfMutable: OwnershipT): CoordT = {
+  def pointifyKind(
+    coutputs: CompilerOutputs,
+    kind: KindT,
+    region: RegionT,
+    ownershipIfMutable: OwnershipT
+  ): CoordT = {
     val mutability = Compiler.getMutability(coutputs, kind)
     val ownership =
       mutability match {
@@ -861,32 +886,32 @@ class TemplataCompiler(
         case MutabilityTemplataT(ImmutableT) => ShareT
       }
     kind match {
-      case a @ contentsRuntimeSizedArrayTT(_, _) => {
-        CoordT(ownership, RegionT(), a)
+      case a@contentsRuntimeSizedArrayTT(_, _, _) => {
+        CoordT(ownership, region, a)
       }
-      case a @ contentsStaticSizedArrayTT(_, _, _, _) => {
-        CoordT(ownership, RegionT(), a)
+      case a@contentsStaticSizedArrayTT(_, _, _, _, _) => {
+        CoordT(ownership, region, a)
       }
       case s @ StructTT(_) => {
-        CoordT(ownership, RegionT(), s)
+        CoordT(ownership, region, s)
       }
       case i @ InterfaceTT(_) => {
-        CoordT(ownership, RegionT(), i)
+        CoordT(ownership, region, i)
       }
       case VoidT() => {
-        CoordT(ShareT, RegionT(), VoidT())
+        CoordT(ShareT, region, VoidT())
       }
       case i @ IntT(_) => {
-        CoordT(ShareT, RegionT(), i)
+        CoordT(ShareT, region, i)
       }
       case FloatT() => {
-        CoordT(ShareT, RegionT(), FloatT())
+        CoordT(ShareT, region, FloatT())
       }
       case BoolT() => {
-        CoordT(ShareT, RegionT(), BoolT())
+        CoordT(ShareT, region, BoolT())
       }
       case StrT() => {
-        CoordT(ShareT, RegionT(), StrT())
+        CoordT(ShareT, region, StrT())
       }
     }
   }
@@ -966,7 +991,7 @@ class TemplataCompiler(
     results.headOption
   }
 
-  def coerceKindToCoord(coutputs: CompilerOutputs, kind: KindT):
+  def coerceKindToCoord(coutputs: CompilerOutputs, kind: KindT, region: RegionT):
   CoordT = {
     val mutability = Compiler.getMutability(coutputs, kind)
     CoordT(
@@ -975,7 +1000,7 @@ class TemplataCompiler(
         case MutabilityTemplataT(ImmutableT) => ShareT
         case PlaceholderTemplataT(idT, tyype) => OwnT
       },
-      RegionT(),
+      region,
       kind)
   }
 

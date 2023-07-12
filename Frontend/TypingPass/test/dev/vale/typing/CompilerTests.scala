@@ -54,7 +54,7 @@ class CompilerTests extends FunSuite with Matchers {
         |exported func main() int { return -3; }
         |""".stripMargin)
     val main = compile.expectCompilerOutputs().lookupFunction("main")
-    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(-3), _) => true })
+    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(-3), _, _) => true })
   }
 
   test("Simple local") {
@@ -106,14 +106,14 @@ class CompilerTests extends FunSuite with Matchers {
           |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(2), _) => true })
-    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(3), _) => true })
+    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(2), _, _) => true })
+    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(3), _, _) => true })
     Collector.only(main, {
       case FunctionCallTE(
         functionNameT("+"),
         Vector(
-          ConstantIntTE(IntegerTemplataT(2), _),
-          ConstantIntTE(IntegerTemplataT(3), _))) =>
+          ConstantIntTE(IntegerTemplataT(2), _, _),
+          ConstantIntTE(IntegerTemplataT(3), _, _))) =>
     })
   }
 
@@ -301,7 +301,7 @@ class CompilerTests extends FunSuite with Matchers {
     Collector.only(main, {
       case FunctionCallTE(
         PrototypeT(simpleNameT("MyStruct"), _),
-        Vector(ConstantIntTE(IntegerTemplataT(7), _))) =>
+        Vector(ConstantIntTE(IntegerTemplataT(7), _, _))) =>
     })
   }
 
@@ -973,8 +973,8 @@ class CompilerTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
     Collector.all(main, { case ReturnTE(_) => }).size shouldEqual 2
-    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(7), _) => })
-    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(9), _) => })
+    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(7), _, _) => })
+    Collector.only(main, { case ConstantIntTE(IntegerTemplataT(9), _, _) => })
   }
 
   test("Zero method anonymous interface") {
@@ -1215,9 +1215,9 @@ class CompilerTests extends FunSuite with Matchers {
     val unrelatedCoord = CoordT(OwnT,region,unrelatedKind)
     val fireflyTemplateName = IdT(testPackageCoord, Vector(), interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)))
     val fireflySignature = ast.SignatureT(IdT(testPackageCoord, Vector(), interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector(fireflyCoord)))))
-    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
+    val fireflyExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)), RegionT())))
     val fireflyExport = KindExportT(tz.head, fireflyKind, fireflyExportId, interner.intern(StrI("Firefly")));
-    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)))))
+    val serenityExportId = IdT(testPackageCoord, Vector(), interner.intern(ExportNameT(interner.intern(ExportTemplateNameT(tz.head.begin)), RegionT())))
     val serenityExport = KindExportT(tz.head, fireflyKind, serenityExportId, interner.intern(StrI("Serenity")));
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
@@ -1507,7 +1507,7 @@ class CompilerTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
-    main.header.params.head.tyype.kind match { case contentsRuntimeSizedArrayTT(MutabilityTemplataT(ImmutableT), _) => }
+    main.header.params.head.tyype.kind match { case contentsRuntimeSizedArrayTT(MutabilityTemplataT(ImmutableT), _, _) => }
   }
 
 

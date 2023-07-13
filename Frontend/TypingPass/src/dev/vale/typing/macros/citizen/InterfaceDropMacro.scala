@@ -1,9 +1,9 @@
 package dev.vale.typing.macros.citizen
 
 import dev.vale.highertyping.{FunctionA, InterfaceA}
-import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, IRulexSR, LookupSR, RuneUsage}
-import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI}
+import dev.vale.postparsing.patterns._
+import dev.vale.postparsing.rules._
+import dev.vale._
 import dev.vale.postparsing._
 import dev.vale.typing.ast.PrototypeT
 import dev.vale.typing.env.{FunctionEnvEntry, IEnvEntry}

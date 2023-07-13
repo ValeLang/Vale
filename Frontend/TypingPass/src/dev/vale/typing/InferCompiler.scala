@@ -14,7 +14,7 @@ import dev.vale.typing.function._
 import dev.vale.typing.infer.{CompilerSolver, CouldntFindFunction, CouldntFindImpl, CouldntResolveKind, IInfererDelegate, ITypingPassSolverError, ReturnTypeConflict}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IImplNameT, INameT, ITemplateNameT, IdT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
 import dev.vale.typing.templata._
-import dev.vale.typing.types.{CoordT, ICitizenTT, ISubKindTT, ISuperKindTT, InterfaceTT, KindT, RegionT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
+import dev.vale.typing.types._
 
 import scala.collection.immutable.{List, Set}
 
@@ -132,7 +132,7 @@ trait IInferCompilerDelegate {
     coords: Vector[CoordT],
     contextRegion: RegionT,
     verifyConclusions: Boolean):
-  Result[EvaluateFunctionSuccess, FindFunctionFailure]
+  Result[StampFunctionSuccess, FindFunctionFailure]
 
   def resolveImpl(
     callingEnv: IInDenizenEnvironmentT,

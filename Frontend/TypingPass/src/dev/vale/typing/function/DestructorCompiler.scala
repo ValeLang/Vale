@@ -38,7 +38,7 @@ class DestructorCompiler(
     callLocation: LocationInDenizen,
     contextRegion: RegionT,
     type2: CoordT):
-  EvaluateFunctionSuccess = {
+  StampFunctionSuccess = {
     val name = interner.intern(CodeNameS(keywords.drop))
     val args = Vector(type2)
     overloadCompiler.findFunction(

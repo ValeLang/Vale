@@ -3,11 +3,11 @@ package dev.vale.typing.macros.ssa
 import dev.vale.{Keywords, RangeS, StrI, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.LocationInDenizen
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
-import dev.vale.typing.env.{FunctionEnvironmentBoxT, FunctionEnvironmentT}
+import dev.vale.typing.ast._
+import dev.vale.typing.env._
 import dev.vale.typing.{ArrayCompiler, CompilerOutputs}
 import dev.vale.typing.macros.IFunctionBodyMacro
-import dev.vale.typing.types.{CoordT, RegionT}
+import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.ast

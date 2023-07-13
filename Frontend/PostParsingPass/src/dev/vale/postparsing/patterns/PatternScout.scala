@@ -1,6 +1,6 @@
 package dev.vale.postparsing.patterns
 
-import dev.vale.{Interner, RangeS, vimpl}
+import dev.vale._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.{IRulexSR, TemplexScout}

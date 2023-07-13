@@ -744,7 +744,7 @@ case class InterfaceToInterfaceUpcastIE(
 // So, the target kind can be anything, not just an interface.
 case class UpcastIE(
   innerExpr: ReferenceExpressionIE,
-  targetSuperKind: InterfaceIT[cI],
+  targetInterface: InterfaceIT[cI],
   // This is the impl we use to allow/permit the upcast. It'll be useful for monomorphization
   // and later on for locating the itable ptr to put in fat pointers.
   implName: IdI[cI, IImplNameI[cI]],

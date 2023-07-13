@@ -75,6 +75,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "../Backend/src/builtins",
           "Alternate path for the temporary C builtin functions."),
         Flag(
+          "--clang_override",
+          FLAG_STR(),
+          "Path to the clang binary to ue for linking.",
+          "clang",
+          "Alternate path for the clang binary to use."),
+        Flag(
           "--benchmark",
           FLAG_BOOL(),
           "Whether to benchmark Frontend.",
@@ -111,6 +117,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "Whether to output VAST, the code's intermediate representation"),
         Flag(
+          "--opt_level",
+          FLAG_STR(),
+          "Optimization level.",
+          "O0",
+          "Optimization level, between O0 and O3."),
+        Flag(
           "--print_mem_overhead",
           FLAG_BOOL(),
           "Whether to output number of generation checks.",
@@ -140,6 +152,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "Whether to output LLVM IR.",
           "false",
           "Whether to output LLVM IR."),
+        Flag(
+          "--asm",
+          FLAG_BOOL(),
+          "Whether to output assembly.",
+          "false",
+          "Whether to output assembly."),
         Flag(
           "--pic",
           FLAG_BOOL(),
@@ -215,9 +233,33 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
         Flag(
           "--elide_checks_for_known_live",
           FLAG_BOOL(),
-          "Whether to skip generation checks when it's statically known to pass.",
+          "Whether to skip gen-checks for objects we know are live.",
+          "true",
+          "Whether to skip gen-checks for objects we know are live."),
+        Flag(
+          "--gen_size",
+          FLAG_INT(),
+          "Size in bits of the generation number.",
+          "32",
+          "Size in bits of the generation number.",),
+        Flag(
+          "--elide_checks_for_regions",
+          FLAG_BOOL(),
+          "Whether to skip gen-checks for immutable references.",
+          "true",
+          "Whether to skip gen-checks for immutable references."),
+        Flag(
+          "--use_atomic_rc",
+          FLAG_BOOL(),
+          "Whether to force it to always use atomic RC operations.",
           "false",
-          "Whether to skip generation checks when it's statically known to pass."),
+          "Whether to force it to always use atomic RC operations."),
+        Flag(
+          "--include_bounds_checks",
+          FLAG_BOOL(),
+          "Whether to do bounds checks.",
+          "true",
+          "Whether to do bounds checks."),
         Flag(
           "--print_mem_overhead",
           FLAG_BOOL(),
@@ -274,6 +316,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
     }
   }
 
+  maybe_clang_path_override = parsed_flags.get_string_flag("--clang_override");
+
   output_dir = Path(parsed_flags.get_string_flag("--output_dir", "build"));
 
   benchmark = parsed_flags.get_bool_flag("--benchmark", false);
@@ -302,10 +346,16 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   debug_symbols = parsed_flags.get_nothing_flag("-g");
   llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
   pic = parsed_flags.get_bool_flag("--pic", true);
+  opt_level = parsed_flags.get_string_flag("--opt_level", "O0");
   pie = parsed_flags.get_bool_flag("--pie", true);
+  asm = parsed_flags.get_bool_flag("--asm", true);
   replay_whitelist_extern = parsed_flags.get_string_flag("--replay_whitelist_extern", "");
   print_mem_overhead = parsed_flags.get_bool_flag("--print_mem_overhead", false);
-  elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
+  elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", true);
+  elide_checks_for_regions = parsed_flags.get_bool_flag("--elide_checks_for_regions", true);
+  gen_size = parsed_flags.get_int_flag("--gen_size", 32);
+  use_atomic_rc = parsed_flags.get_bool_flag("--use_atomic_rc", false);
+  include_bounds_checks = parsed_flags.get_bool_flag("--include_bounds_checks", true);
   force_all_known_live = parsed_flags.get_bool_flag("--force_all_known_live", false);
 
   if verbose {
@@ -444,14 +494,20 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           gen_heap,
           census,
           verify,
+          opt_level,
           llvm_ir,
+          asm,
           enable_replaying,
           replay_whitelist_extern,
           enable_side_calling,
           pic,
           print_mem_overhead,
           elide_checks_for_known_live,
-          force_all_known_live);
+          elide_checks_for_regions,
+          use_atomic_rc,
+          gen_size,
+          force_all_known_live,
+          include_bounds_checks);
   println("Running:\n" + backend_process.command);
   backend_return_code = (backend_process).print_and_join();
   if backend_return_code != 0 {
@@ -549,6 +605,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   clang_process =
       invoke_clang(
           windows,
+          &maybe_clang_path_override,
           &clang_inputs,
           &executable_name,
           asan,

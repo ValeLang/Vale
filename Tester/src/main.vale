@@ -329,6 +329,7 @@ exported func main() int {
     suite.StartTest(1, "panic", samples_path./("programs/panic.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "panicnot", samples_path./("programs/panicnot.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "nestedblocks", samples_path./("programs/nestedblocks.vale"), &List<str>(), region, false, None<str>());
+    suite.StartTest(42, "restackify", samples_path./("programs/restackify.vale"), &List<str>(), region, false, None<str>());
     
     if (region != "naive-rc") {
       suite.StartTest(42, "interfacemutreturnexport", samples_path./("programs/externs/interfacemutreturnexport"), &List<str>(), region, false, None<str>());

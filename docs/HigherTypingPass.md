@@ -1,4 +1,6 @@
 
+See [Architecture](Architecture.md) for an overview of the higher typing pass.
+
 
 # Kind vs Coord, Implicit and Explicit (KVCIE)
 
@@ -147,4 +149,22 @@ maybe we can do this:
  * just before the solver kicks in?
  * right before we add it to the overload index?
  * during the templar solver? (probably not, needless)
+
+
+# Strongly Typed Rule AST (STRAST)
+
+We currently have a rule AST that is weakly typed (LookupSR, etc). The higher-typing phase will figure out the types for each rune and put them into a separate runeToType map.
+
+We used to have a strongly typed version (LookupAR, etc). We could go back to that. IIRC, we removed it because we have to manually assemble those in a few places (such as macros) and it was _really_ tedious and verbose and we often had problems when we mistyped some.
+
+Perhaps we should go back to that.
+
+Reasons for:
+
+ * See LNTKTR, there's information in some of these classes that's only used up until the higher typing phase.
+
+Reasons against:
+
+ * We'd have to type them out in macros again. Perhaps macros can just generate 
+
 

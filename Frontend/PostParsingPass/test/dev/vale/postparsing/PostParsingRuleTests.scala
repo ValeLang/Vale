@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, SourceCodeUtils, StrI, vassertSome, vfail, vregionmut}
+import dev.vale._
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing._

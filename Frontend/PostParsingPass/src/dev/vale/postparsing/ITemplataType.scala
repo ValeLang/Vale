@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{vassert, vcurious, vpass}
+import dev.vale._
 
 sealed trait ITemplataType
 case class RegionTemplataType() extends ITemplataType {

@@ -18,11 +18,11 @@ someone else's object. Not great!
 The solution is to make a borrow ref these three things instead:
 
 * Pointer to the object
-    * If gens match, points to the object.
-    * If gens dont match, is null.
+  * If gens match, points to the object.
+  * If gens dont match, is null.
 * **Pointer** to its generation/tether bits.
-    * If gens match, points to the object's generation/tether bits.
-    * If gens dont match, points to a \"throwaway\" byte on the stack, or a global or something, whatever as long as its not someone's object's metdata.
+  * If gens match, points to the object's generation/tether bits.
+  * If gens dont match, points to a \"throwaway\" byte on the stack, or a global or something, whatever as long as its not someone's object's metdata.
 * A bit mask saying which tether bit we're currently looking at.
 
 Now, if the generations don't match, we're not writing tether bits into someone else's objects.

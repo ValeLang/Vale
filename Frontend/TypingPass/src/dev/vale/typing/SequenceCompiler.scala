@@ -1,6 +1,6 @@
 package dev.vale.typing
 
-import dev.vale.postparsing.LocationInDenizen
+import dev.vale.postparsing._
 import dev.vale.typing.ast._
 import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vimpl}
 import dev.vale.typing.citizen.StructCompiler

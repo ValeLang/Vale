@@ -1,19 +1,16 @@
-Builds upon [[HGM
-V18]{.underline}](https://docs.google.com/document/d/10lVQlkeducyvpbwMtSYLb1DbUGjs8rBvFcTEjS-_aOw/edit#heading=h.1k4427exfc55).
+Builds upon [HGM V18](HGMv16,17,18.md).
 
 When we have a:
 
+```
 struct Spaceship {
-
-weapon Weapon;
-
+  weapon Weapon;
 }
 
 fn moo(ship &Spaceship) {
-
-weapon = ship.weapon;
-
+  weapon = ship.weapon;
 }
+```
 
 one would think that weapon is a fat pointer of:
 

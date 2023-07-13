@@ -489,7 +489,7 @@ class Compiler(
           coords: Vector[CoordT],
           contextRegion: RegionT,
           verifyConclusions: Boolean):
-        Result[EvaluateFunctionSuccess, FindFunctionFailure] = {
+        Result[StampFunctionSuccess, FindFunctionFailure] = {
           overloadResolver.findFunction(
             callingEnv,
             state,
@@ -586,7 +586,7 @@ class Compiler(
           extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
           exact: Boolean,
           verifyConclusions: Boolean):
-        EvaluateFunctionSuccess = {
+        StampFunctionSuccess = {
           overloadResolver.findFunction(
             env,
             coutputs,

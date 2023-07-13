@@ -8,7 +8,7 @@ import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing._
 import dev.vale.typing.ast._
 import dev.vale.instantiating.ast._
-import dev.vale.typing.names.{FunctionNameT, FunctionTemplateNameT, IdT}
+import dev.vale.typing.names._
 import dev.vale.typing.{HinputsT, ICompileErrorT, ast}
 import dev.vale.typing.types._
 import dev.vale.testvm.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}

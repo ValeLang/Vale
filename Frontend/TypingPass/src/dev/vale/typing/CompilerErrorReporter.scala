@@ -65,7 +65,10 @@ case class CouldntFindIdentifierToLoadT(range: List[RangeS], name: IImpreciseNam
   vpass()
 }
 case class CouldntFindMemberT(range: List[RangeS], memberName: String) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class BodyResultDoesntMatch(range: List[RangeS], functionName: IFunctionDeclarationNameS, expectedReturnType: CoordT, resultType: CoordT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BodyResultDoesntMatch(range: List[RangeS], functionName: IFunctionDeclarationNameS, expectedReturnType: CoordT, resultType: CoordT) extends ICompileErrorT {
+  vpass()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+}
 case class CouldntConvertForReturnT(range: List[RangeS], expectedType: CoordT, actualType: CoordT) extends ICompileErrorT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()

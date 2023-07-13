@@ -211,7 +211,7 @@ class ArrayCompiler(
         NewImmRuntimeSizedArrayTE(rsaMT, region, sizeTE, callableTE, prototype)
       }
       case MutabilityTemplataT(MutableT) => {
-        val EvaluateFunctionSuccess(prototype, conclusions) =
+        val StampFunctionSuccess(prototype, conclusions) =
           overloadResolver.findFunction(
             callingEnv
               .addEntries(

@@ -606,7 +606,7 @@ struct PatternPP {
 
   // Whether there's a borrow symbol before the variable name, such
   // as the `&` in `func launch(&ship) { ... }`
-  preBorrow Opt<Range>;
+  selfBorrow Opt<Range>;
 
   // The name of the parameter.
   // This can be absent, such as in

@@ -1,0 +1,11 @@
+exported func main() int {
+  s = [#]([#](10, 20), [#](30, 40));
+  res =
+    pure block {
+      x = s[0];
+      y = x[0];
+      y
+    };
+  [[a1, a2], [a3, a4]] = s;
+  res
+}

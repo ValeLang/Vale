@@ -14,8 +14,8 @@ import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.solver.FailedSolve
 import OverloadResolver._
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
-import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, IValidCalleeCandidate, ParameterT, PrototypeT, ReferenceExpressionTE, ValidCalleeCandidate, ValidHeaderCalleeCandidate}
-import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentBoxT, IDenizenEnvironmentBoxT, IInDenizenEnvironmentT, TemplataLookupContext}
+import dev.vale.typing.ast._
+import dev.vale.typing.env._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
@@ -101,7 +101,7 @@ class OverloadResolver(
     extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
     exact: Boolean,
     verifyConclusions: Boolean):
-  Result[EvaluateFunctionSuccess, FindFunctionFailure] = {
+  Result[StampFunctionSuccess, FindFunctionFailure] = {
     Profiler.frame(() => {
       findPotentialFunction(
         callingEnv,
@@ -740,14 +740,14 @@ class OverloadResolver(
     contextRegion: RegionT,
     args: Vector[CoordT],
     verifyConclusions: Boolean):
-  EvaluateFunctionSuccess = {
+  StampFunctionSuccess = {
     potentialBanner match {
       case ValidCalleeCandidate(header, templateArgs, ft @ FunctionTemplataT(_, _)) => {
         if (ft.function.isLambda()) {
 //          if (ft.function.isTemplate) {
             functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
                 coutputs,callRange, callLocation, callingEnv, ft, templateArgs, contextRegion, args, verifyConclusions) match {
-              case efs @ EvaluateFunctionSuccess(_, _) => efs
+              case EvaluateFunctionSuccess(prototype, inferences) => StampFunctionSuccess(prototype, inferences)
               case (eff@EvaluateFunctionFailure(_)) => vfail(eff.toString)
             }
 //          } else {
@@ -759,7 +759,9 @@ class OverloadResolver(
         } else {
           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
             coutputs, callRange, callLocation, callingEnv, ft, templateArgs, contextRegion, args) match {
-            case efs @ EvaluateFunctionSuccess(_, _) => efs
+            case EvaluateFunctionSuccess(prototype, inferences) => {
+              StampFunctionSuccess(prototype, inferences)
+            }
             case (EvaluateFunctionFailure(fffr)) => {
               throw CompileErrorExceptionT(CouldntEvaluateFunction(callRange, fffr))
             }
@@ -769,11 +771,11 @@ class OverloadResolver(
       case ValidHeaderCalleeCandidate(header) => {
         val declarationRange = vassertSome(header.maybeOriginFunctionTemplata).function.range
         vassert(coutputs.getInstantiationBounds(header.toPrototype.id).nonEmpty)
-        EvaluateFunctionSuccess(PrototypeTemplataT(declarationRange, header.toPrototype), Map())
+        StampFunctionSuccess(PrototypeTemplataT(declarationRange, header.toPrototype), Map())
       }
       case ValidPrototypeTemplataCalleeCandidate(prototype) => {
         vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
-        EvaluateFunctionSuccess(prototype, Map())
+        StampFunctionSuccess(prototype, Map())
       }
     }
   }

@@ -70,7 +70,9 @@ theyre mutated from inside closures.
 
 The higher typing pass is the first one that can look at the rest of the program. It figures out the types of all template runes.
 
-This could be merged into the Typing pass (and sometimes is). One day it will be.
+It also adds the right rules to do coercion, for example if we say `Moo` in a place that expects a coord, and a `struct Moo<r'>` exists, it will coerce from a kind template to a coord.
+
+This could be merged into the Typing pass (and sometimes is). One day it will be merged completely.
 
 
 ## Typing (aka "Compiler")

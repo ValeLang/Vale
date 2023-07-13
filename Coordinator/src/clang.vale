@@ -2,6 +2,7 @@ import stdlib.os.*;
 
 func invoke_clang(
   windows bool,
+  maybe_clang_path_override &Opt<str>,
   clang_inputs &List<Path>,
   exe_name str,
   asan bool,
@@ -11,10 +12,14 @@ func invoke_clang(
   pie bool)
 Subprocess {
   program =
+    if maybe_clang_path_override.isEmpty() {
     if (windows) {
       "cl.exe"
     } else {
-      if not FindProgramInPath("clang-11").isEmpty() { "clang-11" } else { "clang" }
+        "clang"
+      }
+    } else {
+      maybe_clang_path_override.get()
     };
 
   exe_file = output_dir / exe_name;
@@ -22,7 +27,6 @@ Subprocess {
   args = List<str>();
 
   args.add("-I" + output_dir./("include").str());
-  args.add("-O3");
 
   if (windows) {
     args.add("/ENTRY:\"main\"");

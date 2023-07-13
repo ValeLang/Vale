@@ -9,7 +9,7 @@ import dev.vale.postparsing.PostParser
 import OverloadResolver.{FindFunctionFailure, WrongNumberOfArguments}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{ConstantIntTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE, SignatureT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._

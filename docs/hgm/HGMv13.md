@@ -1,6 +1,4 @@
-Builds on [[HGM
-V12]{.underline}](https://docs.google.com/document/d/1LYnaVWqfzcwjpLWgkQc_G5Mdk0dksm869qOxQ9Llh2A/edit),
-which specifies how the stack works.
+Builds on [HGM V12](HGMv11,12.md), which specifies how the stack works.
 
 This talks about how we can share generations in the heap too!
 

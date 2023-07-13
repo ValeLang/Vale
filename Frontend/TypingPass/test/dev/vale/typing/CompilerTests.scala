@@ -15,8 +15,8 @@ import dev.vale.Collector.ProgramWithExpect
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.{FailedSolve, RuleError, Step}
-import dev.vale.typing.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionDefinitionT, FunctionHeaderT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SignatureT, SoftLoadTE, UserFunctionT, referenceExprResultKind, referenceExprResultStructName}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, ExportNameT, ExportTemplateNameT, FunctionNameT, FunctionTemplateNameT, IdT, InterfaceNameT, InterfaceTemplateNameT, KindPlaceholderNameT, KindPlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.ast._
+import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._

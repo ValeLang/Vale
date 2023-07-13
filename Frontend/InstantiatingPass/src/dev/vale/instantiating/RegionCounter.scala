@@ -294,16 +294,33 @@ object RegionCounter {
     countId[IStructNameI[sI]](
       counter,
       structId,
-      {
-        case StructNameI(template, templateArgs) => {
-          templateArgs.foreach(countTemplata(counter, _))
-        }
-        case LambdaCitizenNameI(template) => {
-        }
-        case AnonymousSubstructNameI(template, templateArgs) => {
-          templateArgs.foreach(countTemplata(counter, _))
-        }
-      })
+      countStructName(counter, _))
+  }
+
+  def countStructTemplateName(
+      counter: Counter,
+      structName: IStructTemplateNameI[sI]):
+  Unit = {
+    structName match {
+      case StructTemplateNameI(humanName) => StructTemplateNameI(humanName)
+    }
+  }
+
+  def countStructName(
+      counter: Counter,
+      structName: IStructNameI[sI]):
+  Unit = {
+    structName match {
+      case StructNameI(template, templateArgs) => {
+        countStructTemplateName(counter, template)
+        templateArgs.foreach(countTemplata(counter, _))
+      }
+      case LambdaCitizenNameI(template) => {
+      }
+      case AnonymousSubstructNameI(template, templateArgs) => {
+        templateArgs.foreach(countTemplata(counter, _))
+      }
+    }
   }
 
   def countImplId(

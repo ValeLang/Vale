@@ -1,7 +1,7 @@
 package dev.vale.parsing.ast
 
 import dev.vale.lexing.RangeL
-import dev.vale.{vassert, vcurious, vwat}
+import dev.vale._
 
 //sealed trait IVirtualityP
 case class AbstractP(range: RangeL)// extends IVirtualityP

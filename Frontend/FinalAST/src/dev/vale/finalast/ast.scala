@@ -96,7 +96,7 @@ case class ProgramH(
   }
   def lookupFunction(prototype: PrototypeH): FunctionH = {
     val paackage = lookupPackage(prototype.id.packageCoordinate)
-    val result = vassertSome(paackage.functions.find(_.fullName == prototype.id))
+    val result = vassertSome(paackage.functions.find(_.id == prototype.id))
     vassert(prototype == result.prototype)
     result
   }
@@ -228,7 +228,7 @@ case class FunctionH(
   vpass()
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  def fullName = prototype.id
+  def id = prototype.id
   def isUserFunction = attributes.contains(UserFunctionH)
 }
 

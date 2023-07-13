@@ -15,39 +15,6 @@ import scala.collection.immutable._
 //   type to avoid a cyclical definition.
 // - If not in declared banners, then tell FunctionCompiler to start evaluating it.
 
-// case class ImplI(
-//   // These are ICitizenTI and InterfaceIT which likely have placeholder templatas in them.
-//   // We do this because a struct might implement an interface in multiple ways, see SCIIMT.
-//   // We have the template names as well as the placeholders for better searching, see MLUIBTN.
-//
-//   templata: ImplDefinitionTemplataI[cI],
-//
-//   instantiatedId: IdI[cI, IImplNameI[cI]],
-//   templateId: IdI[cI, IImplTemplateNameI[cI]],
-//
-//   subCitizenTemplateId: IdI[cI, ICitizenTemplateNameI[cI]],
-//   subCitizen: ICitizenIT[cI],
-//
-//   superInterface: InterfaceIT[cI],
-//   superInterfaceTemplateId: IdI[cI, IInterfaceTemplateNameI[cI]],
-//
-//   // This is similar to FunctionT.runeToFuncBound
-//   runeToFuncBound: Map[IRuneS, IdI[cI, FunctionBoundNameI[cI]]],
-//   runeToImplBound: Map[IRuneS, IdI[cI, ImplBoundNameI[cI]]],
-//
-//   runeIndexToIndependence: Vector[Boolean],
-//
-//   // A function will inherit bounds from its parameters' kinds. Same with an impl from its sub
-//   // citizen, and a case block from its receiving kind.
-//   // We'll need to remember those, so the instantiator can do its thing.
-//   // See TIBANFC for more.
-//   reachableBoundsFromSubCitizen: Vector[PrototypeI[cI]]
-//
-// //  // Starting from a placeholdered super interface, this is the interface that would result.
-// //  // We get this by solving the impl, given a placeholdered sub citizen.
-// //  subCitizenFromPlaceholderedParentInterface: ICitizenIT,
-// )
-
 case class KindExportI(
   range: RangeS,
   tyype: KindIT[cI],
@@ -113,10 +80,10 @@ case class EdgeI(
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case EdgeI(thatEdgeFullName, thatStruct, thatInterface, _, _, _) => {
+      case EdgeI(thatEdgeId, thatStruct, thatInterface, _, _, _) => {
         val isSame = subCitizen == thatStruct && superInterface == thatInterface
         if (isSame) {
-          vassert(edgeId == thatEdgeFullName)
+          vassert(edgeId == thatEdgeId)
         }
         isSame
       }

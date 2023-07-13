@@ -1080,7 +1080,7 @@ class Instantiator(
     (idT.initNonPackageId() match {
       case None => Map()
       case Some(initNonPackageIdT) => {
-        assemblePlaceholderMap(initNonPackageIdT, vassertSome(idS.initNonPackageFullName()))
+        assemblePlaceholderMap(initNonPackageIdT, vassertSome(idS.initNonPackageId()))
       }
     }) ++
     (idT match {

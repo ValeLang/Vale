@@ -188,7 +188,7 @@ Build its C side:
 
 ```
 cd ~/RocketValeMetacall/src/native
-gcc -I/usr/local/include metacaller.c -L/usr/local/lib -lmetacall
+gcc -I/usr/local/include -L/usr/local/lib -lmetacall metacaller.c
 ```
 
 Run it:

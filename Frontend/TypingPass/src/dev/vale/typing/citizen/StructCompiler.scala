@@ -48,7 +48,7 @@ trait IStructCompilerDelegate {
     extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
     exact: Boolean,
     verifyConclusions: Boolean):
-  EvaluateFunctionSuccess
+  StampFunctionSuccess
 }
 
 sealed trait IResolveOutcome[+T <: KindT] {

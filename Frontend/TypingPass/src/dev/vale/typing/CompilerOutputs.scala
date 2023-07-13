@@ -1,14 +1,14 @@
 package dev.vale.typing
 
 import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
-import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, FunctionDefinitionT, ImplT, KindExportT, KindExternT, PrototypeT, SignatureT, getFunctionLastName}
+import dev.vale.typing.ast._
 import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentT, IInDenizenEnvironmentT}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.{CodeLocationS, Collector, FileCoordinate, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vpass, vwat}
 import dev.vale.typing.ast._
-import dev.vale.typing.templata.{CoordTemplataT, ITemplataT, MutabilityTemplataT, PrototypeTemplataT}
+import dev.vale.typing.templata._
 import dev.vale.typing.types.InterfaceTT
 
 import scala.collection.immutable.{List, Map}

@@ -1,6 +1,6 @@
 package dev.vale.typing.macros.ssa
 
-import dev.vale.{Keywords, RangeS, StrI, vimpl}
+import dev.vale._
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.LocationInDenizen
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}

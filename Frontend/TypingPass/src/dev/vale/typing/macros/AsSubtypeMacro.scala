@@ -8,7 +8,7 @@ import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, F
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent}
 import dev.vale.typing.env.FunctionEnvironmentT
 import dev.vale.typing.expression.ExpressionCompiler
-import dev.vale.typing.templata.{CoordTemplataT, KindTemplataT}
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBoxT

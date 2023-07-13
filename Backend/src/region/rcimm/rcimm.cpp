@@ -660,6 +660,7 @@ void RCImm::pushRuntimeSizedArrayNoBoundsCheck(
 
   auto arrayWrapperPtrLE = toWrapperPtr(functionState, builder, &kindStructs, rsaRefMT, rsaRef);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, false, arrayWrapperPtrLE);
+
   // We don't increment the size because it's populated when we first create the array.
 //  auto incrementedSize =
 //      incrementRSASize(globalState, functionState, builder, rsaRefMT, arrayWrapperPtrLE);

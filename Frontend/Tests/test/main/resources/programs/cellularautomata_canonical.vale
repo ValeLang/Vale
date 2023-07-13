@@ -1,0 +1,76 @@
+
+func MakeBoard(rand_seed int) [][]bool {
+  rows = [][]bool(20);
+  foreach row_i in 0..20 {
+    row = []bool(20);
+    foreach col_i in 0..20 {
+      random_bool = true;
+      // Implicit & causes a gen check in push. Inlining will fix.
+      row.push(random_bool);
+    }
+    rows.push(row); // Same here.
+  }
+  return rows;
+}
+
+pure func CellularAutomata<r' imm, x' rw>(
+  map &r'[][]bool,
+  rand_seed r'int)
+x'[][]bool
+x'{
+  num_rows = map.size();
+  num_cols = map[0].size();
+
+  new_map = [][]bool(rows);
+
+  foreach row_i in 0..num_rows {
+    row = []bool(20);
+    foreach col_i in 0..num_cols {
+      num_neighbors = 0;
+      num_walkable_neighbors = 0;
+      foreach neighbor_row_i in max(row_i - 1, 0)..min(row_i + 1, num_rows - 1) {
+        foreach neighbor_col_i in max(col_i - 1, 0)..min(col_i + 1, num_cols - 1) {
+          set num_neighbors = num_neighbors + 1;
+          if map[neighbor_row_i][neighbor_col_i] {
+            set num_walkable_neighbors = num_walkable_neighbors + 1;
+          }
+        }
+      }
+      new_walkable =
+        if num_walkable_neighbors * 2 == num_neighbors {
+          (rand.Next() mod 2i64) == 0i64
+        } else {
+          num_walkable_neighbors > num_neighbors / 2
+        };
+      row.push(new_walkable); // inline to elim gen
+    }
+    new_map.push(row);
+  }
+
+  return new_map;
+}
+
+pure func Display<r' imm, x' rw>(
+  map &r'[][]bool)
+x'{
+  foreach row in map {
+    foreach walkable in row {
+      if walkable {
+        print(".");
+      } else {
+        print("#");
+      }
+    }
+    println("");
+  }
+}
+
+exported func main() int {
+  random_seed = 1337;
+  board_0 = MakeBoard(random_seed);
+  board_1 = CellularAutomata(&board_0, random_seed);
+  board_2 = CellularAutomata(&board_1, random_seed);
+  board_3 = CellularAutomata(&board_2, random_seed);
+  Display(&board_3);
+  return 0;
+}

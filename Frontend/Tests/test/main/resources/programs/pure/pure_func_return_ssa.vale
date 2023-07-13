@@ -1,0 +1,8 @@
+pure func makeArr() [#2][#2]int {
+  return [#]([#](10, 20), [#](30, 40));
+}
+exported func main() int {
+  x = makeArr();
+  [[a1, a2], [a3, a4]] = x;
+  a1
+}

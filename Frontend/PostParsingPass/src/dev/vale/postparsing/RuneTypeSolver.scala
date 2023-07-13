@@ -4,7 +4,7 @@ import dev.vale.{Err, Interner, Ok, RangeS, Result, vassert, vassertSome, vfail,
 import dev.vale.postparsing.rules._
 import dev.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, ISolveRule, ISolverError, ISolverState, IStepState, IncompleteSolve, RuleError, Solver, SolverConflict}
 import dev.vale._
-import dev.vale.postparsing.RuneTypeSolver.{checkGenericCall, checkGenericCallWithoutDefaults}
+import dev.vale.postparsing.RuneTypeSolver._
 import dev.vale.postparsing.rules._
 
 import scala.collection.immutable.Map

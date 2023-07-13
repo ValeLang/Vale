@@ -3,7 +3,7 @@ package dev.vale.postparsing.rules
 import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, TemplexPR, TypedPR, VariabilityTypePR}
 import dev.vale.postparsing._
-import dev.vale.{Interner, Keywords, StrI, vassert, vassertOne, vcurious, vfail, vimpl, vregionmut, vwat}
+import dev.vale._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._

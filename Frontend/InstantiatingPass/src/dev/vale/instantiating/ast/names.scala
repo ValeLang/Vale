@@ -28,11 +28,11 @@ case class IdI[+R <: IRegionsModeI, +I <: INameI[R]](
     }
   }
 
-  def packageFullName: IdI[R, PackageTopLevelNameI[R]] = {
+  def packageId: IdI[R, PackageTopLevelNameI[R]] = {
     IdI(packageCoord, Vector(), PackageTopLevelNameI())
   }
 
-  def initFullName: IdI[R, INameI[R]] = {
+  def initId: IdI[R, INameI[R]] = {
     if (initSteps.isEmpty) {
       IdI(packageCoord, Vector(), PackageTopLevelNameI())
     } else {
@@ -40,7 +40,7 @@ case class IdI[+R <: IRegionsModeI, +I <: INameI[R]](
     }
   }
 
-  def initNonPackageFullName(): Option[IdI[R, INameI[R]]] = {
+  def initNonPackageId(): Option[IdI[R, INameI[R]]] = {
     if (initSteps.isEmpty) {
       None
     } else {
@@ -270,9 +270,7 @@ case class OverrideDispatcherCaseNameI[+R <: IRegionsModeI](
 sealed trait IVarNameI[+R <: IRegionsModeI] extends INameI[R]
 case class TypingPassBlockResultVarNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R]
 case class TypingPassFunctionResultVarNameI[+R <: IRegionsModeI]() extends IVarNameI[R]
-case class TypingPassTemporaryVarNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R] {
-  vpass()
-}
+case class TypingPassTemporaryVarNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R]
 case class TypingPassPatternMemberNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R]
 case class TypingIgnoredParamNameI[+R <: IRegionsModeI](num: Int) extends IVarNameI[R]
 case class TypingPassPatternDestructureeNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R]

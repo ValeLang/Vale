@@ -3,7 +3,7 @@ package dev.vale.highertyping
 import dev.vale
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.lexing.{FailedParse, RangeL}
-import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, SourceCodeUtils, StrI, highertyping, vassert, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
+import dev.vale._
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, OwnP}
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}

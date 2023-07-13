@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.{Collector, StrI}
-import dev.vale.lexing.{CantUseThatLocalName, CantUseBreakInExpression, CantUseReturnInExpression}
+import dev.vale.lexing._
 import dev.vale.parsing.ast._
 import org.scalatest._
 

@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{PackageCoordinate, RangeS, StrI, vassert, vcurious, vfail, vpass, vregionmut, vwat}
+import dev.vale._
 import dev.vale.parsing.ast.{IMacroInclusionP, IRuneAttributeP, MutabilityP, VariabilityP}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.parsing._

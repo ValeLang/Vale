@@ -1,76 +1,172 @@
+// TODO: Catch up the rest of the builtins and stdlib
+import v.builtins.arith.*;
+import v.builtins.str.*;
+import v.builtins.logic.*;
+import v.builtins.print.*;
+import v.builtins.runtime_sized_array_mut_new.*;
+import v.builtins.runtime_sized_array_push.*;
+import v.builtins.runtime_sized_array_pop.*;
+import v.builtins.runtime_sized_array_len.*;
 
-func MakeBoard(rand_seed int) [][]bool {
-  rows = [][]bool(20);
-  foreach row_i in 0..20 {
-    row = []bool(20);
-    foreach col_i in 0..20 {
-      random_bool = true;
+// TODO: Catch up logic.vale
+func !=<T>(a &T, b &T) bool
+where func ==(&T, &T)bool {
+  return not (a == b);
+}
+
+// TODO: Re-enable tuples
+struct Tup_i64_i64 {
+  a i64;
+  b i64;
+}
+
+// TODO: (perhaps before) Use a pre or live ref here
+func NextRand(x i64) Tup_i64_i64 {
+  set x = x + (x / 200096i64);
+  set x = x - (x * 33554432i64);
+  set x = x + (x / 134217728i64);
+  return Tup_i64_i64(x, x * 2685821657736338717i64 / 4294967296i64);
+}
+
+func min(a int, b int) int {
+  return if (a <= b) { a } else { b };
+}
+
+func max(a int, b int) int {
+  return if (a >= b) { a } else { b };
+}
+
+
+// How will we eliminate gen checks on the rand instance?
+// Live ref will do it nicely probably.
+func MakeBoard(rand_seed i64, num_rows int, num_cols int) [][]bool {
+  rows = [][]bool(num_rows);
+  row_i = 0;
+  while row_i < num_rows {
+    row = []bool(num_cols);
+    col_i = 0;
+    while col_i < num_cols {
+      [new_rand_seed, rand_int] = NextRand(rand_seed);
+      set rand_seed = new_rand_seed;
+      rand_bool = (rand_int mod 2i64) == 0i64;
       // Implicit & causes a gen check in push. Inlining will fix.
-      row.push(random_bool);
+      row.push(rand_bool);
+      set col_i = col_i + 1;
     }
     rows.push(row); // Same here.
+    set row_i = row_i + 1;
   }
   return rows;
 }
 
-pure func CellularAutomata<r' imm, x' rw>(
-  map &r'[][]bool,
-  rand_seed r'int)
-x'[][]bool
-x'{
-  num_rows = map.size();
-  num_cols = map[0].size();
-
-  new_map = [][]bool(rows);
-
-  foreach row_i in 0..num_rows {
-    row = []bool(20);
-    foreach col_i in 0..num_cols {
-      num_neighbors = 0;
+pure func CellularAutomata<r' imm>(old_map &r'[][]bool) [][]bool {
+  num_rows = old_map.len();
+  new_map = [][]bool(num_rows);
+  /// foreach row_i in 0..num_rows {
+  row_i = 0;
+  while row_i < num_rows {
+    num_cols = old_map[row_i].len();
+    new_row = []bool(num_cols);
+    /// foreach col_i in 0..num_cols {
+    col_i = 0;
+    while col_i < num_cols {
       num_walkable_neighbors = 0;
-      foreach neighbor_row_i in max(row_i - 1, 0)..min(row_i + 1, num_rows - 1) {
-        foreach neighbor_col_i in max(col_i - 1, 0)..min(col_i + 1, num_cols - 1) {
-          set num_neighbors = num_neighbors + 1;
-          if map[neighbor_row_i][neighbor_col_i] {
-            set num_walkable_neighbors = num_walkable_neighbors + 1;
+      /// foreach neighbor_row_i in max(0, row_i - 1)..min(num_rows - 1, row_i + 1) {
+      neighbor_row_i = max(0, row_i - 1);
+      while neighbor_row_i <= min(num_rows - 1, row_i + 1) {
+        /// foreach neighbor_col_i in max(0, col_i - 1)..min(num_cols - 1, col_i + 1) {
+        neighbor_col_i = max(0, col_i - 1);
+        while neighbor_col_i <= min(num_cols - 1, col_i + 1) {
+          if row_i != neighbor_row_i or col_i != neighbor_col_i {
+            if old_map[neighbor_row_i][neighbor_col_i] {
+              set num_walkable_neighbors = num_walkable_neighbors + 1;
+            }
           }
+          set neighbor_col_i = neighbor_col_i + 1;
         }
+        set neighbor_row_i = neighbor_row_i + 1;
       }
       new_walkable =
-        if num_walkable_neighbors * 2 == num_neighbors {
-          (rand.Next() mod 2i64) == 0i64
+        if num_walkable_neighbors < 4 {
+          false
+        } else if num_walkable_neighbors > 4 {
+          true
         } else {
-          num_walkable_neighbors > num_neighbors / 2
+          // TODO: Automatically transmigrate primitives between regions
+          if old_map[row_i][col_i] { true } else { false }
         };
-      row.push(new_walkable); // inline to elim gen
+      new_row.push(new_walkable);
+      set col_i = col_i + 1;
     }
-    new_map.push(row);
+    new_map.push(new_row);
+    set row_i = row_i + 1;
   }
-
   return new_map;
 }
 
-pure func Display<r' imm, x' rw>(
-  map &r'[][]bool)
-x'{
-  foreach row in map {
-    foreach walkable in row {
-      if walkable {
-        print(".");
-      } else {
+pure func Display<r' imm>(map &r'[][]bool) {
+  /// foreach row in map {
+  row_i = 0;
+  while row_i < map.len() {
+    /// foreach cell in row {
+    col_i = 0;
+    while col_i < map[row_i].len() {
+      if map[row_i][col_i] {
         print("#");
+      } else {
+        print(".");
       }
+      set col_i = col_i + 1;
     }
-    println("");
+    print("\n");
+    set row_i = row_i + 1;
   }
 }
 
 exported func main() int {
-  random_seed = 1337;
-  board_0 = MakeBoard(random_seed);
-  board_1 = CellularAutomata(&board_0, random_seed);
-  board_2 = CellularAutomata(&board_1, random_seed);
-  board_3 = CellularAutomata(&board_2, random_seed);
-  Display(&board_3);
+  /// if numMainArgs() < 2 {
+  ///   print("Usage: {getMainArg(0)} [randseed]\n");
+  ///   return 1;
+  /// }
+  /// TODO: translate string to integer
+  /// random_seed = i64(len(getMainArg(1)));
+  random_seed = 1337i64;
+  num_rows = 1000;
+  num_cols = 4000;
+  board_0 = MakeBoard(random_seed, num_rows, num_cols);
+
+  board_1 = CellularAutomata(&board_0);
+  // TODO: re-enable array drops
+  while board_0.len() > 0 {
+    row = board_0.pop();
+    while row.len() > 0 {
+      row.pop();
+    }
+    [] = row;
+  }
+  [] = board_0;
+
+  board_2 = CellularAutomata(&board_1);
+  // TODO: re-enable array drops
+  while board_1.len() > 0 {
+    row = board_1.pop();
+    while row.len() > 0 {
+      row.pop();
+    }
+    [] = row;
+  }
+  [] = board_1;
+
+  //Display(&board_2);
+  // TODO: re-enable array drops
+  while board_2.len() > 0 {
+    row = board_2.pop();
+    while row.len() > 0 {
+      row.pop();
+    }
+    [] = row;
+  }
+  [] = board_2;
+
   return 0;
 }

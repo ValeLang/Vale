@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.{Interner, Keywords, PackageCoordinate, vassert, vassertSome, vimpl, vregionmut, finalast => m}
+import dev.vale._
 import dev.vale.finalast._
 import dev.vale.instantiating.ast._
 

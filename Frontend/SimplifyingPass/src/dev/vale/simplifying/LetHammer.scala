@@ -1,7 +1,7 @@
 package dev.vale.simplifying
 
 import dev.vale.finalast._
-import dev.vale.{vassert, vassertSome, vfail, vimpl, vregionmut, vwat, finalast => m}
+import dev.vale._
 import dev.vale.finalast._
 import dev.vale.instantiating.ast._
 

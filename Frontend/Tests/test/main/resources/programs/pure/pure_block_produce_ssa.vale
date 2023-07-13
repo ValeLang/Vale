@@ -1,0 +1,5 @@
+exported func main() int {
+  x = pure block { [#]([#](10, 20), [#](30, 40)) };
+  [[a1, a2], [a3, a4]] = x;
+  a1
+}

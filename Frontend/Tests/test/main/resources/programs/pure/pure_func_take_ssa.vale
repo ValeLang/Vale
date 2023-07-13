@@ -1,0 +1,9 @@
+pure func Display<r'>(arr &r'[#2][#2]int) {
+  // do nothing
+}
+exported func main() int {
+  x = [#]([#](10, 20), [#](30, 40));
+  Display(&x);
+  [[a1, a2], [a3, a4]] = x;
+  a1
+}

@@ -10,7 +10,9 @@ import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
+import dev.vale.simplifying._
 import dev.vale.typing.{HinputsT, ICompileErrorT}
+import dev.vale.instantiating.ast.HinputsI
 import dev.vale.postparsing.PostParser
 import dev.vale.simplifying._
 import dev.vale.typing.ICompileErrorT

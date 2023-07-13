@@ -1,0 +1,13 @@
+struct Engine { fuel int; }
+struct Spaceship { engine Engine; }
+pure func makeSpaceship() Spaceship {
+  Spaceship(Engine(10))
+}
+exported func main() int {
+  s = makeSpaceship();
+  pure block {
+    x = s.engine;
+    y = x.fuel;
+    y
+  }
+}

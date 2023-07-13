@@ -11,14 +11,20 @@ func invoke_backend(
   gen_heap bool,
   census bool,
   verify bool,
+  opt_level str,
   llvm_ir bool,
+  asm bool,
   enable_replaying bool,
   replay_whitelist_extern str,
   enable_side_calling bool,
   pic bool,
   print_mem_overhead bool,
   elide_checks_for_known_live bool,
-  force_all_known_live bool)
+  elide_checks_for_regions bool,
+  use_atomic_rc bool,
+  gen_size int,
+  force_all_known_live bool,
+  include_bounds_checks bool)
 Subprocess {
   //backend_program_name = if (IsWindows()) { "backend.exe" } else { "backend" };
   //backend_program_path = backend_path./(backend_program_name);
@@ -56,6 +62,16 @@ Subprocess {
   if verify {
     command_line_args.add("--verify");
   }
+  if opt_level != "O0" {
+    command_line_args.add("--opt_level");
+    command_line_args.add(opt_level);
+  }
+  if (llvm_ir) {
+    command_line_args.add("--llvm_ir");
+  }
+  if (asm) {
+    command_line_args.add("--asm");
+  }
   if llvm_ir {
     command_line_args.add("--llvm_ir");
   }
@@ -77,9 +93,20 @@ Subprocess {
   if not elide_checks_for_known_live {
     command_line_args.add("--elide_checks_for_known_live=false");
   }
+  if (not elide_checks_for_regions) {
+    command_line_args.add("--elide_checks_for_regions=false");
+  }
   if force_all_known_live {
     command_line_args.add("--force_all_known_live");
   }
+  if not include_bounds_checks {
+    command_line_args.add("--include_bounds_checks=false");
+  }
+  if use_atomic_rc {
+    command_line_args.add("--use_atomic_rc=true");
+  }
+
+  command_line_args.add("--gen_size={gen_size}");
 
   vast_files.each((vast_file) => {
     command_line_args.add(vast_file.str());

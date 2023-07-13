@@ -1,9 +1,10 @@
 package dev.vale.typing
 
+import dev.vale.postparsing._
 import dev.vale.{CodeLocationS, FileCoordinate, PackageCoordinate, RangeS, StrI, Tests, vassert, vassertSome, vimpl}
 import dev.vale.typing.ast.SignatureT
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, FunctionTemplateNameT, LambdaCallFunctionNameT, LambdaCallFunctionTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, StructNameT, StructTemplateNameT}
-import dev.vale.typing.templata.CoordTemplataT
+import dev.vale.typing.names._
+import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.types._
 import org.scalatest._

@@ -13,7 +13,7 @@ import dev.vale.Collector.ProgramWithExpect
 import dev.vale.postparsing._
 import dev.vale.solver.{FailedSolve, IncompleteSolve, RuleError, SolverConflict, Step}
 import dev.vale.typing.ast.{ConstantIntTE, FunctionCallTE, KindExportT, PrototypeT, SignatureT}
-import dev.vale.typing.infer.{CallResultWasntExpectedType, ITypingPassSolverError, KindIsNotConcrete, SendingNonCitizen}
+import dev.vale.typing.infer._
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._

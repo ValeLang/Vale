@@ -234,3 +234,8 @@ This program allocates 8mb for the stack space. It could be much better if we kn
 
 
 
+# Notes
+
+Make sure to use sigsetjmp and siglongjmp. The regular versions won't work correctly.
+
+For windows, can probably use SuspendThread, ResumeThread, GetThreadContext, SetThreadContext.

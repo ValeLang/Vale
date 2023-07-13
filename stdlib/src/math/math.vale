@@ -15,6 +15,9 @@ func clamp(x int, minimum int, maximum int) int {
 func abs(a int) int {
   if a < 0 { a * -1 } else { a }
 }
+func abs(a i64) i64 {
+  if a < 0i64 { a * -1i64 } else { a }
+}
 
 func signum(a int) int {
   if a < 0 { -1 }

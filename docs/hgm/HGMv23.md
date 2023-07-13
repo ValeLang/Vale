@@ -1,3 +1,4 @@
+Builds upon [HGM V22](HGMv22.md)'s option A.
 
 # HGM V22's Problem
 
@@ -5,17 +6,17 @@ It isn't a problem per se, but it's an unfortunate bit of overhead that HGM glob
 
 Specifically, a borrow ref in HGM is four things:
 
- * Pointer to the object
- * Offset to the generation
- * Remembered generation
- * Scope tether bit mask
+* Pointer to the object
+* Offset to the generation
+* Remembered generation
+* Scope tether bit mask
 
 When we use a borrow ref to get a struct's inline member, we need to:
 
- * Add to the object pointer
- * Subtract from the generation offset
- * (Do nothing to remembered generation)
- * Shift the bit mask
+* Add to the object pointer
+* Subtract from the generation offset
+* (Do nothing to remembered generation)
+* Shift the bit mask
 
 That's normally fine, except **it also happens for immutable region references** because when a pure function returns a borrow ref, it has to have all that information if it's to be a real borrow reference. And unfortunately, none of these can be calculated from any others.
 
@@ -41,6 +42,3 @@ And then we can have `live` references to it.
 If the object already has a generation (such as if it's a stack allocation, heap allocation, or array element, inline varying struct with owning ref, inline enum) this won't cost us anything. It will otherwise cost us some space for some inline structs though, which is unfortunate.
 
 This could fit pretty well though. It's pretty likely that most tethering will happen on arrays (for ECS) and on top level denizens (in OO) so it might work out well.
-
-
-

@@ -1,23 +1,23 @@
 package dev.vale.typing.macros.citizen
 
 import dev.vale.highertyping._
-import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
+import dev.vale.postparsing.patterns._
 import dev.vale.postparsing.rules._
-import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
+import dev.vale._
 import dev.vale.postparsing._
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironmentT, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
+import dev.vale.typing.ast._
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironmentT, FunctionEnvironmentBoxT, ReferenceLocalVariableT}
-import dev.vale.typing.{Compiler, CompilerOutputs, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, ast, env}
+import dev.vale.typing._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.macros.{IFunctionBodyMacro, IOnStructDefinedMacro}
-import dev.vale.typing.names.{IdT, INameT, NameTranslator}
+import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.macros.IOnStructDefinedMacro
 import dev.vale.typing.names.INameT
 import dev.vale.typing.types._
-import dev.vale.typing.templata.{ITemplataT, MutabilityTemplataT, PlaceholderTemplataT}
+import dev.vale.typing.templata._
 
 import scala.collection.mutable
 

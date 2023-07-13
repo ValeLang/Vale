@@ -1,0 +1,9 @@
+import v.builtins.streq.*;
+pure func pureFunc<r'>(s r'str) bool {
+  streq(s, 0, 3, "def", 0, 3)
+}
+
+exported func main() int {
+  s = "abc";
+  if pureFunc(s) { 73 } else { 42 }
+}

@@ -151,12 +151,6 @@ class Instantiator(
     val functionExportsC =
       functionExportsT.map({ case FunctionExportT(range, prototypeT, exportPlaceholderedIdT, exportedName) =>
         val perspectiveRegionT = RegionT()
-          // exportPlaceholderedIdT.localName.templateArgs.last match {
-          //   case PlaceholderTemplataT(IdT(packageCoord, initSteps, r @ RegionPlaceholderNameT(_, _, _, _)), RegionTemplataType()) => {
-          //     IdT(packageCoord, initSteps, r)
-          //   }
-          //   case _ => vwat()
-          // }
 
         val exportIdS =
           translateId[ExportNameT, ExportNameI[sI]](
@@ -187,12 +181,6 @@ class Instantiator(
     val funcExternsC =
       functionExternsT.map({ case FunctionExternT(range, externPlaceholderedIdT, prototypeT, externedName) =>
         val perspectiveRegionT = RegionT()
-          // externPlaceholderedIdT.localName.templateArgs.last match {
-          //   case PlaceholderTemplataT(IdT(packageCoord, initSteps, r @ RegionPlaceholderNameT(_, _, _, _)), RegionTemplataType()) => {
-          //     IdT(packageCoord, initSteps, r)
-          //   }
-          //   case _ => vwat()
-          // }
 
         val externIdS =
           translateId[ExternNameT, ExternNameI[sI]](

@@ -106,7 +106,7 @@ case class Hamuts(
     packageCoordToExternNameToKind: Map[PackageCoordinate, Map[StrI, KindHT]]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
-  vassert(functionDefs.values.map(_.fullName).toVector.distinct.size == functionDefs.values.size)
+  vassert(functionDefs.values.map(_.id).toVector.distinct.size == functionDefs.values.size)
   vassert(structDefs.map(_.id).distinct.size == structDefs.size)
   vassert(runtimeSizedArrays.values.map(_.name).toVector.distinct.size == runtimeSizedArrays.size)
 
@@ -238,10 +238,10 @@ case class Hamuts(
 
   def addFunction(functionRef2: PrototypeI[cI], functionDefH: FunctionH): Hamuts = {
     vassert(functionRefs.contains(functionRef2))
-    functionDefs.find(_._2.fullName == functionDefH.fullName) match {
+    functionDefs.find(_._2.id == functionDefH.id) match {
       case None =>
       case Some(existing) => {
-        vfail("Internal error: Can't add function:\n" + functionRef2 + "\nbecause there's already a function with same hammer name:\b" + existing._1 + "\nHammer name:\n" + functionDefH.fullName)
+        vfail("Internal error: Can't add function:\n" + functionRef2 + "\nbecause there's already a function with same hammer name:\b" + existing._1 + "\nHammer name:\n" + functionDefH.id)
       }
     }
 

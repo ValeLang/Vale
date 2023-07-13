@@ -21,7 +21,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
       """exported func main() {
         |}
         |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Type simple generic function") {
@@ -30,7 +30,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
         """exported func moo<T>() where T Ref {
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Infer coord type from parameters") {
@@ -39,7 +39,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
         """exported func moo<T>(x T) {
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
     val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS(compilation.keywords.T)) shouldEqual CoordTemplataType()
@@ -51,7 +51,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
         """struct Moo {
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Type simple generic struct") {
@@ -61,7 +61,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |  bork T;
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Template call, recursively evaluate") {
@@ -86,7 +86,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
         """interface Moo {
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Type simple generic interface") {
@@ -95,7 +95,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
         """interface Moo<T> where T Ref {
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
   }
 
   test("Type simple generic interface method") {
@@ -145,7 +145,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |{
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
     val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS(compilation.keywords.T)) shouldEqual CoordTemplataType()
@@ -159,7 +159,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |{
           |}
           |""".stripMargin)
-    val astrouts = compilation.getAstrouts().getOrDie()
+    val astrouts = compilation.expectAstrouts()
     val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS(compilation.interner.intern(StrI("P")))) shouldEqual PackTemplataType(CoordTemplataType())

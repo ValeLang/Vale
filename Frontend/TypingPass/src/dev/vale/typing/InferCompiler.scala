@@ -422,6 +422,7 @@ class InferCompiler(
     conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
   Result[Option[InstantiationBoundArgumentsT], ISolverError[IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]] = {
     // Check all template calls
+    // DO NOT SUBMIT
     rules.foreach({
       case MaybeCoercingCallSR(range, _, templateRune, argRunes) => {
         checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {

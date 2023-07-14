@@ -239,138 +239,135 @@ class OverloadResolver(
 //          function.tyype match {
 //            case TemplateTemplataType(identifyingRuneTemplataTypes, FunctionTemplataType()) => {
         val identifyingRuneTemplataTypes = function.tyype.paramTypes
-              if (explicitTemplateArgRunesS.size > identifyingRuneTemplataTypes.size) {
-                Err(WrongNumberOfTemplateArguments(explicitTemplateArgRunesS.size, identifyingRuneTemplataTypes.size))
-              } else {
+        if (explicitTemplateArgRunesS.size > identifyingRuneTemplataTypes.size) {
+          Err(WrongNumberOfTemplateArguments(explicitTemplateArgRunesS.size, identifyingRuneTemplataTypes.size))
+        } else {
 
-                // Now that we know what types are expected, we can FINALLY rule-type these explicitly
-                // specified template args! (The rest of the rule-typing happened back in the astronomer,
-                // this is the one time we delay it, see MDRTCUT).
+          // Now that we know what types are expected, we can FINALLY rule-type these explicitly
+          // specified template args! (The rest of the rule-typing happened back in the astronomer,
+          // this is the one time we delay it, see MDRTCUT).
 
-                // There might be less explicitly specified template args than there are types, and that's
-                // fine. Hopefully the rest will be figured out by the rule evaluator.
-                val explicitTemplateArgRuneToType =
-                explicitTemplateArgRunesS.zip(identifyingRuneTemplataTypes).toMap
+          // There might be less explicitly specified template args than there are types, and that's
+          // fine. Hopefully the rest will be figured out by the rule evaluator.
+          val explicitTemplateArgRuneToType =
+          explicitTemplateArgRunesS.zip(identifyingRuneTemplataTypes).toMap
 
 
-                val runeTypeSolveEnv =
-                  new IRuneTypeSolverEnv {
-                    override def lookup(range: RangeS, nameS: IImpreciseNameS):
-                    Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
-                      callingEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
-                        case Some(x) => Ok(TemplataLookupResult(x.tyype))
-                        case None => Err(RuneTypingCouldntFindType(range, nameS))
-                      }
-                    }
+          val runeTypeSolveEnv =
+            new IRuneTypeSolverEnv {
+              override def lookup(range: RangeS, nameS: IImpreciseNameS):
+              Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
+                callingEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
+                  case Some(x) => Ok(TemplataLookupResult(x.tyype))
+                  case None => Err(RuneTypingCouldntFindType(range, nameS))
+                }
+              }
+            }
+
+          // And now that we know the types that are expected of these template arguments, we can
+          // run these template argument templexes through the solver so it can evaluate them in
+          // context of the current environment and spit out some templatas.
+          runeTypeSolver.solve(
+            opts.globalOptions.sanityCheck,
+            opts.globalOptions.useOptimizedSolver,
+            runeTypeSolveEnv,
+            callRange,
+            false,
+            explicitTemplateArgRulesS,
+            explicitTemplateArgRunesS,
+            true,
+            explicitTemplateArgRuneToType) match {
+            case Err(e@RuneTypeSolveError(_, _)) => {
+              Err(RuleTypeSolveFailure(e))
+            }
+            case Ok(runeAToTypeWithImplicitlyCoercingLookupsS) => {
+              // rulesA is the equals rules, but rule typed. Now we'll run them through the solver to get
+              // some actual templatas.
+
+              val runeTypeSolveEnv = TemplataCompiler.createRuneTypeSolverEnv(callingEnv)
+
+              val runeAToType =
+                mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
+              // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
+              // loose. We intentionally ignored the types of the things they're looking up, so we could know
+              // what types we *expect* them to be, so we could coerce.
+              // That coercion is good, but lets make it more explicit.
+              val ruleBuilder = ArrayBuffer[IRulexSR]()
+              explicifyLookups(
+                runeTypeSolveEnv,
+                runeAToType, ruleBuilder, explicitTemplateArgRulesS) match {
+                case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: callRange, name))
+                case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: callRange, name))
+                case Ok(()) =>
+              }
+              val rulesWithoutImplicitCoercionsA = ruleBuilder.toVector
+
+              // We preprocess out the rune parent env lookups, see MKRFA.
+              val (initialKnowns, rulesWithoutRuneParentEnvLookups) =
+                rulesWithoutImplicitCoercionsA.foldLeft((Vector[InitialKnown](), Vector[IRulexSR]()))({
+                  case ((previousConclusions, remainingRules), RuneParentEnvLookupSR(_, rune)) => {
+                    val templata =
+                      vassertSome(
+                        callingEnv.lookupNearestWithImpreciseName(
+                          interner.intern(RuneNameS(rune.rune)), Set(TemplataLookupContext)))
+                    val newConclusions = previousConclusions :+ InitialKnown(rune, templata)
+                    (newConclusions, remainingRules)
                   }
-
-                // And now that we know the types that are expected of these template arguments, we can
-                // run these template argument templexes through the solver so it can evaluate them in
-                // context of the current environment and spit out some templatas.
-                runeTypeSolver.solve(
-                  opts.globalOptions.sanityCheck,
-                  opts.globalOptions.useOptimizedSolver,
-                  runeTypeSolveEnv,
-                  callRange,
-                  false,
-                  explicitTemplateArgRulesS,
-                  explicitTemplateArgRunesS,
-                  true,
-                  explicitTemplateArgRuneToType) match {
-                  case Err(e@RuneTypeSolveError(_, _)) => {
-                    Err(RuleTypeSolveFailure(e))
+                  case ((previousConclusions, remainingRules), rule) => {
+                    (previousConclusions, remainingRules :+ rule)
                   }
-                  case Ok(runeAToTypeWithImplicitlyCoercingLookupsS) => {
-                    // rulesA is the equals rules, but rule typed. Now we'll run them through the solver to get
-                    // some actual templatas.
+                })
 
-                    val runeTypeSolveEnv = TemplataCompiler.createRuneTypeSolverEnv(callingEnv)
+//                  val callEnv =
+//                    GeneralEnvironment.childOf(
+//                      interner, callingEnv, callingEnv.fullName.addStep(CallEnvNameT()))
 
-                    val runeAToType =
-                      mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
-                    // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
-                    // loose. We intentionally ignored the types of the things they're looking up, so we could know
-                    // what types we *expect* them to be, so we could coerce.
-                    // That coercion is good, but lets make it more explicit.
-                    val ruleBuilder = ArrayBuffer[IRulexSR]()
-                    explicifyLookups(
-                      runeTypeSolveEnv,
-                      runeAToType, ruleBuilder, explicitTemplateArgRulesS) match {
-                      case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: callRange, name))
-                      case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: callRange, name))
-                      case Ok(()) =>
-                    }
-                    val rulesWithoutImplicitCoercionsA = ruleBuilder.toVector
+              // We only want to solve the template arg runes
+              inferCompiler.solveComplete(
+                InferEnv(callingEnv, callRange, callLocation, declaringEnv, contextRegion),
+                coutputs,
+                rulesWithoutRuneParentEnvLookups,
+                explicitTemplateArgRuneToType ++ runeAToType,
+                callRange,
+                callLocation,
+                initialKnowns,
+                Vector(),
+                true,
+                false,
+                Vector()) match {
+                case (Err(e)) => {
+                  Err(InferFailure(e))
+                }
+                case (Ok(CompleteCompilerSolve(_, explicitRuneSToTemplata, _, Vector()))) => {
+                  val explicitlySpecifiedTemplateArgTemplatas =
+                    explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
 
-                    // We preprocess out the rune parent env lookups, see MKRFA.
-                    val (initialKnowns, rulesWithoutRuneParentEnvLookups) =
-                      rulesWithoutImplicitCoercionsA.foldLeft((Vector[InitialKnown](), Vector[IRulexSR]()))({
-                        case ((previousConclusions, remainingRules), RuneParentEnvLookupSR(_, rune)) => {
-                          val templata =
-                            vassertSome(
-                              callingEnv.lookupNearestWithImpreciseName(
-                                interner.intern(RuneNameS(rune.rune)), Set(TemplataLookupContext)))
-                          val newConclusions = previousConclusions :+ InitialKnown(rune, templata)
-                          (newConclusions, remainingRules)
-                        }
-                        case ((previousConclusions, remainingRules), rule) => {
-                          (previousConclusions, remainingRules :+ rule)
-                        }
-                      })
-
-  //                  val callEnv =
-  //                    GeneralEnvironment.childOf(
-  //                      interner, callingEnv, callingEnv.fullName.addStep(CallEnvNameT()))
-
-                    // We only want to solve the template arg runes
-                    inferCompiler.solveComplete(
-                      InferEnv(callingEnv, callRange, callLocation, declaringEnv, contextRegion),
-                      coutputs,
-                      rulesWithoutRuneParentEnvLookups,
-                      explicitTemplateArgRuneToType ++ runeAToType,
-                      callRange,
-                      callLocation,
-                      initialKnowns,
-                      Vector(),
-                      true,
-                      false,
-                      Vector()) match {
-                      case (Err(e)) => {
-                        Err(InferFailure(e))
-                      }
-                      case (Ok(CompleteCompilerSolve(_, explicitRuneSToTemplata, _, Vector()))) => {
-                        val explicitlySpecifiedTemplateArgTemplatas =
-                          explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
-
-                        if (ft.function.isLambda()) {
-                          // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
-                          functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-                            coutputs, callingEnv, callRange, callLocation, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, contextRegion, args) match {
-                            case (EvaluateFunctionFailure(reason)) => Err(reason)
-                            case (EvaluateFunctionSuccess(prototype, conclusions)) => {
-                              paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
-                                case Err(rejectionReason) => Err(rejectionReason)
-                                case Ok(()) => {
-                                  vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
-                                  Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototype))
-                                }
-                              }
-                            }
+                  if (ft.function.isLambda()) {
+                    // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
+                    functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
+                      coutputs, callingEnv, callRange, callLocation, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, contextRegion, args) match {
+                      case (EvaluateFunctionFailure(reason)) => Err(reason)
+                      case (EvaluateFunctionSuccess(prototype, conclusions)) => {
+                        paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
+                          case Err(rejectionReason) => Err(rejectionReason)
+                          case Ok(()) => {
+                            vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+                            Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototype))
                           }
-                        } else {
-                          // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
-                          functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-                            coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, RegionT(), args) match {
-                            case (EvaluateFunctionFailure(reason)) => Err(reason)
-                            case (EvaluateFunctionSuccess(prototype, conclusions)) => {
-                              paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
-                                case Err(rejectionReason) => Err(rejectionReason)
-                                case Ok(()) => {
-                                  vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
-                                  Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototype))
-                                }
-                              }
-                            }
+                        }
+                      }
+                    }
+                  } else {
+                    // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
+                    functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
+                      coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, RegionT(), args) match {
+                      case (EvaluateFunctionFailure(reason)) => Err(reason)
+                      case (EvaluateFunctionSuccess(prototype, conclusions)) => {
+                        paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
+                          case Err(rejectionReason) => Err(rejectionReason)
+                          case Ok(()) => {
+                            vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+                            Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototype))
                           }
                         }
                       }
@@ -378,62 +375,9 @@ class OverloadResolver(
                   }
                 }
               }
-//            }
-//            case FunctionTemplataType() => {
-//              // So it's not a template, but it's a template in context. We'll still need to
-//              // feed it into the inferer.
-//              functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-//                coutputs, callingEnv, callRange, ft, Vector.empty, paramFilters) match {
-//                case (EvaluateFunctionFailure(reason)) => {
-//                  Err(reason)
-//                }
-//                case (EvaluateFunctionSuccess(banner, conclusions)) => {
-//                  paramsMatch(coutputs, callingEnv, callRange, paramFilters, banner.prototype.paramTypes, exact) match {
-//                    case Err(reason) => Err(reason)
-//                    case Ok(_) => {
-//                      vassert(coutputs.getInstantiationBounds(banner.prototype.fullName).nonEmpty)
-//                      Ok(ValidPrototypeTemplataCalleeCandidate(banner))
-//                    }
-//                  }
-//                }
-//              }
-//            }
-//          }
-//        } else {
-//          if (ft.function.isLambda()) {
-//            functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-//                coutputs, callRange, callingEnv, ft, Vector(), paramFilters, verifyConclusions) match {
-//              case (EvaluateFunctionFailure(reason)) => {
-//                Err(reason)
-//              }
-//              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
-//                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
-//                  case Ok(_) => {
-//                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
-//                    Ok(ast.ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
-//                  }
-//                  case Err(reason) => Err(reason)
-//                }
-//              }
-//            }
-//          } else {
-//            functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-//              coutputs, callRange, callingEnv, ft, Vector(), paramFilters) match {
-//              case (EvaluateFunctionFailure(reason)) => {
-//                Err(reason)
-//              }
-//              case (EvaluateFunctionSuccess(prototypeTemplata, conclusions)) => {
-//                paramsMatch(coutputs, callingEnv, callRange, paramFilters, prototypeTemplata.prototype.paramTypes, exact) match {
-//                  case Ok(_) => {
-//                    vassert(coutputs.getInstantiationBounds(prototypeTemplata.prototype.fullName).nonEmpty)
-//                    Ok(ValidPrototypeTemplataCalleeCandidate(prototypeTemplata))
-//                  }
-//                  case Err(reason) => Err(reason)
-//                }
-//              }
-//            }
-//          }
-//        }
+            }
+          }
+        }
       }
       case HeaderCalleeCandidate(header) => {
         paramsMatch(coutputs, callingEnv, callRange, callLocation, args, header.paramTypes, exact) match {

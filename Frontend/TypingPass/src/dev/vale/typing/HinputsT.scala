@@ -201,9 +201,9 @@ case class HinputsT(
     vassertOne(lookupLambdasIn(needleFunctionHumanName))
   }
 
-  def getAllNonExternFunctions: Iterable[FunctionDefinitionT] = {
-    functions.filter(!_.header.isExtern)
-  }
+  // def getAllNonExternFunctions: Iterable[FunctionDefinitionT] = {
+  //   functions.filter(!_.header.isExtern)
+  // }
 
   def getAllUserFunctions: Iterable[FunctionDefinitionT] = {
     functions.filter(_.header.isUserFunction)

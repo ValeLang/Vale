@@ -1,0 +1,83 @@
+
+// See TAVWG for what it would take to re-enable variadic tuples.
+// struct Tup<T RefList> {
+//  _ ..T;
+// }
+
+#!DeriveStructDrop
+struct Tup3<T0, T1, T2> { 0 T0; 1 T1; 2 T2; }
+func drop<T0, T1, T2>(tup Tup3<T0, T1, T2>)
+where func drop(T0)void,
+    func drop(T1)void,
+    func drop(T2)void
+{ [a, b, c] = tup; }
+
+// #!DeriveStructDrop
+// struct Tup4<T0, T1, T2, T3> { 0 T0; 1 T1; 2 T2; 3 T3; }
+// func drop<T0, T1, T2, T3>(tup Tup4<T0, T1, T2, T3>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void
+// { [a, b, c, d] = tup; }
+//
+// #!DeriveStructDrop
+// struct Tup5<T0, T1, T2, T3, T4> { 0 T0; 1 T1; 2 T2; 3 T3; 4 T4; }
+// func drop<T0, T1, T2, T3, T4>(tup Tup5<T0, T1, T2, T3, T4>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void,
+//     func drop(T4)void
+// { [a, b, c, d, e] = tup; }
+//
+// #!DeriveStructDrop
+// struct Tup6<T0, T1, T2, T3, T4, T5> { 0 T0; 1 T1; 2 T2; 3 T3; 4 T4; 5 T5; }
+// func drop<T0, T1, T2, T3, T4, T5>(tup Tup6<T0, T1, T2, T3, T4, T5>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void,
+//     func drop(T4)void,
+//     func drop(T5)void
+// { [a, b, c, d, e, f] = tup; }
+//
+// #!DeriveStructDrop
+// struct Tup7<T0, T1, T2, T3, T4, T5, T6> { 0 T0; 1 T1; 2 T2; 3 T3; 4 T4; 5 T5; 6 T6; }
+// func drop<T0, T1, T2, T3, T4, T5, T6>(tup Tup7<T0, T1, T2, T3, T4, T5, T6>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void,
+//     func drop(T4)void,
+//     func drop(T5)void,
+//     func drop(T6)void
+// { [a, b, c, d, e, f, g] = tup; }
+//
+// #!DeriveStructDrop
+// struct Tup8<T0, T1, T2, T3, T4, T5, T6, T7> { 0 T0; 1 T1; 2 T2; 3 T3; 4 T4; 5 T5; 6 T6; 7 T7; }
+// func drop<T0, T1, T2, T3, T4, T5, T6, T7>(tup Tup8<T0, T1, T2, T3, T4, T5, T6, T7>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void,
+//     func drop(T4)void,
+//     func drop(T5)void,
+//     func drop(T6)void,
+//     func drop(T7)void
+// { [a, b, c, d, e, f, g, h] = tup; }
+//
+// #!DeriveStructDrop
+// struct Tup9<T0, T1, T2, T3, T4, T5, T6, T7, T8> { 0 T0; 1 T1; 2 T2; 3 T3; 4 T4; 5 T5; 6 T6; 7 T7; 8 T8; }
+// func drop<T0, T1, T2, T3, T4, T5, T6, T7, T8>(tup Tup9<T0, T1, T2, T3, T4, T5, T6, T7, T8>)
+// where func drop(T0)void,
+//     func drop(T1)void,
+//     func drop(T2)void,
+//     func drop(T3)void,
+//     func drop(T4)void,
+//     func drop(T5)void,
+//     func drop(T6)void,
+//     func drop(T7)void,
+//     func drop(T8)void
+// { [a, b, c, d, e, f, g, h, i] = tup; }
+//

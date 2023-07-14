@@ -342,7 +342,7 @@ class VirtualTests extends FunSuite with Matchers {
       val moo = compile.expectCompilerOutputs().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
+          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _, _)) => {
             (destVar, returnType)
           }
         })

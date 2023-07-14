@@ -1,0 +1,10 @@
+
+// See TAVWG for what it would take to re-enable variadic tuples.
+// struct Tup<T RefList> {
+//  _ ..T;
+// }
+
+#!DeriveStructDrop
+struct Tup1<T0> { 0 T0; }
+func drop<T0>(tup Tup1<T0>)
+where func drop(T0)void { [a] = tup; }

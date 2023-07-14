@@ -210,7 +210,7 @@ class TemplexScout(
                 MaybeCoercingLookupSR(
                   rangeS,
                   templateRuneS,
-                  CodeNameS(keywords.tupleHumanName))
+                  CodeNameS(keywords.tupleHumanName(members.length)))
 
               val resultRuneS = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
               ruleBuilder += MaybeCoercingCallSR(
@@ -277,7 +277,7 @@ class TemplexScout(
                 rules.MaybeCoercingLookupSR(
                   rangeS,
                   templateRuneS,
-                  interner.intern(CodeNameS(keywords.TUP)))
+                  interner.intern(CodeNameS(keywords.tupleHumanName(elements.length))))
               ruleBuilder +=
                 rules.MaybeCoercingCallSR(
                   rangeS,

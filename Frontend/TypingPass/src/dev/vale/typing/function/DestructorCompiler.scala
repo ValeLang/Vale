@@ -61,10 +61,12 @@ class DestructorCompiler(
         case CoordT(ShareT, _, NeverT(_)) => undestructedExpr2
         case CoordT(ShareT, _, _) => DiscardTE(undestructedExpr2)
         case r@CoordT(OwnT, _, _) => {
-          val destructorPrototype = getDropFunction(env, coutputs, callRange, callLocation, RegionT(), r)
-          vassert(coutputs.getInstantiationBounds(destructorPrototype.prototype.prototype.id).nonEmpty)
-
-          FunctionCallTE(destructorPrototype.prototype.prototype, Vector(undestructedExpr2))
+          val StampFunctionSuccess(destructorPrototype, _) =
+            getDropFunction(env, coutputs, callRange, callLocation, RegionT(), r)
+          vassert(coutputs.getInstantiationBounds(destructorPrototype.prototype.id).nonEmpty)
+          val resultTT =
+            destructorPrototype.prototype.returnType
+          FunctionCallTE(destructorPrototype.prototype, Vector(undestructedExpr2), resultTT)
         }
         case CoordT(BorrowT, _, _) => (DiscardTE(undestructedExpr2))
         case CoordT(WeakT, _, _) => (DiscardTE(undestructedExpr2))

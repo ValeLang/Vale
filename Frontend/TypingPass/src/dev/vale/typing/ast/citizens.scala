@@ -14,6 +14,7 @@ trait CitizenDefinitionT {
   def templateName: IdT[ICitizenTemplateNameT]
   def genericParamTypes: Vector[ITemplataType]
   def instantiatedCitizen: ICitizenTT
+  def defaultRegion: RegionT
 }
 
 case class StructDefinitionT(
@@ -28,7 +29,7 @@ case class StructDefinitionT(
   runeToFunctionBound: Map[IRuneS, IdT[FunctionBoundNameT]],
   runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
 ) extends CitizenDefinitionT {
-  vpass()
+  def defaultRegion: RegionT = RegionT()
 
   override def genericParamTypes: Vector[ITemplataType] = {
     instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
@@ -118,6 +119,8 @@ case class InterfaceDefinitionT(
   // See IMRFDI for why we need to remember only the internal methods here.
   internalMethods: Vector[(PrototypeT, Int)]
 ) extends CitizenDefinitionT {
+  def defaultRegion: RegionT = RegionT()
+
   override def genericParamTypes: Vector[ITemplataType] = {
     instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
   }

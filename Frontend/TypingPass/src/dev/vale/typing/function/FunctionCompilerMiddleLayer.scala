@@ -226,8 +226,8 @@ class FunctionCompilerMiddleLayer(
 //    })
 //
 //    val paramTypes2 = evaluateFunctionParamTypes(runedEnv, function1.params);
-//    val functionFullName = assembleName(runedEnv.fullName, runedEnv.templateArgs, paramTypes2)
-//    val needleSignature = SignatureT(functionFullName)
+//    val functionId = assembleName(runedEnv.fullName, runedEnv.templateArgs, paramTypes2)
+//    val needleSignature = SignatureT(functionId)
 //    val p = vassertSome(coutputs.lookupFunction(needleSignature)).header.toPrototype
 //    PrototypeTemplata(function1.range, p)
 //  }
@@ -310,15 +310,6 @@ class FunctionCompilerMiddleLayer(
         ParameterT(nameT, maybeVirtuality, param1.preChecked, coord)
       })
   }
-//
-//  private def assembleName(
-//    name: FullNameT[IFunctionTemplateNameT],
-//    templateArgs: Vector[ITemplata[ITemplataType]],
-//    params: Vector[CoordT]):
-//  FullNameT[IFunctionNameT] = {
-//    val newLastStep = name.last.makeFunctionName(interner, keywords, templateArgs, params)
-//    FullNameT(name.packageCoord, name.initSteps, newLastStep)
-//  }
 
   private def getMaybeReturnType(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT,
@@ -428,8 +419,8 @@ class FunctionCompilerMiddleLayer(
 //    })
 //
 //    val paramTypes2 = evaluateFunctionParamTypes(runedEnv, function1.params);
-//    val functionFullName = assembleName(runedEnv.fullName, runedEnv.templateArgs, paramTypes2)
-//    val needleSignature = SignatureT(functionFullName)
+//    val functionId = assembleName(runedEnv.fullName, runedEnv.templateArgs, paramTypes2)
+//    val needleSignature = SignatureT(functionId)
 //    coutputs.lookupFunction(needleSignature) match {
 //      case Some(FunctionT(header, _)) => {
 //        (header)

@@ -85,7 +85,9 @@ class CallCompiler(
           exact = true)
 
         vassert(coutputs.getInstantiationBounds(prototype.prototype.prototype.id).nonEmpty)
-        (ast.FunctionCallTE(prototype.prototype.prototype, argsExprs2))
+        val resultTE =
+          prototype.prototype.prototype.returnType
+        ast.FunctionCallTE(prototype.prototype.prototype, argsExprs2, resultTE)
       }
       case other => {
         evaluateCustomCall(
@@ -188,6 +190,7 @@ class CallCompiler(
 
     val actualArgsExprs2 = Vector(actualCallableExpr2) ++ givenArgsExprs2
 
+    val StampFunctionSuccess(prototype, inferences) = resolved
     val argTypes = actualArgsExprs2.map(_.result.coord)
     if (argTypes != resolved.prototype.prototype.paramTypes) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.prototype.paramTypes + " args: " + argTypes))
@@ -196,7 +199,9 @@ class CallCompiler(
     checkTypes(coutputs, env, range, callLocation, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
 
     vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.id).nonEmpty)
-    val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2);
+    val resultTE =
+      prototype.prototype.returnType
+    val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2, resultTE);
 
     (resultingExpr2)
   }

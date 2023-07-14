@@ -132,15 +132,24 @@ class BodyCompiler(
               case Ok((body, returns)) => (body, returns)
             }
 
-          if (returns == Set(explicitRetCoord)) {
-            // Let it through, it returns the expected type.
-          } else if (returns == Set(CoordT(ShareT, RegionT(), NeverT(false)))) {
-            // Let it through, it returns a never but we expect something else, that's fine
-          } else if (returns == Set() && body2.result.kind == NeverT(false)) {
-            // Let it through, it doesn't return anything yet it results in a never, which means
-            // we called panic or something from inside.
-          } else {
-            throw CompileErrorExceptionT(CouldntConvertForReturnT(bodyS.range :: parentRanges, explicitRetCoord, returns.head))
+
+          vcurious(returns.size <= 1)
+          (returns.headOption, body2.result.kind) match {
+            case (Some(x), _) if x == explicitRetCoord => {
+              // Let it through, it returns the expected type.
+            }
+            case (Some(CoordT(ShareT, _, NeverT(false))), _) => {
+              // Let it through, it returns a never but we expect something else, that's fine
+            }
+            case (None, NeverT(false)) => {
+              // Let it through, it doesn't return anything yet it results in a never, which means
+              // we called panic or something from inside.
+            }
+            case _ => {
+              throw CompileErrorExceptionT(
+                CouldntConvertForReturnT(
+                  bodyS.range :: parentRanges, explicitRetCoord, returns.head))
+            }
           }
 
           (None, body2)
@@ -206,9 +215,20 @@ class BodyCompiler(
     // If we already had a ret, then the above will add a Never to the returns, but that's fine, it will be filtered
     // out below.
 
+
+    // val returns =
+    //   if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, NeverT(false)))) {
+    //     returnsMaybeWithNever - CoordT(ShareT, NeverT(false))
+    //   } else {
+    //     returnsMaybeWithNever
+    //   }
+
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, RegionT(), NeverT(false)))) {
-        returnsMaybeWithNever - CoordT(ShareT, RegionT(), NeverT(false))
+      if (returnsMaybeWithNever.size > 1) {
+        returnsMaybeWithNever.filter({
+          case CoordT(ShareT, _, NeverT(false)) => false
+          case _ => true
+        })
       } else {
         returnsMaybeWithNever
       }

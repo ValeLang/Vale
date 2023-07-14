@@ -99,7 +99,18 @@ class Keywords(interner: Interner) {
   val isEmpty: StrI = interner.intern(StrI("isEmpty"))
   val get: StrI = interner.intern(StrI("get"))
   val underscoresCall: StrI = interner.intern(StrI("__call"))
-  val tupleHumanName: StrI = interner.intern(StrI("Tup"))
+  val tupleHumanName: Vector[StrI] =
+    Vector(
+      interner.intern(StrI("Tup0")),
+      interner.intern(StrI("Tup1")),
+      interner.intern(StrI("Tup2")),
+      interner.intern(StrI("Tup3")),
+      interner.intern(StrI("Tup4")),
+      interner.intern(StrI("Tup5")),
+      interner.intern(StrI("Tup6")),
+      interner.intern(StrI("Tup7")),
+      interner.intern(StrI("Tup8")),
+      interner.intern(StrI("Tup9")))
 
   // Macros exposed to the user
   val DeriveStructDrop: StrI = interner.intern(StrI("DeriveStructDrop"))
@@ -162,7 +173,7 @@ class Keywords(interner: Interner) {
   val REF_LIST_COMPOUND_MUTABILITY = interner.intern(StrI("refListCompoundMutability"))
   val ANY = interner.intern(StrI("any"))
   val IFUNCTION = interner.intern(StrI("IFunction"))
-  val TUP = interner.intern(StrI("Tup"))
+  // val TUP = interner.intern(StrI("Tup"))
   val M = interner.intern(StrI("M"))
   val E = interner.intern(StrI("E"))
   val F = interner.intern(StrI("F"))

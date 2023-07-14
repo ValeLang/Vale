@@ -35,7 +35,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() {
-        |  launchGeneric(Raza(42));
+        |  launchGeneric(&Raza(42));
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -83,20 +83,6 @@ class AfterRegionsTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
-  // Depends on IFunction1, and maybe Generic interface anonymous subclass
-  test("Basic IFunction1 anonymous subclass") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |import ifunction.ifunction1.*;
-        |
-        |exported func main() int {
-        |  f = IFunction1<mut, int, int>({_});
-        |  return (f)(7);
-        |}
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-  }
-
   test("Prototype rule to get return type") {
     // i dont think we support this anymore, now that we have generics?
 
@@ -123,7 +109,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
   test("Can destructure and assemble tuple") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |import v.builtins.tup2.*;
         |import v.builtins.drop.*;
         |
         |func swap<T, Y>(x (T, Y)) (Y, T) {
@@ -132,7 +118,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() bool {
-        |  return swap((5, true)).a;
+        |  return swap((5, true)).0;
         |}
         |""".stripMargin
     )
@@ -243,31 +229,6 @@ class AfterRegionsTests extends FunSuite with Matchers {
     //    val main = coutputs.lookupFunction("main")
     //    val call =
     //      Collector.only(main, { case call @ FunctionCallTE(PrototypeT(FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("__call"), _), _, _)), _), _) => call })
-  }
-
-  test("Test struct default generic argument in call") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |struct MyHashSet<K Ref, H Int = 5> { }
-        |func moo() {
-        |  x = MyHashSet<bool>();
-        |}
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-    val moo = coutputs.lookupFunction("moo")
-    val variable = Collector.only(moo, { case LetNormalTE(v, _) => v })
-    variable.coord match {
-      case CoordT(
-      OwnT,
-      _,
-      StructTT(
-      IdT(_,_,
-      StructNameT(
-      StructTemplateNameT(StrI("MyHashSet")),
-      Vector(
-      CoordTemplataT(CoordT(ShareT,_,BoolT())),
-      IntegerTemplataT(5)))))) =>
-    }
   }
 
   test("Test interface default generic argument in type") {

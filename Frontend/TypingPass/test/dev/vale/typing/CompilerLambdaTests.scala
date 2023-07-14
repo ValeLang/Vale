@@ -133,7 +133,7 @@ class CompilerLambdaTests extends FunSuite with Matchers {
     vassert(coutputs.nameIsLambdaIn(lambda.header.id, "main"))
 
     val main = coutputs.lookupFunction("main");
-    Collector.only(main, { case FunctionCallTE(callee, _) if coutputs.nameIsLambdaIn(callee.id, "main") => })
+    Collector.only(main, { case FunctionCallTE(callee, _, _) if coutputs.nameIsLambdaIn(callee.id, "main") => })
   }
 
   test("Tests lambda and concept function") {

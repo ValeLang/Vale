@@ -650,6 +650,7 @@ object CompilerErrorHumanizer {
         "asc:" + humanizeName(codeMap, substruct)
       }
       case SelfNameT() => "self"
+      case OverrideDispatcherTemplateNameT(implId) => "ovdt:" + humanizeId(codeMap, implId)
       case IteratorNameT(range) => "it:" + codeMap(range.begin)
       case IterableNameT(range) => "ib:" + codeMap(range.begin)
       case IterationOptionNameT(range) => "io:" + codeMap(range.begin)

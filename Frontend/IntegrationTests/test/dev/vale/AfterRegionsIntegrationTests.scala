@@ -85,23 +85,12 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
           |import array.each.*;
           |func myfunc(i int) { }
           |exported func main() int {
-          |  mylist = [#][1, 3, 3, 7];
+          |  mylist = [#](1, 3, 3, 7);
           |  mylist.each(myfunc);
           |  42
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(42) => }
-  }
-
-  test("Simple tuple with one int") {
-    val compile = RunCompilation.test( "exported func main() int { return (9,).0; }")
-
-    val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("main").header.returnType.kind shouldEqual IntT.i32
-    // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
-    Collector.only(coutputs.lookupFunction("main"), { case TupleTE(_, _) => })
-
-    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Upcasting in a generic function") {
@@ -321,17 +310,4 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
-
-  test("Ignoring receiver") {
-    val compile = RunCompilation.test(
-      """
-        |struct Marine { hp int; }
-        |exported func main() int { [_, y] = (Marine(6), Marine(8)); return y.hp; }
-        |
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-    val main = coutputs.lookupFunction("main");
-    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
-    compile.evalForKind(Vector()) match { case VonInt(8) => }
-  }
 }

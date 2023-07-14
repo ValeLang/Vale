@@ -44,7 +44,7 @@ class SequenceCompiler(
     val tupleTemplate @ StructDefinitionTemplataT(_, _) =
       vassertSome(
         env.lookupNearestWithName(
-          interner.intern(StructTemplateNameT(keywords.tupleHumanName)), Set(TemplataLookupContext)))
+          interner.intern(StructTemplateNameT(keywords.tupleHumanName(types2.length))), Set(TemplataLookupContext)))
     structCompiler.resolveStruct(
       coutputs,
       env,

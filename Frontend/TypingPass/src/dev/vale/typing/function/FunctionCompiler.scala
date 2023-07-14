@@ -69,8 +69,6 @@ trait IFunctionCompilerDelegate {
   FunctionHeaderT
 }
 
-object FunctionCompiler
-
 trait IEvaluateFunctionResult
 
 case class EvaluateFunctionSuccess(

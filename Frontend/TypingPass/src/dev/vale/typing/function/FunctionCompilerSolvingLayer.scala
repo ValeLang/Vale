@@ -142,7 +142,7 @@ class FunctionCompilerSolvingLayer(
         false,
         Vector()
       ) match {
-        case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
+        case Err(e) => return EvaluateFunctionFailure(InferFailure(e))
         case Ok(i) => (i)
       }
 
@@ -308,20 +308,65 @@ class FunctionCompilerSolvingLayer(
             function.rules, function.genericParameters, explicitTemplateArgs.size)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args)
+
+
+    val envs = InferEnv(callingEnv, callRange, callLocation, outerEnv, contextRegion)
+    val rules = callSiteRules
+    val runeToType = function.runeToType
+    val invocationRange = callRange
+    val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
+    val verifyConclusions = true
+    val isRootSolve = false
+    val includeReachableBoundsForRunes = Vector()
+
+    val solver =
+      inferCompiler.makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
+
+    var loopCheck = function.genericParameters.size + 1
+
+    // Incrementally solve and add default generic parameters (and context region).
+    inferCompiler.incrementallySolve(
+      envs, coutputs, solver,
+      (solver) => {
+        if (loopCheck == 0) {
+          throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Infinite loop detected in incremental call solve!"))
+        }
+        loopCheck = loopCheck - 1
+
+        TemplataCompiler.getFirstUnsolvedIdentifyingRune(
+          function.genericParameters,
+          (rune) => solver.getConclusion(rune).nonEmpty) match {
+          case None => false
+          case Some((genericParam, index)) => {
+            // This unsolved rune better be one we didn't explicitly hand in already.
+            vassert(index >= explicitTemplateArgs.size)
+
+            genericParam.default match {
+              case Some(defaultRules) => {
+                solver.addRules(defaultRules.rules)
+                true
+              }
+              case None => {
+                // There are no defaults for this.
+                false
+              }
+            }
+          }
+        }
+      }) match {
+      case Err(f@FailedCompilerSolve(_, _, err)) => {
+        return (EvaluateFunctionFailure(InferFailure(f)))
+      }
+      case Ok(true) =>
+      case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
+    }
+
     val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
-      inferCompiler.solveComplete(
-        InferEnv(callingEnv, callRange, callLocation, outerEnv, RegionT()),
-        coutputs,
-        callSiteRules,
-        function.runeToType,
-        callRange,
-        callLocation,
-        assembleKnownTemplatas(function, explicitTemplateArgs),
-        initialSends,
-        true,
-        false,
-        Vector()
-      ) match {
+      (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
+        case f@FailedCompilerSolve(_, _, _) => Err(f)
+        case i@IncompleteCompilerSolve(_, _, _, _) => Err(i)
+        case c@CompleteCompilerSolve(_, _, _, _) => Ok(c)
+      }) match {
         case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
         case Ok(i) => (i)
       }
@@ -421,7 +466,8 @@ class FunctionCompilerSolvingLayer(
         }
       })
 
-    // Now that we have placeholders, let's do the rest of the solve, so we can get a full prototype out of it.
+    // Now that we have placeholders, let's do the rest of the solve, so we can get a full
+    // prototype out of it.
 
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
       inferCompiler.solveExpectComplete(
@@ -516,9 +562,10 @@ class FunctionCompilerSolvingLayer(
       middleLayer.getOrEvaluateFunctionForHeader(
         nearEnv, runedEnv, coutputs, parentRanges, callLocation, function)
 
-    // We don't add these here because we aren't instantiating anything here, we're compiling a function
+    // We don't add these here because we aren't instantiating anything here, we're compiling a
+    // function
     // not calling it.
-    // coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
+    // coutputs.addInstantiationBounds(header.toPrototype.id, runeToFunctionBound)
 
     header
   }

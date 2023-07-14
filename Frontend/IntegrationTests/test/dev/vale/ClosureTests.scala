@@ -159,7 +159,7 @@ class ClosureTests extends FunSuite with Matchers {
         Collector.all(
           coutputs.lookupFunction("main"),
           {
-            case FunctionCallTE(p @ PrototypeT(IdT(_, _, LambdaCallFunctionNameT(_, _, _)), _), _) => p
+            case FunctionCallTE(p @ PrototypeT(IdT(_, _, LambdaCallFunctionNameT(_, _, _)), _), _, _) => p
           }))
     params.head match {
       case CoordT(ShareT, _, StructTT(IdT(_, Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"), _),Vector(),Vector())),LambdaCitizenNameT(_)))) =>

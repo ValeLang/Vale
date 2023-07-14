@@ -53,18 +53,6 @@ class RSAImmutableNewMacro(
           env.lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(CodeRuneS(keywords.M))), Set(TemplataLookupContext))))
 
-//    val PrototypeTemplata(generatorRange, generatorFullName, generatorReturnCoord) =
-//      vassertSome(
-//        env.lookupNearestWithImpreciseName(
-//          interner.intern(RuneNameS(CodeRuneS(keywords.F))), Set(TemplataLookupContext)))
-
-//    val variability =
-//      mutability match {
-//        case PlaceholderTemplata(fullNameT, tyype) => vimpl()
-//        case MutabilityTemplata(ImmutableT) => FinalT
-//        case MutabilityTemplata(MutableT) => VaryingT
-//      }
-
     val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, RegionT())
 
     val generatorArgCoord =

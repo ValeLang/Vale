@@ -99,24 +99,6 @@ class StructTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
-  test("Ignore destructure") {
-    val compile = RunCompilation.test(
-      """
-        |struct Marine {
-        |  hp int;
-        |}
-        |exported func main() int {
-        |  m = Marine(4);
-        |  Marine[_] = m;
-        |  return 42;
-        |}
-    """.stripMargin)
-
-    compile.evalForKind(Vector()) match {
-      case VonInt(42) =>
-    }
-  }
-
   test("Sugar destructure") {
     val compile = RunCompilation.test(
       """

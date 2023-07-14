@@ -864,6 +864,7 @@ class CompilerRuleSolver(
         Ok(())
       }
       case AugmentSR(range, resultRune, augmentOwnership, innerRune) => {
+        // DO NOT SUBMIT
         stepState.getConclusion(innerRune.rune) match {
           case Some(CoordTemplataT(initialCoord)) => {
             val newCoord =
@@ -1006,6 +1007,7 @@ class CompilerRuleSolver(
     }
   }
 
+  // DO NOT SUBMIT
   private def solveCallRule(
       env: InferEnv,
       stepState: IStepState[IRulexSR, IRuneS, ITemplataT[ITemplataType]],
@@ -1123,6 +1125,7 @@ class CompilerRuleSolver(
                 if (!delegate.kindIsFromTemplate(state, struct, st)) {
                   return Err(CallResultWasntExpectedType(st, result))
                 }
+                // DO NOT SUBMIT
                 vassert(argRunes.size == struct.id.localName.templateArgs.size)
                 argRunes.zip(struct.id.localName.templateArgs).foreach({ case (rune, templateArg) =>
                   stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)

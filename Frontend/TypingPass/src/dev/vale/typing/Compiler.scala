@@ -123,25 +123,6 @@ class Compiler(
             coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs, contextRegion)
         }
 
-        // override def resolveStaticSizedArrayKind(
-        //     env: IInDenizenEnvironmentT,
-        //     coutputs: CompilerOutputs,
-        //     mutability: ITemplataT[MutabilityTemplataType],
-        //     variability: ITemplataT[VariabilityTemplataType],
-        //     size: ITemplataT[IntegerTemplataType],
-        //     type2: CoordT
-        // ): StaticSizedArrayTT = {
-        //   arrayCompiler.resolveStaticSizedArray(mutability, variability, size, type2)
-        // }
-        //
-        // override def resolveRuntimeSizedArrayKind(
-        //     env: IInDenizenEnvironmentT,
-        //     state: CompilerOutputs,
-        //     element: CoordT,
-        //     arrayMutability: ITemplataT[MutabilityTemplataType]):
-        // RuntimeSizedArrayTT = {
-        //   arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
-        // }
       })
   val inferCompiler: InferCompiler =
     new InferCompiler(
@@ -1453,6 +1434,7 @@ class Compiler(
               }
             }))
 
+    // DO NOT SUBMIT
     coutputs.getFunctionExports.foreach(funcExport => {
       val exportedKindToExport = packageToKindToExport.getOrElse(funcExport.exportId.packageCoord, Map())
       (Vector(funcExport.prototype.returnType) ++ funcExport.prototype.paramTypes)

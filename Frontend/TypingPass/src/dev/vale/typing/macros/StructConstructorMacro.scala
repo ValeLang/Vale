@@ -56,20 +56,16 @@ class StructConstructorMacro(
     val retRune = RuneUsage(structA.name.range, ReturnRuneS())
     runeToType += (retRune.rune -> CoordTemplataType())
     val structNameRange = structA.name.range
-//    if (structA.isTemplate) {
-      val structGenericRune = StructNameRuneS(structA.name)
-      runeToType += (structGenericRune -> structA.tyype)
-      rules += LookupSR(structNameRange, RuneUsage(structNameRange, structGenericRune), structA.name.getImpreciseName(interner))
+    val structGenericRune = StructNameRuneS(structA.name)
+    runeToType += (structGenericRune -> structA.tyype)
+    // DO NOT SUBMIT whats up with MaybeCoercingLookupSR?
+    rules += LookupSR(structNameRange, RuneUsage(structNameRange, structGenericRune), structA.name.getImpreciseName(interner))
 
-      val structKindRune = RuneUsage(structNameRange, ImplicitCoercionKindRuneS(structNameRange, structGenericRune))
-      runeToType += (structKindRune.rune -> KindTemplataType())
-      rules += CallSR(structNameRange, structKindRune, RuneUsage(structNameRange, structGenericRune), structA.genericParameters.map(_.rune).toVector)
+    val structKindRune = RuneUsage(structNameRange, ImplicitCoercionKindRuneS(structNameRange, structGenericRune))
+    runeToType += (structKindRune.rune -> KindTemplataType())
+    rules += CallSR(structNameRange, structKindRune, RuneUsage(structNameRange, structGenericRune), structA.genericParameters.map(_.rune).toVector)
 
-      rules += CoerceToCoordSR(structNameRange, retRune, structKindRune)
-//    } else {
-//      vcurious()
-//      rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
-//    }
+    rules += CoerceToCoordSR(structNameRange, retRune, structKindRune)
 
     val params =
       structA.members.zipWithIndex.flatMap({

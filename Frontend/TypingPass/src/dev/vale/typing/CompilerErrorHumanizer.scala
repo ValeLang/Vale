@@ -667,20 +667,12 @@ object CompilerErrorHumanizer {
       case LambdaCitizenTemplateNameT(codeLocation) => "λC:" + codeMap(codeLocation)
       case LambdaCallFunctionNameT(template, templateArgs, parameters) => {
         humanizeName(codeMap, template) +
-          (if (templateArgs.nonEmpty) {
-            "<" + templateArgs.map(humanizeTemplata(codeMap, _)).mkString(", ") + ">"
-          } else {
-            ""
-          }) +
+          humanizeGenericArgs(codeMap, templateArgs, None) +
           "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case FunctionBoundNameT(template, templateArgs, parameters) => {
         humanizeName(codeMap, template) +
-          (if (templateArgs.nonEmpty) {
-            "<" + templateArgs.map(humanizeTemplata(codeMap, _)).mkString(", ") + ">"
-          } else {
-            ""
-          }) +
+          humanizeGenericArgs(codeMap, templateArgs, None) +
           "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case KindPlaceholderNameT(template) => humanizeName(codeMap, template)
@@ -691,11 +683,7 @@ object CompilerErrorHumanizer {
       case ExternFunctionNameT(humanName, parameters) => humanName.str
       case FunctionNameT(templateName, templateArgs, parameters) => {
         humanizeName(codeMap, templateName) +
-          (if (templateArgs.nonEmpty) {
-            "<" + templateArgs.map(humanizeTemplata(codeMap, _)).mkString(", ") + ">"
-          } else {
-            ""
-          }) +
+          humanizeGenericArgs(codeMap, templateArgs, containingRegion) +
           (if (parameters.nonEmpty) {
             "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
           } else {
@@ -704,19 +692,15 @@ object CompilerErrorHumanizer {
       }
       case CitizenNameT(humanName, templateArgs) => {
         humanizeName(codeMap, humanName) +
-          (if (templateArgs.nonEmpty) {
-            "<" + templateArgs.map(humanizeTemplata(codeMap, _)).mkString(", ") + ">"
-          } else {
-            ""
-          })
+          humanizeGenericArgs(codeMap, templateArgs, containingRegion)
       }
       case RuntimeSizedArrayNameT(RuntimeSizedArrayTemplateNameT(), RawArrayNameT(mutability, elementType, region)) => {
-        "[]" +
+        "[]<" +
           (mutability match {
-            case MutabilityTemplataT(ImmutableT) => "<imm>"
-            case MutabilityTemplataT(MutableT) => ""
-            case other => "<" + humanizeTemplata(codeMap, other) + ">"
-          }) +
+            case MutabilityTemplataT(ImmutableT) => "imm"
+            case MutabilityTemplataT(MutableT) => "mut"
+            case other => humanizeTemplata(codeMap, other)
+          }) + ", " +
           humanizeTemplata(codeMap, CoordTemplataT(elementType))
       }
       case StaticSizedArrayNameT(StaticSizedArrayTemplateNameT(), size, variability, RawArrayNameT(mutability, elementType, region)) => {

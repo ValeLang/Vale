@@ -34,12 +34,6 @@ class RSAMutablePushMacro(interner: Interner, keywords: Keywords) extends IFunct
       FunctionHeaderT(
         env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
 
-//    val CoordTemplata(elementType) =
-//      vassertSome(
-//        env.lookupNearestWithImpreciseName(
-//          interner.intern(RuneNameS(CodeRuneS(keywords.E))), Set(TemplataLookupContext)))
-//    val arrayTT = interner.intern(RuntimeSizedArrayTT(MutabilityTemplata(MutableT), elementType))
-
     val body =
       BlockTE(
         ReturnTE(

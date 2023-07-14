@@ -590,6 +590,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
+  test("Test generic param default") {
+    val compile = RunCompilation.test(
+      """
+        |func bork<N Int = 42>() int { return N; }
+        |exported func main() int { bork() }
+      """.stripMargin)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
   test("Tests calling a virtual function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/calling.vale"))
     compile.evalForKind(Vector()) match { case VonInt(7) => }

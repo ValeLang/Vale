@@ -71,7 +71,7 @@ class PatternTests extends FunSuite with Matchers {
     coutputs.functions.head.header.returnType == CoordT(ShareT, RegionT(), IntT.i32)
 
     val monouts = compile.getMonouts()
-    val tupDef = monouts.lookupStruct("Tup")
+    val tupDef = monouts.lookupStruct("Tup2")
     val tupDefMemberTypes =
       tupDef.members.collect({ case StructMemberI(_, _, tyype) => tyype.reference })
     tupDefMemberTypes match {
@@ -159,4 +159,5 @@ class PatternTests extends FunSuite with Matchers {
 //    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
 //    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
+
 }

@@ -160,7 +160,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
   test("Simple program with tup") {
-    val compile = RunCompilation.test("import v.builtins.tup.*; exported func main() int { return 3; }", false)
+    val compile = RunCompilation.test("import v.builtins.tup2.*; exported func main() int { return 3; }", false)
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
   test("Simple program with panic") {
@@ -1004,4 +1004,20 @@ class IntegrationTestsA extends FunSuite with Matchers {
       case VonInt(42) =>
     }
   }
+
+  test("Ignoring receiver") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine { hp int; }
+        |exported func main() int { [_, y] = (Marine(6), Marine(8)); return y.hp; }
+        |
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main");
+    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
+    compile.evalForKind(Vector()) match {
+      case VonInt(8) =>
+    }
+  }
+
 }

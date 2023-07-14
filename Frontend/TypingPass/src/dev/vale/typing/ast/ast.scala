@@ -78,7 +78,7 @@ case class FunctionExportT(
   exportedName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-
+  vpass()
 }
 
 case class KindExternT(
@@ -340,14 +340,14 @@ case class FunctionHeaderT(
       case None =>
       case Some(originFunctionTemplata) => {
         val templateName = TemplataCompiler.getFunctionTemplate(id)
-        val placeholders =
+        val placeholderInThisFunctionNames =
           Collector.all(id, {
             case KindPlaceholderT(name) => name
             case PlaceholderTemplataT(name, _) => name
           })
         // Filter out any placeholders that came from the parent, in case this is a lambda function.
-        val placeholdersOfThisFunction =
-          placeholders.filter({ case IdT(packageCoord, initSteps, last) =>
+        val selfPlaceholdersInThisFunctionName =
+          placeholderInThisFunctionNames.filter({ case IdT(packageCoord, initSteps, last) =>
             val parentName = IdT(packageCoord, initSteps.init, initSteps.last)
             // Not sure which one it is, this should catch both.
             parentName == id || parentName == templateName
@@ -355,14 +355,15 @@ case class FunctionHeaderT(
 
         if (originFunctionTemplata.function.isLambda()) {
           // make sure there are no placeholders
-          vassert(placeholdersOfThisFunction.isEmpty)
+          vassert(selfPlaceholdersInThisFunctionName.isEmpty)
         } else {
           if (originFunctionTemplata.function.genericParameters.isEmpty) {
             // make sure there are no placeholders
-            vassert(placeholdersOfThisFunction.isEmpty)
+            vassert(selfPlaceholdersInThisFunctionName.isEmpty)
           } else {
-            // make sure all the placeholders in the parameters exist as template args
-            placeholdersOfThisFunction.foreach({
+            // Make sure all the placeholders in the generic parameters exist as template args in
+            // the original function definition.
+            selfPlaceholdersInThisFunctionName.foreach({
               case placeholderName @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) => {
                 id.localName.templateArgs(index) match {
                   case KindTemplataT(KindPlaceholderT(placeholderNameAtIndex)) => {

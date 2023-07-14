@@ -261,8 +261,10 @@ class ArrayCompiler(
           }
         })
         vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+        val resultTE =
+          prototype.prototype.returnType
         val callTE =
-          FunctionCallTE(prototype.prototype, Vector(sizeTE) ++ maybeCallableTE)
+          FunctionCallTE(prototype.prototype, Vector(sizeTE) ++ maybeCallableTE, resultTE)
         callTE
         //        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
       }

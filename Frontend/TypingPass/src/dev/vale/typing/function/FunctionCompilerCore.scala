@@ -216,23 +216,6 @@ class FunctionCompilerCore(
         }
       }
 
-    // maybeExport match {
-    //   case None =>
-    //   case Some(exportPackageCoord) => {
-    //     val exportedName =
-    //       fullEnv.id.localName match {
-    //         case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
-    //         case _ => vfail("Can't export something that doesn't have a human readable name!")
-    //       }
-    //     coutputs.addInstantiationBounds(header.toPrototype.id, InstantiationBoundArgumentsT(Map(), Map()))
-    //     coutputs.addFunctionExport(
-    //       fullEnv.function.range,
-    //       header.toPrototype,
-    //       exportPackageCoord.packageCoordinate,
-    //       exportedName)
-    //   }
-    // }
-
     if (header.attributes.contains(PureT)) {
       //      header.params.foreach(param => {
       //        if (param.tyype.permission != ReadonlyT) {
@@ -345,6 +328,7 @@ class FunctionCompilerCore(
       //      case ExportA(packageCoord) => Export2(packageCoord)
       case UserFunctionS => UserFunctionT
       case PureS => PureT
+      case AdditiveS => AdditiveT
     })
   }
 

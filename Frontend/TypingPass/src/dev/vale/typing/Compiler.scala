@@ -33,7 +33,6 @@ import dev.vale.typing.expression.LocalHelper
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale.typing.function.FunctionCompiler._
 import dev.vale.typing.macros.citizen.StructDropMacro
 import dev.vale.typing.macros.ssa.SSALenMacro
 

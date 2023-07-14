@@ -2072,7 +2072,7 @@ class Instantiator(
         case VoidLiteralTE(_) => {
           (CoordI[sI](MutableShareI, VoidIT()), VoidLiteralIE())
         }
-        case FunctionCallTE(prototypeT, args) => {
+        case FunctionCallTE(prototypeT, args, returnType) => {
           val innersCE =
             args.map(argTE => {
               val (argIT, argCE) =

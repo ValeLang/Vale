@@ -27,7 +27,7 @@ class InferTemplateTests extends FunSuite with Matchers {
     }
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("moo"), _), templateArgs, _)), _), _) => {
+      case FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("moo"), _), templateArgs, _)), _), _, _) => {
         templateArgs match {
           case Vector(CoordTemplataT(CoordT(OwnT, _, StructTT(IdT(x, Vector(), StructNameT(StructTemplateNameT(StrI("Muta")), Vector())))))) => {
             vassert(x.isTest)

@@ -88,6 +88,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
                       Vector(FunctionTemplateNameT(StrI("bork"),_)),
                       KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, _)))))))),
           CoordT(ShareT,_, VoidT())),
+        _,
         _) =>
     }
   }
@@ -115,7 +116,8 @@ class CompilerSolverTests extends FunSuite with Matchers {
               Vector(CoordTemplataT(CoordT(ShareT,RegionT(), IntT(32)))),
               Vector(CoordT(ShareT,RegionT(), IntT(32))))),
           CoordT(ShareT,RegionT(), IntT(32))),
-        Vector(ConstantIntTE(IntegerTemplataT(3),32, _))) =>
+        Vector(ConstantIntTE(IntegerTemplataT(3),32, _)),
+        _) =>
     }
   }
 
@@ -168,7 +170,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         case BlockTE(
             ReturnTE(
               ConsecutorTE(
-                Vector(FunctionCallTE(prototype, _),
+                Vector(FunctionCallTE(prototype, _, _),
                 VoidLiteralTE(_))))) => prototype
       }
     prototype match {
@@ -357,7 +359,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _) =>
+      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _, _) =>
     })
   }
 
@@ -375,7 +377,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     Collector.only(coutputs.lookupFunction("main"), {
-      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _) =>
+      case FunctionCallTE(PrototypeT(simpleNameT("moo"), _), _, _) =>
     })
   }
 
@@ -426,7 +428,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val arg =
       coutputs.lookupFunction("main").body shouldHave {
-        case FunctionCallTE(_, Vector(arg)) => arg
+        case FunctionCallTE(_, Vector(arg), _) => arg
       }
     arg.result.coord match {
       case CoordT(_, _, StructTT(_)) =>
@@ -452,7 +454,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val moo = coutputs.lookupFunction("moo")
     val main = coutputs.lookupFunction("main")
     main.body shouldHave {
-      case FunctionCallTE(prototype, Vector(_, _)) => {
+      case FunctionCallTE(prototype, Vector(_, _), _) => {
         prototype.id.localName.templateArgs.head match {
           case CoordTemplataT(CoordT(_, _, InterfaceTT(_))) =>
         }
@@ -489,7 +491,8 @@ class CompilerSolverTests extends FunSuite with Matchers {
           UpcastTE(
             _,
             InterfaceTT(IdT(_,_,InterfaceNameT(InterfaceTemplateNameT(StrI("IShip")),Vector(CoordTemplataT(CoordT(ShareT,_,IntT(32))))))),
-            _))) =>
+            _)),
+        _) =>
     }
   }
 
@@ -622,7 +625,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val main = coutputs.lookupFunction("main")
     val call =
       Collector.only(main, {
-        case call @ FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("swap"), _), _, _)), _), _) => call
+        case call @ FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("swap"), _), _, _)), _), _, _) => call
       })
     call.callable.id.localName.templateArgs.last match {
       case CoordTemplataT(CoordT(ShareT, _, IntT(32))) =>

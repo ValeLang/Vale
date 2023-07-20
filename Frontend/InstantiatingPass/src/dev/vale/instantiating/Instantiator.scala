@@ -3109,10 +3109,6 @@ class Instantiator(
       //   denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, outerRegion)
       //     .expectRegionTemplata()
 
-    // strt here, somethings weird.
-    // // its possible the ownership from the substitution is messing with us.
-    // // the ownership should
-
     kind match {
       case KindPlaceholderT(placeholderId) => {
         // Let's get the index'th placeholder from the top level denizen.

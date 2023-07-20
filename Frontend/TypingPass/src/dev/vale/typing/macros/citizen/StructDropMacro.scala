@@ -52,7 +52,7 @@ class StructDropMacro(
     runeToType.put(voidCoordRune, CoordTemplataType())
     rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, voidKindRune)))
 
-    val selfKindTemplateRune = SelfKindTemplateRuneS()
+    val selfKindTemplateRune = SelfKindTemplateRuneS(structA.range.begin)
     runeToType += (selfKindTemplateRune -> structA.tyype)
     rules.add(
       LookupSR(

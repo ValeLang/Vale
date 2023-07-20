@@ -101,12 +101,10 @@ class Compiler(
           callRange: List[RangeS],
           callLocation: LocationInDenizen,
           structTemplata: StructDefinitionTemplataT,
-          uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
-          // Context region is the only implicit generic parameter, see DROIGP.
-          contextRegion: RegionT):
+          uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
         IResolveOutcome[StructTT] = {
           structCompiler.resolveStruct(
-            coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs, contextRegion)
+            coutputs, callingEnv, callRange, callLocation, structTemplata, uncoercedTemplateArgs)
         }
 
         override def resolveInterface(
@@ -115,33 +113,12 @@ class Compiler(
             callRange: List[RangeS],
             callLocation: LocationInDenizen,
             interfaceTemplata: InterfaceDefinitionTemplataT,
-            uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
-            // Context region is the only implicit generic parameter, see DROIGP.
-            contextRegion: RegionT):
+            uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
         IResolveOutcome[InterfaceTT] = {
           structCompiler.resolveInterface(
-            coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs, contextRegion)
+            coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
         }
 
-        // override def resolveStaticSizedArrayKind(
-        //     env: IInDenizenEnvironmentT,
-        //     coutputs: CompilerOutputs,
-        //     mutability: ITemplataT[MutabilityTemplataType],
-        //     variability: ITemplataT[VariabilityTemplataType],
-        //     size: ITemplataT[IntegerTemplataType],
-        //     type2: CoordT
-        // ): StaticSizedArrayTT = {
-        //   arrayCompiler.resolveStaticSizedArray(mutability, variability, size, type2)
-        // }
-        //
-        // override def resolveRuntimeSizedArrayKind(
-        //     env: IInDenizenEnvironmentT,
-        //     state: CompilerOutputs,
-        //     element: CoordT,
-        //     arrayMutability: ITemplataT[MutabilityTemplataType]):
-        // RuntimeSizedArrayTT = {
-        //   arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
-        // }
       })
   val inferCompiler: InferCompiler =
     new InferCompiler(
@@ -341,23 +318,20 @@ class Compiler(
           env: InferEnv,
           state: CompilerOutputs,
           templata: InterfaceDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]],
-          // Context region is the only implicit generic parameter, see DROIGP.
-          contextRegion: RegionT):
+          templateArgs: Vector[ITemplataT[ITemplataType]]):
         (KindT) = {
             structCompiler.predictInterface(
-              state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs, contextRegion)
+              state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs)
         }
 
         override def predictStruct(
           env: InferEnv,
           state: CompilerOutputs,
           templata: StructDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]],
-          contextRegion: RegionT):
+          templateArgs: Vector[ITemplataT[ITemplataType]]):
         (KindT) = {
           structCompiler.predictStruct(
-            state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs, contextRegion)
+            state, env.originalCallingEnv, env.parentRanges, env.callLocation, templata, templateArgs)
         }
 
         override def kindIsFromTemplate(
@@ -456,12 +430,10 @@ class Compiler(
           callLocation: LocationInDenizen,
           templata: InterfaceDefinitionTemplataT,
           templateArgs: Vector[ITemplataT[ITemplataType]],
-          // Context region is the only implicit generic parameter, see DROIGP.
-          contextRegion: RegionT,
           verifyConclusions: Boolean):
         IResolveOutcome[InterfaceTT] = {
           vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
-          structCompiler.resolveInterface(state, callingEnv, callRange, callLocation, templata, templateArgs, contextRegion)
+          structCompiler.resolveInterface(state, callingEnv, callRange, callLocation, templata, templateArgs)
         }
 
         override def resolveStruct(
@@ -471,12 +443,10 @@ class Compiler(
           callLocation: LocationInDenizen,
           templata: StructDefinitionTemplataT,
           templateArgs: Vector[ITemplataT[ITemplataType]],
-          // Context region is the only implicit generic parameter, see DROIGP.
-          contextRegion: RegionT,
           verifyConclusions: Boolean):
         IResolveOutcome[StructTT] = {
           vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
-          structCompiler.resolveStruct(state, callingEnv, callRange,callLocation, templata, templateArgs, contextRegion)
+          structCompiler.resolveStruct(state, callingEnv, callRange,callLocation, templata, templateArgs)
         }
 
         override def resolveFunction(
@@ -927,7 +897,7 @@ class Compiler(
 
                     val exportPlaceholderedStruct =
                       structCompiler.resolveStruct(
-                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector(), regionPlaceholder) match {
+                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
                           throw CompileErrorExceptionT(CouldntEvaluateStruct(range, reason))
@@ -968,7 +938,7 @@ class Compiler(
 
                     val exportPlaceholderedKind =
                       structCompiler.resolveInterface(
-                        coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector(), RegionT()) match {
+                        coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
                           throw CompileErrorExceptionT(CouldntEvaluateInterface(range, reason))

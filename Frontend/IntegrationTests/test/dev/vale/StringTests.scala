@@ -85,6 +85,12 @@ class StringTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(12) => }
   }
 
+  test("Strings equal") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/strings/strneq.vale"))
+
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
   test("String interpolate") {
     val compile = RunCompilation.test(
       "func +(s str, i int) str { return s + str(i); }\n" +

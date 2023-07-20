@@ -1354,6 +1354,9 @@ class ExpressionCompiler(
 
           (Compiler.consecutive(initExprsTE :+ lastExprTE), (initReturnsUnflattened.flatten ++ lastReturns).toSet)
         }
+        // case p@PureSE(range, location, inner) => {
+        //   // TODO(regionsmerge)
+        // }
         case b @ BlockSE(range, locals, _) => {
           val childEnvironment = NodeEnvironmentBox(nenv.makeChild(b, None))
 
@@ -1566,8 +1569,7 @@ class ExpressionCompiler(
         range,
         callLocation,
         interfaceTemplata,
-        Vector(CoordTemplataT(containedCoord)),
-        contextRegion).expect().kind
+        Vector(CoordTemplataT(containedCoord))).expect().kind
     val ownOptCoord = CoordT(OwnT, RegionT(), optInterfaceRef)
 
     val someConstructorTemplata =
@@ -1638,8 +1640,7 @@ class ExpressionCompiler(
         interfaceTemplata,
         Vector(
           CoordTemplataT(containedSuccessCoord),
-          CoordTemplataT(containedFailCoord)),
-        region).expect().kind
+          CoordTemplataT(containedFailCoord))).expect().kind
     val ownResultCoord = CoordT(OwnT, region, resultInterfaceRef)
 
     val okConstructorTemplata =

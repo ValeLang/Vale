@@ -1,0 +1,9 @@
+
+extern("vale_static_sized_array_drop_into")
+func drop_into<V Variability, S Int, E, F>(arr [#S]<mut, V>E, consumer &F) void
+where func(&F, E)void;
+
+func drop<V Variability, S Int, E>(arr [#S]<mut, V>E) void
+where func drop(E)void {
+  drop_into(arr, {_;});
+}

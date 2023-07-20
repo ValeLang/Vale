@@ -555,9 +555,9 @@ object TemplataCompiler {
     templata match {
       case CoordTemplataT(c) => CoordTemplataT(substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, c))
       case KindTemplataT(k) => substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, k)
-      case PlaceholderTemplataT(id @ IdT(_, _, pn @ KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))), _) => {
+      case PlaceholderTemplataT(id @ IdT(_, _, pn), _) => {
         if (id.initId(interner) == needleTemplateName) {
-          newSubstitutingTemplatas(index)
+          newSubstitutingTemplatas(pn.index)
         } else {
           templata
         }

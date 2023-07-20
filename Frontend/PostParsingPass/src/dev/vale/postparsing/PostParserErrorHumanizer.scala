@@ -150,7 +150,7 @@ object PostParserErrorHumanizer {
       case ArgumentRuneS(paramIndex) => "(arg " + paramIndex + ")"
       case SelfKindRuneS() => "(self kind)"
       case SelfOwnershipRuneS() => "(self ownership)"
-      case SelfKindTemplateRuneS() => "(self kind template)"
+      case SelfKindTemplateRuneS(_) => "(self kind template)"
       case PatternInputRuneS(codeLoc) => "(pattern input " + codeLoc + ")"
       case SelfRuneS() => "(self)"
       case SelfCoordRuneS() => "(self ref)"

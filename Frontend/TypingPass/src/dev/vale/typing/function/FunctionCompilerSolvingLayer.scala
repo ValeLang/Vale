@@ -1,6 +1,6 @@
 package dev.vale.typing.function
 
-import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, vassert, vassertSome, vcurious, vfail, vimpl, vpass}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, vassert, vassertSome, vcurious, vfail, vimpl, vpass, vregionmut}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.citizen.StructCompiler
@@ -458,9 +458,10 @@ class FunctionCompilerSolvingLayer(
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
 //            val runeType = vassertSome(function.runeToType.get(genericParam.rune.rune))
             vimpl()
+            val placeholderPureHeight = vregionmut(None)
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, false)
+                coutputs, callingEnv, callingEnv.id, genericParam, index, function.runeToType, placeholderPureHeight, false)
             Some(InitialKnown(genericParam.rune, templata))
           }
         }
@@ -536,9 +537,10 @@ class FunctionCompilerSolvingLayer(
           case None => false
           case Some((genericParam, index)) => {
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
+            val placeholderPureHeight = vregionmut(None)
             val templata =
               templataCompiler.createPlaceholder(
-                coutputs, nearEnv, functionTemplateId, genericParam, index, function.runeToType, true)
+                coutputs, nearEnv, functionTemplateId, genericParam, index, function.runeToType, placeholderPureHeight, true)
             solver.manualStep(Map(genericParam.rune.rune -> templata))
             true
           }

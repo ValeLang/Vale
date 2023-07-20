@@ -46,9 +46,7 @@ trait ITemplataCompilerDelegate {
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only implicit generic parameter, see DROIGP.
-    contextRegion: RegionT
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]
   ):
   IResolveOutcome[StructTT]
 
@@ -60,9 +58,7 @@ trait ITemplataCompilerDelegate {
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only implicit generic parameter, see DROIGP.
-    contextRegion: RegionT
+    uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]
   ):
   IResolveOutcome[InterfaceTT]
 }

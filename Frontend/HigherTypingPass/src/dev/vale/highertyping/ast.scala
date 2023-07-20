@@ -2,10 +2,9 @@ package dev.vale.highertyping
 
 import dev.vale.{RangeS, StrI, vassert, vcurious, vpass, vwat}
 import dev.vale.parsing.ast.MutabilityP
-import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
+import dev.vale.postparsing.rules._
 import dev.vale.postparsing._
 import dev.vale.parsing._
-import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing._
 
 import scala.collection.immutable.List
@@ -88,6 +87,16 @@ case class StructA(
 
   vpass()
 
+  // These should be removed by the higher typer
+  headerRules.collect({
+    case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _) => vwat()
+  })
+  memberRules.collect({
+    case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _) => vwat()
+  })
+
   vassert(
     !genericParameters.exists({ case x =>
       x.rune.rune match {
@@ -130,6 +139,12 @@ case class ImplA(
   subCitizenImpreciseName: IImpreciseNameS,
   interfaceKindRune: RuneUsage,
   superInterfaceImpreciseName: IImpreciseNameS) {
+
+  // These should be removed by the higher typer
+  rules.collect({
+    case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _) => vwat()
+  })
 
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
@@ -182,6 +197,11 @@ case class InterfaceA(
   // See IMRFDI
   internalMethods: Vector[FunctionA]
 ) extends CitizenA {
+  // These should be removed by the higher typer
+  rules.collect({
+    case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _) => vwat()
+  })
 
   vassert(
     !genericParameters.exists({ case x =>
@@ -268,6 +288,12 @@ case class FunctionA(
 ) {
   val hash = range.hashCode() + name.hashCode()
   vpass()
+
+  // These should be removed by the higher typer
+  rules.collect({
+    case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _) => vwat()
+  })
 
   vassert(
     !genericParameters.exists({ case x =>

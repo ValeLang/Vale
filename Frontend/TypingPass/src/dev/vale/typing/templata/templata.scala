@@ -179,7 +179,7 @@ case class FunctionTemplataT(
 }
 
 case class StructDefinitionTemplataT(
-  // The paackage this interface was declared in.
+  // The paackage this struct was declared in.
   // has the name of the surrounding environment, does NOT include struct's name.
   // See TMRE for more on these environments.
   declaringEnv: IEnvironmentT,

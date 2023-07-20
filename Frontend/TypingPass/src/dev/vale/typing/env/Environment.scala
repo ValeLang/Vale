@@ -388,10 +388,10 @@ case class PackageEnvironmentT[+T <: INameT](
 //  override def rootCompilingDenizenEnv: IInDenizenEnvironment = vwat()
 
   override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[IInDenizenEnvironmentT]) {
+    if (!obj.isInstanceOf[PackageEnvironmentT[T]]) {
       return false
     }
-    return id.equals(obj.asInstanceOf[IInDenizenEnvironmentT].id)
+    return id.equals(obj.asInstanceOf[PackageEnvironmentT[T]].id)
   }
 
   private[env] override def lookupWithNameInner(

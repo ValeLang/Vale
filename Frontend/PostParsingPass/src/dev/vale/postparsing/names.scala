@@ -175,7 +175,9 @@ case class InterfaceNameRuneS(interfaceName: ICitizenDeclarationNameS) extends I
 case class SelfRuneS() extends IRuneS {  }
 case class SelfOwnershipRuneS() extends IRuneS {  }
 case class SelfKindRuneS() extends IRuneS {  }
-case class SelfKindTemplateRuneS() extends IRuneS {  }
+case class SelfKindTemplateRuneS(loc: CodeLocationS) extends IRuneS {
+  vpass()
+}
 case class SelfCoordRuneS() extends IRuneS {  }
 case class MacroVoidKindRuneS() extends IRuneS {  }
 case class MacroVoidCoordRuneS() extends IRuneS {  }

@@ -52,8 +52,7 @@ class SequenceCompiler(
       callLocation,
       tupleTemplate,
 //      Vector(CoordListTemplata(types2))).kind
-      types2.map(CoordTemplataT),
-      RegionT()).expect().kind
+      types2.map(CoordTemplataT)).expect().kind
   }
 
   def makeTupleCoord(

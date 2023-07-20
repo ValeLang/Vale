@@ -418,10 +418,9 @@ class InferCompiler(
     conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
   Result[Option[InstantiationBoundArgumentsT], ISolverError[IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]] = {
     // Check all template calls
-    // DO NOT SUBMIT
     rules.foreach({
       case r@CallSR(_, _, _, _) => {
-        checkTemplateCall(env, contextRegion, state, ranges, callLocation, r, conclusions) match {
+        checkTemplateCall(env, state, ranges, callLocation, r, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }
@@ -544,7 +543,6 @@ class InferCompiler(
   // like in the case of an incomplete solve.
   def checkTemplateCall(
     callingEnv: IInDenizenEnvironmentT,
-    contextRegion: RegionT, // DO NOT SUBMIT remove this
     state: CompilerOutputs,
     ranges: List[RangeS],
       callLocation: LocationInDenizen,

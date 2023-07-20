@@ -1355,7 +1355,7 @@ class ExpressionCompiler(
           (Compiler.consecutive(initExprsTE :+ lastExprTE), (initReturnsUnflattened.flatten ++ lastReturns).toSet)
         }
         // case p@PureSE(range, location, inner) => {
-        //   // DO NOT SUBMIT
+        //   // TODO(regionsmerge)
         // }
         case b @ BlockSE(range, locals, _) => {
           val childEnvironment = NodeEnvironmentBox(nenv.makeChild(b, None))

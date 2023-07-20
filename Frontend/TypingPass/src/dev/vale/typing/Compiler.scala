@@ -1423,7 +1423,6 @@ class Compiler(
               }
             }))
 
-    // DO NOT SUBMIT
     coutputs.getFunctionExports.foreach(funcExport => {
       val exportedKindToExport = packageToKindToExport.getOrElse(funcExport.exportId.packageCoord, Map())
       (Vector(funcExport.prototype.returnType) ++ funcExport.prototype.paramTypes)

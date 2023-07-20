@@ -62,12 +62,12 @@ object HigherTypingPass {
           }
         (actualType, expectedType) match {
           case (x, y) if x == y => {
-            ruleBuilder += rule
+            ruleBuilder += CallSR(range, resultRune, templateRune, args)
           }
           case (KindTemplataType(), CoordTemplataType()) => {
             val kindRune = RuneUsage(range, ImplicitCoercionKindRuneS(range, resultRune.rune))
             runeAToType.put(kindRune.rune, KindTemplataType())
-            ruleBuilder += MaybeCoercingCallSR(range, kindRune, templateRune, args)
+            ruleBuilder += CallSR(range, kindRune, templateRune, args)
             ruleBuilder += CoerceToCoordSR(range, resultRune, kindRune)
           }
           case _ => vimpl()
@@ -89,7 +89,7 @@ object HigherTypingPass {
                   runeAToType, ruleBuilder, range, resultRune, name)
               }
               case KindTemplataType() => {
-                ruleBuilder += rule
+                ruleBuilder += LookupSR(range, resultRune, name)
               }
               case TemplateTemplataType(paramTypes, returnType) => {
                 vassert(paramTypes.nonEmpty) // impl, if it's empty we might need to do some coercing.
@@ -118,7 +118,7 @@ object HigherTypingPass {
           case TemplataLookupResult(actualType) => {
             (actualType, desiredType) match {
               case (x, y) if x == y => {
-                ruleBuilder += rule
+                ruleBuilder += LookupSR(range, resultRune, name)
               }
               case (KindTemplataType(), CoordTemplataType()) => {
                 coerceKindLookupToCoord(
@@ -157,7 +157,7 @@ object HigherTypingPass {
   ) = {
     val kindRune = RuneUsage(range, ImplicitCoercionKindRuneS(range, resultRune.rune))
     runeAToType.put(kindRune.rune, KindTemplataType())
-    ruleBuilder += MaybeCoercingLookupSR(range, kindRune, name)
+    ruleBuilder += LookupSR(range, kindRune, name)
     ruleBuilder += CoerceToCoordSR(range, resultRune, kindRune)
   }
 
@@ -171,8 +171,8 @@ object HigherTypingPass {
   Unit = {
     val templateRune = RuneUsage(range, ImplicitCoercionTemplateRuneS(range, resultRune.rune))
     runeAToType.put(templateRune.rune, actualTemplateType)
-    ruleBuilder += MaybeCoercingLookupSR(range, templateRune, name)
-    ruleBuilder += MaybeCoercingCallSR(range, resultRune, templateRune, Vector())
+    ruleBuilder += LookupSR(range, templateRune, name)
+    ruleBuilder += CallSR(range, resultRune, templateRune, Vector())
   }
 
   private def coerceKindTemplateLookupToCoord(
@@ -187,8 +187,8 @@ object HigherTypingPass {
     val kindRune = RuneUsage(range, ImplicitCoercionKindRuneS(range, resultRune.rune))
     runeAToType.put(templateRune.rune, ttt)
     runeAToType.put(kindRune.rune, KindTemplataType())
-    ruleBuilder += MaybeCoercingLookupSR(range, templateRune, name)
-    ruleBuilder += MaybeCoercingCallSR(range, kindRune, templateRune, Vector())
+    ruleBuilder += LookupSR(range, templateRune, name)
+    ruleBuilder += CallSR(range, kindRune, templateRune, Vector())
     ruleBuilder += CoerceToCoordSR(range, resultRune, kindRune)
   }
 }
@@ -378,6 +378,13 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keyword
 
     // Shouldnt fail because we got a complete solve earlier
     astrouts.codeLocationToMaybeType.put(rangeS.begin, Some(tyype))
+
+    headerRulesExplicitS.collect({
+      case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    })
+    memberRulesExplicitS.collect({
+      case MaybeCoercingCallSR(_, _, _, _) => vwat()
+    })
 
     val structA =
       highertyping.StructA(

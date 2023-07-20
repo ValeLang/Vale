@@ -205,7 +205,7 @@ class PatternCompiler(
     vassert(previousLiveCaptureLocals.map(_.name) == previousLiveCaptureLocals.map(_.name).distinct)
 
     val AtomSP(range, maybeCaptureLocalVarA, coordRuneA, maybeDestructure) = pattern
-    // DO NOT SUBMIT make test that we have the right type in there, cuz the coordRuneA seems to be unused
+    // TODO(CRASTBU): make test that we have the right type in there, cuz the coordRuneA seems to be unused
 
     // We make it here instead of down in the maybeDestructure clauses because whether we destructure it or not
     // is unrelated to whether we destructure it.

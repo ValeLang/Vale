@@ -1,0 +1,13 @@
+
+func drop_into<E, F>(arr []<mut>E, consumer &F) void
+where func(&F, E)void
+{
+  while (arr.len() > 0) {
+    consumer(arr.pop());
+  }
+  [] = arr;
+}
+func drop<E>(arr []<mut>E) void
+where func drop(E)void {
+  drop_into(arr, {_;});
+}

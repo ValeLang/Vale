@@ -410,7 +410,7 @@ class AnonymousInterfaceMacro(
     runeToType.put(selfKindRune, KindTemplataType())
     val selfCoordRune = SelfRuneS()
     runeToType.put(selfCoordRune, CoordTemplataType())
-    val selfKindTemplateRune = SelfKindTemplateRuneS()
+    val selfKindTemplateRune = SelfKindTemplateRuneS(struct.range.begin)
     runeToType.put(selfKindTemplateRune, structType)
 
     val rules = new Accumulator[IRulexSR]()

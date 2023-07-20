@@ -2,36 +2,18 @@ import v.builtins.arith.*;
 import v.builtins.drop.*;
 import v.builtins.panic.*;
 import v.builtins.runtime_sized_array_mut_new.*;
+import v.builtins.runtime_sized_array_mut_drop.*;
 import v.builtins.runtime_sized_array_push.*;
 import v.builtins.runtime_sized_array_pop.*;
 import v.builtins.runtime_sized_array_len.*;
+import v.builtins.runtime_sized_array_capacity.*;
+import v.builtins.static_sized_array_mut_drop.*;
 
 func drop_into<V Variability, S Int, E, F>(arr [#S]<imm, V>E, consumer &F) void
 where func(&F, E)void
 {}
 
-extern("vale_static_sized_array_drop_into")
-func drop_into<V Variability, S Int, E, F>(arr [#S]<mut, V>E, consumer &F) void
-where func(&F, E)void;
-
-func drop<V Variability, S Int, E>(arr [#S]<mut, V>E) void
-where func drop(E)void {
-  drop_into(arr, {_;});
-}
 func drop<V Variability, S Int, E>(arr [#S]<imm, V>E) void {}
-
-func drop_into<E, F>(arr []<mut>E, consumer &F) void
-where func(&F, E)void
-{
-  while (arr.len() > 0) {
-    consumer(arr.pop());
-  }
-  [] = arr;
-}
-func drop<E>(arr []<mut>E) void
-where func drop(E)void {
-  drop_into(arr, {_;});
-}
 
 func drop_into<E, F>(arr []<imm>E, consumer &F) void
 where func(&F, &E)void, func drop(E)void
@@ -50,9 +32,6 @@ where func drop(E)void {
 
 extern("vale_static_sized_array_len")
 func len<M Mutability, V Variability, S Int, E>(arr &[#S]<M Mutability, V>E) int;
-
-extern("vale_runtime_sized_array_capacity")
-func capacity<E>(arr &[]<mut>E) int;
 
 func Array<M Mutability, E, G>(n int, generator G) []<M>E
 where

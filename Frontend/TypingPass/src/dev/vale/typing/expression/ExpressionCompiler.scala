@@ -1354,9 +1354,10 @@ class ExpressionCompiler(
 
           (Compiler.consecutive(initExprsTE :+ lastExprTE), (initReturnsUnflattened.flatten ++ lastReturns).toSet)
         }
-        // case p@PureSE(range, location, inner) => {
-        //   // TODO(regionsmerge)
-        // }
+        case p@PureSE(range, location, inner) => {
+          evaluateAndCoerceToReferenceExpression(
+            coutputs, nenv, life + 0, parentRanges, outerCallLocation, region, inner)
+        }
         case b @ BlockSE(range, locals, _) => {
           val childEnvironment = NodeEnvironmentBox(nenv.makeChild(b, None))
 

@@ -58,7 +58,6 @@ class StructConstructorMacro(
     val structNameRange = structA.name.range
     val structGenericRune = StructNameRuneS(structA.name)
     runeToType += (structGenericRune -> structA.tyype)
-    // DO NOT SUBMIT whats up with MaybeCoercingLookupSR?
     rules += LookupSR(structNameRange, RuneUsage(structNameRange, structGenericRune), structA.name.getImpreciseName(interner))
 
     val structKindRune = RuneUsage(structNameRange, ImplicitCoercionKindRuneS(structNameRange, structGenericRune))

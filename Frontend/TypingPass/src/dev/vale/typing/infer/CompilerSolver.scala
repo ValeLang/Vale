@@ -841,7 +841,7 @@ class CompilerRuleSolver(
         Ok(())
       }
       case AugmentSR(range, resultRune, augmentOwnership, innerRune) => {
-        // DO NOT SUBMIT
+        // TODO(regionsmerge)
         stepState.getConclusion(innerRune.rune) match {
           case Some(CoordTemplataT(initialCoord)) => {
             val newCoord =
@@ -976,17 +976,16 @@ class CompilerRuleSolver(
         Ok(())
       }
       case CallSR(range, resultRune, templateRune, argRunes) => {
-        solveCallRule(env, stepState, range, state, resultRune, templateRune, argRunes)
+        solveCallRule(state, env, stepState, range, resultRune, templateRune, argRunes)
       }
     }
   }
 
-  // DO NOT SUBMIT
   private def solveCallRule(
+      state: CompilerOutputs,
       env: InferEnv,
       stepState: IStepState[IRulexSR, IRuneS, ITemplataT[ITemplataType]],
       range: RangeS,
-      state: CompilerOutputs,
       resultRune: RuneUsage,
       templateRune: RuneUsage,
       argRunes: Vector[RuneUsage]):
@@ -1039,18 +1038,21 @@ class CompilerRuleSolver(
             Ok(())
           }
           case KindTemplataT(interface@InterfaceTT(_)) => {
-            // // DO NOT SUBMIT seems slow
+            // With all this, it seems like we could solve this rule even
+            // without knowing the template. Like we could pull the template
+            // from the result. Alas, we couldnt make a template templata
+            // for a given lambda. If we can figure that out, this could work.
             // val templateTemplata =
             //   env.selfEnv.lookupNearestWithName(interface.id.localName.template, Set(TemplataLookupContext)) match {
             //     case Some(t@InterfaceDefinitionTemplataT(_, _)) => t
             //     case Some(_) => vwat()
             //     case None => {
-            //       // This might happen if there's a lambda. DO NOT SUBMIT
+            //       // This might happen if there's a lambda?
             //       return Err(CallResultIsntCallable(result))
             //     }
             //   }
             // if (templateTemplata.tyype.paramTypes != interface.id.localName.templateArgs.map(_.tyype)) {
-            //   return Err(WrongNumberOfTemplateArgs(argRunes.length, argRunes.length)) // DO NOT SUBMIT better error
+            //   vimpl()//return Err(WrongNumberOfTemplateArgs(argRunes.length, argRunes.length)) need better error
             // }
             // stepState.concludeRune[ITypingPassSolverError](
             //   range :: env.parentRanges, templateRune.rune, templateTemplata)
@@ -1070,18 +1072,21 @@ class CompilerRuleSolver(
             Ok(())
           }
           case KindTemplataT(struct@StructTT(_)) => {
-            // // DO NOT SUBMIT seems slow
+            // With all this, it seems like we could solve this rule even
+            // without knowing the template. Like we could pull the template
+            // from the result. Alas, we couldnt make a template templata
+            // for a given lambda. If we can figure that out, this could work.
             // val templateTemplata =
             //   env.selfEnv.lookupNearestWithName(struct.id.localName.template, Set(TemplataLookupContext)) match {
             //     case Some(t@StructDefinitionTemplataT(_, _)) => t
             //     case Some(_) => vwat()
             //     case None => {
-            //       // This might happen if there's a lambda. DO NOT SUBMIT
+            //       // This might happen if there's a lambda?
             //       return Err(CallResultIsntCallable(result))
             //     }
             //   }
             // if (templateTemplata.tyype.paramTypes != struct.id.localName.templateArgs.map(_.tyype)) {
-            //   return Err(WrongNumberOfTemplateArgs(argRunes.length, argRunes.length)) // DO NOT SUBMIT better error
+            //   vimpl() // return Err(WrongNumberOfTemplateArgs(argRunes.length, argRunes.length)) need better error
             // }
             // stepState.concludeRune[ITypingPassSolverError](
             //   range :: env.parentRanges, templateRune.rune, templateTemplata)
@@ -1107,7 +1112,7 @@ class CompilerRuleSolver(
             return Err(CallResultIsntCallable(result))
           }
           case KindTemplataT(KindPlaceholderT(_)) => {
-            // DO NOT SUBMIT will this always be true?
+            // I can't imagine a placeholder that is a callable template...
             return Err(CallResultIsntCallable(result))
           }
           case other => vwat(other)

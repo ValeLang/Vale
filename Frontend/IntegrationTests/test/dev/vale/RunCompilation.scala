@@ -1,6 +1,5 @@
 package dev.vale
 
-import dev.vale._
 import dev.vale.finalast.ProgramH
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.instantiating.ast.HinputsI

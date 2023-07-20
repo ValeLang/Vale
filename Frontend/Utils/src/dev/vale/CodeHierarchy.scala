@@ -68,6 +68,12 @@ object PackageCoordinate {// extends Ordering[PackageCoordinate] {
 
 object FileCoordinateMap {
   val TEST_MODULE = "test"
+
+  def simple[T](fileCoord: FileCoordinate, contents: T): FileCoordinateMap[T] = {
+    val result = new FileCoordinateMap[T]()
+    result.put(fileCoord, contents)
+    result
+  }
   def test[T](interner: Interner, contents: T): FileCoordinateMap[T] = {
     val result = new FileCoordinateMap[T]()
     result.put(

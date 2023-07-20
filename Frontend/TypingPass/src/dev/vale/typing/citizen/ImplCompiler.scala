@@ -10,7 +10,7 @@ import dev.vale.typing._
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.{Accumulator, Err, Interner, Ok, Profiler, RangeS, Result, U, postparsing, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Ok, Profiler, RangeS, Result, U, postparsing, vassert, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing._
@@ -201,7 +201,7 @@ class ImplCompiler(
       implA.genericParams.zipWithIndex.map({ case (rune, index) =>
         val placeholder =
           templataCompiler.createPlaceholder(
-            coutputs, implOuterEnv, implTemplateId, rune, index, implA.runeToType, true)
+            coutputs, implOuterEnv, implTemplateId, rune, index, implA.runeToType, vregionmut(None), true)
         InitialKnown(rune.rune, placeholder)
       })
 

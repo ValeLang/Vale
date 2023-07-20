@@ -555,9 +555,9 @@ object TemplataCompiler {
     templata match {
       case CoordTemplataT(c) => CoordTemplataT(substituteTemplatasInCoord(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, c))
       case KindTemplataT(k) => substituteTemplatasInKind(coutputs, interner, keywords, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, k)
-      case PlaceholderTemplataT(id @ IdT(_, _, pn @ KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))), _) => {
+      case PlaceholderTemplataT(id @ IdT(_, _, pn), _) => {
         if (id.initId(interner) == needleTemplateName) {
-          newSubstitutingTemplatas(index)
+          newSubstitutingTemplatas(pn.index)
         } else {
           templata
         }
@@ -1089,76 +1089,119 @@ class TemplataCompiler(
     TemplataCompiler.getCitizenTemplate(actualCitizenRef.id) == citizenTemplateId
   }
 
-  // TODO(regionsmerge)
   def createPlaceholder(
-    coutputs: CompilerOutputs,
-    env: IInDenizenEnvironmentT,
-    namePrefix: IdT[INameT],
-    genericParam: GenericParameterS,
-    index: Int,
-    runeToType: Map[IRuneS, ITemplataType],
-    registerWithCompilerOutputs: Boolean):
+      coutputs: CompilerOutputs,
+      env: IInDenizenEnvironmentT,
+      namePrefix: IdT[INameT],
+      genericParam: GenericParameterS,
+      index: Int,
+      runeToType: Map[IRuneS, ITemplataType],
+      currentHeight: Option[Int],
+      registerWithCompilerOutputs: Boolean
+  ):
   ITemplataT[ITemplataType] = {
-    vregionmut() // Change with regions
-    val immutable =
-      genericParam.tyype match {
-        case CoordGenericParameterTypeS(coordRegion, kindMutable, regionMutable) => !kindMutable
-        case _ => true
-      }
     val runeType = vassertSome(runeToType.get(genericParam.rune.rune))
-    createPlaceholderInner(
-      coutputs, env, namePrefix, index, genericParam.rune.rune, runeType, immutable, registerWithCompilerOutputs)
-  }
-
-  def createPlaceholderInner(
-    coutputs: CompilerOutputs,
-    env: IInDenizenEnvironmentT,
-    namePrefix: IdT[INameT],
-    index: Int,
-    rune: IRuneS,
-    runeType: ITemplataType,
-    immutable: Boolean,
-    registerWithCompilerOutputs: Boolean):
-  ITemplataT[ITemplataType] = {
-    val placeholderId =
-      namePrefix.addStep(
-        interner.intern(KindPlaceholderNameT(
-          interner.intern(KindPlaceholderTemplateNameT(index, rune)))))
-    val placeholderTemplateId =
-      TemplataCompiler.getPlaceholderTemplate(placeholderId)
-
-    val placeholderKindT = KindPlaceholderT(placeholderId)
-    if (registerWithCompilerOutputs) {
-      coutputs.declareType(placeholderTemplateId)
-
-      val mutability = MutabilityTemplataT(if (immutable) ImmutableT else MutableT)
-      coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-
-      val placeholderEnv = GeneralEnvironmentT.childOf(interner, env, placeholderTemplateId)
-      coutputs.declareTypeOuterEnv(placeholderTemplateId, placeholderEnv)
-      coutputs.declareTypeInnerEnv(placeholderTemplateId, placeholderEnv)
-    }
+    val rune = genericParam.rune.rune
 
     runeType match {
       case KindTemplataType() => {
-        KindTemplataT(placeholderKindT)
-      }
-      // TODO: Not sure what to put here when we do regions. We might need to
-      // flood the nearest region annotation downward, and then apply it if it's
-      // a coord or something. Remembering that in every templex would be bothersome
-      // though.
-      // For now, we can manually add them.
-      // So, I guess we could just assume the function's default region here then.
-      case CoordTemplataType() => {
-        val ownership =
-          if (immutable) {
-            ShareT
-          } else {
-            OwnT
+        val (kindMutable, regionMutable) =
+          genericParam.tyype match {
+            case CoordGenericParameterTypeS(coordRegion, kindMutable, regionMutable) => {
+              (if (kindMutable) OwnT else ShareT, regionMutable)
+            }
+            case _ => (OwnT, false)
           }
-        CoordTemplataT(CoordT(ownership, RegionT(), placeholderKindT))
+        createKindPlaceholderInner(
+          coutputs, env, namePrefix, index, rune, kindMutable, registerWithCompilerOutputs)
       }
-      case _ => PlaceholderTemplataT(placeholderId, runeType)
+      case CoordTemplataType() => {
+        val (kindMutable, regionMutability) =
+          genericParam.tyype match {
+            case CoordGenericParameterTypeS(coordRegion, kindMutable, regionMutable) => {
+              (if (kindMutable) OwnT else ShareT, if (regionMutable) ReadWriteRegionS else ReadOnlyRegionS)
+            }
+            case _ => (OwnT, ReadOnlyRegionS)
+          }
+        createCoordPlaceholderInner(
+          coutputs,
+          env,
+          namePrefix,
+          index,
+          rune,
+          currentHeight,
+          regionMutability,
+          kindMutable,
+          registerWithCompilerOutputs)
+      }
+      case otherType => {
+        createNonKindNonRegionPlaceholderInner(namePrefix, index, rune, otherType)
+      }
     }
+  }
+
+  def createCoordPlaceholderInner(
+      coutputs: CompilerOutputs,
+      env: IInDenizenEnvironmentT,
+      namePrefix: IdT[INameT],
+      index: Int,
+      rune: IRuneS,
+      currentHeight: Option[Int],
+      regionMutability: IRegionMutabilityS,
+      kindOwnership: OwnershipT,
+      registerWithCompilerOutputs: Boolean
+  ): CoordTemplataT = {
+    val regionPlaceholderTemplata = RegionT()
+
+    val kindPlaceholderT =
+      createKindPlaceholderInner(
+        coutputs, env, namePrefix, index, rune, kindOwnership, registerWithCompilerOutputs)
+
+    CoordTemplataT(CoordT(kindOwnership, regionPlaceholderTemplata, kindPlaceholderT.kind))
+  }
+
+  def createKindPlaceholderInner(
+      coutputs: CompilerOutputs,
+      env: IInDenizenEnvironmentT,
+      namePrefix: IdT[INameT],
+      index: Int,
+      rune: IRuneS,
+      kindOwnership: OwnershipT,
+      registerWithCompilerOutputs: Boolean):
+  KindTemplataT = {
+    val kindPlaceholderId =
+      namePrefix.addStep(
+        interner.intern(KindPlaceholderNameT(
+          interner.intern(KindPlaceholderTemplateNameT(index, rune)))))
+    val kindPlaceholderTemplateId =
+      TemplataCompiler.getPlaceholderTemplate(kindPlaceholderId)
+
+    if (registerWithCompilerOutputs) {
+      coutputs.declareType(kindPlaceholderTemplateId)
+
+      val mutability =
+        MutabilityTemplataT(
+          kindOwnership match {
+            case OwnT => MutableT
+            case ShareT => ImmutableT
+          })
+      coutputs.declareTypeMutability(kindPlaceholderTemplateId, mutability)
+
+      val placeholderEnv = GeneralEnvironmentT.childOf(interner, env, kindPlaceholderTemplateId)
+      coutputs.declareTypeOuterEnv(kindPlaceholderTemplateId, placeholderEnv)
+      coutputs.declareTypeInnerEnv(kindPlaceholderTemplateId, placeholderEnv)
+    }
+
+    KindTemplataT(KindPlaceholderT(kindPlaceholderId))
+  }
+
+  def createNonKindNonRegionPlaceholderInner[T <: ITemplataType](
+      namePrefix: IdT[INameT],
+      index: Int,
+      rune: IRuneS,
+      tyype: T):
+  PlaceholderTemplataT[T] = {
+    val idT = namePrefix.addStep(interner.intern(NonKindNonRegionPlaceholderNameT(index, rune)))
+    PlaceholderTemplataT(idT, tyype)
   }
 }

@@ -9,7 +9,7 @@ import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, RangeS, typing, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, RangeS, typing, vassert, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
 import dev.vale.highertyping._
 import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve}
 import dev.vale.typing.types._
@@ -345,10 +345,11 @@ class StructCompilerGenericArgsLayer(
           TemplataCompiler.getFirstUnsolvedIdentifyingRune(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
             case None => false
             case Some((genericParam, index)) => {
+              val placeholderPureHeight = vregionmut(None)
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
               val templata =
                 templataCompiler.createPlaceholder(
-                  coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, true)
+                  coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, placeholderPureHeight, true)
               solver.manualStep(Map(genericParam.rune.rune -> templata))
               true
             }
@@ -429,9 +430,10 @@ class StructCompilerGenericArgsLayer(
             case None => false
             case Some((genericParam, index)) => {
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
+              val placeholderPureHeight = vregionmut(None)
               val templata =
                 templataCompiler.createPlaceholder(
-                  coutputs, outerEnv, interfaceTemplateId, genericParam, index, interfaceA.runeToType, true)
+                  coutputs, outerEnv, interfaceTemplateId, genericParam, index, interfaceA.runeToType, placeholderPureHeight, true)
               solver.manualStep(Map(genericParam.rune.rune -> templata))
               true
             }

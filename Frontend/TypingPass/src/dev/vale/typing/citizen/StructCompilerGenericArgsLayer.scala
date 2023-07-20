@@ -36,9 +36,7 @@ class StructCompilerGenericArgsLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
-    templateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only impicit generic parameter, see DROIGP.
-    contextRegion: RegionT):
+    templateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[StructTT] = {
     Profiler.frame(() => {
       val StructDefinitionTemplataT(declaringEnv, structA) = structTemplata
@@ -56,6 +54,8 @@ class StructCompilerGenericArgsLayer(
       val callSiteRules =
         TemplataCompiler.assembleCallSiteRules(
           structA.headerRules.toVector, structA.genericParameters, templateArgs.size)
+
+      val contextRegion = RegionT()
 
       // Check if its a valid use of this template
       val envs = InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion)
@@ -110,9 +110,7 @@ class StructCompilerGenericArgsLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    templateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only impicit generic parameter, see DROIGP.
-    contextRegion: RegionT):
+    templateArgs: Vector[ITemplataT[ITemplataType]]):
   (InterfaceTT) = {
     Profiler.frame(() => {
       val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
@@ -135,6 +133,8 @@ class StructCompilerGenericArgsLayer(
           callSiteRules.flatMap(_.runeUsages.map(_.rune))).toSet
       val runeToTypeForPrediction =
         runesForPrediction.toVector.map(r => r -> interfaceA.runeToType(r)).toMap
+
+      val contextRegion = RegionT()
 
       // This *doesnt* check to make sure it's a valid use of the template. Its purpose is really
       // just to populate any generic parameter default values.
@@ -177,9 +177,7 @@ class StructCompilerGenericArgsLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT,
-    templateArgs: Vector[ITemplataT[ITemplataType]],
-    // The default region is the only implicit generic param, see DROIGP.
-    contextRegion: RegionT):
+    templateArgs: Vector[ITemplataT[ITemplataType]]):
   (StructTT) = {
     Profiler.frame(() => {
       val StructDefinitionTemplataT(declaringEnv, structA) = structTemplata
@@ -207,6 +205,8 @@ class StructCompilerGenericArgsLayer(
       // just to populate any generic parameter default values.
 
       // Maybe we should make this incremental too, like when solving definitions?
+
+      val contextRegion = RegionT()
 
       val CompleteCompilerSolve(_, inferences, _, Vector()) =
         inferCompiler.solveExpectComplete(
@@ -246,9 +246,7 @@ class StructCompilerGenericArgsLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     interfaceTemplata: InterfaceDefinitionTemplataT,
-    templateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only impicit generic parameter, see DROIGP.
-    contextRegion: RegionT):
+    templateArgs: Vector[ITemplataT[ITemplataType]]):
   IResolveOutcome[InterfaceTT] = {
     Profiler.frame(() => {
       val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
@@ -266,6 +264,8 @@ class StructCompilerGenericArgsLayer(
       val callSiteRules =
         TemplataCompiler.assembleCallSiteRules(
           interfaceA.rules.toVector, interfaceA.genericParameters, templateArgs.size)
+
+      val contextRegion = RegionT()
 
       // This checks to make sure it's a valid use of this template.
       val envs = InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion)

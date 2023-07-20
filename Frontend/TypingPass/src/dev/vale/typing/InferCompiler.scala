@@ -90,8 +90,6 @@ trait IInferCompilerDelegate {
     callLocation: LocationInDenizen,
     templata: StructDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only implicit generic parameter, see DROIGP.
-    contextRegion: RegionT,
     verifyConclusions: Boolean):
   IResolveOutcome[StructTT]
 
@@ -102,8 +100,6 @@ trait IInferCompilerDelegate {
     callLocation: LocationInDenizen,
     templata: InterfaceDefinitionTemplataT,
     templateArgs: Vector[ITemplataT[ITemplataType]],
-    // Context region is the only implicit generic parameter, see DROIGP.
-    contextRegion: RegionT,
     verifyConclusions: Boolean):
   IResolveOutcome[InterfaceTT]
 
@@ -423,14 +419,8 @@ class InferCompiler(
   Result[Option[InstantiationBoundArgumentsT], ISolverError[IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError]] = {
     // Check all template calls
     rules.foreach({
-      case MaybeCoercingCallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
-          case Ok(()) =>
-          case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
-        }
-      }
-      case CallSR(range, _, templateRune, argRunes) => {
-        checkTemplateCall(env, contextRegion, state, ranges, callLocation, range, templateRune, argRunes, conclusions) match {
+      case r@CallSR(_, _, _, _) => {
+        checkTemplateCall(env, state, ranges, callLocation, r, conclusions) match {
           case Ok(()) =>
           case Err(e) => return Err(RuleError(CouldntResolveKind(e)))
         }
@@ -553,17 +543,14 @@ class InferCompiler(
   // like in the case of an incomplete solve.
   def checkTemplateCall(
     callingEnv: IInDenizenEnvironmentT,
-    contextRegion: RegionT, // DO NOT SUBMIT remove this
     state: CompilerOutputs,
     ranges: List[RangeS],
       callLocation: LocationInDenizen,
-    range: RangeS,
-    templateRune: RuneUsage,
-    argRunes: Vector[RuneUsage],
+    c: CallSR,
     conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
   Result[Unit, ResolveFailure[KindT]] = {
 //  Result[Option[(IRuneS, PrototypeTemplata)], ISolverError[IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]] = {
-//     val CallSR(range, resultRune, templateRune, argRunes) = c
+    val CallSR(range, resultRune, templateRune, argRunes) = c
 
     // If it was an incomplete solve, then just skip.
     val template =
@@ -597,16 +584,14 @@ class InferCompiler(
         Ok(())
       }
       case it @ StructDefinitionTemplataT(_, _) => {
-        val contextRegion = RegionT()
-        delegate.resolveStruct(callingEnv, state, range :: ranges, callLocation, it, args.toVector, contextRegion, true) match {
+        delegate.resolveStruct(callingEnv, state, range :: ranges, callLocation, it, args.toVector, true) match {
           case ResolveSuccess(kind) => kind
           case rf @ ResolveFailure(_, _) => return Err(rf)
         }
         Ok(())
       }
       case it @ InterfaceDefinitionTemplataT(_, _) => {
-        val contextRegion = RegionT()
-        delegate.resolveInterface(callingEnv, state, range :: ranges, callLocation, it, args.toVector, contextRegion, true) match {
+        delegate.resolveInterface(callingEnv, state, range :: ranges, callLocation, it, args.toVector, true) match {
           case ResolveSuccess(kind) => kind
           case rf @ ResolveFailure(_, _) => return Err(rf)
         }

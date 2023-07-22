@@ -217,7 +217,7 @@ class ImplCompiler(
         callLocation,
         outerEnv,
         RegionT())
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound1, Vector(), reachableBoundsFromSubCitizen) =
+    val CompleteCompilerSolve(_, inferences, runeToFunctionBound1, declaredBoundsFromSubCitizen, reachableBoundsFromSubCitizen) =
       inferCompiler.solveForDefining(
         envs,
         coutputs,

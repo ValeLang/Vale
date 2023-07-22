@@ -293,7 +293,7 @@ class InferCompiler(
           includeReachableBoundsForRunes
               .map(conclusions)
               .flatMap(conc => TemplataCompiler.getReachableBounds(interner, keywords, state, conc))
-        val envWithConclusions = importReachableBounds(envs.originalCallingEnv, reachableBounds)
+        val envWithConclusions = importReachableBounds(state, envs.originalCallingEnv, declaredBounds, reachableBounds)
         val runeToFunctionBound =
           resolveConclusions(
             envWithConclusions, state, invocationRange, callLocation, envs.contextRegion, initialRules, conclusions) match {
@@ -356,9 +356,26 @@ class InferCompiler(
   }
 
   def importReachableBounds(
+    coutputs: CompilerOutputs,
     originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
+    declaredBounds: Vector[PrototypeTemplataT],
     reachableBounds: Vector[PrototypeTemplataT]):
   GeneralEnvironmentT[INameT] = {
+
+    declaredBounds.foreach({ case PrototypeTemplataT(range, prototype) =>
+      // DO NOT SUBMIT move from TemplatasStore
+      TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
+        case None => println("Skipping adding bound " + prototype.id.localName) // DO NOT SUBMIT
+        case Some(impreciseName) => {
+          coutputs.addOverload(
+            opts.globalOptions.useOverloadIndex,
+            impreciseName,
+            prototype.id.localName.parameters.map(x => Some(x)),
+            PrototypeTemplataCalleeCandidate(range, prototype))
+        }
+      }
+    })
+
     GeneralEnvironmentT.childOf(
       interner,
       originalCallingEnv,
@@ -380,7 +397,7 @@ class InferCompiler(
     // If this is the original calling env, in other words, if we're the original caller for
     // this particular solve, then lets add all of our templatas to the environment.
 
-    declaredBounds.foreach({ case PrototypeTemplataT(range, prototype) =>
+    (declaredBounds ++ reachableBounds).foreach({ case PrototypeTemplataT(range, prototype) =>
       // DO NOT SUBMIT move from TemplatasStore
       TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
         case None => println("Skipping adding bound " + prototype.id.localName) // DO NOT SUBMIT

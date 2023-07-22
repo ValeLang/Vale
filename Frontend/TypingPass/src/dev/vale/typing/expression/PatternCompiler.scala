@@ -152,7 +152,9 @@ class PatternCompiler(
             val rulesA = ruleBuilder.toVector
 
             val CompleteCompilerSolve(_, templatasByRune, _, Vector()) =
-              inferCompiler.solveExpectComplete(
+              // We could probably just solveForResolving (see DBDAR) but seems right to solveForDefining since we're
+              // declaring a bunch of things.
+              inferCompiler.solveForDefining(
                 InferEnv(nenv.snapshot, parentRanges, callLocation, nenv.snapshot, nenv.defaultRegion),
                 coutputs,
                 rulesA,
@@ -165,9 +167,10 @@ class PatternCompiler(
                     RuneUsage(pattern.range, PatternInputRuneS(pattern.range.begin)),
                     receiverRune,
                     CoordTemplataT(unconvertedInputExpr.result.coord))),
-                true,
-                true,
-                Vector())
+                Vector()) match {
+                case Err(f) => throw CompileErrorExceptionT(TypingPassSolverError(pattern.range :: parentRanges, f))
+                case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+              }
 
             nenv.addEntries(
               interner,

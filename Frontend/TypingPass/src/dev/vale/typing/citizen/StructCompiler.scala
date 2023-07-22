@@ -31,8 +31,7 @@ trait IStructCompilerDelegate {
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
-    functionTemplata: FunctionTemplataT,
-    verifyConclusions: Boolean):
+    functionTemplata: FunctionTemplataT):
   FunctionHeaderT
 
   def scoutExpectedFunctionForPrototype(
@@ -46,8 +45,7 @@ trait IStructCompilerDelegate {
     contextRegion: RegionT,
     args: Vector[CoordT],
     extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
-    exact: Boolean,
-    verifyConclusions: Boolean):
+    exact: Boolean):
   StampFunctionSuccess
 }
 

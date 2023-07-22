@@ -66,8 +66,7 @@ class CallCompiler(
             contextRegion,
             unconvertedArgsPointerTypes2,
             Vector.empty,
-            false,
-            true) match {
+            false) match {
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
             case Ok(x) => x
           }
@@ -172,8 +171,7 @@ class CallCompiler(
         contextRegion,
         paramFilters,
         Vector.empty,
-        false,
-        true) match {
+        false) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
         case Ok(x) => x
       }

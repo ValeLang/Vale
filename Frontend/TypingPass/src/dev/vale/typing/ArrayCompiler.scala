@@ -92,7 +92,7 @@ class ArrayCompiler(
     }
     val rulesA = ruleBuilder.toVector
 
-    val CompleteCompilerSolve(_, templatas, _, Vector()) =
+    val CompleteCompilerSolve(_, templatas, _, Vector(), Vector()) =
       inferCompiler.solveExpectComplete(
         InferEnv(callingEnv, parentRanges, callLocation, callingEnv, region),
         coutputs,
@@ -206,11 +206,11 @@ class ArrayCompiler(
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, reachableBounds) =
+    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
       (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, true, Vector(), solver) match {
         case f @ FailedCompilerSolve(_, _, _) => Err(f)
         case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
-        case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
+        case c @ CompleteCompilerSolve(_, _, _, _, _) => Ok(c)
       }) match {
         case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
         case Ok(i) => (i)
@@ -401,11 +401,11 @@ class ArrayCompiler(
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, reachableBounds) =
+    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
       (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, true, Vector(), solver) match {
         case f @ FailedCompilerSolve(_, _, _) => Err(f)
         case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
-        case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
+        case c @ CompleteCompilerSolve(_, _, _, _, _) => Ok(c)
       }) match {
         case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
         case Ok(i) => (i)

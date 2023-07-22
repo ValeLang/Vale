@@ -18,6 +18,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
+import dev.vale.typing.citizen.ImplCompiler
 import dev.vale.typing.names._
 
 import scala.collection.immutable.{Map, Set}
@@ -85,7 +86,8 @@ class OverloadResolver(
     keywords: Keywords,
     templataCompiler: TemplataCompiler,
     inferCompiler: InferCompiler,
-    functionCompiler: FunctionCompiler) {
+    functionCompiler: FunctionCompiler,
+    implCompiler: ImplCompiler) {
   val runeTypeSolver = new RuneTypeSolver(interner)
 
   def findFunction(
@@ -338,7 +340,7 @@ class OverloadResolver(
                 case (Err(e)) => {
                   Err(InferFailure(e))
                 }
-                case (Ok(CompleteCompilerSolve(_, explicitRuneSToTemplata, _, Vector()))) => {
+                case (Ok(CompleteCompilerSolve(_, explicitRuneSToTemplata, _, Vector(), Vector()))) => {
                   val explicitlySpecifiedTemplateArgTemplatas =
                     explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
 
@@ -455,18 +457,22 @@ class OverloadResolver(
     exact: Boolean,
     verifyConclusions: Boolean):
   Result[IValidCalleeCandidate, FindFunctionFailure] = {
-    functionName match {
-      case CodeNameS(StrI("get")) => {
-        vpass()
-      }
-      case _ =>
-    }
     // This is here for debugging, so when we dont find something we can see what envs we searched
     val searchedEnvs = new Accumulator[SearchedEnvironment]()
-    val undedupedCandidates = new Accumulator[ICalleeCandidate]()
-    getCandidateBanners(
-      env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
-    val candidates = undedupedCandidates.buildArray().distinct
+    val candidates =
+      if (opts.globalOptions.useOverloadIndex) {
+        coutputs.findOverloads(
+          functionName,
+          args,
+          citizen => {
+            implCompiler.getParents(coutputs, callRange, callLocation, env, citizen, false).toArray // DO NOT SUBMIT is false right?
+          })
+      } else {
+        val undedupedCandidates = new Accumulator[ICalleeCandidate]()
+        getCandidateBanners(
+          env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
+        undedupedCandidates.buildArray().distinct.toArray
+      }
     val attempted =
       candidates.map(candidate => {
         attemptCandidateBanner(

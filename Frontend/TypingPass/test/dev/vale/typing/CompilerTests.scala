@@ -133,9 +133,11 @@ class CompilerTests extends FunSuite with Matchers {
   test("Make array and dot it") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.arrays.*;
         |exported func main() int {
-        |  [#]int(6, 60, 103).2
+        |  arr = [#]int(6, 60, 103);
+        |  x = arr.2;
+        |  [_, _, _] = arr;
+        |  return x;
         |}
         |""".stripMargin)
     compile.expectCompilerOutputs()

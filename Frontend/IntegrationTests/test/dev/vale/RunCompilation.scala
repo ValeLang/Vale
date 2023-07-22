@@ -33,7 +33,7 @@ object RunCompilation {
       })
           .or(FileCoordinateMap.test(interner, Vector(code)))
           .or(Tests.getPackageToResourceResolver),
-      FullCompilationOptions(GlobalOptions(true, true, true, true)))
+      FullCompilationOptions(GlobalOptions(true, true, true, true, true)))
   }
 }
 

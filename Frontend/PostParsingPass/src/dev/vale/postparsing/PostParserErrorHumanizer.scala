@@ -130,6 +130,7 @@ object PostParserErrorHumanizer {
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
+      case ArbitraryNameS() => "_arby"
       case SelfNameS() => "_Self"
       case CodeNameS(n) => n.str
 //      case FreeImpreciseNameS() => "_Free"

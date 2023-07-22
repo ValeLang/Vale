@@ -1,12 +1,12 @@
 package dev.vale.typing
 
-import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
+import dev.vale.postparsing.{IImpreciseNameS, IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentT, IInDenizenEnvironmentT}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.types._
-import dev.vale.{CodeLocationS, Collector, FileCoordinate, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vpass, vwat}
+import dev.vale.{CodeLocationS, Collector, FileCoordinate, Interner, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vpass, vwat}
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._
 import dev.vale.typing.types.InterfaceTT
@@ -46,6 +46,7 @@ case class CompilerOutputs() {
   // This will be the instantiated name, not just the template name, see UINIT.
   private val functionNameToInnerEnv: mutable.HashMap[IdT[INameT], IInDenizenEnvironmentT] = mutable.HashMap()
 
+  private val overloadIndex = new OverloadIndex()
 
   // declaredNames is the structs that we're currently in the process of defining
   // Things will appear here before they appear in structTemplateNameToDefinition/interfaceTemplateNameToDefinition
@@ -87,13 +88,6 @@ case class CompilerOutputs() {
   // We also do this for structs and interfaces too.
   private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT] =
     mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT]()
-
-//  // Only ArrayCompiler can make an RawArrayT2.
-//  private val staticSizedArrayTypes:
-//    mutable.HashMap[(ITemplata[IntegerTemplataType], ITemplata[MutabilityTemplataType], ITemplata[VariabilityTemplataType], CoordT), StaticSizedArrayTT] =
-//    mutable.HashMap()
-//  // Only ArrayCompiler can make an RawArrayT2.
-//  private val runtimeSizedArrayTypes: mutable.HashMap[(ITemplata[MutabilityTemplataType], CoordT), RuntimeSizedArrayTT] = mutable.HashMap()
 
   // A queue of functions that our code uses, but we don't need to compile them right away.
   // We can compile them later. Perhaps in parallel, someday!
@@ -193,7 +187,16 @@ case class CompilerOutputs() {
     returnTypesBySignature += (signature -> returnType2)
   }
 
-  def addFunction(function: FunctionDefinitionT): Unit = {
+  // DO NOT SUBMIT move to environment somehow? maybe we cant because lambdas?
+  def findOverloads(
+      name: IImpreciseNameS,
+      params: Vector[CoordT],
+      kindToSuperKinds: ISubKindTT => Array[ISuperKindTT]): // DO NOT SUBMIT maybe hand them in, like we used to do with paramfilters
+  Array[ICalleeCandidate] = {
+    overloadIndex.findOverloads(name, params, kindToSuperKinds)
+  }
+
+  def addFunction(interner: Interner, function: FunctionDefinitionT): Unit = {
 //    vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
       function.body.result.coord.kind == NeverT(false) ||
@@ -218,6 +221,17 @@ case class CompilerOutputs() {
 
     signatureToFunction.put(function.header.toSignature, function)
 //    functionsByPrototype.put(function.header.toPrototype, function)
+  }
+
+  def addOverload(
+      useOverloadIndexFlag: Boolean,
+      candidateName: IImpreciseNameS,
+      candidateParamMaybes: Vector[Option[CoordT]],
+      calleeCandidate: ICalleeCandidate):
+  Unit = {
+    if (useOverloadIndexFlag) {
+      overloadIndex.add(candidateName, candidateParamMaybes, calleeCandidate)
+    }
   }
 
   def declareFunction(callRanges: List[RangeS], name: IdT[IFunctionNameT]): Unit = {

@@ -151,7 +151,7 @@ class PatternCompiler(
             }
             val rulesA = ruleBuilder.toVector
 
-            val CompleteCompilerSolve(_, templatasByRune, _, Vector()) =
+            val CompleteCompilerSolve(_, templatasByRune, _, Vector(), Vector()) =
               inferCompiler.solveExpectComplete(
                 InferEnv(nenv.snapshot, parentRanges, callLocation, nenv.snapshot, nenv.defaultRegion),
                 coutputs,

@@ -12,9 +12,27 @@ object U {
       i = i + 1
     }
   }
+
+  def foreachIArr[T](arr: Array[T], func: scala.Function2[Int, T, Unit]): Unit = {
+    var i = 0
+    while (i < arr.length) {
+      func(i, arr(i))
+      i = i + 1
+    }
+  }
+
   def foreachI[T](vec: Vector[T], func: scala.Function2[Int, T, Unit]): Unit = {
     //    vec.zipWithIndex.foreach(func)
     var i = 0
+    while (i < vec.length) {
+      func(i, vec(i))
+      i = i + 1
+    }
+  }
+
+  def foreachIFrom[T](vec: Vector[T], start: Int, func: scala.Function2[Int, T, Unit]): Unit = {
+    //    vec.zipWithIndex.foreach(func)
+    var i = start
     while (i < vec.length) {
       func(i, vec(i))
       i = i + 1
@@ -26,6 +44,29 @@ object U {
     while (it.hasNext) {
       func(it.next())
     }
+  }
+
+  def filterIterable[T](vec: Iterable[T], func: scala.Function1[T, Boolean])(implicit m: ClassTag[T]): Array[T] = {
+    val result = mutable.ArrayBuffer[T]()
+    val it = vec.iterator
+    while (it.hasNext) {
+      val value = it.next()
+      if (func(value)) {
+        result += value
+      }
+    }
+    result.toArray
+  }
+
+  def map2Arr[T, Y, R](arr1: Array[T], arr2: Array[Y], func: scala.Function2[T, Y, R])(implicit m: ClassTag[R]): Vector[R] = {
+    vassert(arr1.length == arr2.length)
+    var i = 0
+    val result = new Array[R](arr1.length)
+    while (i < arr1.length) {
+      result(i) = func(arr1(i), arr2(i))
+      i = i + 1
+    }
+    result.toVector
   }
   def map[T, R](vec: Vector[T], func: scala.Function1[T, R])(implicit m: ClassTag[R]): Vector[R] = {
 //    vec.map(func)

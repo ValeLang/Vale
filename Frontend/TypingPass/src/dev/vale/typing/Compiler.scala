@@ -628,7 +628,7 @@ class Compiler(
         functionCompilerCore, structCompiler, destructorCompiler, arrayCompiler, fullEnv, coutputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
-  val overloadResolver: OverloadResolver = new OverloadResolver(opts, interner, keywords, templataCompiler, inferCompiler, functionCompiler)
+  val overloadResolver: OverloadResolver = new OverloadResolver(opts, interner, keywords, templataCompiler, inferCompiler, functionCompiler, implCompiler)
   val destructorCompiler: DestructorCompiler = new DestructorCompiler(opts, interner, keywords, structCompiler, overloadResolver)
 
   val virtualCompiler = new VirtualCompiler(opts, interner, overloadResolver)
@@ -734,6 +734,8 @@ class Compiler(
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[HinputsT, ICompileErrorT] = {
     try {
       Profiler.frame(() => {
+        println("Using overload index? " + opts.globalOptions.useOverloadIndex)
+
         val nameToStructDefinedMacro =
           Map(
             structConstructorMacro.macroName -> structConstructorMacro,
@@ -1148,7 +1150,7 @@ class Compiler(
               ExportEnvironmentT(
                 globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
-            val CompleteCompilerSolve(_, templataByRune, _, Vector()) =
+            val CompleteCompilerSolve(_, templataByRune, _, Vector(), Vector()) =
               inferCompiler.solveExpectComplete(
                 InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv, regionPlaceholder),
                 coutputs, rules, runeToType, List(range),

@@ -121,9 +121,7 @@ class ImplCompiler(
       callLocation: LocationInDenizen,
     callingEnv: IInDenizenEnvironmentT,
     initialKnowns: Vector[InitialKnown],
-    implTemplata: ImplDefinitionTemplataT,
-    verifyConclusions: Boolean,
-    isRootSolve: Boolean):
+    implTemplata: ImplDefinitionTemplataT):
   Result[CompleteCompilerSolve, IIncompleteOrFailedCompilerSolve] = {
     val ImplDefinitionTemplataT(parentEnv, impl) = implTemplata
     val ImplA(
@@ -172,7 +170,7 @@ class ImplCompiler(
         initialKnowns,
         Vector(),
         true,
-        isRootSolve,
+        true,
         // We include reachable bounds for the struct so we don't have to re-specify all its bounds in the impl.
         Vector(structKindRune.rune))
     result
@@ -205,8 +203,8 @@ class ImplCompiler(
         InitialKnown(rune.rune, placeholder)
       })
 
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound1, reachableBoundsFromSubCitizen) =
-      solveImplForDefine(coutputs, List(implA.range), callLocation, implOuterEnv, implPlaceholders, implTemplata, true, true) match {
+    val CompleteCompilerSolve(_, inferences, runeToFunctionBound1, Vector(), reachableBoundsFromSubCitizen) =
+      solveImplForDefine(coutputs, List(implA.range), callLocation, implOuterEnv, implPlaceholders, implTemplata) match {
         case Ok(i) => i
         case Err(e) => throw CompileErrorExceptionT(CouldntEvaluatImpl(List(implA.range), e))
       }
@@ -299,7 +297,7 @@ class ImplCompiler(
         // might not even be able to solve the struct, which means we can't pull in any declared
         // function bounds that come from them. We'll check them later.
         false) match {
-        case CompleteCompilerSolve(_, conclusions, _, reachableBoundsFromSubCitizen) => (conclusions, reachableBoundsFromSubCitizen)
+        case CompleteCompilerSolve(_, conclusions, _, Vector(), reachableBoundsFromSubCitizen) => (conclusions, reachableBoundsFromSubCitizen)
         case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => (incompleteConclusions, Vector[ITemplataT[ITemplataType]]())
         case fcs @ FailedCompilerSolve(_, _, _) => {
           throw CompileErrorExceptionT(CouldntEvaluatImpl(List(implTemplata.impl.range), fcs))
@@ -506,9 +504,9 @@ class ImplCompiler(
     val initialKnowns =
       Vector(
         InitialKnown(implTemplata.impl.interfaceKindRune, KindTemplataT(parent)))
-    val CompleteCompilerSolve(_, conclusions, _, _) =
+    val CompleteCompilerSolve(_, conclusions, _, Vector(), _) =
       solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata, isRootSolve, true) match {
-        case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
+        case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
         case x : IIncompleteOrFailedCompilerSolve => return Err(x)
       }
     val parentTT = conclusions.get(implTemplata.impl.subCitizenRune.rune)
@@ -534,9 +532,9 @@ class ImplCompiler(
       coutputs.getOuterEnvForType(
         parentRanges,
         TemplataCompiler.getCitizenTemplate(child.id))
-    val CompleteCompilerSolve(_, conclusions, _, _) =
+    val CompleteCompilerSolve(_, conclusions, _, Vector(), _) =
       solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata, false, true) match {
-        case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
+        case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
         case x : IIncompleteOrFailedCompilerSolve => return Err(x)
       }
     val parentTT = conclusions.get(implTemplata.impl.interfaceKindRune.rune)
@@ -666,14 +664,14 @@ class ImplCompiler(
             InitialKnown(impl.impl.subCitizenRune, KindTemplataT(subKindTT)),
             InitialKnown(impl.impl.interfaceKindRune, KindTemplataT(superKindTT)))
         solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, impl, false, true) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _) => Ok((impl, ccs))
+          case ccs @ CompleteCompilerSolve(_, _, _, _, _) => Ok((impl, ccs))
           case x : IIncompleteOrFailedCompilerSolve => Err(x)
         }
       })
     val (oks, errs) = Result.split(results)
     vcurious(oks.size <= 1)
     oks.headOption match {
-      case Some((implTemplata, CompleteCompilerSolve(_, conclusions, runeToSuppliedFunction, reachableBoundsFromSubCitizen))) => {
+      case Some((implTemplata, CompleteCompilerSolve(_, conclusions, runeToSuppliedFunction, Vector(), reachableBoundsFromSubCitizen))) => {
         // Dont need this for anything yet
         val _ = reachableBoundsFromSubCitizen
 

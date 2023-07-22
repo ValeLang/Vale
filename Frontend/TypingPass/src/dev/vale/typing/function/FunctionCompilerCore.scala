@@ -95,7 +95,7 @@ class FunctionCompilerCore(
       fullEnv.function.maybeRetCoordRune match {
         case None => (None)
         case Some(retCoordRune) => {
-          fullEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(retCoordRune.rune)), Set(TemplataLookupContext)).headOption
+          fullEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(retCoordRune.rune)), Set(TemplataLookupContext))
         }
       }
     val maybeRetCoord =
@@ -107,6 +107,26 @@ class FunctionCompilerCore(
         }
         case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Must be a coord!"))
       }
+
+    // Add it to the overload index
+    TemplatasStore.getImpreciseName(interner, fullEnv.id.localName) match {
+      case None => {
+        // DO NOT SUBMIT
+        println("Skipping adding function " + fullEnv.id.localName + " to overload index")
+      }
+      case Some(impreciseName) => {
+        coutputs.addOverload(
+          opts.globalOptions.useOverloadIndex,
+          impreciseName,
+          fullEnv.id.localName.parameters.map({
+            case CoordT(_, _, KindPlaceholderT(_)) => None // DO NOT SUBMIT document
+            case other => Some(other)
+          }),
+          FunctionCalleeCandidate(fullEnv.templata))
+      }
+    }
+
+    // DO NOT SUBMIT note that we just added/enabled generated/abstract functions to be deferred.
 
     val header =
       fullEnv.function.body match {
@@ -134,6 +154,7 @@ class FunctionCompilerCore(
               (header)
             }
             case None => {
+              // This can happen for templates such as lambdas.
               val header =
                 finishFunctionMaybeDeferred(
                   coutputs, fullEnv, callRange, callLocation, life, attributesT, params2, isDestructor, None)
@@ -155,64 +176,37 @@ class FunctionCompilerCore(
           (header)
         }
         case AbstractBodyS | GeneratedBodyS(_) => {
-          val generatorId =
-            fullEnv.function.body match {
-              case AbstractBodyS => keywords.abstractBody
-              case GeneratedBodyS(generatorId) => generatorId
+          val attributesWithoutExport =
+            fullEnv.function.attributes.filter({
+              case ExportS(_) => false
+              case BuiltinS(_) => false
+              case _ => true
+            })
+          val attributesT = translateAttributes(attributesWithoutExport)
+
+          maybeRetCoord match {
+            case Some(returnCoord) => {
+              val header =
+                finalizeHeader(fullEnv, coutputs, attributesT, params2, returnCoord)
+
+              coutputs.deferEvaluatingFunctionBody(
+                DeferredEvaluatingFunctionBody(
+                  header.toPrototype,
+                  (coutputs) => {
+                    finishGeneratedOrAbstractFunctionMaybeDeferred(
+                      coutputs, fullEnv, callRange, callLocation, life, attributesT, signature2, params2, isDestructor, Some(returnCoord))
+                  }))
+
+              (header)
             }
-
-          // Funny story... let's say we're current instantiating a constructor,
-          // for example MySome<T>().
-          // The constructor returns a MySome<T>, which means when we do the above
-          // evaluating of the function body, we stamp the MySome<T> struct.
-          // That ends up stamping the entire struct, including the constructor.
-          // That's what we were originally here for, and evaluating the body above
-          // just did it for us O_o
-          // So, here we check to see if we accidentally already did it.
-          //   opts.debugOut("doesnt this mean we have to do this in every single generated function?")
-          //   coutputs.lookupFunction(signature2) match {
-          //     case Some(function2) => {
-          //       (function2.header)
-          //     }
-          //     case None => {
-          //       val generator = vassertSome(fullEnv.globalEnv.nameToFunctionBodyMacro.get(generatorId))
-          //       val (header, body) =
-          //         generator.generateFunctionBody(
-          //           fullEnv, coutputs, generatorId, life, callRange,
-          //           Some(fullEnv.function), params2, maybeRetCoord)
-          //
-          //       coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
-          //       val runeToFunctionBound = TemplataCompiler.assembleFunctionBoundToRune(fullEnv.templatas)
-          //       coutputs.addFunction(FunctionT(header, runeToFunctionBound, body))
-          //
-          //       if (header.toSignature != signature2) {
-          //         throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
-          //           "Expected:  " + signature2 + "\n" +
-          //           "Generated: " + header.toSignature))
-          //       }
-          //       (header)
-          //     }
-          //   }
-          // Note from later: This might not be true anymore, since we have real generics.
-          vassert(coutputs.lookupFunction(signature2).isEmpty)
-
-          val generator = vassertSome(fullEnv.globalEnv.nameToFunctionBodyMacro.get(generatorId))
-          val (header, body) =
-            generator.generateFunctionBody(
-              fullEnv, coutputs, generatorId, life, callRange, callLocation,
-              Some(fullEnv.function), params2, maybeRetCoord)
-
-          coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
-          val neededFunctionBounds = TemplataCompiler.assembleRuneToFunctionBound(fullEnv.templatas)
-          val neededImplBounds = TemplataCompiler.assembleRuneToImplBound(fullEnv.templatas)
-          coutputs.addFunction(FunctionDefinitionT(header, neededFunctionBounds, neededImplBounds, body))
-
-          if (header.toSignature != signature2) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
-              "Expected:  " + signature2 + "\n" +
-              "Generated: " + header.toSignature))
+            case None => {
+              // This can happen for templates such as lambdas.
+              val header =
+                finishGeneratedOrAbstractFunctionMaybeDeferred(
+                  coutputs, fullEnv, callRange, callLocation, life, attributesT, signature2, params2, isDestructor, None)
+              (header)
+            }
           }
-          header
         }
       }
 
@@ -276,6 +270,84 @@ class FunctionCompilerCore(
   }
 
   // By MaybeDeferred we mean that this function might be called later, to reduce reentrancy.
+  // DO NOT SUBMIT better name
+  private def finishGeneratedOrAbstractFunctionMaybeDeferred(
+      coutputs: CompilerOutputs,
+      fullEnvSnapshot: FunctionEnvironmentT,
+      callRange: List[RangeS],
+      callLocation: LocationInDenizen,
+      life: LocationInFunctionEnvironmentT,
+      attributesT: Vector[IFunctionAttributeT],
+      signature2: SignatureT,
+      paramsT: Vector[ParameterT],
+      isDestructor: Boolean,
+      maybeExplicitReturnCoord: Option[CoordT]):
+  FunctionHeaderT = {
+
+    val generatorId =
+      fullEnvSnapshot.function.body match {
+        case AbstractBodyS => keywords.abstractBody
+        case GeneratedBodyS(generatorId) => generatorId
+      }
+
+    // Funny story... let's say we're current instantiating a constructor,
+    // for example MySome<T>().
+    // The constructor returns a MySome<T>, which means when we do the above
+    // evaluating of the function body, we stamp the MySome<T> struct.
+    // That ends up stamping the entire struct, including the constructor.
+    // That's what we were originally here for, and evaluating the body above
+    // just did it for us O_o
+    // So, here we check to see if we accidentally already did it.
+    //   opts.debugOut("doesnt this mean we have to do this in every single generated function?")
+    //   coutputs.lookupFunction(signature2) match {
+    //     case Some(function2) => {
+    //       (function2.header)
+    //     }
+    //     case None => {
+    //       val generator = vassertSome(fullEnv.globalEnv.nameToFunctionBodyMacro.get(generatorId))
+    //       val (header, body) =
+    //         generator.generateFunctionBody(
+    //           fullEnv, coutputs, generatorId, life, callRange,
+    //           Some(fullEnv.function), params2, maybeRetCoord)
+    //
+    //       coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
+    //       val runeToFunctionBound = TemplataCompiler.assembleFunctionBoundToRune(fullEnv.templatas)
+    //       coutputs.addFunction(FunctionT(header, runeToFunctionBound, body))
+    //
+    //       if (header.toSignature != signature2) {
+    //         throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
+    //           "Expected:  " + signature2 + "\n" +
+    //           "Generated: " + header.toSignature))
+    //       }
+    //       (header)
+    //     }
+    //   }
+    // Note from later: This might not be true anymore, since we have real generics.
+    vassert(coutputs.lookupFunction(signature2).isEmpty)
+
+    val generator = vassertSome(fullEnvSnapshot.globalEnv.nameToFunctionBodyMacro.get(generatorId))
+    val (header, body) =
+      generator.generateFunctionBody(
+        fullEnvSnapshot, coutputs, generatorId, life, callRange, callLocation,
+        Some(fullEnvSnapshot.function), paramsT, maybeExplicitReturnCoord)
+    // DO NOT SUBMIT find all vars in here suffixed 2
+
+    coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
+    val neededFunctionBounds = TemplataCompiler.assembleRuneToFunctionBound(fullEnvSnapshot.templatas)
+    val neededImplBounds = TemplataCompiler.assembleRuneToImplBound(fullEnvSnapshot.templatas)
+    coutputs.addFunction(
+      interner,
+      FunctionDefinitionT(header, neededFunctionBounds, neededImplBounds, body))
+
+    if (header.toSignature != signature2) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
+          "Expected:  " + signature2 + "\n" +
+          "Generated: " + header.toSignature))
+    }
+    header
+  }
+
+  // By MaybeDeferred we mean that this function might be called later, to reduce reentrancy.
   private def finishFunctionMaybeDeferred(
       coutputs: CompilerOutputs,
       fullEnvSnapshot: FunctionEnvironmentT,
@@ -319,7 +391,7 @@ class FunctionCompilerCore(
     val neededFunctionBounds = TemplataCompiler.assembleRuneToFunctionBound(fullEnvSnapshot.templatas)
     val neededImplBounds = TemplataCompiler.assembleRuneToImplBound(fullEnvSnapshot.templatas)
     val function2 = FunctionDefinitionT(header, neededFunctionBounds, neededImplBounds, body2);
-    coutputs.addFunction(function2)
+    coutputs.addFunction(interner, function2)
     header
   }
 
@@ -367,7 +439,7 @@ class FunctionCompilerCore(
             ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
-        coutputs.addFunction(function2)
+        coutputs.addFunction(interner, function2)
         (header)
       }
       case _ => {

@@ -206,6 +206,7 @@ object TemplatasStore {
       case AnonymousSubstructConstructorTemplateNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(humanName))) => {
         Some(interner.intern(CodeNameS(humanName)))
       }
+      case AnonymousSubstructConstructorNameT(template, _, _) => getImpreciseName(interner, template)
       case AnonymousSubstructNameT(interfaceName, _) => getImpreciseName(interner, interfaceName)
       case ImplTemplateNameT(_) => {
         // We shouldn't get here, caller shouldn't pass these in. Should instead get the impl
@@ -220,6 +221,9 @@ object TemplatasStore {
       case ForwarderFunctionNameT(_, inner) => getImpreciseName(interner, inner)
       case FunctionBoundNameT(inner, _, _) => getImpreciseName(interner, inner)
       case FunctionBoundTemplateNameT(humanName, _) => Some(interner.intern(CodeNameS(humanName)))
+      case LambdaCallFunctionNameT(_, _, _) => {
+        None // I don't think anyone will ever need to look up a specific lambda incarnation by name
+      }
 //      case AnonymousSubstructImplTemplateNameT(inner) => getImpreciseName(interner, inner).map(ImplImpreciseNameS)
 //      case OverrideVirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
 //      case AbstractVirtualFreeNameT(_, _) => Some(interner.intern(VirtualFreeImpreciseNameS()))

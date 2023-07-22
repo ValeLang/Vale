@@ -72,7 +72,7 @@ class FunctionCompilerSolvingLayer(
             function.rules, function.genericParameters, explicitTemplateArgs.size)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
+    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, declaredBounds, reachableBounds) =
       inferCompiler.solveComplete(
         InferEnv(originalCallingEnv, callRange, callLocation, outerEnv, contextRegion),
         coutputs,
@@ -89,6 +89,8 @@ class FunctionCompilerSolvingLayer(
         case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
         case Ok(i) => (i)
       }
+
+    vimpl() // declaredBounds
 
     val runedEnv =
       addRunedDataToNearEnv(
@@ -128,7 +130,8 @@ class FunctionCompilerSolvingLayer(
             function.rules, function.genericParameters, 0)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
+    // Vector() because all templates are closures currently, and closures can't have bounds.
+    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, Vector(), reachableBounds) =
       inferCompiler.solveComplete(
         InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
         coutputs,
@@ -189,7 +192,8 @@ class FunctionCompilerSolvingLayer(
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
+    // Vector() because all templates are closures currently, and closures can't have bounds.
+    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), reachableBounds) =
       inferCompiler.solveComplete(
         InferEnv(originalCallingEnv, callRange, callLocation, nearEnv, contextRegion),
         coutputs,
@@ -361,11 +365,11 @@ class FunctionCompilerSolvingLayer(
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
+    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, Vector(), reachableBounds) =
       (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
         case f@FailedCompilerSolve(_, _, _) => Err(f)
         case i@IncompleteCompilerSolve(_, _, _, _) => Err(i)
-        case c@CompleteCompilerSolve(_, _, _, _) => Ok(c)
+        case c@CompleteCompilerSolve(_, _, _, _, _) => Ok(c)
       }) match {
         case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
         case Ok(i) => (i)
@@ -442,7 +446,7 @@ class FunctionCompilerSolvingLayer(
           throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: callRange, f))
         }
         case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => incompleteConclusions
-        case CompleteCompilerSolve(_, conclusions, _, Vector()) => conclusions
+        case CompleteCompilerSolve(_, conclusions, _, Vector(), Vector()) => conclusions
       }
     // Now we can use preliminaryInferences to know whether or not we need a placeholder for an
     // identifying rune.
@@ -469,7 +473,7 @@ class FunctionCompilerSolvingLayer(
     // Now that we have placeholders, let's do the rest of the solve, so we can get a full
     // prototype out of it.
 
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
+    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), reachableBounds) =
       inferCompiler.solveExpectComplete(
         InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT()),
         coutputs,
@@ -550,9 +554,27 @@ class FunctionCompilerSolvingLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
-    val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+    val CompleteCompilerSolve(_, inferences, runeToBound, declaredBounds, reachableBoundsFromParamsAndReturn) =
       inferCompiler.expectCompleteSolve(
         envs, coutputs, definitionRules, function.runeToType, range, callLocation, true, true, paramRunes, solver)
+
+    declaredBounds.foreach(bound => {
+      val PrototypeTemplataT(range, prototype) = bound
+      // Add it to the overload index
+      TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
+        case None => {
+          // DO NOT SUBMIT
+          println("Skipping adding function " + prototype.id.localName + " to overload index")
+        }
+        case Some(impreciseName) => {
+          coutputs.addOverload(
+            opts.globalOptions.useOverloadIndex,
+            impreciseName,
+            prototype.id.localName.parameters.map(x => Some(x)),
+            PrototypeTemplataCalleeCandidate(range, prototype))
+        }
+      }
+    })
 
     val runedEnv =
       addRunedDataToNearEnv(

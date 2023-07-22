@@ -1,9 +1,12 @@
 package dev.vale.benchmark
 
 import dev.vale._
+import dev.vale.highertyping.HigherTypingErrorHumanizer
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ParseErrorHumanizer
 import dev.vale.passmanager.FullCompilationOptions
+import dev.vale.postparsing.PostParserErrorHumanizer
+import dev.vale.typing.CompilerErrorHumanizer
 
 object Benchmark {
   val roguelikeSrc =
@@ -87,25 +90,26 @@ object Benchmark {
             GlobalOptions(
               sanityCheck = false,
               useOptimization,
+              true,
               false,
               false),
             debugOut = (_) => {}))
-      compile.getParseds() match {
-        case Err(e) => println(ParseErrorHumanizer.humanizeFromMap(compile.getCodeMap().getOrDie().fileCoordToContents.toMap, FileCoordinate.test(interner), e.error))
-        case Ok(t) =>
-      }
-//      compile.getScoutput() match {
-//        case Err(e) => println(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
-//        case Ok(t) =>
-//      }
-//      compile.getAstrouts() match {
-//        case Err(e) => println(HigherTypingErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
-//        case Ok(t) =>
-//      }
-//      compile.getCompilerOutputs() match {
-//        case Err(e) => println(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
-//        case Ok(t) =>
-//      }
+      compile.getParseds() //match {
+      //   case Err(e) => println(ParseErrorHumanizer.humanizeFromMap(compile.getCodeMap().getOrDie().fileCoordToContents.toMap, FileCoordinate.test(interner), e.error))
+      //   case Ok(t) =>
+      // }
+     compile.getScoutput() //match {
+     //   case Err(e) => println(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+     //   case Ok(t) =>
+     // }
+     compile.getAstrouts() //match {
+     //   case Err(e) => println(HigherTypingErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+     //   case Ok(t) =>
+     // }
+     compile.getCompilerOutputs() //match {
+     //   case Err(e) => println(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
+     //   case Ok(t) =>
+     // }
     })
 //    compile.getHamuts()
     timer.stop()
@@ -113,7 +117,7 @@ object Benchmark {
   }
 
   def main(args: Array[String]): Unit = {
-    val compareOptimization = false
+    val compareOptimization = true
 
     println("Starting benchmarking...")
     if (compareOptimization) {
@@ -141,7 +145,7 @@ object Benchmark {
 //      val warmupTime = (0 until 10000).map(_ => go(true)).sum
 //      println("Warmed up (" + warmupTime + "ns)")
       println("Benchmarking...")
-      val profiles = U.makeArray(10000, _ => go(true))
+      val profiles = U.makeArray(10, _ => go(true))
       val times = profiles
       val averageTime = times.sum / times.size
       println("Done benchmarking! Total: " + averageTime + " minimum: " + times.min)

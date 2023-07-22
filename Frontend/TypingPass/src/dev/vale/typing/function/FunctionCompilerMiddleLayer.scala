@@ -137,7 +137,7 @@ class FunctionCompilerMiddleLayer(
       case None => {
         coutputs.declareFunction(callRange, namedEnv.id)
         coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
-        coutputs.declareFunctionInnerEnv(namedEnv.id, runedEnv)
+        coutputs.declareFunctionInnerEnv(namedEnv.id, runedEnv) // DO NOT SUBMIT
 
         val header =
           core.evaluateFunctionForHeader(namedEnv, coutputs, callRange, callLocation, params2)
@@ -187,7 +187,7 @@ class FunctionCompilerMiddleLayer(
       case None => {
         coutputs.declareFunction(callRange, functionId)
         coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
-        coutputs.declareFunctionInnerEnv(functionId, runedEnv)
+        coutputs.declareFunctionInnerEnv(functionId, runedEnv) // DO NOT SUBMIT
 
         val params2 = assembleFunctionParams(runedEnv, coutputs, callRange, function1.params)
 

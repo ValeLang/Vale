@@ -72,7 +72,7 @@ class StructCompilerGenericArgsLayer(
         case Ok(()) =>
         case Err(x) => return ResolveFailure(callRange, x)
       }
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), Vector()) =
         inferCompiler.interpretResults(
           envs,
           coutputs,
@@ -84,7 +84,7 @@ class StructCompilerGenericArgsLayer(
           false,
           Vector(),
           solver) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
+          case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
 
@@ -138,7 +138,7 @@ class StructCompilerGenericArgsLayer(
 
       // This *doesnt* check to make sure it's a valid use of the template. Its purpose is really
       // just to populate any generic parameter default values.
-      val CompleteCompilerSolve(_, inferences, _, Vector()) =
+      val CompleteCompilerSolve(_, inferences, _, Vector(), Vector()) =
         inferCompiler.solveExpectComplete(
           InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
           coutputs,
@@ -208,7 +208,7 @@ class StructCompilerGenericArgsLayer(
 
       val contextRegion = RegionT()
 
-      val CompleteCompilerSolve(_, inferences, _, Vector()) =
+      val CompleteCompilerSolve(_, inferences, _, Vector(), Vector()) =
         inferCompiler.solveExpectComplete(
           InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
           coutputs,
@@ -282,7 +282,7 @@ class StructCompilerGenericArgsLayer(
         case Ok(()) =>
         case Err(x) => return ResolveFailure(callRange, x)
       }
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), Vector()) =
         inferCompiler.interpretResults(
           envs,
           coutputs,
@@ -294,7 +294,7 @@ class StructCompilerGenericArgsLayer(
           false,
           Vector(),
           solver) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
+          case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
 
@@ -360,10 +360,10 @@ class StructCompilerGenericArgsLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
-      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+      val CompleteCompilerSolve(_, inferences, _, declaredBounds, reachableBoundsFromParamsAndReturn) =
         inferCompiler.expectCompleteSolve(
           envs, coutputs, definitionRules, allRuneToType, structA.range :: parentRanges, callLocation, true, true, Vector(), solver)
-
+      // vimpl() // declaredBounds? DO NOT SUBMIT
 
       structA.maybePredictedMutability match {
         case None => {
@@ -443,9 +443,10 @@ class StructCompilerGenericArgsLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
-      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+      val CompleteCompilerSolve(_, inferences, _, declaredBounds, reachableBoundsFromParamsAndReturn) =
         inferCompiler.expectCompleteSolve(
           envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, callLocation, true, true, Vector(), solver)
+      //vimpl() // declared bounds? DO NOT SUBMIT
 
       interfaceA.maybePredictedMutability match {
         case None => {

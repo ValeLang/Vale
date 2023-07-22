@@ -281,7 +281,7 @@ class FunctionCompiler(
         .map(name => determineClosureVariableMember(containingNodeEnv, coutputs, name))
         .toVector;
 
-    val (structTT, _, functionTemplata) =
+    val (structTT, _, functionTemplata) = // DO NOT SUBMIT nothing done with this
       structCompiler.makeClosureUnderstruct(
         containingNodeEnv, coutputs, callRange, callLocation, name, functionA, closuredVarNamesAndTypes)
 

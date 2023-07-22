@@ -442,7 +442,7 @@ class EdgeCompiler(
         // Keep in mind, at the end of the solve, we're actually pulling in some reachable bounds
         // from the struct we're solving for here.
       ) match {
-        case CompleteCompilerSolve(_, conclusions, _, reachableBoundsFromFullSolve) => (conclusions, reachableBoundsFromFullSolve)
+        case CompleteCompilerSolve(_, conclusions, _, _, reachableBoundsFromFullSolve) => (conclusions, reachableBoundsFromFullSolve)
         case IncompleteCompilerSolve(_, _, _, _) => vfail()
         case fcs @ FailedCompilerSolve(_, _, _) => {
           throw CompileErrorExceptionT(CouldntEvaluatImpl(List(range), fcs))

@@ -32,7 +32,8 @@ case class CompleteCompilerSolve(
   steps: Stream[Step[IRulexSR, IRuneS, ITemplataT[ITemplataType]]],
   conclusions: Map[IRuneS, ITemplataT[ITemplataType]],
   runeToBound: InstantiationBoundArgumentsT,
-  reachableBounds: Vector[PrototypeTemplataT]
+  declaredBounds: Vector[PrototypeTemplataT],
+  reachableBounds: Vector[PrototypeTemplataT] // DO NOT SUBMIT document. is this for the call site?
 ) extends ICompilerSolverOutcome {
   override def getOrDie(): Map[IRuneS, ITemplataT[ITemplataType]] = conclusions
 }
@@ -173,7 +174,7 @@ class InferCompiler(
     interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
       case f @ FailedCompilerSolve(_, _, _) => Err(f)
       case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
-      case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
+      case c @ CompleteCompilerSolve(_, _, _, _, _) => Ok(c)
     }
   }
 
@@ -244,7 +245,7 @@ class InferCompiler(
       case i@IncompleteCompilerSolve(_, _, _, _) => {
         throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, i))
       }
-      case c@CompleteCompilerSolve(_, _, _, _) => c
+      case c@CompleteCompilerSolve(_, _, _, _, _) => c
     }
   }
 
@@ -314,6 +315,15 @@ class InferCompiler(
   ICompilerSolverOutcome = {
     compilerSolver.interpretResults(runeToType, solver) match {
       case CompleteSolve(steps, conclusions) => {
+        // DO NOT SUBMIT might be slow.
+        val declaredBounds =
+          initialRules
+              .collect({ case DefinitionFuncSR(_, resultRune, _, _, _) => resultRune.rune })
+              .map(conclusions)
+              .map({
+                case p @ PrototypeTemplataT(_, _) => p
+                case other => vwat(other)
+              })
         val reachableBounds =
           includeReachableBoundsForRunes
             .map(conclusions)
@@ -327,7 +337,7 @@ class InferCompiler(
           } else {
             InstantiationBoundArgumentsT(Map(), Map())
           }
-        CompleteCompilerSolve(steps, conclusions, runeToFunctionBound, reachableBounds)
+        CompleteCompilerSolve(steps, conclusions, runeToFunctionBound, declaredBounds, reachableBounds)
       }
       case IncompleteSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
         if (verifyConclusions) {
@@ -388,6 +398,7 @@ class InferCompiler(
             // These are the bounds we pulled in from the parameters, return type, impl sub citizen, etc.
           reachableBounds.zipWithIndex.map({ case (reachableBound, index) =>
             interner.intern(ReachablePrototypeNameT(index)) -> TemplataEnvEntry(reachableBound)
+            strt here // the above is for the old approach to be able to find overloads and stuff
           }))
 
       checkTemplateInstantiationsForEnv(

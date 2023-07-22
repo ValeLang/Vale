@@ -320,8 +320,13 @@ class StructCompilerCore(
     coutputs.addInstantiationBounds(understructInstantiatedId, InstantiationBoundArgumentsT(Map(), Map()))
     val understructStructTT = interner.intern(StructTT(understructInstantiatedId))
 
+    val callNameT =
+      interner.intern(FunctionTemplateNameT(keywords.underscoresCall, functionA.range.begin))
+    val callImpreciseName = interner.intern(CodeNameS(keywords.underscoresCall))
     val dropFuncNameT =
       interner.intern(FunctionTemplateNameT(keywords.drop, functionA.range.begin))
+    val dropNameS = interner.intern(FunctionNameS(keywords.drop, functionA.range.begin))
+    val dropImpreciseName = interner.intern(CodeNameS(keywords.drop))
 
     // We declare the function into the environment that we use to compile the
     // struct, so that those who use the struct can reach into its environment
@@ -337,14 +342,27 @@ class StructCompilerCore(
           .addEntries(
             interner,
             Vector(
-              interner.intern(FunctionTemplateNameT(keywords.underscoresCall, functionA.range.begin)) ->
-                env.FunctionEnvEntry(functionA),
+              callNameT -> env.FunctionEnvEntry(functionA),
               dropFuncNameT ->
                 FunctionEnvEntry(
                   containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(
-                    interner.intern(FunctionNameS(keywords.drop, functionA.range.begin)), functionA.range)),
+                    dropNameS, functionA.range)),
               understructInstantiatedNameT -> TemplataEnvEntry(KindTemplataT(understructStructTT)),
               interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplataT(understructStructTT)))))
+    val callFunctionTemplata = FunctionTemplataT(structOuterEnv, functionA)
+    coutputs.addOverload(
+      opts.globalOptions.useOverloadIndex,
+      callImpreciseName,
+      // DO NOT SUBMIT doc
+      functionA.params.indices.map(_ => None).toVector,
+      FunctionCalleeCandidate(callFunctionTemplata))
+    val dropFunctionTemplata = FunctionTemplataT(structOuterEnv, functionA)
+    coutputs.addOverload(
+      opts.globalOptions.useOverloadIndex,
+      dropImpreciseName,
+      // DO NOT SUBMIT doc
+      functionA.params.indices.map(_ => None).toVector,
+      FunctionCalleeCandidate(dropFunctionTemplata))
 
     val structInnerEnv =
       CitizenEnvironmentT(

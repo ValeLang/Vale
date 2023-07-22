@@ -49,8 +49,7 @@ class ArrayCompiler(
     sizeRuneA: IRuneS,
     mutabilityRune: IRuneS,
     variabilityRune: IRuneS,
-    callableTE: ReferenceExpressionTE,
-    verifyConclusions: Boolean):
+    callableTE: ReferenceExpressionTE):
   StaticArrayFromCallableTE = {
     val runeTypingEnv =
       new IRuneTypeSolverEnv {
@@ -93,7 +92,7 @@ class ArrayCompiler(
     val rulesA = ruleBuilder.toVector
 
     val CompleteCompilerSolve(_, templatas, _, Vector()) =
-      inferCompiler.solveExpectComplete(
+      inferCompiler.solveForResolving(
         InferEnv(callingEnv, parentRanges, callLocation, callingEnv, region),
         coutputs,
         rulesA,
@@ -102,16 +101,17 @@ class ArrayCompiler(
         callLocation,
         Vector(),
         Vector(),
-        true,
-        true,
-        Vector())
+        Vector()) match {
+        case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(parentRanges, e))
+        case Ok(c) => c
+      }
 
     val size = ITemplataT.expectInteger(vassertSome(templatas.get(sizeRuneA)))
     val mutability = ITemplataT.expectMutability(vassertSome(templatas.get(mutabilityRune)))
     val variability = ITemplataT.expectVariability(vassertSome(templatas.get(variabilityRune)))
     val prototype =
       overloadResolver.getArrayGeneratorPrototype(
-        coutputs, callingEnv, parentRanges, callLocation, callableTE, region, true)
+        coutputs, callingEnv, parentRanges, callLocation, callableTE, region)
     val ssaMT = resolveStaticSizedArray(mutability, variability, size, prototype.returnType, region)
 
     maybeElementTypeRuneA.foreach(elementTypeRuneA => {
@@ -135,8 +135,7 @@ class ArrayCompiler(
     maybeElementTypeRune: Option[IRuneS],
     mutabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
-    maybeCallableTE: Option[ReferenceExpressionTE],
-    verifyConclusions: Boolean):
+    maybeCallableTE: Option[ReferenceExpressionTE]):
   ReferenceExpressionTE = {
 
     val runeTypingEnv = TemplataCompiler.createRuneTypeSolverEnv(callingEnv)
@@ -197,6 +196,7 @@ class ArrayCompiler(
     inferCompiler.incrementallySolve(
       envs, coutputs, solver,
       (solver) => {
+        // TODO(regions): Sometimes add default region rune
         false
       }) match {
       case Err(f @ FailedCompilerSolve(_, _, err)) => {
@@ -207,11 +207,7 @@ class ArrayCompiler(
     }
 
     val CompleteCompilerSolve(_, templatas, runeToFunctionBound, reachableBounds) =
-      (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, true, Vector(), solver) match {
-        case f @ FailedCompilerSolve(_, _, _) => Err(f)
-        case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
-        case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
-      }) match {
+      inferCompiler.checkResolvingConclusionsAndResolve(envs, coutputs, invocationRange, callLocation, runeToType, rules, Vector(), solver) match {
         case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
         case Ok(i) => (i)
       }
@@ -238,7 +234,7 @@ class ArrayCompiler(
 
         val prototype =
           overloadResolver.getArrayGeneratorPrototype(
-            coutputs, callingEnv, parentRanges, callLocation, callableTE, region, true)
+            coutputs, callingEnv, parentRanges, callLocation, callableTE, region)
         val rsaMT = resolveRuntimeSizedArray(prototype.returnType, mutability, region)
 
         maybeElementTypeRune.foreach(elementTypeRuneA => {
@@ -275,7 +271,6 @@ class ArrayCompiler(
             Vector(sizeTE.result.coord) ++
               maybeCallableTE.map(c => c.result.coord),
             Vector(),
-            true,
             true) match {
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(parentRanges, e))
             case Ok(x) => x
@@ -322,8 +317,7 @@ class ArrayCompiler(
       mutabilityRuneA: IRuneS,
       variabilityRuneA: IRuneS,
       exprs2: Vector[ReferenceExpressionTE],
-      region: RegionT,
-      verifyConclusions: Boolean):
+      region: RegionT):
    StaticArrayFromValuesTE = {
 
     val runeTypingEnv = TemplataCompiler.createRuneTypeSolverEnv(callingEnv)
@@ -387,11 +381,11 @@ class ArrayCompiler(
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
-
     // Incrementally solve and add default generic parameters (and context region).
     inferCompiler.incrementallySolve(
       envs, coutputs, solver,
       (solver) => {
+        // TODO(regions): Sometimes add default region
         false
       }) match {
       case Err(f @ FailedCompilerSolve(_, _, err)) => {
@@ -402,11 +396,7 @@ class ArrayCompiler(
     }
 
     val CompleteCompilerSolve(_, templatas, runeToFunctionBound, reachableBounds) =
-      (inferCompiler.interpretResults(envs, coutputs, invocationRange, callLocation, runeToType, rules, verifyConclusions, true, Vector(), solver) match {
-        case f @ FailedCompilerSolve(_, _, _) => Err(f)
-        case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
-        case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
-      }) match {
+      inferCompiler.checkResolvingConclusionsAndResolve(envs, coutputs, invocationRange, callLocation, runeToType, rules, Vector(), solver) match {
         case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
         case Ok(i) => (i)
       }
@@ -458,7 +448,7 @@ class ArrayCompiler(
 
     val prototype =
       overloadResolver.getArrayConsumerPrototype(
-        coutputs, fate, range, callLocation, callableTE, arrayTT.elementType, contextRegion, true)
+        coutputs, fate, range, callLocation, callableTE, arrayTT.elementType, contextRegion)
 
     ast.DestroyStaticSizedArrayIntoFunctionTE(
       arrTE,
@@ -496,7 +486,7 @@ class ArrayCompiler(
 
     val prototype =
       overloadResolver.getArrayConsumerPrototype(
-        coutputs, fate, range, callLocation, callableTE, arrayTT.elementType, contextRegion, true)
+        coutputs, fate, range, callLocation, callableTE, arrayTT.elementType, contextRegion)
 
 //    val freePrototype =
 //      destructorCompiler.getFreeFunction(

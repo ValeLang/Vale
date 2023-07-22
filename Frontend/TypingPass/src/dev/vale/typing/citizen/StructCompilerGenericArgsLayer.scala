@@ -9,7 +9,7 @@ import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, RangeS, typing, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, RangeS, typing, vassert, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat}
 import dev.vale.highertyping._
 import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve}
 import dev.vale.typing.types._
@@ -73,19 +73,17 @@ class StructCompilerGenericArgsLayer(
         case Err(x) => return ResolveFailure(callRange, x)
       }
       val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), Vector()) =
-        inferCompiler.interpretResults(
+        inferCompiler.checkResolvingConclusionsAndResolve(
           envs,
           coutputs,
           callRange,
           callLocation,
           structA.headerRuneToType,
           callSiteRules,
-          true,
-          false,
           Vector(),
           solver) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
-          case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
+          case Ok(ccs) => ccs
+          case Err(x) => return ResolveFailure(callRange, x)
         }
 
       // We can't just make a StructTT with the args they gave us, because they may have been
@@ -138,20 +136,19 @@ class StructCompilerGenericArgsLayer(
 
       // This *doesnt* check to make sure it's a valid use of the template. Its purpose is really
       // just to populate any generic parameter default values.
-      val CompleteCompilerSolve(_, inferences, _, Vector(), Vector()) =
-        inferCompiler.solveExpectComplete(
+      // We're just predicting, see STCMBDP.
+      val inferences =
+        inferCompiler.partialSolve(
           InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
           coutputs,
           callSiteRules,
           runeToTypeForPrediction,
           callRange,
-          callLocation,
           initialKnowns,
-          Vector(),
-          // False because we're just predicting, see STCMBDP.
-          false,
-          false,
-          Vector())
+          Vector()) match {
+          case Ok(i) => i
+          case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(callRange, e))
+        }
 
       // We can't just make a StructTT with the args they gave us, because they may have been
       // missing some, in which case we had to run some default rules.
@@ -204,24 +201,20 @@ class StructCompilerGenericArgsLayer(
       // This *doesnt* check to make sure it's a valid use of the template. Its purpose is really
       // just to populate any generic parameter default values.
 
-      // Maybe we should make this incremental too, like when solving definitions?
-
       val contextRegion = RegionT()
-
-      val CompleteCompilerSolve(_, inferences, _, Vector(), Vector()) =
-        inferCompiler.solveExpectComplete(
+      val inferences =
+      // We're just predicting, see STCMBDP.
+        inferCompiler.partialSolve(
           InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
           coutputs,
           callSiteRules,
           runeToTypeForPrediction,
           callRange,
-          callLocation,
           initialKnowns,
-          Vector(),
-          // False because we're just predicting, see STCMBDP.
-          false,
-          false,
-          Vector())
+          Vector()) match {
+          case Ok(i) => i
+          case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(callRange, e))
+        }
 
       // We can't just make a StructTT with the args they gave us, because they may have been
       // missing some, in which case we had to run some default rules.
@@ -268,34 +261,19 @@ class StructCompilerGenericArgsLayer(
       val contextRegion = RegionT()
 
       // This checks to make sure it's a valid use of this template.
-      val envs = InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion)
-      val solver =
-        inferCompiler.makeSolver(
-          envs,
-          coutputs,
-          callSiteRules,
-          interfaceA.runeToType,
-          callRange,
-          initialKnowns,
-          Vector())
-      inferCompiler.continue(envs, coutputs, solver) match {
-        case Ok(()) =>
-        case Err(x) => return ResolveFailure(callRange, x)
-      }
       val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector(), Vector()) =
-        inferCompiler.interpretResults(
-          envs,
-          coutputs,
-          callRange,
-          callLocation,
+        inferCompiler.solveForResolving(
+        InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
+        coutputs,
+        callSiteRules,
           interfaceA.runeToType,
-          callSiteRules,
-          true,
-          false,
+          callRange,
+        callLocation,
+          initialKnowns,
           Vector(),
-          solver) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _, _) => ccs
-          case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
+        Vector()) match {
+          case Ok(ccs @ CompleteCompilerSolve(_, _, _, _, _)) => ccs
+          case Err(x) => return ResolveFailure(callRange, x)
         }
 
       // We can't just make a StructTT with the args they gave us, because they may have been
@@ -345,10 +323,11 @@ class StructCompilerGenericArgsLayer(
           TemplataCompiler.getFirstUnsolvedIdentifyingRune(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
             case None => false
             case Some((genericParam, index)) => {
+              val placeholderPureHeight = vregionmut(None)
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
               val templata =
                 templataCompiler.createPlaceholder(
-                  coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, true)
+                  coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, placeholderPureHeight, true)
               solver.manualStep(Map(genericParam.rune.rune -> templata))
               true
             }
@@ -361,9 +340,12 @@ class StructCompilerGenericArgsLayer(
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
       val CompleteCompilerSolve(_, inferences, _, declaredBounds, reachableBoundsFromParamsAndReturn) =
-        inferCompiler.expectCompleteSolve(
-          envs, coutputs, definitionRules, allRuneToType, structA.range :: parentRanges, callLocation, true, true, Vector(), solver)
-      // vimpl() // declaredBounds? DO NOT SUBMIT
+        inferCompiler.checkDefiningConclusionsAndResolve(
+          envs, coutputs, structA.range :: parentRanges, callLocation, allRuneToType, definitionRules, Vector(), solver) match {
+          case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
+          case Ok(c) => c
+        }
+
 
       structA.maybePredictedMutability match {
         case None => {
@@ -429,9 +411,10 @@ class StructCompilerGenericArgsLayer(
             case None => false
             case Some((genericParam, index)) => {
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
+              val placeholderPureHeight = vregionmut(None)
               val templata =
                 templataCompiler.createPlaceholder(
-                  coutputs, outerEnv, interfaceTemplateId, genericParam, index, interfaceA.runeToType, true)
+                  coutputs, outerEnv, interfaceTemplateId, genericParam, index, interfaceA.runeToType, placeholderPureHeight, true)
               solver.manualStep(Map(genericParam.rune.rune -> templata))
               true
             }
@@ -444,9 +427,11 @@ class StructCompilerGenericArgsLayer(
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
       val CompleteCompilerSolve(_, inferences, _, declaredBounds, reachableBoundsFromParamsAndReturn) =
-        inferCompiler.expectCompleteSolve(
-          envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, callLocation, true, true, Vector(), solver)
-      //vimpl() // declared bounds? DO NOT SUBMIT
+        inferCompiler.checkDefiningConclusionsAndResolve(
+          envs, coutputs, interfaceA.range :: parentRanges, callLocation, interfaceA.runeToType, definitionRules, Vector(), solver) match {
+          case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
+          case Ok(c@CompleteCompilerSolve(_, _, _, _, _)) => c
+        }
 
       interfaceA.maybePredictedMutability match {
         case None => {

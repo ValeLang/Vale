@@ -885,8 +885,7 @@ class ExpressionCompiler(
               mutabilityRune.rune,
               variabilityRune.rune,
               exprs2,
-              region,
-              true)
+              region)
           (expr2, returnsFromElements)
         }
         case StaticArrayFromCallableSE(range, rules, maybeElementTypeRune, maybeMutabilityRune, maybeVariabilityRune, sizeRuneA, callableAE) => {
@@ -905,8 +904,7 @@ class ExpressionCompiler(
               sizeRuneA.rune,
               maybeMutabilityRune.rune,
               maybeVariabilityRune.rune,
-              callableTE,
-              true)
+              callableTE)
           (expr2, returnsFromCallable)
         }
         case NewRuntimeSizedArraySE(range, rulesA, maybeElementTypeRune, mutabilityRune, sizeAE, maybeCallableAE) => {
@@ -942,8 +940,7 @@ class ExpressionCompiler(
               maybeElementTypeRune.map(_.rune),
               mutabilityRune.rune,
               sizeTE,
-              maybeCallableTE,
-              true)
+              maybeCallableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {
@@ -1100,8 +1097,8 @@ class ExpressionCompiler(
               case (_, NeverT(true)) => uncoercedThenBlock2.result.coord
               case (a, b) if a == b => uncoercedThenBlock2.result.coord
               case (a : ICitizenTT, b : ICitizenTT) => {
-                val aAncestors = ancestorHelper.getParents(coutputs, parentRanges, outerCallLocation, nenv.snapshot, a, true).toSet
-                val bAncestors = ancestorHelper.getParents(coutputs, parentRanges, outerCallLocation, nenv.snapshot, b, true).toSet
+                val aAncestors = ancestorHelper.getParents(coutputs, parentRanges, outerCallLocation, nenv.snapshot, a).toSet
+                val bAncestors = ancestorHelper.getParents(coutputs, parentRanges, outerCallLocation, nenv.snapshot, b).toSet
                 val commonAncestors = aAncestors.intersect(bAncestors)
 
                 if (uncoercedElseBlock2.result.coord.ownership != uncoercedElseBlock2.result.coord.ownership) {
@@ -1354,9 +1351,10 @@ class ExpressionCompiler(
 
           (Compiler.consecutive(initExprsTE :+ lastExprTE), (initReturnsUnflattened.flatten ++ lastReturns).toSet)
         }
-        // case p@PureSE(range, location, inner) => {
-        //   // TODO(regionsmerge)
-        // }
+        case p@PureSE(range, location, inner) => {
+          evaluateAndCoerceToReferenceExpression(
+            coutputs, nenv, life + 0, parentRanges, outerCallLocation, region, inner)
+        }
         case b @ BlockSE(range, locals, _) => {
           val childEnvironment = NodeEnvironmentBox(nenv.makeChild(b, None))
 

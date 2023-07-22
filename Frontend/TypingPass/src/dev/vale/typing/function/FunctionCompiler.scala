@@ -120,14 +120,13 @@ class FunctionCompiler(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
-    functionTemplata: FunctionTemplataT,
-    verifyConclusions: Boolean):
+    functionTemplata: FunctionTemplataT):
   (FunctionHeaderT) = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight) {
         closureOrLightLayer.evaluateGenericLightFunctionFromNonCall(
-          env, coutputs, function.range :: parentRanges, callLocation, function, verifyConclusions)
+          env, coutputs, function.range :: parentRanges, callLocation, function)
       } else {
         vfail() // I think we need a call to evaluate a lambda?
       }
@@ -203,14 +202,13 @@ class FunctionCompiler(
     functionTemplata: FunctionTemplataT,
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
-    argTypes: Vector[CoordT],
-    verifyConclusions: Boolean):
+    argTypes: Vector[CoordT]):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight()) {
         closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
-          env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs, contextRegion, argTypes, verifyConclusions)
+          env, coutputs, callingEnv, callRange, callLocation, function, explicitTemplateArgs, contextRegion, argTypes)
       } else {
         val lambdaCitizenName2 =
           function.name match {
@@ -224,13 +222,13 @@ class FunctionCompiler(
               Set(TemplataLookupContext)))
         closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForPrototype(
           env, coutputs, callingEnv, callRange, callLocation, closureStructRef, function, explicitTemplateArgs,
-          contextRegion, argTypes, verifyConclusions)
+          contextRegion, argTypes)
       }
     })
 
   }
 
-  def evaluateGenericLightFunctionParentForPrototype(
+  def evaluateGenericVirtualDispatcherFunctionForPrototype(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
@@ -240,7 +238,7 @@ class FunctionCompiler(
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
-      closureOrLightLayer.evaluateGenericLightFunctionParentForPrototype2(
+      closureOrLightLayer.evaluateGenericVirtualDispatcherFunctionForPrototype(
         env, coutputs, callingEnv, callRange, callLocation, function, args)
     })
   }

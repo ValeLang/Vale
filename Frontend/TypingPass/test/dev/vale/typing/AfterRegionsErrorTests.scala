@@ -7,6 +7,8 @@ import dev.vale.typing.infer.SendingNonCitizen
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
+import dev.vale.typing.citizen._
+import dev.vale.typing.expression._
 import dev.vale.{Collector, Err, Ok, vwat, _}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
 import org.scalatest._
@@ -231,6 +233,81 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
         }
       }
     }
+  }
+
+  test("Abstract func without virtual") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |sealed interface ISpaceship<X Ref, Y Ref, Z Ref> { }
+        |abstract func launch<X, Y, Z>(self &ISpaceship<X, Y, Z>, bork X) where func drop(X)void;
+        |
+        |exported func main() int {
+        |  a = #[](10, {_});
+        |  return a.3;
+        |}
+    """.stripMargin)
+
+    compile.getCompilerOutputs() match {
+      case Err(e) => vimpl(e)
+      case Ok(_) => vfail()
+    }
+  }
+
+  test("Cant make non-weakable extend a weakable") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |weakable interface IUnit {}
+        |struct Muta { hp int; }
+        |impl IUnit for Muta;
+        |func main(muta Muta) int  { return 7; }
+        |""".stripMargin)
+
+    try {
+      compile.expectCompilerOutputs().lookupFunction("main")
+      vfail()
+    } catch {
+      case WeakableImplingMismatch(false, true) =>
+      case other => {
+        other.printStackTrace()
+        vfail()
+      }
+    }
+  }
+
+
+  test("Cant make weakable extend a non-weakable") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |interface IUnit {}
+        |weakable struct Muta { hp int; }
+        |impl IUnit for Muta;
+        |func main(muta Muta) int  { return 7; }
+        |""".stripMargin)
+
+    try {
+      compile.expectCompilerOutputs().lookupFunction("main")
+      vfail()
+    } catch {
+      case WeakableImplingMismatch(true, false) =>
+      case _ => vfail()
+    }
+  }
+  test("Cant make weak ref to non-weakable") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |struct Muta { hp int; }
+        |func getHp(weakMuta &&Muta) { (lock(weakMuta)).get().hp }
+        |exported func main() int { getHp(&&Muta(7)) }
+        |""".stripMargin)
+
+    try {
+      compile.expectCompilerOutputs().lookupFunction("main")
+      vfail()
+    } catch {
+      case TookWeakRefOfNonWeakableError() =>
+      case _ => vfail()
+    }
+
   }
 
 }

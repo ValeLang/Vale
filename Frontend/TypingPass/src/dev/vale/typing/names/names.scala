@@ -249,6 +249,10 @@ case class KindPlaceholderNameT(template: KindPlaceholderTemplateNameT) extends 
   override def index: Int = template.index
 }
 
+// This exists because we need a different way to refer to a coord generic param's other components,
+// see MNRFGC.
+case class NonKindNonRegionPlaceholderNameT(index: Int, rune: IRuneS) extends IPlaceholderNameT
+
 // See NNSPAFOC.
 case class OverrideDispatcherTemplateNameT(
   implId: IdT[IImplTemplateNameT]

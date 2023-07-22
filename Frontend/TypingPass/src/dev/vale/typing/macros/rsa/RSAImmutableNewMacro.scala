@@ -74,8 +74,7 @@ class RSAImmutableNewMacro(
         RegionT(),
         Vector(generatorArgCoord, CoordT(ShareT, RegionT(), IntT(32))),
         Vector(),
-        false,
-        true) match {
+        false) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
         case Ok(x) => x
       }

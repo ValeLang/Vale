@@ -326,7 +326,7 @@ class EdgeCompiler(
     // Step 2: Compile Dispatcher Function Given Interface, see CDFGI
 
     val EvaluateFunctionSuccess(dispatchingFuncPrototype, dispatcherInnerInferences) =
-      functionCompiler.evaluateGenericLightFunctionParentForPrototype(
+      functionCompiler.evaluateGenericVirtualDispatcherFunctionForPrototype(
         coutputs,
         List(range, impl.templata.impl.range),
         callLocation,
@@ -417,7 +417,7 @@ class EdgeCompiler(
 
     // See IBFCS, ONBIFS and NBIFP for why we need reachableBoundsFromSubCitizen in our below env.
     val (caseConclusions, reachableBoundsFromSubCitizen) =
-      implCompiler.solveImplForCall(
+      implCompiler.resolveImpl(
         coutputs,
         List(range),
         callLocation,
@@ -436,17 +436,12 @@ class EdgeCompiler(
             KindTemplataT(dispatcherPlaceholderedInterface))) ++
         implRuneToCasePlaceholder
           .map({ case (rune, templata) => InitialKnown(RuneUsage(range, rune), templata) }),
-        impl.templata,
-        false,
-        true
+        impl.templata
         // Keep in mind, at the end of the solve, we're actually pulling in some reachable bounds
         // from the struct we're solving for here.
       ) match {
-        case CompleteCompilerSolve(_, conclusions, _, _, reachableBoundsFromFullSolve) => (conclusions, reachableBoundsFromFullSolve)
-        case IncompleteCompilerSolve(_, _, _, _) => vfail()
-        case fcs @ FailedCompilerSolve(_, _, _) => {
-          throw CompileErrorExceptionT(CouldntEvaluatImpl(List(range), fcs))
-        }
+        case Ok(CompleteCompilerSolve(_, conclusions, _, _, reachableBoundsFromFullSolve)) => (conclusions, reachableBoundsFromFullSolve)
+        case Err(e) => throw CompileErrorExceptionT(CouldntEvaluatImpl(List(range), e))
       }
     val caseSubCitizen =
       expectKindTemplata(
@@ -502,7 +497,6 @@ class EdgeCompiler(
         Vector(
           coutputs.getOuterEnvForType(List(range, impl.templata.impl.range), interfaceTemplateId),
           coutputs.getOuterEnvForType(List(range, impl.templata.impl.range), subCitizenTemplateId)),
-        true,
         true) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindOverrideT(List(range, impl.templata.impl.range), e))
         case Ok(x) => x

@@ -11,9 +11,9 @@ import PostParserErrorHumanizer._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.PostParserErrorHumanizer
 import OverloadResolver._
-import dev.vale.highertyping.{FunctionA, HigherTypingErrorHumanizer}
-import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, PrototypeT, SignatureT}
-import dev.vale.typing.infer.{BadIsaSubKind, BadIsaSuperKind, CallResultWasntExpectedType, CantCheckPlaceholder, CantGetComponentsOfPlaceholderPrototype, CantShareMutable, CouldntFindFunction, CouldntResolveKind, ITypingPassSolverError, IsaFailed, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, ReceivingDifferentOwnerships, ReturnTypeConflict, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
+import dev.vale.highertyping._
+import dev.vale.typing.ast._
+import dev.vale.typing.infer._
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
@@ -440,13 +440,16 @@ object CompilerErrorHumanizer {
       }
       case LookupFailed(name) => "Couldn't find anything named: " + humanizeImpreciseName(name)
       case KindIsNotConcrete(kind) => {
-        "Expected kind to be concrete, but was not. Kind: " + kind
+        "Expected kind to be concrete, but was not. Kind: " + humanizeKind(codeMap, kind)
       }
       case OneOfFailed(rule) => {
         "One-of rule failed."
       }
       case KindIsNotInterface(kind) => {
-        "Expected kind to be interface, but was not. Kind: " + kind
+        "Expected kind to be interface, but was not. Kind: " + humanizeKind(codeMap, kind)
+      }
+      case CallResultIsntCallable(result) => {
+        "Generic call result isn't callable: " + humanizeTemplata(codeMap, result)
       }
       case CallResultWasntExpectedType(expected, actual) => {
         "Expected an instantiation of " + humanizeTemplata(codeMap, expected) + " but got " + humanizeTemplata(codeMap, actual)
@@ -655,6 +658,7 @@ object CompilerErrorHumanizer {
       case IteratorNameT(range) => "it:" + codeMap(range.begin)
       case IterableNameT(range) => "ib:" + codeMap(range.begin)
       case IterationOptionNameT(range) => "io:" + codeMap(range.begin)
+      case ImplTemplateNameT(codeLoc) => "implt:" + codeMap(codeLoc)
       case ForwarderFunctionNameT(_, inner) => humanizeName(codeMap, inner)
       case ForwarderFunctionTemplateNameT(inner, index) => "fwd" + index + ":" + humanizeName(codeMap, inner)
       case MagicParamNameT(codeLoc) => "mp:" + codeMap(codeLoc)

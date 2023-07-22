@@ -134,7 +134,7 @@ class StructCompilerCore(
             outerEnv.id.addStep(name),
             (coutputs) => {
               delegate.evaluateGenericFunctionFromNonCallForHeader(
-                coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA), true)
+                coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA))
             }))
       }
       case _ => vcurious()
@@ -212,7 +212,7 @@ class StructCompilerCore(
         case (name, FunctionEnvEntry(functionA)) => {
           val header =
             delegate.evaluateGenericFunctionFromNonCallForHeader(
-              coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA), true)
+              coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA))
           header.toPrototype -> vassertSome(header.getVirtualIndex)
         }
       }).toVector
@@ -414,8 +414,7 @@ class StructCompilerCore(
         structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
           case Some(ft@FunctionTemplataT(_, _)) => ft
           case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))
-        },
-        true)
+        })
 //    }
 
     (closuredVarsStructRef, mutability, functionTemplata)

@@ -3,7 +3,7 @@ package dev.vale.typing.citizen
 import dev.vale.highertyping.ImplA
 import dev.vale.postparsing.{IRuneS, ITemplataType, ImplImpreciseNameS, ImplSubCitizenImpreciseNameS, ImplTemplataType, LocationInDenizen}
 import dev.vale.postparsing.rules.{Equivalencies, IRulexSR, RuleScout}
-import dev.vale.solver.{IIncompleteOrFailedSolve, SolverErrorHumanizer}
+import dev.vale.solver._
 import dev.vale.typing.OverloadResolver.InferFailure
 import dev.vale.typing.env.{ExpressionLookupContext, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing._
@@ -41,90 +41,15 @@ class ImplCompiler(
 
   // We don't have an isAncestor call, see REMUIDDA.
 
-  def solveImplForCall(
-    coutputs: CompilerOutputs,
-    parentRanges: List[RangeS],
-    callLocation: LocationInDenizen,
-    callingEnv: IInDenizenEnvironmentT,
-    initialKnowns: Vector[InitialKnown],
-    implTemplata: ImplDefinitionTemplataT,
-    isRootSolve: Boolean,
-    verifyConclusions: Boolean):
-  ICompilerSolverOutcome = {
-    val ImplDefinitionTemplataT(parentEnv, impl) = implTemplata
-    val ImplA(
-      range,
-      name,
-      identifyingRunes,
-      rules,
-      runeToType,
-      structKindRune,
-      subCitizenImpreciseName,
-      interfaceKindRune,
-      superInterfaceImpreciseName
-    ) = impl
-
-    val implTemplateId =
-      parentEnv.id.addStep(nameTranslator.translateImplName(name))
-
-    val outerEnv =
-      CitizenEnvironmentT(
-        parentEnv.globalEnv,
-        parentEnv,
-        implTemplateId,
-        implTemplateId,
-        TemplatasStore(implTemplateId, Map(), Map()))
-
-    // Remember, impls can have rules too, such as:
-    //   impl<T> Opt<T> for Some<T> where func drop(T)void;
-    // so we do need to filter them out when compiling.
-    val definitionRules = rules.filter(InferCompiler.includeRuleInCallSiteSolve)
-
-    val envs =
-      InferEnv(
-        // This is callingEnv because we might be coming from an abstract function that's trying
-        // to evaluate an override.
-        callingEnv,
-        range :: parentRanges,
-        callLocation,
-        outerEnv,
-        RegionT())
-    val solver =
-      inferCompiler.makeSolver(
-        envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
-
-    inferCompiler.continue(envs, coutputs, solver) match {
-      case Ok(()) =>
-      case Err(e) => return e
-    }
-
-    val result =
-      inferCompiler.interpretResults(
-        envs,
-        coutputs,
-        range :: parentRanges,
-        callLocation,
-        runeToType,
-        definitionRules,
-        verifyConclusions,
-        isRootSolve,
-        // We include the reachable bounds for the struct rune. Those are bounds that this impl will
-        // have to satisfy when it calls the interface.
-        Vector(structKindRune.rune),
-        solver)
-    result
-  }
-
-  private def solveImplForDefine(
-    coutputs: CompilerOutputs,
-    parentRanges: List[RangeS],
+  def resolveImpl(
+      coutputs: CompilerOutputs,
+      parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
-    callingEnv: IInDenizenEnvironmentT,
-    initialKnowns: Vector[InitialKnown],
-    implTemplata: ImplDefinitionTemplataT,
-    verifyConclusions: Boolean,
-    isRootSolve: Boolean):
+      callingEnv: IInDenizenEnvironmentT,
+      initialKnowns: Vector[InitialKnown],
+      implTemplata: ImplDefinitionTemplataT):
   Result[CompleteCompilerSolve, IIncompleteOrFailedCompilerSolve] = {
+
     val ImplDefinitionTemplataT(parentEnv, impl) = implTemplata
     val ImplA(
     range,
@@ -152,30 +77,85 @@ class ImplCompiler(
     // Remember, impls can have rules too, such as:
     //   impl<T> Opt<T> for Some<T> where func drop(T)void;
     // so we do need to filter them out when compiling.
-    val definitionRules = rules.filter(InferCompiler.includeRuleInDefinitionSolve)
+    val definitionRules = rules.filter(InferCompiler.includeRuleInCallSiteSolve)
 
-    val result =
-      inferCompiler.solveComplete(
-        InferEnv(
-          // This is callingEnv because we might be coming from an abstraction function that's trying
-          // to evaluate an override.
-          callingEnv,
-          range :: parentRanges,
-          callLocation,
-          outerEnv,
-          RegionT()),
-        coutputs,
-        definitionRules,
-        runeToType,
-        range :: parentRanges,
-        callLocation,
-        initialKnowns,
-        Vector(),
-        true,
-        isRootSolve,
-        // We include reachable bounds for the struct so we don't have to re-specify all its bounds in the impl.
-        Vector(structKindRune.rune))
-    result
+    // This is callingEnv because we might be coming from an abstract function that's trying
+    // to evaluate an override.
+    val originalCallingEnv = callingEnv
+    val envs = InferEnv(originalCallingEnv, range :: parentRanges, callLocation, outerEnv, RegionT())
+    val solver =
+      inferCompiler.makeSolver(
+        envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
+
+    inferCompiler.continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(e) => return Err(e)
+    }
+
+    inferCompiler.checkResolvingConclusionsAndResolve(
+      envs,
+      coutputs,
+      range :: parentRanges,
+      callLocation,
+      runeToType,
+      definitionRules,
+      // We include the reachable bounds for the struct rune. Those are bounds that this impl will
+      // have to satisfy when it calls the interface.
+      Vector(structKindRune.rune),
+      solver)
+  }
+
+  // WARNING: Doesn't verify conclusions to make sure that any bounds are satisfied!
+  def partialResolveImpl(
+    coutputs: CompilerOutputs,
+    parentRanges: List[RangeS],
+    callLocation: LocationInDenizen,
+    callingEnv: IInDenizenEnvironmentT,
+    initialKnowns: Vector[InitialKnown],
+    implTemplata: ImplDefinitionTemplataT):
+  Result[Map[IRuneS, ITemplataT[ITemplataType]], FailedCompilerSolve] = {
+
+    val ImplDefinitionTemplataT(parentEnv, impl) = implTemplata
+    val ImplA(
+    range,
+    name,
+    identifyingRunes,
+    rules,
+    runeToType,
+    structKindRune,
+    subCitizenImpreciseName,
+    interfaceKindRune,
+    superInterfaceImpreciseName
+    ) = impl
+
+    val implTemplateId =
+      parentEnv.id.addStep(nameTranslator.translateImplName(name))
+
+    val outerEnv =
+      CitizenEnvironmentT(
+        parentEnv.globalEnv,
+        parentEnv,
+        implTemplateId,
+        implTemplateId,
+        TemplatasStore(implTemplateId, Map(), Map()))
+
+    // Remember, impls can have rules too, such as:
+    //   impl<T> Opt<T> for Some<T> where func drop(T)void;
+    // so we do need to filter them out when compiling.
+    val definitionRules = rules.filter(InferCompiler.includeRuleInCallSiteSolve)
+
+    // This is callingEnv because we might be coming from an abstract function that's trying
+    // to evaluate an override.
+    val originalCallingEnv = callingEnv
+    val envs = InferEnv(originalCallingEnv, range :: parentRanges, callLocation, outerEnv, RegionT())
+    val solver =
+      inferCompiler.makeSolver(
+        envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
+    inferCompiler.continue(envs, coutputs, solver) match {
+      case Ok(()) =>
+      case Err(e) => return Err(e)
+    }
+    Ok(solver.userifyConclusions().toMap)
   }
 
   // This will just figure out the struct template and interface template,
@@ -205,8 +185,50 @@ class ImplCompiler(
         InitialKnown(rune.rune, placeholder)
       })
 
+    val ImplA(
+    range,
+    name,
+    identifyingRunes,
+    rules,
+    runeToType,
+    structKindRune,
+    subCitizenImpreciseName,
+    interfaceKindRune,
+    superInterfaceImpreciseName
+    ) = implA
+
+    val outerEnv =
+      CitizenEnvironmentT(
+        parentEnv.globalEnv,
+        parentEnv,
+        implTemplateId,
+        implTemplateId,
+        TemplatasStore(implTemplateId, Map(), Map()))
+
+    // Remember, impls can have rules too, such as:
+    //   impl<T> Opt<T> for Some<T> where func drop(T)void;
+    // so we do need to filter them out when compiling.
+    val definitionRules = rules.filter(InferCompiler.includeRuleInDefinitionSolve)
+
+    val envs =
+      InferEnv(
+        implOuterEnv,
+        List(range),
+        callLocation,
+        outerEnv,
+        RegionT())
     val CompleteCompilerSolve(_, inferences, runeToFunctionBound1, reachableBoundsFromSubCitizen) =
-      solveImplForDefine(coutputs, List(implA.range), callLocation, implOuterEnv, implPlaceholders, implTemplata, true, true) match {
+      inferCompiler.solveForDefining(
+        envs,
+        coutputs,
+        definitionRules,
+        runeToType,
+        List(range),
+        callLocation,
+        implPlaceholders,
+        Vector(),
+        // We include reachable bounds for the struct so we don't have to re-specify all its bounds in the impl.
+        Vector(structKindRune.rune)) match {
         case Ok(i) => i
         case Err(e) => throw CompileErrorExceptionT(CouldntEvaluatImpl(List(implA.range), e))
       }
@@ -281,8 +303,12 @@ class ImplCompiler(
   ): Vector[Boolean] = {
 
     // Now we're going to figure out the <ZZ> for the eg Milano case.
-    val (partialCaseConclusionsFromSuperInterface, _) =
-      solveImplForCall(
+
+    // Don't verify conclusions, because this will likely be a partial solve, which means we
+    // might not even be able to solve the struct, which means we can't pull in any declared
+    // function bounds that come from them. We'll check them later.
+    val partialCaseConclusionsFromSuperInterface =
+      partialResolveImpl(
         coutputs,
         List(implTemplata.impl.range),
         callLocation,
@@ -293,16 +319,10 @@ class ImplCompiler(
             // We may be feeding in something interesting like IObserver<Opt<T>> here should be fine,
             // the impl will receive it and match it to its own unknown runes appropriately.
             KindTemplataT(interface))),
-        implTemplata,
-        false,
-        // Don't verify conclusions, because this will likely be a partial solve, which means we
-        // might not even be able to solve the struct, which means we can't pull in any declared
-        // function bounds that come from them. We'll check them later.
-        false) match {
-        case CompleteCompilerSolve(_, conclusions, _, reachableBoundsFromSubCitizen) => (conclusions, reachableBoundsFromSubCitizen)
-        case IncompleteCompilerSolve(_, _, _, incompleteConclusions) => (incompleteConclusions, Vector[ITemplataT[ITemplataType]]())
-        case fcs @ FailedCompilerSolve(_, _, _) => {
-          throw CompileErrorExceptionT(CouldntEvaluatImpl(List(implTemplata.impl.range), fcs))
+        implTemplata) match {
+        case Ok(c) => c
+        case Err(e) => {
+          throw CompileErrorExceptionT(CouldntEvaluatImpl(List(implTemplata.impl.range), e))
         }
       }
     // These will be anything that wasn't already determined by the incoming interface.
@@ -487,36 +507,35 @@ class ImplCompiler(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     callingEnv: IInDenizenEnvironmentT,
-    kind: ISubKindTT,
-    verifyConclusions: Boolean):
+    kind: ISubKindTT):
   Boolean = {
-    getParents(coutputs, parentRanges, callLocation, callingEnv, kind, verifyConclusions).nonEmpty
+    getParents(coutputs, parentRanges, callLocation, callingEnv, kind).nonEmpty
   }
 
-  def getImplDescendantGivenParent(
-    coutputs: CompilerOutputs,
-    parentRanges: List[RangeS],
-      callLocation: LocationInDenizen,
-    callingEnv: IInDenizenEnvironmentT,
-    implTemplata: ImplDefinitionTemplataT,
-    parent: InterfaceTT,
-    verifyConclusions: Boolean,
-    isRootSolve: Boolean):
-  Result[ICitizenTT, IIncompleteOrFailedCompilerSolve] = {
-    val initialKnowns =
-      Vector(
-        InitialKnown(implTemplata.impl.interfaceKindRune, KindTemplataT(parent)))
-    val CompleteCompilerSolve(_, conclusions, _, _) =
-      solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata, isRootSolve, true) match {
-        case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
-        case x : IIncompleteOrFailedCompilerSolve => return Err(x)
-      }
-    val parentTT = conclusions.get(implTemplata.impl.subCitizenRune.rune)
-    vassertSome(parentTT) match {
-      case KindTemplataT(i : ICitizenTT) => Ok(i)
-      case _ => vwat()
-    }
-  }
+  // def getImplDescendantGivenParent(
+  //   coutputs: CompilerOutputs,
+  //   parentRanges: List[RangeS],
+  //     callLocation: LocationInDenizen,
+  //   callingEnv: IInDenizenEnvironmentT,
+  //   implTemplata: ImplDefinitionTemplataT,
+  //   parent: InterfaceTT,
+  //   verifyConclusions: Boolean,
+  //   declareBounds: Boolean):
+  // Result[ICitizenTT, IIncompleteOrFailedCompilerSolve] = {
+  //   val initialKnowns =
+  //     Vector(
+  //       InitialKnown(implTemplata.impl.interfaceKindRune, KindTemplataT(parent)))
+  //   val CompleteCompilerSolve(_, conclusions, _, _) =
+  //     solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata, declareBounds, true) match {
+  //       case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
+  //       case x : IIncompleteOrFailedCompilerSolve => return Err(x)
+  //     }
+  //   val parentTT = conclusions.get(implTemplata.impl.subCitizenRune.rune)
+  //   vassertSome(parentTT) match {
+  //     case KindTemplataT(i : ICitizenTT) => Ok(i)
+  //     case _ => vwat()
+  //   }
+  // }
 
   def getImplParentGivenSubCitizen(
     coutputs: CompilerOutputs,
@@ -524,8 +543,7 @@ class ImplCompiler(
       callLocation: LocationInDenizen,
     callingEnv: IInDenizenEnvironmentT,
     implTemplata: ImplDefinitionTemplataT,
-    child: ICitizenTT,
-    verifyConclusions: Boolean):
+    child: ICitizenTT):
   Result[InterfaceTT, IIncompleteOrFailedCompilerSolve] = {
     val initialKnowns =
       Vector(
@@ -535,9 +553,9 @@ class ImplCompiler(
         parentRanges,
         TemplataCompiler.getCitizenTemplate(child.id))
     val CompleteCompilerSolve(_, conclusions, _, _) =
-      solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata, false, true) match {
-        case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
-        case x : IIncompleteOrFailedCompilerSolve => return Err(x)
+      resolveImpl(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, implTemplata) match {
+        case Ok(ccs @ CompleteCompilerSolve(_, _, _, _)) => ccs
+        case Err(x) => return Err(x)
       }
     val parentTT = conclusions.get(implTemplata.impl.interfaceKindRune.rune)
     vassertSome(parentTT) match {
@@ -551,8 +569,7 @@ class ImplCompiler(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     callingEnv: IInDenizenEnvironmentT,
-    subKind: ISubKindTT,
-    verifyConclusions: Boolean):
+    subKind: ISubKindTT):
   Vector[ISuperKindTT] = {
     val subKindId = subKind.id
     val subKindTemplateName = TemplataCompiler.getSubKindTemplate(subKindId)
@@ -584,7 +601,7 @@ class ImplCompiler(
       implDefs.flatMap(impl => {
         subKind match {
           case subCitizen : ICitizenTT => {
-            getImplParentGivenSubCitizen(coutputs, parentRanges, callLocation, callingEnv, impl, subCitizen, verifyConclusions) match {
+            getImplParentGivenSubCitizen(coutputs, parentRanges, callLocation, callingEnv, impl, subCitizen) match {
               case Ok(x) => List(x)
               case Err(_) => {
                 opts.debugOut("Throwing away error! TODO: Use an index or something instead.")
@@ -665,9 +682,9 @@ class ImplCompiler(
           Vector(
             InitialKnown(impl.impl.subCitizenRune, KindTemplataT(subKindTT)),
             InitialKnown(impl.impl.interfaceKindRune, KindTemplataT(superKindTT)))
-        solveImplForCall(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, impl, false, true) match {
-          case ccs @ CompleteCompilerSolve(_, _, _, _) => Ok((impl, ccs))
-          case x : IIncompleteOrFailedCompilerSolve => Err(x)
+        resolveImpl(coutputs, parentRanges, callLocation, callingEnv, initialKnowns, impl) match {
+          case Ok(ccs @ CompleteCompilerSolve(_, _, _, _)) => Ok((impl, ccs))
+          case Err(x) => Err(x)
         }
       })
     val (oks, errs) = Result.split(results)

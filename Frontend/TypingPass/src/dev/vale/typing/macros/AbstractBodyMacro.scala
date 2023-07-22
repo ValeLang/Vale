@@ -51,7 +51,6 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
         RegionT(),
         params2.map(_.tyype),
         Vector(),
-        true,
         true) match {
         case Ok(StampFunctionSuccess(PrototypeTemplataT(_, prototype), _)) => prototype
         case Err(fff @ FindFunctionFailure(_, _, _)) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, fff))

@@ -3,7 +3,13 @@
 
 Back when we did templates, every time we used (resolved) a struct, we would lazily compile it for that set of template args, unless we've seen that combination before.
 
-Now, we **compile** them all\* ahead of time, outside of any particular use. (\* Except for lambdas, those are still templates, see UINIT and LAGT.)
+Now, we **compile** (or **define**) them all\* ahead of time, outside of any particular use. (\* Except for lambdas, those are still templates, see UINIT and LAGT.)
+
+To **resolve** something means to solve rules as a user of a thing; calling a template. It usually involves supplying some actual generic args.
+
+To **import** something means to include it in your environment with a name.
+
+To **partially resolve** something means to see how much of it we could solve.
 
 
 # Some Rules Only Apply to Call Site or Definition (SROACSD)
@@ -399,7 +405,7 @@ One of those dependencies needs to be changed up.
  2. We can check their requirements later.
  3. This can't be changed.
 
-#2 seems easiest for now.
+2 seems easiest for now.
 
 So, when compiling a denizen, we do all the checking of calls _later_.
 
@@ -791,7 +797,7 @@ Here, there are actually three generic functions created:
 
 In this program, we're calling only `genFunc(7)` so these would be the final three instantiations in total:
 
- * `mvtest/genFunc<int>.lam:2:6.__call{bool}<bool>`
+ * `mvtest/genFunc<int>.lam:2:6.__call{bool}<int>`
  * `mvtest/genFunc<int>.lam:2:6.__call{genFunc$0}<int>`
  * `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`
 
@@ -799,7 +805,7 @@ Note how `{genFunc$0}` is still there, even in an instantiation name. See DMPOGN
   
 These all might be completely different functions, depending on what happened inside the body, what kind of metaprogramming it does, etc.
 
-Now the challenge: What is `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`'s original generic's name? (Note from later: I think this challenge is because we need to know the original generic so we know what to start instantiating.) We have to be careful because these look very similar:
+Now the challenge: What is `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`'s original generic's name? (Note from later: I think we need it because we need to know the original generic so we know what to start instantiating?) We have to be careful because these look very similar:
 
  * `mvtest/genFunc<genFunc$0>.lam:2:6.__call{genFunc$0}`
  * `mvtest/genFunc<genFunc$0>.lam:2:6.__call{int}`
@@ -1608,3 +1614,11 @@ It can't figure out $1 because it doesn't know whether it should load "Moo" as a
 
 It can't figure out that second rule because it doesn't know $1, and can't conclude it just from knowing $2 (a coord) and the args (T).
 
+
+# Difference Between solveForDefining and solveForResolving (DBDAR)
+
+The difference between solveForDefining and solveForResolving is whether we declare the function bounds that the rules mention.
+
+When we're defining something, and it requires function bounds, we want to declare them, and then get some instantiation bounds for them.
+
+When we're just resolving something, we instead resolve them against the calling environment to get their instantiation bounds.

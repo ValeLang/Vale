@@ -42,7 +42,7 @@ class DestructorCompiler(
     val name = interner.intern(CodeNameS(keywords.drop))
     val args = Vector(type2)
     overloadCompiler.findFunction(
-      env, coutputs, callRange, callLocation, name, Vector.empty, Vector.empty, contextRegion, args, Vector(), true, true) match {
+      env, coutputs, callRange, callLocation, name, Vector.empty, Vector.empty, contextRegion, args, Vector(), true) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
       case Ok(x) => x
     }

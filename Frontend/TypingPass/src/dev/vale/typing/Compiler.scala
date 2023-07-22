@@ -238,13 +238,13 @@ class Compiler(
           kind: KindT):
         Boolean = {
           kind match {
-            case p @ KindPlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, p, false)
+            case p @ KindPlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, p)
             case contentsRuntimeSizedArrayTT(_, _, _) => false
             case OverloadSetT(_, _) => false
             case NeverT(fromBreak) => true
             case contentsStaticSizedArrayTT(_, _, _, _, _) => false
-            case s @ StructTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, s, false)
-            case i @ InterfaceTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, i, false)
+            case s @ StructTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, s)
+            case i @ InterfaceTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, i)
             case IntT(_) | BoolT() | FloatT() | StrT() | VoidT() => false
           }
         }
@@ -359,7 +359,7 @@ class Compiler(
               Set[KindT]()
             }) ++
               (descendant match {
-                case s : ISubKindTT => implCompiler.getParents(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, s, true)
+                case s : ISubKindTT => implCompiler.getParents(coutputs, envs.parentRanges, envs.callLocation, envs.originalCallingEnv, s)
                 case _ => Vector[KindT]()
               })
         }
@@ -470,8 +470,7 @@ class Compiler(
             contextRegion,
             coords,
             Vector.empty,
-            true,
-            verifyConclusions)
+            true)
         }
 
         override def resolveStaticSizedArrayKind(
@@ -535,11 +534,10 @@ class Compiler(
           coutputs: CompilerOutputs,
           parentRanges: List[RangeS],
           callLocation: LocationInDenizen,
-          functionTemplata: FunctionTemplataT,
-          verifyConclusions: Boolean):
+          functionTemplata: FunctionTemplataT):
         FunctionHeaderT = {
           functionCompiler.evaluateGenericFunctionFromNonCall(
-            coutputs, parentRanges, callLocation, functionTemplata, verifyConclusions)
+            coutputs, parentRanges, callLocation, functionTemplata)
         }
 
         override def scoutExpectedFunctionForPrototype(
@@ -553,8 +551,7 @@ class Compiler(
           contextRegion: RegionT,
           args: Vector[CoordT],
           extraEnvsToLookIn: Vector[IInDenizenEnvironmentT],
-          exact: Boolean,
-          verifyConclusions: Boolean):
+          exact: Boolean):
         StampFunctionSuccess = {
           overloadResolver.findFunction(
             env,
@@ -567,8 +564,7 @@ class Compiler(
             contextRegion,
             args,
             extraEnvsToLookIn,
-            exact,
-            verifyConclusions) match {
+            exact) match {
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
             case Ok(x) => x
           }
@@ -673,7 +669,7 @@ class Compiler(
             args: Vector[CoordT]):
         IEvaluateFunctionResult = {
           functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
-            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args, true)
+            coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args)
         }
 
         override def evaluateGenericFunctionFromCallForPrototype(
@@ -983,7 +979,7 @@ class Compiler(
                   val templata = FunctionTemplataT(packageEnv, functionA)
                   val header =
                   functionCompiler.evaluateGenericFunctionFromNonCall(
-                      coutputs, List(), LocationInDenizen(Vector()), templata, true)
+                      coutputs, List(), LocationInDenizen(Vector()), templata)
 
                   functionA.attributes.collectFirst({ case e @ ExternS(_) => e }) match {
                     case None =>
@@ -1149,10 +1145,13 @@ class Compiler(
                 globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
             val CompleteCompilerSolve(_, templataByRune, _, Vector()) =
-              inferCompiler.solveExpectComplete(
+              inferCompiler.solveForDefining(
                 InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv, regionPlaceholder),
                 coutputs, rules, runeToType, List(range),
-                LocationInDenizen(Vector()), Vector(), Vector(), true, true, Vector())
+                LocationInDenizen(Vector()), Vector(), Vector(), Vector()) match {
+                case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(List(range), f))
+                case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+              }
               templataByRune.get(typeRuneT.rune) match {
                 case Some(KindTemplataT(kind)) => {
                 coutputs.addKindExport(range, kind, placeholderedExportId, exportedName)

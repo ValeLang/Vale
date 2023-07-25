@@ -195,6 +195,7 @@ object PostParserErrorHumanizer {
       case ImplicitCoercionTemplateRuneS(_, inner) => humanizeRune(inner) + ".gen"
       case ImplicitRegionRuneS(originalRune) => humanizeRune(originalRune) + ".region"
       case CallRegionRuneS(lid) => "_" + lid.path.mkString("") + ".pcall"
+      case CaseRuneFromImplS(innerRune) => "case:" + humanizeRune(innerRune)
       case DispatcherRuneFromImplS(innerRune) => "disimpl:" + humanizeRune(innerRune)
       case other => vimpl(other)
     }

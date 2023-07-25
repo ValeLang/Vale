@@ -35,6 +35,9 @@ object CompilerErrorHumanizer {
         case TypingPassDefiningError(range, inner) => {
           humanizeDefiningError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
         }
+        case TypingPassResolvingError(range, inner) => {
+          humanizeResolvingError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+        }
         case RangedInternalErrorT(range, message) => {
           "Internal error: " + message
         }
@@ -241,6 +244,7 @@ object CompilerErrorHumanizer {
       }
     }
   }
+
   //
   // def humanizeConclusionResolveError(
   //     verbose: Boolean,
@@ -754,6 +758,11 @@ object CompilerErrorHumanizer {
       case SelfNameT() => "self"
       case ImplTemplateNameT(codeLoc) => "implt:" + codeMap(codeLoc)
       case OverrideDispatcherTemplateNameT(implId) => "ovdt:" + humanizeId(codeMap, implId)
+      case OverrideDispatcherNameT(OverrideDispatcherTemplateNameT(implId), templateArgs, parameters) => {
+        "ovd:" + humanizeId(codeMap, implId) +
+        humanizeGenericArgs(codeMap, templateArgs, None) +
+            "(" + parameters.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
+      }
       case IteratorNameT(range) => "it:" + codeMap(range.begin)
       case IterableNameT(range) => "ib:" + codeMap(range.begin)
       case IterationOptionNameT(range) => "io:" + codeMap(range.begin)
@@ -820,6 +829,9 @@ object CompilerErrorHumanizer {
       }
       case AnonymousSubstructTemplateNameT(interface) => {
         humanizeName(codeMap, interface) + ".anonymous"
+      }
+      case AnonymousSubstructImplTemplateNameT(interface) => {
+        humanizeName(codeMap, interface) + ".anonymous.impl"
       }
       case StructTemplateNameT(humanName) => humanName.str
       case InterfaceTemplateNameT(humanName) => humanName.str

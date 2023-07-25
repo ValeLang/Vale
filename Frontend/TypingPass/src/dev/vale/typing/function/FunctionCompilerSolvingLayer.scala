@@ -448,7 +448,7 @@ class FunctionCompilerSolvingLayer(
     // Now that we have placeholders, let's do the rest of the solve, so we can get a full
     // prototype out of it.
 
-    val CompleteDefineSolve(inferences, runeToFunctionBound, Vector(), reachableBounds) =
+    val CompleteDefineSolve(inferences, runeToFunctionBound, declaredBounds, reachableBounds) =
       inferCompiler.solveForDefining(
         InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT()),
         coutputs,

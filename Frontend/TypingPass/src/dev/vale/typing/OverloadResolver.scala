@@ -458,12 +458,17 @@ class OverloadResolver(
     val searchedEnvs = new Accumulator[SearchedEnvironment]()
     val candidates =
       if (opts.globalOptions.useOverloadIndex) {
-        coutputs.findOverloads(
-          functionName,
-          args,
-          citizen => {
-            implCompiler.getParents(coutputs, callRange, callLocation, env, citizen).toArray
-          })
+        val result =
+          coutputs.findOverloads(
+            functionName,
+            args,
+            citizen => {
+              implCompiler.getParents(coutputs, callRange, callLocation, env, citizen).toArray
+            })
+        if (result.size > 1) {
+          vpass()
+        }
+        result
       } else {
         val undedupedCandidates = new Accumulator[ICalleeCandidate]()
         getCandidateBanners(

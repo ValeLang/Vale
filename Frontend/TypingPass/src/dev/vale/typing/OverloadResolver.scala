@@ -559,19 +559,22 @@ class OverloadResolver(
     // Sometimes a banner might come from many different environments (remember,
     // when we do a call, we look in the environments of all the arguments' types).
     // Here we weed out these duplicates.
+    // DO NOT SUBMIT maybe we can weed these out sooner?
     val dedupedBanners =
-      unfilteredBanners.foldLeft(Vector[IValidCalleeCandidate]())({
-        case (potentialBannerByBannerSoFar, currentPotentialBanner) => {
-          if (potentialBannerByBannerSoFar.exists(_.range == currentPotentialBanner.range)) {
-            potentialBannerByBannerSoFar
-          } else {
-            potentialBannerByBannerSoFar :+ currentPotentialBanner
-          }
-        }
-      })
+      unfilteredBanners
+      //     .foldLeft(Vector[IValidCalleeCandidate]())({
+      //   case (potentialBannerByBannerSoFar, currentPotentialBanner) => {
+      //     if (potentialBannerByBannerSoFar.exists(_.range == currentPotentialBanner.range)) {
+      //       potentialBannerByBannerSoFar
+      //     } else {
+      //       potentialBannerByBannerSoFar :+ currentPotentialBanner
+      //     }
+      //   }
+      // })
 
     // If there are multiple overloads with the same exact parameter list,
     // then get rid of the templated ones; ordinary ones get priority.
+    // DO NOT SUBMIT what does this even mean in a generics world
     val banners =
       dedupedBanners.groupBy(_.paramTypes).values.flatMap({ potentialBannersWithSameParamTypes =>
         val ordinaryBanners =
@@ -613,7 +616,7 @@ class OverloadResolver(
           bannerIndexToScore.indices
         } else {
           val survivingBannerIndices =
-            bannerIndexToRequiresConversion.zipWithIndex.filter(_._1).map(_._2)
+            bannerIndexToRequiresConversion.zipWithIndex.filter(!_._1).map(_._2)
           survivingBannerIndices
         }
       })
@@ -665,6 +668,7 @@ class OverloadResolver(
       banners.zipWithIndex.filter(_._2 != finalBannerIndex).map(_._1)
     val rejectionReasonByBanner =
       rejectedBanners.map((_, Outscored())).toMap
+    // vcurious(rejectedBanners.isEmpty)
 
     (banners(finalBannerIndex), rejectionReasonByBanner)
   }

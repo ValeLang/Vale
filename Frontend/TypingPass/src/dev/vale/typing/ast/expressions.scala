@@ -454,6 +454,7 @@ case class AsSubtypeTE(
 }
 
 case class VoidLiteralTE(region: RegionT) extends ReferenceExpressionTE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, region, VoidT()))
 }

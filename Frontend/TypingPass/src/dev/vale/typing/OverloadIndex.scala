@@ -58,7 +58,7 @@ class KindToOwnershipToFunctionsMap {
   var never: Option[OwnershipToFunctionsMap] = None
   var str: Option[OwnershipToFunctionsMap] = None
   var float: Option[OwnershipToFunctionsMap] = None
-  var frees: Option[OwnershipToFunctionsMap] = None // DO NOT SUBMIT document an example
+  var frees: Option[OwnershipToFunctionsMap] = None // DO NOT SUBMIT document an example, maybe better name than frees
 
   // if None, its a free param DO NOT SUBMIT
   def add(freeOrCoord: Option[CoordT], function: ICalleeCandidate): Unit = {
@@ -314,7 +314,8 @@ class OverloadIndex() {
             // DO NOT SUBMIT i think we can just use the min one first.
             val sortedCandidateLists = paramIndexToCandidateLists.sortBy(_.size)
 
-            // Let's union all the sets together
+            // Let's union everything in the first parameter
+            // DO NOT SUBMIT what if we keep a hash set of "what we've checked so far"
             val unusualestParamCandidateList = mutable.HashSet[ICalleeCandidate]()
             U.foreach[mutable.HashSet[ICalleeCandidate]](
               sortedCandidateLists(0),
@@ -340,6 +341,7 @@ class OverloadIndex() {
                   }
                   inAll
                 })
+            vassert(result.length == result.distinct.length)
             result
           }
         }

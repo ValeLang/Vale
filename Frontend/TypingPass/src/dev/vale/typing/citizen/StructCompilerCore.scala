@@ -327,6 +327,8 @@ class StructCompilerCore(
       interner.intern(FunctionTemplateNameT(keywords.drop, functionA.range.begin))
     val dropNameS = interner.intern(FunctionNameS(keywords.drop, functionA.range.begin))
     val dropImpreciseName = interner.intern(CodeNameS(keywords.drop))
+    val dropFunctionA =
+      containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(dropNameS, functionA.range)
 
     // We declare the function into the environment that we use to compile the
     // struct, so that those who use the struct can reach into its environment
@@ -343,10 +345,7 @@ class StructCompilerCore(
             interner,
             Vector(
               callNameT -> env.FunctionEnvEntry(functionA),
-              dropFuncNameT ->
-                FunctionEnvEntry(
-                  containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(
-                    dropNameS, functionA.range)),
+              dropFuncNameT -> FunctionEnvEntry(dropFunctionA),
               understructInstantiatedNameT -> TemplataEnvEntry(KindTemplataT(understructStructTT)),
               interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplataT(understructStructTT)))))
     val callFunctionTemplata = FunctionTemplataT(structOuterEnv, functionA)
@@ -356,7 +355,7 @@ class StructCompilerCore(
       // DO NOT SUBMIT doc
       functionA.params.indices.map(_ => None).toVector,
       FunctionCalleeCandidate(callFunctionTemplata))
-    val dropFunctionTemplata = FunctionTemplataT(structOuterEnv, functionA)
+    val dropFunctionTemplata = FunctionTemplataT(structOuterEnv, dropFunctionA)
     coutputs.addOverload(
       opts.globalOptions.useOverloadIndex,
       dropImpreciseName,

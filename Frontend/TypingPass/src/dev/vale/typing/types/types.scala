@@ -121,6 +121,7 @@ case class NeverT(
 
 // Mostly for interoperability with extern functions
 case class VoidT() extends KindT {
+  vpass()
   override def isPrimitive: Boolean = true
 }
 

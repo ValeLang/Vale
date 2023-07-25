@@ -255,7 +255,14 @@ case class ValidHeaderCalleeCandidate(
 case class ValidPrototypeTemplataCalleeCandidate(
   prototype: PrototypeTemplataT
 ) extends IValidCalleeCandidate {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    val that = obj.asInstanceOf[ValidPrototypeTemplataCalleeCandidate]
+    if (that == null) {
+      return false
+    }
+    prototype == that.prototype
+  }
 
   override def range: Option[RangeS] = Some(prototype.declarationRange)
   override def paramTypes: Vector[CoordT] = prototype.prototype.id.localName.parameters.toVector

@@ -324,6 +324,7 @@ class InferCompiler(
               .map(conclusions)
               .flatMap(conc => TemplataCompiler.getReachableBounds(interner, keywords, state, conc))
         val envWithConclusions = importReachableBounds(state, envs.originalCallingEnv, declaredBounds, reachableBounds)
+        // right here we need to bring in those reachable bounds to define them in our current environment.
         val runeToFunctionBound =
           resolveConclusions(
             envWithConclusions, state, invocationRange, callLocation, envs.contextRegion, initialRules, conclusions) match {
@@ -397,7 +398,9 @@ class InferCompiler(
     reachableBounds: Vector[PrototypeTemplataT]):
   GeneralEnvironmentT[INameT] = {
 
-    declaredBounds.foreach({ case PrototypeTemplataT(range, prototype) =>
+    // DO NOT SUBMIT document. we did a perspective shift, bringing these prototypes into our own perspective and making it take *our* placeholders. we'll
+    // need these in the overload index so that we can resolve them later when we want to call them.
+    (declaredBounds ++ reachableBounds).foreach({ case PrototypeTemplataT(range, prototype) =>
       // DO NOT SUBMIT move from TemplatasStore
       TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
         case None => println("Skipping adding bound " + prototype.id.localName) // DO NOT SUBMIT

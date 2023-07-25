@@ -471,6 +471,13 @@ case class FunctionHeaderT(
 case class PrototypeT(
     id: IdT[IFunctionNameT],
     returnType: CoordT) {
+  this match {
+    case PrototypeT(IdT(_, Vector(StructTemplateNameT(StrI("BorkForwarder"))), FunctionBoundNameT(FunctionBoundTemplateNameT(StrI("drop"), _), Vector(), Vector(CoordT(own, RegionT(), KindPlaceholderT(IdT(_, Vector(InterfaceTemplateNameT(StrI("Bork")), FunctionTemplateNameT(StrI("bork"), _), OverrideDispatcherNameT(OverrideDispatcherTemplateNameT(IdT(_, Vector(), ImplTemplateNameT(_))), Vector(), Vector(CoordT(borrow, RegionT(), InterfaceTT(IdT(_, Vector(), InterfaceNameT(InterfaceTemplateNameT(StrI("Bork")), Vector()))))))), KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, CaseRuneFromImplS(CodeRuneS(StrI("Lam"))))))))))), CoordT(share, RegionT(), VoidT())) => {
+      vpass()
+    }
+    case _ =>
+  }
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def paramTypes: Vector[CoordT] = id.localName.parameters
   def toSignature: SignatureT = SignatureT(id)

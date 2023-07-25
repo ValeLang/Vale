@@ -328,6 +328,7 @@ case class StringTemplataT(value: String) extends ITemplataT[StringTemplataType]
   override def tyype: StringTemplataType = StringTemplataType()
 }
 case class PrototypeTemplataT(declarationRange: RangeS, prototype: PrototypeT) extends ITemplataT[PrototypeTemplataType] {
+  vpass()
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def tyype: PrototypeTemplataType = PrototypeTemplataType()
 }

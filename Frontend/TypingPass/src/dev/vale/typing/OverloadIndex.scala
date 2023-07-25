@@ -55,6 +55,7 @@ class KindToOwnershipToFunctionsMap {
   val intSizes = mutable.HashMap[Int, OwnershipToFunctionsMap]()
   var bool: Option[OwnershipToFunctionsMap] = None
   var void: Option[OwnershipToFunctionsMap] = None
+  var never: Option[OwnershipToFunctionsMap] = None
   var str: Option[OwnershipToFunctionsMap] = None
   var float: Option[OwnershipToFunctionsMap] = None
   var frees: Option[OwnershipToFunctionsMap] = None // DO NOT SUBMIT document an example
@@ -135,6 +136,16 @@ class KindToOwnershipToFunctionsMap {
               }
             }
           }
+          case NeverT(_) => {
+            never match {
+              case Some(x) => x
+              case None => {
+                val newMap = new OwnershipToFunctionsMap(false)
+                never = Some(newMap)
+                newMap
+              }
+            }
+          }
           case StrT() => {
             str match {
               case Some(x) => x
@@ -197,6 +208,10 @@ class KindToOwnershipToFunctionsMap {
       case IntT(otherSize) => intSizes.get(otherSize).toVector ++ frees
       case BoolT() => bool.toVector ++ frees
       case VoidT() => void.toVector ++ frees
+      case NeverT(_) => {
+        // DO NOT SUBMIT
+        Vector() ++ i32Shortcut ++ i64Shortcut ++ intSizes.values ++ bool ++ void ++ never ++ str ++ float ++ rsas ++ ssas ++ structTemplates.values ++ interfaceTemplates.values ++ boundPlaceholderTemplates.values ++ frees
+      }
       case StrT() => str.toVector ++ frees
       case FloatT() => float.toVector ++ frees
       case RuntimeSizedArrayTT(_) => rsas.toVector ++ frees
@@ -296,6 +311,7 @@ class OverloadIndex() {
                 })
             // Now we sort by the number of functions that match each particular parameter, so we can start with the
             // most unusual parameter type first.
+            // DO NOT SUBMIT i think we can just use the min one first.
             val sortedCandidateLists = paramIndexToCandidateLists.sortBy(_.size)
 
             // Let's union all the sets together

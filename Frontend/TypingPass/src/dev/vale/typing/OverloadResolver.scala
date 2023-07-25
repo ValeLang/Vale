@@ -456,7 +456,7 @@ class OverloadResolver(
   Result[IValidCalleeCandidate, FindFunctionFailure] = {
     // This is here for debugging, so when we dont find something we can see what envs we searched
     val searchedEnvs = new Accumulator[SearchedEnvironment]()
-    val candidates =
+    val newSystemCandidates =
       if (opts.globalOptions.useOverloadIndex) {
         val result =
           coutputs.findOverloads(
@@ -468,13 +468,27 @@ class OverloadResolver(
         if (result.size > 1) {
           vpass()
         }
+        // if (opts.globalOptions.sanityCheck) {
+        //   val undedupedCandidates = new Accumulator[ICalleeCandidate]()
+        //   getCandidateBanners(
+        //     env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
+        //   val resultsFromOldSystem = undedupedCandidates.buildArray().distinct
+        //   vassert(result.length >= resultsFromOldSystem.length)
+        // }
         result
       } else {
+        Array[ICalleeCandidate]()
+      }
+    val oldSystemCandidates =
+      if (!opts.globalOptions.useOverloadIndex || opts.globalOptions.sanityCheck) {
         val undedupedCandidates = new Accumulator[ICalleeCandidate]()
         getCandidateBanners(
           env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
         undedupedCandidates.buildArray().distinct.toArray
+      } else {
+        Array[ICalleeCandidate]()
       }
+    val candidates = if (opts.globalOptions.useOverloadIndex) newSystemCandidates else oldSystemCandidates
     val attempted =
       candidates.map(candidate => {
         attemptCandidateBanner(

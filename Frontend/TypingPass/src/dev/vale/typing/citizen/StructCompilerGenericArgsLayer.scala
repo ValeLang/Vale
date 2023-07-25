@@ -367,12 +367,30 @@ class StructCompilerGenericArgsLayer(
       // val allRulesS = structA.headerRules ++ structA.memberRules
       // val definitionRules = allRulesS.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      val CompleteDefineSolve(_, _, _, _) =
+      val CompleteDefineSolve(_, _, declaredBounds, reachableBounds) =
         inferCompiler.checkDefiningConclusionsAndResolve(
           outerEnv, coutputs, structA.range :: parentRanges, callLocation, RegionT(), definitionRules, Vector(), inferences) match {
           case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(structA.range :: parentRanges, DefiningResolveConclusionError(f)))
           case Ok(c) => c
         }
+
+      declaredBounds.foreach(bound => {
+        val PrototypeTemplataT(range, prototype) = bound
+        // Add it to the overload index
+        TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
+          case None => {
+            // DO NOT SUBMIT
+            println("Skipping adding function " + prototype.id.localName + " to overload index")
+          }
+          case Some(impreciseName) => {
+            coutputs.addOverload(
+              opts.globalOptions.useOverloadIndex,
+              impreciseName,
+              prototype.id.localName.parameters.map(x => Some(x)),
+              PrototypeTemplataCalleeCandidate(range, prototype))
+          }
+        }
+      })
 
       core.compileStruct(outerEnv, innerEnv, coutputs, parentRanges, callLocation, structA)
     })
@@ -437,6 +455,24 @@ class StructCompilerGenericArgsLayer(
           case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(interfaceA.range :: parentRanges, DefiningResolveConclusionError(f)))
           case Ok(c) => c
         }
+
+      declaredBounds.foreach(bound => {
+        val PrototypeTemplataT(range, prototype) = bound
+        // Add it to the overload index
+        TemplatasStore.getImpreciseName(interner, prototype.id.localName) match {
+          case None => {
+            // DO NOT SUBMIT
+            println("Skipping adding function " + prototype.id.localName + " to overload index")
+          }
+          case Some(impreciseName) => {
+            coutputs.addOverload(
+              opts.globalOptions.useOverloadIndex,
+              impreciseName,
+              prototype.id.localName.parameters.map(x => Some(x)),
+              PrototypeTemplataCalleeCandidate(range, prototype))
+          }
+        }
+      })
 
       interfaceA.maybePredictedMutability match {
         case None => {

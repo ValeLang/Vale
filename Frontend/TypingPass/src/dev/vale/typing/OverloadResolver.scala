@@ -58,6 +58,9 @@ object OverloadResolver {
   case class Outscored() extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
   case class RuleTypeSolveFailure(reason: RuneTypeSolveError) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
   case class InferFailure(reason: IIncompleteOrFailedCompilerSolve) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  case class FindFunctionResolveFailure(reason: IResolvingError) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  case class CouldntEvaluateTemplateError(reason: IDefiningError) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+
 
   case class FindFunctionFailure(
     name: IImpreciseNameS,
@@ -333,9 +336,9 @@ class OverloadResolver(
                 Vector(),
                 Vector()) match {
                 case (Err(e)) => {
-                  Err(InferFailure(e))
+                  Err(FindFunctionResolveFailure(e))
                 }
-                case (Ok(CompleteCompilerSolve(_, explicitRuneSToTemplata, _, Vector(), Vector()))) => {
+                case (Ok(CompleteResolveSolve(_, explicitRuneSToTemplata, _, Vector(), Vector()))) => {
                   val explicitlySpecifiedTemplateArgTemplatas =
                     explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
 
@@ -343,7 +346,7 @@ class OverloadResolver(
                     // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
                     functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
                       coutputs, callingEnv, callRange, callLocation, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, contextRegion, args) match {
-                      case (EvaluateFunctionFailure(reason)) => Err(reason)
+                      case (EvaluateFunctionFailure(reason)) => Err(CouldntEvaluateTemplateError(reason))
                       case (EvaluateFunctionSuccess(prototype, conclusions)) => {
                         paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
                           case Err(rejectionReason) => Err(rejectionReason)
@@ -358,8 +361,8 @@ class OverloadResolver(
                     // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
                     functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
                       coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, RegionT(), args) match {
-                      case (EvaluateFunctionFailure(reason)) => Err(reason)
-                      case (EvaluateFunctionSuccess(prototype, conclusions)) => {
+                      case (ResolveFunctionFailure(reason)) => Err(FindFunctionResolveFailure(reason))
+                      case (ResolveFunctionSuccess(prototype, conclusions)) => {
                         paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
                           case Err(rejectionReason) => Err(rejectionReason)
                           case Ok(()) => {
@@ -702,11 +705,11 @@ class OverloadResolver(
         } else {
           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
             coutputs, callRange, callLocation, callingEnv, ft, templateArgs, contextRegion, args) match {
-            case EvaluateFunctionSuccess(prototype, inferences) => {
+            case ResolveFunctionSuccess(prototype, inferences) => {
               StampFunctionSuccess(prototype, inferences)
             }
-            case (EvaluateFunctionFailure(fffr)) => {
-              throw CompileErrorExceptionT(CouldntEvaluateFunction(callRange, fffr))
+            case (ResolveFunctionFailure(fffr)) => {
+              throw CompileErrorExceptionT(TypingPassResolvingError(callRange, fffr))
             }
           }
         }

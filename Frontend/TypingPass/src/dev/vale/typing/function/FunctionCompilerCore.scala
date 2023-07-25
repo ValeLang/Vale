@@ -107,24 +107,24 @@ class FunctionCompilerCore(
         }
         case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Must be a coord!"))
       }
-
-    // Add it to the overload index
-    TemplatasStore.getImpreciseName(interner, fullEnv.id.localName) match {
-      case None => {
-        // DO NOT SUBMIT
-        println("Skipping adding function " + fullEnv.id.localName + " to overload index")
-      }
-      case Some(impreciseName) => {
-        coutputs.addOverload(
-          opts.globalOptions.useOverloadIndex,
-          impreciseName,
-          fullEnv.id.localName.parameters.map({
-            case CoordT(_, _, KindPlaceholderT(_)) => None // DO NOT SUBMIT document
-            case other => Some(other)
-          }),
-          FunctionCalleeCandidate(fullEnv.templata))
-      }
-    }
+    // DO NOT SUBMIT
+    // // Add it to the overload index
+    // TemplatasStore.getImpreciseName(interner, fullEnv.id.localName) match {
+    //   case None => {
+    //     // DO NOT SUBMIT
+    //     println("Skipping adding function " + fullEnv.id.localName + " to overload index")
+    //   }
+    //   case Some(impreciseName) => {
+    //     coutputs.addOverload(
+    //       opts.globalOptions.useOverloadIndex,
+    //       impreciseName,
+    //       fullEnv.id.localName.parameters.map({
+    //         case CoordT(_, _, KindPlaceholderT(_)) => None // DO NOT SUBMIT document
+    //         case other => Some(other)
+    //       }),
+    //       FunctionCalleeCandidate(fullEnv.templat[a))
+    //   }
+    // }
 
     // DO NOT SUBMIT note that we just added/enabled generated/abstract functions to be deferred.
 
@@ -175,7 +175,35 @@ class FunctionCompilerCore(
               Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)))
           (header)
         }
-        case AbstractBodyS | GeneratedBodyS(_) => {
+        case AbstractBodyS => {
+          val attributesWithoutExport =
+            fullEnv.function.attributes.filter({
+              case ExportS(_) => false
+              case BuiltinS(_) => false
+              case _ => true
+            })
+          val attributesT = translateAttributes(attributesWithoutExport)
+
+          maybeRetCoord match {
+            case Some(returnCoord) => {
+              val header =
+                finalizeHeader(fullEnv, coutputs, attributesT, params2, returnCoord)
+
+              // DO NOT SUBMIT maybe unify with below generated case
+              finishGeneratedOrAbstractFunctionMaybeDeferred(
+                coutputs, fullEnv, callRange, callLocation, life, attributesT, signature2, params2, isDestructor, Some(returnCoord))
+
+              (header)
+            }
+            case None => {
+              val header =
+                finishGeneratedOrAbstractFunctionMaybeDeferred(
+                  coutputs, fullEnv, callRange, callLocation, life, attributesT, signature2, params2, isDestructor, None)
+              (header)
+            }
+          }
+        }
+        case GeneratedBodyS(_) => {
           val attributesWithoutExport =
             fullEnv.function.attributes.filter({
               case ExportS(_) => false
@@ -200,7 +228,6 @@ class FunctionCompilerCore(
               (header)
             }
             case None => {
-              // This can happen for templates such as lambdas.
               val header =
                 finishGeneratedOrAbstractFunctionMaybeDeferred(
                   coutputs, fullEnv, callRange, callLocation, life, attributesT, signature2, params2, isDestructor, None)

@@ -11,7 +11,7 @@ import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale.solver.FailedSolve
 import OverloadResolver._
 import dev.vale.typing.ast.{KindExportT, SignatureT}
-import dev.vale.typing.names.{IdT, IFunctionNameT, IFunctionTemplateNameT, INameT, IVarNameT}
+import dev.vale.typing.names.{IFunctionNameT, IFunctionTemplateNameT, INameT, IVarNameT, IdT}
 import dev.vale.typing.ast._
 import dev.vale.typing.types.InterfaceTT
 
@@ -80,7 +80,7 @@ case class CouldntFindFunctionToCallT(range: List[RangeS], fff: FindFunctionFail
 
   vpass()
 }
-case class CouldntEvaluateFunction(range: List[RangeS], eff: IFindFunctionFailureReason) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CouldntEvaluateFunction(range: List[RangeS], eff: IDefiningError) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CouldntEvaluatImpl(range: List[RangeS], eff: IIncompleteOrFailedCompilerSolve) extends ICompileErrorT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
@@ -125,6 +125,14 @@ case class HigherTypingInferError(range: List[RangeS], err: RuneTypeSolveError) 
 case class AbstractMethodOutsideOpenInterface(range: List[RangeS]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 //case class NotEnoughToSolveError(range: List[RangeS], conclusions: Map[IRuneS, ITemplata[ITemplataType]], unknownRunes: Iterable[IRuneS]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class TypingPassSolverError(range: List[RangeS], failedSolve: IIncompleteOrFailedCompilerSolve) extends ICompileErrorT {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+}
+case class TypingPassResolvingError(range: List[RangeS], inner: IResolvingError) extends ICompileErrorT {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  vpass()
+}
+case class TypingPassDefiningError(range: List[RangeS], inner: IDefiningError) extends ICompileErrorT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }

@@ -77,8 +77,20 @@ case class EvaluateFunctionSuccess(
 ) extends IEvaluateFunctionResult
 
 case class EvaluateFunctionFailure(
-    reason: IFindFunctionFailureReason
+    reason: IDefiningError
 ) extends IEvaluateFunctionResult
+
+
+trait IResolveFunctionResult
+
+case class ResolveFunctionSuccess(
+    prototype: PrototypeTemplataT,
+    inferences: Map[IRuneS, ITemplataT[ITemplataType]]
+) extends IResolveFunctionResult
+
+case class ResolveFunctionFailure(
+    reason: IResolvingError
+) extends IResolveFunctionResult
 
 
 trait IStampFunctionResult
@@ -91,6 +103,7 @@ case class StampFunctionSuccess(
 case class StampFunctionFailure(
   reason: IFindFunctionFailureReason
 ) extends IStampFunctionResult
+
 
 
 // When typingpassing a function, these things need to happen:
@@ -116,7 +129,7 @@ class FunctionCompiler(
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
   // func main():Int{main()}
-  def evaluateGenericFunctionFromNonCall(
+  def compileGenericFunction(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
@@ -125,13 +138,24 @@ class FunctionCompiler(
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       if (function.isLight) {
-        closureOrLightLayer.evaluateGenericLightFunctionFromNonCall(
+        closureOrLightLayer.compileGenericFunction(
           env, coutputs, function.range :: parentRanges, callLocation, function)
       } else {
         vfail() // I think we need a call to evaluate a lambda?
       }
     })
 
+  }
+
+  def precompileGenericFunction(
+      coutputs: CompilerOutputs,
+      parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
+      functionTemplata: FunctionTemplataT
+  ): Unit = {
+    // DO NOT SUBMIT rename FunctionTemplataT to FunctionDefinitionTemplataT
+    val FunctionTemplataT(env, function) = functionTemplata
+    closureOrLightLayer.precompileGenericFunction(env, coutputs, function.range :: parentRanges, callLocation, function)
   }
 
   def evaluateTemplatedLightFunctionFromCallForPrototype(
@@ -252,7 +276,7 @@ class FunctionCompiler(
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[CoordT]):
-  IEvaluateFunctionResult = {
+  IResolveFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericLightFunctionFromCallForPrototype2(

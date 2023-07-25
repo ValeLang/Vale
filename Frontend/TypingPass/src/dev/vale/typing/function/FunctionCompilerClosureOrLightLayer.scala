@@ -163,7 +163,7 @@ class FunctionCompilerClosureOrLightLayer(
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[Option[CoordT]]):
-  (IEvaluateFunctionResult) = {
+  (IResolveFunctionResult) = {
     checkNotClosure(function);
 
     val outerEnvId = parentEnv.id.addStep(nameTranslator.translateGenericFunctionName(function.name))
@@ -205,7 +205,20 @@ class FunctionCompilerClosureOrLightLayer(
 //      newEnv, coutputs, parentRanges, verifyConclusions)
 //  }
 
-  def evaluateGenericLightFunctionFromNonCall(
+  def precompileGenericFunction(
+      parentEnv: IEnvironmentT,
+      coutputs: CompilerOutputs,
+      parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
+      function: FunctionA
+  ): Unit = {
+    // DO NOT SUBMIT rename ordinaryOrTemplatedLayer
+    val outerEnvId = parentEnv.id.addStep(nameTranslator.translateGenericFunctionName(function.name))
+    val outerEnv = makeEnvWithoutClosureStuff(parentEnv, function, outerEnvId, true)
+    ordinaryOrTemplatedLayer.precompileGenericFunction(coutputs, outerEnv, parentRanges, callLocation)
+  }
+
+  def compileGenericFunction(
     parentEnv: IEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
@@ -214,7 +227,7 @@ class FunctionCompilerClosureOrLightLayer(
   (FunctionHeaderT) = {
     val outerEnvId = parentEnv.id.addStep(nameTranslator.translateGenericFunctionName(function.name))
     val outerEnv = makeEnvWithoutClosureStuff(parentEnv, function, outerEnvId, true)
-    ordinaryOrTemplatedLayer.evaluateGenericFunctionFromNonCall(
+    ordinaryOrTemplatedLayer.compileGenericFunction(
       coutputs, outerEnv, parentRanges, callLocation)
   }
 

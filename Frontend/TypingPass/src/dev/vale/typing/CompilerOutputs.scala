@@ -1,6 +1,6 @@
 package dev.vale.typing
 
-import dev.vale.postparsing.{IImpreciseNameS, IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
+import dev.vale.postparsing.{IImpreciseNameS, IRuneS, ITemplataType, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentT, IInDenizenEnvironmentT}
 import dev.vale.typing.expression.CallCompiler
@@ -42,6 +42,8 @@ case class CompilerOutputs() {
   // Outer env is the env that contains the template.
   // This will be the instantiated name, not just the template name, see UINIT.
   private val functionNameToOuterEnv: mutable.HashMap[IdT[IFunctionTemplateNameT], IInDenizenEnvironmentT] = mutable.HashMap()
+  // DO NOT SUBMIT document or use an env
+  private val functionNameToInferences: mutable.HashMap[IdT[IFunctionTemplateNameT], Map[IRuneS, ITemplataT[ITemplataType]]] = mutable.HashMap()
   // Inner env is the env that contains the solved rules for the declaration, given placeholders.
   // This will be the instantiated name, not just the template name, see UINIT.
   private val functionNameToInnerEnv: mutable.HashMap[IdT[INameT], IInDenizenEnvironmentT] = mutable.HashMap()
@@ -289,6 +291,15 @@ case class CompilerOutputs() {
     functionNameToOuterEnv += (nameT -> env)
   }
 
+  def declareFunctionInferences(
+      nameT: IdT[IFunctionTemplateNameT],
+      env: Map[IRuneS, ITemplataT[ITemplataType]],
+  ): Unit = {
+    vassert(!functionNameToInferences.contains(nameT))
+    //    vassert(nameT == env.fullName)
+    functionNameToInferences += (nameT -> env)
+  }
+
   def declareTypeOuterEnv(
     nameT: IdT[ITemplateNameT],
     env: IInDenizenEnvironmentT,
@@ -493,6 +504,10 @@ case class CompilerOutputs() {
   }
   def getInnerEnvForFunction(name: IdT[INameT]): IInDenizenEnvironmentT = {
     vassertSome(functionNameToInnerEnv.get(name))
+  }
+
+  def getInferencesForFunction(name: IdT[IFunctionTemplateNameT]): Map[IRuneS, ITemplataT[ITemplataType]] = {
+    vassertSome(functionNameToInferences.get(name))
   }
   def getOuterEnvForFunction(name: IdT[IFunctionTemplateNameT]): IInDenizenEnvironmentT = {
     vassertSome(functionNameToOuterEnv.get(name))

@@ -530,13 +530,23 @@ class Compiler(
       templataCompiler,
       inferCompiler,
       new IStructCompilerDelegate {
-        override def evaluateGenericFunctionFromNonCallForHeader(
+        override def compileGenericFunction(
           coutputs: CompilerOutputs,
           parentRanges: List[RangeS],
           callLocation: LocationInDenizen,
           functionTemplata: FunctionTemplataT):
         FunctionHeaderT = {
-          functionCompiler.evaluateGenericFunctionFromNonCall(
+          functionCompiler.compileGenericFunction(
+            coutputs, parentRanges, callLocation, functionTemplata)
+        }
+
+        override def precompileGenericFunction(
+            coutputs: CompilerOutputs,
+            parentRanges: List[RangeS],
+            callLocation: LocationInDenizen,
+            functionTemplata: FunctionTemplataT):
+        Unit = {
+          functionCompiler.precompileGenericFunction(
             coutputs, parentRanges, callLocation, functionTemplata)
         }
 
@@ -681,7 +691,7 @@ class Compiler(
           explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
           contextRegion: RegionT,
           args: Vector[CoordT]):
-        IEvaluateFunctionResult = {
+        IResolveFunctionResult = {
           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
             coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args)
         }
@@ -847,20 +857,53 @@ class Compiler(
 
         // Indexing phase
 
-        globalEnv.nameToTopLevelEnvironment.foreach({ case (packageId, templatas) =>
-          val env = PackageEnvironmentT.makeTopLevelEnvironment(globalEnv, packageId)
-          templatas.entriesByNameT.map({ case (name, entry) =>
-            entry match {
-              case StructEnvEntry(structA) => {
-                val templata = StructDefinitionTemplataT(env, structA)
-                structCompiler.precompileStruct(coutputs, templata)
+        val citizenTemplateIds =
+          globalEnv.nameToTopLevelEnvironment.flatMap({ case (packageId, templatas) =>
+            val env = PackageEnvironmentT.makeTopLevelEnvironment(globalEnv, packageId)
+            templatas.entriesByNameT.flatMap({ case (name, entry) =>
+              entry match {
+                case StructEnvEntry(structA) => {
+                  val templata = StructDefinitionTemplataT(env, structA)
+                  val templateId = structCompiler.precompileStruct(coutputs, templata)
+                  List(templateId)
+                }
+                case InterfaceEnvEntry(interfaceA) => {
+                  val templata = InterfaceDefinitionTemplataT(env, interfaceA)
+                  val templateId = structCompiler.precompileInterface(coutputs, templata)
+                  List(templateId)
+                }
+                case _ => List()
               }
-              case InterfaceEnvEntry(interfaceA) => {
-                val templata = InterfaceDefinitionTemplataT(env, interfaceA)
-                structCompiler.precompileInterface(coutputs, templata)
+            })
+          })
+
+        globalEnv.nameToTopLevelEnvironment.foreach({
+          // Anything in global scope should be compiled
+          case (packageId@IdT(_, Vector(), PackageTopLevelNameT()), templatas) => {
+            val packageEnv = PackageEnvironmentT.makeTopLevelEnvironment(globalEnv, packageId)
+            templatas.entriesByNameT.foreach({ case (name, entry) =>
+              entry match {
+                case FunctionEnvEntry(functionA) => {
+                  val templata = FunctionTemplataT(packageEnv, functionA)
+                  functionCompiler.precompileGenericFunction(
+                    coutputs, List(), LocationInDenizen(Vector()), templata)
+                }
+                case _ =>
               }
-              case _ =>
+            })
+          }
+          // Anything underneath something else should be skipped, we'll evaluate those later on.
+          case (IdT(_, anythingElse, PackageTopLevelNameT()), _) =>
+        })
+
+        citizenTemplateIds.foreach(templateId => {
+          val outerEnv = coutputs.getOuterEnvForType(List(), templateId)
+          outerEnv.templatas.entriesByNameT.foreach({
+            case (name, FunctionEnvEntry(functionA)) => {
+              functionCompiler.precompileGenericFunction(
+                coutputs, List(functionA.range), LocationInDenizen(Vector()), FunctionTemplataT(outerEnv, functionA))
             }
+            case _ => vcurious()
           })
         })
 
@@ -898,7 +941,7 @@ class Compiler(
                         coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          throw CompileErrorExceptionT(CouldntEvaluateStruct(range, reason))
+                          throw CompileErrorExceptionT(TypingPassResolvingError(range, reason))
                         }
                       }
 
@@ -939,7 +982,7 @@ class Compiler(
                         coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          throw CompileErrorExceptionT(CouldntEvaluateInterface(range, reason))
+                          throw CompileErrorExceptionT(TypingPassResolvingError(range, reason))
                         }
                       }
 
@@ -980,7 +1023,7 @@ class Compiler(
                 case FunctionEnvEntry(functionA) => {
                   val templata = FunctionTemplataT(packageEnv, functionA)
                   val header =
-                  functionCompiler.evaluateGenericFunctionFromNonCall(
+                  functionCompiler.compileGenericFunction(
                       coutputs, List(), LocationInDenizen(Vector()), templata)
 
                   functionA.attributes.collectFirst({ case e @ ExternS(_) => e }) match {
@@ -1015,9 +1058,9 @@ class Compiler(
                           Vector(),
                           regionPlaceholder,
                           Vector()) match {
-                          case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
-                          case EvaluateFunctionFailure(reason) => {
-                            throw CompileErrorExceptionT(CouldntEvaluateFunction(List(functionA.range), reason))
+                          case ResolveFunctionSuccess(prototype, inferences) => prototype.prototype
+                          case ResolveFunctionFailure(reason) => {
+                            throw CompileErrorExceptionT(TypingPassResolvingError(List(functionA.range), reason))
                           }
                         }
 
@@ -1099,9 +1142,9 @@ class Compiler(
                       val exportPlaceholderedPrototype =
                         functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
                           coutputs, List(functionA.range), LocationInDenizen(Vector()), exportEnv, templata, Vector(), regionPlaceholder, Vector()) match {
-                          case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
-                          case EvaluateFunctionFailure(reason) => {
-                            throw CompileErrorExceptionT(CouldntEvaluateFunction(List(functionA.range), reason))
+                          case ResolveFunctionSuccess(prototype, inferences) => prototype.prototype
+                          case ResolveFunctionFailure(reason) => {
+                            throw CompileErrorExceptionT(TypingPassResolvingError(List(functionA.range), reason))
                           }
                         }
 
@@ -1146,13 +1189,13 @@ class Compiler(
               ExportEnvironmentT(
                 globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
-            val CompleteCompilerSolve(_, templataByRune, _, Vector(), Vector()) =
+            val CompleteDefineSolve(templataByRune, _, Vector(), Vector()) =
               inferCompiler.solveForDefining(
                 InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv, regionPlaceholder),
                 coutputs, rules, runeToType, List(range),
                 LocationInDenizen(Vector()), Vector(), Vector(), Vector()) match {
-                case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(List(range), f))
-                case Ok(c@CompleteCompilerSolve(_, _, _, _, _)) => c
+                case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(List(range), f))
+                case Ok(c) => c
               }
               templataByRune.get(typeRuneT.rune) match {
                 case Some(KindTemplataT(kind)) => {

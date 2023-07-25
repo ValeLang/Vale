@@ -186,7 +186,6 @@ class FunctionCompilerMiddleLayer(
       }
       case None => {
         coutputs.declareFunction(callRange, functionId)
-        coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
         coutputs.declareFunctionInnerEnv(functionId, runedEnv) // DO NOT SUBMIT
 
         val params2 = assembleFunctionParams(runedEnv, coutputs, callRange, function1.params)
@@ -269,8 +268,8 @@ class FunctionCompilerMiddleLayer(
 //  }
 
 
-
-  private def evaluateFunctionParamTypes(
+  // DO NOT SUBMIT private
+  def evaluateFunctionParamTypes(
     env: IInDenizenEnvironmentT,
     params1: Vector[ParameterS]):
   Vector[CoordT] = {

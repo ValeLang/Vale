@@ -91,7 +91,7 @@ class ArrayCompiler(
     }
     val rulesA = ruleBuilder.toVector
 
-    val CompleteCompilerSolve(_, templatas, _, Vector(), Vector()) =
+    val CompleteResolveSolve(_, templatas, _, Vector(), Vector()) =
       inferCompiler.solveForResolving(
         InferEnv(callingEnv, parentRanges, callLocation, callingEnv, region),
         coutputs,
@@ -102,7 +102,7 @@ class ArrayCompiler(
         Vector(),
         Vector(),
         Vector()) match {
-        case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(parentRanges, e))
+        case Err(e) => throw CompileErrorExceptionT(TypingPassResolvingError(parentRanges, e))
         case Ok(c) => c
       }
 
@@ -206,9 +206,9 @@ class ArrayCompiler(
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
+    val CompleteResolveSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
       inferCompiler.checkResolvingConclusionsAndResolve(envs, coutputs, invocationRange, callLocation, runeToType, rules, Vector(), solver) match {
-        case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
+        case Err(e) => throw CompileErrorExceptionT(TypingPassResolvingError(invocationRange, e))
         case Ok(i) => (i)
       }
 
@@ -395,9 +395,9 @@ class ArrayCompiler(
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
+    val CompleteResolveSolve(_, templatas, runeToFunctionBound, Vector(), reachableBounds) =
       inferCompiler.checkResolvingConclusionsAndResolve(envs, coutputs, invocationRange, callLocation, runeToType, rules, Vector(), solver) match {
-        case Err(e) => throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, e))
+        case Err(e) => throw CompileErrorExceptionT(TypingPassResolvingError(invocationRange, e))
         case Ok(i) => (i)
       }
 

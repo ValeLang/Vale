@@ -440,8 +440,8 @@ class EdgeCompiler(
         // Keep in mind, at the end of the solve, we're actually pulling in some reachable bounds
         // from the struct we're solving for here.
       ) match {
-        case Ok(CompleteCompilerSolve(_, conclusions, _, _, reachableBoundsFromFullSolve)) => (conclusions, reachableBoundsFromFullSolve)
-        case Err(e) => throw CompileErrorExceptionT(CouldntEvaluatImpl(List(range), e))
+        case Ok(CompleteResolveSolve(_, conclusions, _, _, reachableBoundsFromFullSolve)) => (conclusions, reachableBoundsFromFullSolve)
+        case Err(e) => throw CompileErrorExceptionT(TypingPassResolvingError(List(range), e))
       }
     val caseSubCitizen =
       expectKindTemplata(

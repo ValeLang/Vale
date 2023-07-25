@@ -204,6 +204,16 @@ The only real challenge is in determining how much stack space functions need, s
 Luckily, stack switching won't be a problem, since we implemented it as part of the Fearless FFI prototype. We can also in theory reuse Go's context switching, or Google's cooperative OS thread switching mechanisms.
 
 
+# Ideas
+
+Could we add preempting by having a fenced read of a thread-local `preempt` boolean in:
+
+ * In the recursion thunk
+ * In loop conditions
+ * Virtual call thunks
+
+We might not even need it to be fenced, if there's a guarantee that the write will _eventually_ be visible to this thread's nonatomic read, but I'm not sure things work like that.
+
 # More Resources
 
 [User-space cooperative multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) (used for the fearless FFI prototype, in fact)

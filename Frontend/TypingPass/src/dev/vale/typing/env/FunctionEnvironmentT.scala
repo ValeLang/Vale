@@ -25,6 +25,8 @@ case class BuildingFunctionEnvironmentWithClosuredsT(
   isRootCompilingDenizen: Boolean
 ) extends IInDenizenEnvironmentT {
 
+  def templata = FunctionTemplataT(parentEnv, function)
+
   override def denizenId: IdT[INameT] = id
 
   val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;

@@ -133,7 +133,7 @@ class StructCompilerCore(
           DeferredEvaluatingFunction(
             outerEnv.id.addStep(name),
             (coutputs) => {
-              delegate.evaluateGenericFunctionFromNonCallForHeader(
+              delegate.compileGenericFunction(
                 coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA))
             }))
       }
@@ -211,7 +211,7 @@ class StructCompilerCore(
       outerEnv.templatas.entriesByNameT.collect({
         case (name, FunctionEnvEntry(functionA)) => {
           val header =
-            delegate.evaluateGenericFunctionFromNonCallForHeader(
+            delegate.compileGenericFunction(
               coutputs, parentRanges, callLocation, FunctionTemplataT(outerEnv, functionA))
           header.toPrototype -> vassertSome(header.getVirtualIndex)
         }
@@ -407,14 +407,24 @@ class StructCompilerCore(
 
     // Always evaluate a drop, drops only capture borrows so there should always be a drop defined
     // on all members.
-      delegate.evaluateGenericFunctionFromNonCallForHeader(
-        coutputs,
-        parentRanges,
-        callLocation,
-        structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
-          case Some(ft@FunctionTemplataT(_, _)) => ft
-          case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))
-        })
+
+    delegate.precompileGenericFunction(
+      coutputs,
+      parentRanges,
+      callLocation,
+      // DO NOT SUBMIT
+      structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplataT(_, _)) => ft
+        case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))
+      })
+    delegate.compileGenericFunction(
+      coutputs,
+      parentRanges,
+      callLocation,
+      structInnerEnv.lookupNearestWithName(dropFuncNameT, Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplataT(_, _)) => ft
+        case _ => throw CompileErrorExceptionT(RangedInternalErrorT(functionA.range :: parentRanges, "Couldn't find closure drop function we just added!"))
+      })
 //    }
 
     (closuredVarsStructRef, mutability, functionTemplata)

@@ -32,6 +32,9 @@ object CompilerErrorHumanizer {
   String = {
     val errorStrBody =
       err match {
+        case TypingPassDefiningError(range, inner) => {
+          humanizeDefiningError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+        }
         case RangedInternalErrorT(range, message) => {
           "Internal error: " + message
         }
@@ -162,9 +165,10 @@ object CompilerErrorHumanizer {
           humanizeFindFunctionFailure(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, range, fff)
         }
         case CouldntEvaluateFunction(range, eff) => {
-          "Couldn't evaluate function:\n" +
-          humanizeRejectionReason(
-            verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, range, eff)
+          vimpl() // DO NOT SUBMIT maybe we should bring back CouldntEvaluateFunction
+          // "Couldn't evaluate function:\n" +
+          // humanizeRejectionReason(
+          //   verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, range, eff)
         }
         case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
           "Function " + humanizeId(codeMap, signature) + " already exists! Previous declaration at:\n" +
@@ -223,6 +227,36 @@ object CompilerErrorHumanizer {
     errorStrBody + "\n"
   }
 
+  def humanizeDefiningError(
+      verbose: Boolean,
+      codeMap: CodeLocationS => String,
+      linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+      lineRangeContaining: (CodeLocationS) => RangeS,
+      lineContaining: (CodeLocationS) => String,
+      err: IDefiningError):
+  String = {
+    err match {
+      case DefiningResolveConclusionError(inner) => {
+        humanizeConclusionResolveError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+      }
+    }
+  }
+  //
+  // def humanizeConclusionResolveError(
+  //     verbose: Boolean,
+  //     codeMap: CodeLocationS => String,
+  //     linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+  //     lineRangeContaining: (CodeLocationS) => RangeS,
+  //     lineContaining: (CodeLocationS) => String,
+  //     err: IConclusionResolveError):
+  // String = {
+  //   err match {
+  //     case CouldntFindKindForConclusionResolve(inner) => {
+  //       humanizeResolveFailure(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+  //     }
+  //   }
+  // }
+
   def humanizeResolveFailure(
     verbose: Boolean,
     codeMap: CodeLocationS => String,
@@ -232,7 +266,47 @@ object CompilerErrorHumanizer {
     fff: ResolveFailure[KindT]):
   String = {
     val ResolveFailure(range, reason) = fff
-    humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, reason match {
+    humanizeResolvingError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, reason)
+    // humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, reason match {
+    //   case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
+    //     IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
+    //       steps, unsolvedRules, unknownRunes, incompleteConclusions)
+    //   }
+    //   case FailedCompilerSolve(steps, unsolvedRules, error) => {
+    //     FailedSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
+    //       steps, unsolvedRules, error)
+    //   }
+    // })
+  }
+
+  def humanizeResolvingError(
+      verbose: Boolean,
+      codeMap: CodeLocationS => String,
+      linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+      lineRangeContaining: (CodeLocationS) => RangeS,
+      lineContaining: (CodeLocationS) => String,
+      error: IResolvingError):
+  String = {
+    error match {
+      case ResolvingResolveConclusionError(inner) => {
+        humanizeConclusionResolveError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+      }
+      case ResolvingSolveFailedOrIncomplete(inner) => {
+        humanizeIncompleteOrFailedCompilerSolve(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+      }
+      case other => vimpl(other)
+    }
+  }
+
+  def humanizeIncompleteOrFailedCompilerSolve(
+      verbose: Boolean,
+      codeMap: CodeLocationS => String,
+      linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+      lineRangeContaining: (CodeLocationS) => RangeS,
+      lineContaining: (CodeLocationS) => String,
+      error: IIncompleteOrFailedCompilerSolve):
+  String = {
+    humanizeCandidateAndFailedSolve(codeMap, linesBetween, lineRangeContaining, lineContaining, error match {
       case IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
         IncompleteSolve[IRulexSR, IRuneS, ITemplataT[ITemplataType], ITypingPassSolverError](
           steps, unsolvedRules, unknownRunes, incompleteConclusions)
@@ -242,6 +316,28 @@ object CompilerErrorHumanizer {
           steps, unsolvedRules, error)
       }
     })
+  }
+
+  def humanizeConclusionResolveError(
+      verbose: Boolean,
+      codeMap: CodeLocationS => String,
+      linesBetween: (CodeLocationS, CodeLocationS) => Vector[RangeS],
+      lineRangeContaining: (CodeLocationS) => RangeS,
+      lineContaining: (CodeLocationS) => String,
+      error: IConclusionResolveError):
+  String = {
+    error match {
+      case CouldntFindKindForConclusionResolve(inner) => {
+        humanizeResolveFailure(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, inner)
+      }
+      case CouldntFindFunctionForConclusionResolve(range, inner) => {
+        humanizeFindFunctionFailure(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, range, inner)
+      }
+      case ReturnTypeConflictInConclusionResolve(range, expectedReturnType, actualPrototype) => {
+        "Found function: " + humanizeId(codeMap, actualPrototype.id) + " which returns " + humanizeTemplata(codeMap, CoordTemplataT(actualPrototype.returnType)) + " but expected return type of " + humanizeTemplata(codeMap, CoordTemplataT(expectedReturnType))
+      }
+      case other => vimpl(other)
+    }
   }
 
   def humanizeFindFunctionFailure(
@@ -337,6 +433,9 @@ object CompilerErrorHumanizer {
       reason: IFindFunctionFailureReason): String = {
 
     (reason match {
+      case FindFunctionResolveFailure(reason) => {
+        humanizeResolvingError(verbose, codeMap, linesBetween, lineRangeContaining, lineContaining, reason)
+      }
       case RuleTypeSolveFailure(RuneTypeSolveError(range, failedSolve)) => {
         SolverErrorHumanizer.humanizeFailedSolve(
           codeMap,

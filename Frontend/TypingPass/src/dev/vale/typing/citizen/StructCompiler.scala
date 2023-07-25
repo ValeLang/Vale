@@ -27,11 +27,18 @@ import scala.collection.mutable
 case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 trait IStructCompilerDelegate {
-  def evaluateGenericFunctionFromNonCallForHeader(
+  def precompileGenericFunction(
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     functionTemplata: FunctionTemplataT):
+  Unit
+
+  def compileGenericFunction(
+      coutputs: CompilerOutputs,
+      parentRanges: List[RangeS],
+      callLocation: LocationInDenizen,
+      functionTemplata: FunctionTemplataT):
   FunctionHeaderT
 
   def scoutExpectedFunctionForPrototype(
@@ -55,9 +62,9 @@ sealed trait IResolveOutcome[+T <: KindT] {
 case class ResolveSuccess[+T <: KindT](kind: T) extends IResolveOutcome[T] {
   override def expect(): ResolveSuccess[T] = this
 }
-case class ResolveFailure[+T <: KindT](range: List[RangeS], x: IIncompleteOrFailedCompilerSolve) extends IResolveOutcome[T] {
+case class ResolveFailure[+T <: KindT](range: List[RangeS], x: IResolvingError) extends IResolveOutcome[T] {
   override def expect(): ResolveSuccess[T] = {
-    throw CompileErrorExceptionT(TypingPassSolverError(range, x))
+    throw CompileErrorExceptionT(TypingPassResolvingError(range, x))
   }
 }
 
@@ -90,7 +97,7 @@ class StructCompiler(
   def precompileStruct(
     coutputs: CompilerOutputs,
     structTemplata: StructDefinitionTemplataT):
-  Unit = {
+  IdT[IStructTemplateNameT] = {
     val StructDefinitionTemplataT(declaringEnv, structA) = structTemplata
 
     val structTemplateId = templataCompiler.resolveStructTemplate(structTemplata)
@@ -124,12 +131,85 @@ class StructCompiler(
               .toVector
               .flatMap(_.entriesByNameT)))
     coutputs.declareTypeOuterEnv(structTemplateId, outerEnv)
+
+    structTemplateId
+
+    // DO NOT SUBMIT
+    // // We're about to eagerly pre-compile the struct and make its inner env. We're not going to check yet that any of
+    // // its usages of other structs/interfaces/functions are correct.
+    //
+    // val allRulesS = structA.headerRules ++ structA.memberRules
+    // val allRuneToType = structA.headerRuneToType ++ structA.membersRuneToType
+    // val definitionRules = allRulesS.filter(InferCompiler.includeRuleInDefinitionSolve)
+    //
+    // val envs = InferEnv(outerEnv, List(structA.range), callLocation, outerEnv, RegionT())
+    // val solver =
+    //   inferCompiler.makeSolver(
+    //     envs, coutputs, definitionRules, allRuneToType, List(structA.range), Vector(), Vector())
+    // // Incrementally solve and add placeholders, see IRAGP.
+    // inferCompiler.incrementallySolve(
+    //   envs, coutputs, solver,
+    //   // Each step happens after the solver has done all it possibly can. Sometimes this can lead
+    //   // to races, see RRBFS.
+    //   (solver) => {
+    //     TemplataCompiler.getFirstUnsolvedIdentifyingRune(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+    //       case None => false
+    //       case Some((genericParam, index)) => {
+    //         val placeholderPureHeight = vregionmut(None)
+    //         // Make a placeholder for every argument even if it has a default, see DUDEWCD.
+    //         val templata =
+    //           templataCompiler.createPlaceholder(
+    //             coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, placeholderPureHeight, true)
+    //         solver.manualStep(Map(genericParam.rune.rune -> templata))
+    //         true
+    //       }
+    //     }
+    //   }) match {
+    //   case Err(f@FailedCompilerSolve(_, _, err)) => {
+    //     throw CompileErrorExceptionT(typing.TypingPassSolverError(List(structA.range), f))
+    //   }
+    //   case Ok(true) =>
+    //   case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
+    // }
+    // val inferences =
+    //   inferCompiler.interpretResults(allRuneToType, solver) match {
+    //     case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(List(structA.range), f))
+    //     case Ok(c) => c
+    //   }
+    //
+    // structA.maybePredictedMutability match {
+    //   case None => {
+    //     val mutability =
+    //       ITemplataT.expectMutability(inferences(structA.mutabilityRune.rune))
+    //     coutputs.declareTypeMutability(structTemplateId, mutability)
+    //   }
+    //   case Some(_) =>
+    // }
+    //
+    // val templateArgs = structA.genericParameters.map(_.rune.rune).map(inferences)
+    //
+    // val id = assembleStructName(structTemplateId, templateArgs)
+    //
+    // val innerEnv =
+    //   CitizenEnvironmentT(
+    //     outerEnv.globalEnv,
+    //     outerEnv,
+    //     structTemplateId,
+    //     id,
+    //     TemplatasStore(id, Map(), Map())
+    //         .addEntries(
+    //           interner,
+    //           inferences.toVector
+    //               .map({ case (rune, templata) => (interner.intern(RuneNameT(rune)), TemplataEnvEntry(templata)) })))
+    //
+    // coutputs.declareStructInnerEnv(structTemplateId, innerEnv)
+
   }
 
   def precompileInterface(
     coutputs: CompilerOutputs,
     interfaceTemplata: InterfaceDefinitionTemplataT):
-  Unit = {
+  IdT[IInterfaceTemplateNameT] = {
     val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
 
     val interfaceTemplateId = templataCompiler.resolveInterfaceTemplate(interfaceTemplata)
@@ -175,6 +255,8 @@ class StructCompiler(
                 .toVector
                 .flatMap(_.entriesByNameT)))
     coutputs.declareTypeOuterEnv(interfaceTemplateId, outerEnv)
+
+    interfaceTemplateId
   }
 
   def compileStruct(
@@ -273,6 +355,14 @@ class StructCompiler(
 //      }
 //    })
 //  }
+
+  def assembleStructName(
+      templateName: IdT[IStructTemplateNameT],
+      templateArgs: Vector[ITemplataT[ITemplataType]]):
+  IdT[IStructNameT] = {
+    templateName.copy(
+      localName = templateName.localName.makeStructName(interner, templateArgs))
+  }
 
 }
 

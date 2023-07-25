@@ -916,7 +916,6 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.arrays.*;
-        |import v.builtins.functor1.*;
         |import v.builtins.drop.*;
         |
         |struct Vec2 imm {
@@ -2014,6 +2013,36 @@ class CompilerTests extends FunSuite with Matchers {
       CoordTemplataT(CoordT(ShareT,_,BoolT())),
       IntegerTemplataT(5)))))) =>
     }
+  }
+
+
+  // DO NOT SUBMIT i think when we do "where func drop(int)void { }" it's literally getting declared holy crap
+
+  test("Structs can resolve right") { // DO NOT SUBMIT better name
+    // The definition of Marine<T> was trying to resolve the existence of func drop(int)void.
+    // Unfortunately, we don't have an overload index at the time of struct definitions yet, that comes later when
+    // we define the functions.
+    // Normally this wouldnt be a problem as we can usually use things before we compile them, we just use the templata
+    // and solve the whole thing on our own, don't even need to know if it's been compiled yet.
+    // However, now that we want to rely on the overload index, and the overload index doesn't exist until we compile
+    // the functions, we rely on things being compiled before we use them, hence this problem.
+    // The solution is to delay resolving function bounds until functions are compiled, see MCFBRBF.
+
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.drop.*;
+        |
+        |struct XNone<T> where func drop(T)void { }
+        |
+        |// This function will try to do a resolve for func drop(int)void.
+        |struct Marine { weapon XNone<int>; }
+        |
+        |exported func main() {
+        |  m = Marine(XNone<int>());
+        |}
+      """.stripMargin)
+
+    val coutputs = compile.expectCompilerOutputs()
   }
 
 }

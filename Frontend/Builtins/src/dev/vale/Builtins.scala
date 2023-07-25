@@ -9,7 +9,7 @@ object Builtins {
   val moduleToFilename =
     Vector(
       "arith" -> "arith.vale",
-      "functor1" -> "functor1.vale",
+      // "functor1" -> "functor1.vale",
       "logic" -> "logic.vale",
       "migrate" -> "migrate.vale",
       "str" -> "str.vale",

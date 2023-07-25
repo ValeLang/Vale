@@ -195,7 +195,7 @@ object TemplatasStore {
       case LambdaCitizenTemplateNameT(loc) => Some(interner.intern(LambdaStructImpreciseNameS(interner.intern(LambdaImpreciseNameS()))))
       case ClosureParamNameT(codeLoc) => Some(interner.intern(ClosureParamImpreciseNameS()))
       case SelfNameT() => Some(interner.intern(SelfNameS()))
-      case ArbitraryNameT() => Some(interner.intern(ArbitraryNameS()))
+      case ArbitraryNameT() => Some(interner.intern(CodeNameS(interner.intern(StrI("__call"))))) // DO NOT SUBMIT
       case AnonymousSubstructImplNameT(_, _, _) => None
       case AnonymousSubstructConstructorTemplateNameT(StructTemplateNameT(humanName)) => {
         Some(interner.intern(CodeNameS(humanName)))

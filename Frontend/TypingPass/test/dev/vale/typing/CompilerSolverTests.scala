@@ -508,7 +508,10 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin,
       interner)
     compile.getCompilerOutputs() match {
-      case Err(TypingPassSolverError(_,IncompleteCompilerSolve(_,Vector(),unsolved, _))) => {
+      case Err(TypingPassSolverError(_,IncompleteCompilerSolve(_,Vector(),unsolved, _))) => { // DO NOT SUBMIT
+        unsolved shouldEqual Set(CodeRuneS(interner.intern(interner.intern(StrI("N")))))
+      }
+      case Err(TypingPassDefiningError(_, DefiningSolveFailedOrIncomplete(IncompleteCompilerSolve(_,Vector(),unsolved, _)))) => {
         unsolved shouldEqual Set(CodeRuneS(interner.intern(interner.intern(StrI("N")))))
       }
     }

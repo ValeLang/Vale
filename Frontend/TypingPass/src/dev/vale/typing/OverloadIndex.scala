@@ -247,6 +247,16 @@ class OverloadIndex() {
       candidateParamMaybes: Vector[Option[CoordT]],
       calleeCandidate: ICalleeCandidate):
   Unit = {
+    Profiler.frame(() => {
+      addInner(candidateName, candidateParamMaybes, calleeCandidate)
+    })
+  }
+
+  def addInner(
+      candidateName: IImpreciseNameS,
+      candidateParamMaybes: Vector[Option[CoordT]],
+      calleeCandidate: ICalleeCandidate):
+  Unit = {
     if (candidateParamMaybes.length == 0) {
       nameToZeroArgFunction
           .getOrElseUpdate(candidateName, new mutable.HashSet[ICalleeCandidate]())
@@ -285,6 +295,12 @@ class OverloadIndex() {
   }
 
   def findOverloads(name: IImpreciseNameS, params: Vector[CoordT], kindToSuperKinds: ISubKindTT => Array[ISuperKindTT]): Array[ICalleeCandidate] = {
+    Profiler.frame(() => {
+      findOverloadsInner(name, params, kindToSuperKinds)
+    })
+  }
+
+  def findOverloadsInner(name: IImpreciseNameS, params: Vector[CoordT], kindToSuperKinds: ISubKindTT => Array[ISuperKindTT]): Array[ICalleeCandidate] = {
     if (params.isEmpty) {
       return nameToZeroArgFunction.get(name).toArray.flatten
     }

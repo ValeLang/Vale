@@ -1420,6 +1420,15 @@ class Instantiator(
                 vassert(templateArgsA.length == templateArgsB.length)
                 vassert(parametersA.length == parametersB.length)
               }
+              // case (
+              //     LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)),
+              //     FunctionNameIX(
+              //       FunctionTemplateNameI(StrI("parseSlice"),_),
+              //       Vector(),
+              //       Vector(
+              //         CoordI(MutableBorrowI,StructIT(IdI(_,Vector(),StructNameI(StructTemplateNameI(StrI("Path")),Vector())))),
+              //         CoordI(own,StructIT(IdI(_,Vector(),StructNameI(StructTemplateNameI(StrI(NotesCollector)),Vector())))),
+              //         CoordI(MutableBorrowI,StructIT(IdI(_,Vector(),StructNameI(StructTemplateNameI(StrI(ParseIter)),Vector()))))))) =>
               case other => vwat(other)
             }
           }

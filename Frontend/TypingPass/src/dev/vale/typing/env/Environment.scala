@@ -1,6 +1,6 @@
 package dev.vale.typing.env
 
-import dev.vale.{CodeLocationS, Err, Interner, Ok, PackageCoordinate, Profiler, Result, StrI, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Err, Interner, Ok, PackageCoordinate, Profiler, Result, StrI, U, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.postparsing._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.citizen._
@@ -19,6 +19,7 @@ import dev.vale.typing.templata._
 import dev.vale.typing.types.{InterfaceTT, KindPlaceholderT, StructTT}
 
 import scala.collection.immutable.{List, Map, Set}
+import scala.collection.mutable
 
 
 trait IEnvironmentT {
@@ -357,11 +358,11 @@ case class TemplatasStore(
 
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext]):
-  Iterable[ITemplataT[ITemplataType]] = {
+  Array[ITemplataT[ITemplataType]] = {
     val a1 = entriesByImpreciseNameS.getOrElse(name, Vector())
     val a2 = a1.filter(entryMatchesFilter(_, lookupFilter))
     val a3 = a2.map(entryToTemplata(definingEnv, _))
-    a3
+    a3.toArray
   }
 }
 
@@ -414,13 +415,21 @@ case class PackageEnvironmentT[+T <: INameT](
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
-  Iterable[ITemplataT[ITemplataType]] = {
-    globalEnv.builtins.lookupWithImpreciseNameInner(this, name, lookupFilter) ++
-    globalNamespaces.flatMap(ns => {
-      ns.lookupWithImpreciseNameInner(
-        PackageEnvironmentT(globalEnv, ns.templatasStoreName, globalNamespaces),
-        name, lookupFilter)
+  Vector[ITemplataT[ITemplataType]] = {
+    val result = mutable.ArrayBuffer[ITemplataT[ITemplataType]]();
+    U.foreachArr[ITemplataT[ITemplataType]](
+      globalEnv.builtins.lookupWithImpreciseNameInner(this, name, lookupFilter),
+      (a) => result += a)
+    U.foreach[TemplatasStore](globalNamespaces, globalNamespace => {
+      U.foreachIterable[ITemplataT[ITemplataType]](
+        globalNamespace.lookupWithImpreciseNameInner(
+          PackageEnvironmentT(globalEnv, globalNamespace.templatasStoreName, globalNamespaces),
+          name, lookupFilter),
+        thing => {
+          result += thing
+        })
     })
+    result.toVector
   }
 }
 

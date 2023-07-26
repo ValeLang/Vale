@@ -222,7 +222,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "--sanity_check",
           FLAG_BOOL(),
           "Whether to run self-diagnostics while compiling.",
-          "true",
+          "false",
           "Whether to run self-diagnostics while compiling."),
         Flag(
           "--force_all_known_live",
@@ -328,7 +328,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
   run_backend = parsed_flags.get_bool_flag("--run_backend", true);
   run_clang = parsed_flags.get_bool_flag("--run_clang", true);
-  sanity_check = parsed_flags.get_bool_flag("--sanity_check", true);
+  sanity_check = parsed_flags.get_bool_flag("--sanity_check", false);
   enable_replaying = parsed_flags.get_bool_flag("--enable_replaying", false);
   enable_side_calling = parsed_flags.get_bool_flag("--enable_side_calling", false);
   output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);

@@ -457,7 +457,8 @@ class OverloadResolver(
     // This is here for debugging, so when we dont find something we can see what envs we searched
     val searchedEnvs = new Accumulator[SearchedEnvironment]()
     val newSystemCandidates =
-      if (opts.globalOptions.useOverloadIndex) {
+      {
+      // if (opts.globalOptions.useOverloadIndex) {
         val result =
           coutputs.findOverloads(
             functionName,
@@ -476,19 +477,21 @@ class OverloadResolver(
         //   vassert(result.length >= resultsFromOldSystem.length)
         // }
         result
-      } else {
-        Array[ICalleeCandidate]()
+      // } else {
+      //   Array[ICalleeCandidate]()
       }
-    val oldSystemCandidates =
-      if (!opts.globalOptions.useOverloadIndex || opts.globalOptions.sanityCheck) {
-        val undedupedCandidates = new Accumulator[ICalleeCandidate]()
-        getCandidateBanners(
-          env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
-        undedupedCandidates.buildArray().distinct.toArray
-      } else {
-        Array[ICalleeCandidate]()
-      }
-    val candidates = if (opts.globalOptions.useOverloadIndex) newSystemCandidates else oldSystemCandidates
+    // val oldSystemCandidates =
+    //   if (!opts.globalOptions.useOverloadIndex || opts.globalOptions.sanityCheck) {
+    //     val undedupedCandidates = new Accumulator[ICalleeCandidate]()
+    //     getCandidateBanners(
+    //       env, coutputs, callRange, functionName, args, extraEnvsToLookIn, searchedEnvs, undedupedCandidates)
+    //     undedupedCandidates.buildArray().distinct.toArray
+    //   } else {
+    //     Array[ICalleeCandidate]()
+    //   }
+    // val candidates = if (opts.globalOptions.useOverloadIndex) newSystemCandidates else oldSystemCandidates
+    val candidates = newSystemCandidates
+
     val attempted =
       candidates.map(candidate => {
         attemptCandidateBanner(

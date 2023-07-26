@@ -13,6 +13,15 @@ object U {
     }
   }
 
+  def foreachArr[T](vec: Array[T], func: scala.Function1[T, Unit]): Unit = {
+    //    vec.foreach(func)
+    var i = 0
+    while (i < vec.length) {
+      func(vec(i))
+      i = i + 1
+    }
+  }
+
   def foreachIArr[T](arr: Array[T], func: scala.Function2[Int, T, Unit]): Unit = {
     var i = 0
     while (i < arr.length) {

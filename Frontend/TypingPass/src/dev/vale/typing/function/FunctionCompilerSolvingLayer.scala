@@ -456,7 +456,7 @@ class FunctionCompilerSolvingLayer(
         callLocation,
         placeholderInitialKnownsFromFunction,
         Vector(),
-        Vector()) match {
+        function.params.flatMap(_.pattern.coordRune.map(_.rune))) match {
         case Err(f) => throw CompileErrorExceptionT(TypingPassSolverError(function.range :: callRange, f))
         case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
       }

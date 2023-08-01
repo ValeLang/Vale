@@ -639,7 +639,7 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keyword
       attributesS ++ Vector(UserFunctionS),
       tyype,
       identifyingRunesS,
-      runeAToType.toMap ++ env.runeToType,
+      runeAToType.toMap,
       paramsS,
       maybeRetCoordRune,
       ruleBuilder.toVector,

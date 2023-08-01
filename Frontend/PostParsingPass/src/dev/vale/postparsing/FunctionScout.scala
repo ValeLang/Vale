@@ -188,8 +188,8 @@ class FunctionScout(
         vassert(templateRulesP.isEmpty)
       }
       case ParentInterface(interfaceEnv, _, interfaceRules, interfaceRuneToExplicitType) => {
-        ruleBuilder ++= interfaceRules
-        runeToExplicitType ++= interfaceRuneToExplicitType
+        // ruleBuilder ++= interfaceRules
+        // runeToExplicitType ++= interfaceRuneToExplicitType
         ruleScout.translateRulexes(
           interfaceEnv,
           lidb.child(),

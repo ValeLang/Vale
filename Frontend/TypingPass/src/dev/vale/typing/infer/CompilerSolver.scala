@@ -28,7 +28,9 @@ sealed trait ITypingPassSolverError
 case class KindIsNotConcrete(kind: KindT) extends ITypingPassSolverError
 case class KindIsNotInterface(kind: KindT) extends ITypingPassSolverError
 case class KindIsNotStruct(kind: KindT) extends ITypingPassSolverError
-case class CouldntFindFunction(range: List[RangeS], fff: FindFunctionFailure) extends ITypingPassSolverError
+case class CouldntFindFunction(range: List[RangeS], fff: FindFunctionFailure) extends ITypingPassSolverError {
+  vpass()
+}
 case class CouldntFindImpl(range: List[RangeS], fail: IsntParent) extends ITypingPassSolverError
 case class CouldntResolveKind(
   rf: ResolveFailure[KindT]

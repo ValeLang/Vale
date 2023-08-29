@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="lift-json_2.12-3.4.3">
+  <library name="commons-lang3-3.13.0">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/lift-json_2.12-3.4.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-lang3-3.13.0.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

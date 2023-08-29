@@ -7,7 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test/main/resources" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="temurin-20" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="HigherTypingPass" />
     <orderEntry type="module" module-name="PassManager" />

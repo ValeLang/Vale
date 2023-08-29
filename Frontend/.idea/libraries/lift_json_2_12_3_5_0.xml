@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="lift-json_2.12-3.5.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/lift-json_2.12-3.5.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

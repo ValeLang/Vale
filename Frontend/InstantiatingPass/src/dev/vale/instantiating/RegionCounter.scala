@@ -109,6 +109,15 @@ object RegionCounter {
         countName(counter, funcTemplateName)
         countFunctionName(counter, funcName)
       }
+    //   case OverrideDispatcherNameI(OverrideDispatcherTemplateNameI(implId), templateArgs, parameters) => {
+    //     countId(counter, implId, x => countName(counter, x))
+    //     templateArgs.foreach(countTemplata(counter, _))
+    //     parameters.foreach(countCoord(counter, _))
+    //   }
+    //   case CaseFunctionFromImplNameI(CaseFunctionFromImplTemplateNameI(humanName, runeInImpl, runeInCitizen), templateArgs, parameters) => {
+    //     templateArgs.foreach(countTemplata(counter, _))
+    //     parameters.foreach(countCoord(counter, _))
+    //   }
     }
   }
 
@@ -175,6 +184,9 @@ object RegionCounter {
         countName(counter, interface)
       }
       case FunctionTemplateNameI(humanName, codeLocation) =>
+      // case AnonymousSubstructImplTemplateNameI(interface) => {
+      //   countName(counter, interface)
+      // }
       case other => vimpl(other)
     }
   }

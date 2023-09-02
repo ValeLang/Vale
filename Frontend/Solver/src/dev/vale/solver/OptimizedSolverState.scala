@@ -327,6 +327,7 @@ case class OptimizedSolverState[Rule, Rune, Conclusion](
     numUnknownsToNumPuzzles(numUnknowns) += 1
 
     // Every entry in this table should have enough room for all rules to be in there at the same time
+    // TODO(optimize): zipWithIndex taking 1% of total time
     numUnknownsToPuzzles.zipWithIndex.foreach({ case (puzzles, numUnknowns) =>
       puzzles += -1
 //      vassert(puzzles.length == puzzleToRule.length)

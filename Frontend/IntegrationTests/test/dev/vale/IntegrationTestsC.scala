@@ -293,6 +293,47 @@ class IntegrationTestsC extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
 
+  test("Supplying bounded struct to struct accepting") {
+    // See OIRCRR.
+    //
+    // We have a bug where the Spork<...>(...) call site sees that it's calling:
+    //   func Spork<Bork<int>>(Bork)Spork<Bork<int>>
+    // and it sees that it's supplying a Bork, and so it supplies Bork's bounds as part of the instantiation reachable
+    // functions.
+    //
+    // However, the definition of Spork constructor is:
+    //   func Spork<T>(a T) Spork<T> { construct<Spork<T>>(a) }
+    // and sees that the parameter is a T, and doesn't expect any particular reachable functions.
+    //
+    // The call site thinks "I'm giving an argument that's a citizen with bounds. I should include it in the
+    // instantiation args.".
+    // What it should really think is "I should only give the arguments that the receiver expects."
+    // And the receiver only expects reachable functions for params that it *knows* are citizens. Params that the
+    // *definition* calls.
+    //
+    // We can know that by looking at the CallSR rules of the function we're calling, and only include reachables for
+    // what comes out of those.
+
+    val compile = RunCompilation.test(
+      """
+        |struct Bork<T> where func drop(T)void { a T; }
+        |// makes implicit constructor:
+        |// func Bork<T>(a T) Bork<T> { construct<Bork<T>>(a) }
+        |
+        |struct Spork<T> where func drop(T)void { a T; }
+        |// makes implicit constructor:
+        |// func Spork<T>(a T) Spork<T> { construct<Spork<T>>(a) }
+        |
+        |exported func main() int {
+        |  return Spork<Bork<int>>(Bork(7)).a.a;
+        |}
+    """.stripMargin)
+
+    compile.evalForKind(Vector()) match {
+      case VonInt(7) =>
+    }
+  }
+
   test("Same type multiple times in an invocation") {
     val compile = RunCompilation.test(
       """

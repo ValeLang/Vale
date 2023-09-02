@@ -1,6 +1,5 @@
 package dev.vale
 
-import dev.vale._
 import dev.vale.finalast.ProgramH
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.instantiating.ast.HinputsI
@@ -34,7 +33,7 @@ object RunCompilation {
       })
           .or(FileCoordinateMap.test(interner, Vector(code)))
           .or(Tests.getPackageToResourceResolver),
-      FullCompilationOptions(GlobalOptions(true, true, true, true)))
+      FullCompilationOptions(GlobalOptions(true, true, true, true, true)))
   }
 }
 

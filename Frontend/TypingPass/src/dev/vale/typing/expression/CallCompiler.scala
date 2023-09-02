@@ -72,21 +72,21 @@ class CallCompiler(
           }
         val argsExprs2 =
           convertHelper.convertExprs(
-            nenv.snapshot, coutputs, range, callLocation, givenArgsExprs2, prototype.prototype.prototype.paramTypes)
+            nenv.snapshot, coutputs, range, callLocation, givenArgsExprs2, prototype.prototype.paramTypes)
 
         checkTypes(
           coutputs,
           nenv.snapshot,
           range,
           callLocation,
-          prototype.prototype.prototype.paramTypes,
+          prototype.prototype.paramTypes,
           argsExprs2.map(a => a.result.coord),
           exact = true)
 
-        vassert(coutputs.getInstantiationBounds(prototype.prototype.prototype.id).nonEmpty)
+        vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
         val resultTE =
-          prototype.prototype.prototype.returnType
-        ast.FunctionCallTE(prototype.prototype.prototype, argsExprs2, resultTE)
+          prototype.prototype.returnType
+        ast.FunctionCallTE(prototype.prototype, argsExprs2, resultTE)
       }
       case other => {
         evaluateCustomCall(
@@ -190,16 +190,16 @@ class CallCompiler(
 
     val StampFunctionSuccess(prototype, inferences) = resolved
     val argTypes = actualArgsExprs2.map(_.result.coord)
-    if (argTypes != resolved.prototype.prototype.paramTypes) {
-      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.prototype.paramTypes + " args: " + argTypes))
+    if (argTypes != resolved.prototype.paramTypes) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.paramTypes + " args: " + argTypes))
     }
 
-    checkTypes(coutputs, env, range, callLocation, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
+    checkTypes(coutputs, env, range, callLocation, resolved.prototype.paramTypes, argTypes, exact = true)
 
-    vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.id).nonEmpty)
+    vassert(coutputs.getInstantiationBounds(resolved.prototype.id).nonEmpty)
     val resultTE =
-      prototype.prototype.returnType
-    val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2, resultTE);
+      prototype.returnType
+    val resultingExpr2 = FunctionCallTE(resolved.prototype, actualArgsExprs2, resultTE);
 
     (resultingExpr2)
   }

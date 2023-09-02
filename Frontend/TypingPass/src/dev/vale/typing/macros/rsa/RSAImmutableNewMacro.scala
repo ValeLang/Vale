@@ -79,7 +79,7 @@ class RSAImmutableNewMacro(
         case Ok(x) => x
       }
 
-    vassert(generatorPrototype.prototype.prototype.returnType.ownership == ShareT)
+    vassert(generatorPrototype.prototype.returnType.ownership == ShareT)
 
     val sizeTE = ArgLookupTE(0, paramCoords(0).tyype)
     val generatorTE = ArgLookupTE(1, paramCoords(1).tyype)
@@ -92,7 +92,7 @@ class RSAImmutableNewMacro(
             RegionT(),
             sizeTE,
             generatorTE,
-            generatorPrototype.prototype.prototype)))
+            generatorPrototype.prototype)))
     (header, body)
   }
 }

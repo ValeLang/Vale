@@ -14,7 +14,7 @@ class SpannerTests extends FunSuite with Matchers {
     val keywords = new Keywords(interner)
     val compilation =
       new ParserCompilation(
-        GlobalOptions(true, true, true, true),
+        GlobalOptions(true, true, true, true, true),
         interner,
         keywords,
         Vector(PackageCoordinate.TEST_TLD(interner, keywords)),

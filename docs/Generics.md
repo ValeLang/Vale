@@ -329,7 +329,7 @@ In fact, we do solving *between* adding placeholders as well. If we just populat
 func bork<T, Y>(a T) Y where T = Y { return a; }
 ```
 
-Because the placeholder for T is of course not equial to the placeholder for Y.
+Because the placeholder for T is of course not equal to the placeholder for Y.
 
 So, we populate placeholders one at a time, doing a solve inbetween each new one.
 
@@ -542,6 +542,8 @@ func HashMap<K Ref imm, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
 ```
 
 It failed because `main` wasn't passing any functions to satisfy the bounds which were expected by the `HashMap<K, V, H, E>(hasher, equator, 0)` invocation (it expected a `drop(H)`). At best, we can hoist the _requirements_ from the return type, but we can't use the return type as evidence that a type satisfies some bounds.
+
+Note from later: couldn't we leave it up to the call site to try to instantiate the return type? Then the definition could assume that everything exists and things will be fine. It seems that Rust allows a function definition to inherit bounds from its return value, so that hints that it might be fine.
 
 
 ### Monomorphizer
@@ -1622,3 +1624,94 @@ The difference between solveForDefining and solveForResolving is whether we decl
 When we're defining something, and it requires function bounds, we want to declare them, and then get some instantiation bounds for them.
 
 When we're just resolving something, we instead resolve them against the calling environment to get their instantiation bounds.
+
+
+# Only Include Reachables for Call Rules' Results (OIRCRR)
+
+We have a bug where the Spork<...>(...) call site sees that it's calling:
+
+```
+func Spork<Bork<int>>(Bork)Spork<Bork<int>>
+```
+
+and it sees that it's supplying a Bork, and so it supplies Bork's bounds as part of the instantiation reachable functions.
+
+However, the definition of Spork constructor is:
+
+```
+func Spork<T>(a T) Spork<T> { construct<Spork<T>>(a) }
+```
+
+and sees that the parameter is a T, and doesn't expect any particular reachable functions.
+
+The call site thinks "I'm giving an argument that's a citizen with bounds. I should include it in the instantiation args.".
+
+What it should really think is "I should only give the arguments that the receiver expects."
+
+And the receiver only expects reachable functions for params that it *knows* are citizens. Params that the *definition* calls.
+
+We can know that by looking at the CallSR rules of the function we're calling, and only include reachables for what comes out of those.
+
+
+
+# Merge Function Bounds From Different Places (MFBFDP)
+
+In this example, this `myFunc` is inheriting the drop bound from two different places:
+
+```
+struct A<T> where func drop(T)void { x T; }
+struct B<T> where func drop(T)void { x T; }
+func myFunc<T>(a &A<T>, b &B<T>) { ... }
+```
+
+Previously, we would introduce those bounds into `myFunc`'s environment:
+
+ * func A.bound:drop:my.vale:1:18($myFunc.T)void
+ * func B.bound:drop:my.vale:2:18($myFunc.T)void
+
+However, this led to some ambiguity when the typing phase was registering instantiation bounds. Sometimes it would choose that first one, sometimes it would choose that second one. We don't want that because that could lead to confusion in the instantiator, and also probably the overload index.
+
+We tried making it so there was a clear order when doing overload resolution, so that the overload resolver would choose deterministically, but the problem was when we did substitutions. For example, in the overload dispatcher function, when we tried to grab the subcitizen or superinterface out of the impl, we substituted the dispatcher function's placeholders in. In doing that, we also substituted those placeholders into the bounds that it had registered. Those didn't agree with the abstract param's interface's instantiation bounds.
+
+The solution was to take the location out of the bound's name, and to rename any incoming bound to be in the original denizen's (`myFunc` here) namespace. That way, all bounds have the same full ID no matter where they came from.
+
+
+Soon, this could all be moot because we'll be able to resolve instantiation bounds from the instantiator itself. Hopefully.
+
+
+# ReachableFunctionNameT instead of BoundFunctionNameT (RFNTIOB)
+
+We tried splitting this out into a ReachableFunctionNameT, so each function could keep separate its direct instantiation bound params (e.g. where func drop(T)void on the function itself) as opposed to its indirect instantiation bound params (ones declared on the params' kind struct/interfaces' definitions).
+
+It turns out, we can still do that, without having a FunctionBoundNameT/ReachableFunctionNameT distinction.
+
+We keep them in different fields of the InstantiationBoundArgumentsT.
+
+The reason we combined them all to have one name, FunctionBoundNameT, is because these bounds can come from a lot of different places. For example, in the override dispatcher function, we resolve the impl, and in doing so, we resolve its subcitizen and the superinterface. We did a substitution to phrase those in terms of the override dispatcher's placeholders (IOW, bring them into the override dispatcher's perspective) but in doing that substitution, we translated the instantiation bound arguments as ReachableFunctionNameT. That later conflicted with when the override dispatcher instantiated the interface directly, and the interface directly used on of the bounds from the virtual function, a FunctionBoundNameT. Uh oh, that means we've registered the same interface with different instantiation bound args. Assertion tripped in addInstantiationBounds.
+
+The moral of the story is that we can get bounds from anywhere, and making their names line up so that every instantiation is calling the right bound from the environment is pretty difficult.
+
+
+# Instantiation Bound Args Match Instantiation Bound Params (IBAMIBP)
+
+FunctionT has an InstantiationBoundArgumentsT instance named instantiationBoundParams. This is similar to the callsite InstantiationBoundArgumentsT's that are inside the coutputs.
+
+The runes for each callsite will match up with the runes in the function definition.
+
+
+# Ambiguous Generic Overlapping Bound Functions (AGOBF)
+
+what if we have 
+struct A { }
+func moo<X>(a A, x X) { ... }
+struct B { }
+func moo<X>(x X, b B) { ... }
+
+func bork<P, Q>(p P, q Q)
+where exists moo(P, Q)
+{ ... }
+
+then if we call bork(myA, myB)
+we'll not be sure which bound we should call.
+
+this is why we should probably still do some checking at the call site.

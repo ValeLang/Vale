@@ -13,7 +13,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.function._
-import dev.vale.typing.names.RuneNameT
+import dev.vale.typing.names.{IFunctionNameT, RuneNameT}
 import dev.vale.typing.templata.PrototypeTemplataT
 import dev.vale.typing.types.CoordT
 
@@ -22,7 +22,7 @@ class FunctorHelper( interner: Interner, keywords: Keywords) {
     env: FunctionEnvironmentT,
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
-    dropFunction: PrototypeTemplataT):
+    dropFunction: PrototypeTemplataT[IFunctionNameT]):
   ReinterpretTE = {
     vfail()
 //    val functorTemplate =

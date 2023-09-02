@@ -90,9 +90,9 @@ case class LockWeakTE(
   resultOptBorrowType: CoordT,
 
   // Function to give a borrow ref to to make a Some(borrow ref)
-  someConstructor: PrototypeT,
+  someConstructor: PrototypeT[IFunctionNameT],
   // Function to make a None of the right type
-  noneConstructor: PrototypeT,
+  noneConstructor: PrototypeT[IFunctionNameT],
 
   // This is the impl we use to allow/permit the upcast from the some to the none.
   // It'll be useful for monomorphization and later on for locating the itable ptr to put in fat pointers.
@@ -434,9 +434,9 @@ case class AsSubtypeTE(
     // make it, so we're sure it's created.
     resultResultType: CoordT,
     // Function to give a borrow ref to to make a Some(borrow ref)
-    okConstructor: PrototypeT,
+    okConstructor: PrototypeT[IFunctionNameT],
     // Function to make a None of the right type
-    errConstructor: PrototypeT,
+    errConstructor: PrototypeT[IFunctionNameT],
 
 
     // This is the impl we use to allow/permit the downcast. It'll be useful for monomorphization.
@@ -565,7 +565,7 @@ case class AddressMemberLookupTE(
 }
 
 case class InterfaceFunctionCallTE(
-    superFunctionPrototype: PrototypeT,
+    superFunctionPrototype: PrototypeT[IFunctionNameT],
     virtualParamIndex: Int,
     resultReference: CoordT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
@@ -574,7 +574,7 @@ case class InterfaceFunctionCallTE(
 }
 
 case class ExternFunctionCallTE(
-    prototype2: PrototypeT,
+    prototype2: PrototypeT[ExternFunctionNameT],
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   // We dont:
@@ -594,7 +594,7 @@ case class ExternFunctionCallTE(
 }
 
 case class FunctionCallTE(
-  callable: PrototypeT,
+  callable: PrototypeT[IFunctionNameT],
   args: Vector[ReferenceExpressionTE],
   // We have this not only for convenience, but also because sometimes a call's result is in a different region than
   // what the prototype thinks.
@@ -672,7 +672,7 @@ case class StaticArrayFromCallableTE(
   arrayType: StaticSizedArrayTT,
   region: RegionT,
   generator: ReferenceExpressionTE,
-  generatorMethod: PrototypeT,
+  generatorMethod: PrototypeT[IFunctionNameT],
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
@@ -696,7 +696,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
     arrayExpr: ReferenceExpressionTE,
     arrayType: StaticSizedArrayTT,
     consumer: ReferenceExpressionTE,
-    consumerMethod: PrototypeT) extends ReferenceExpressionTE {
+    consumerMethod: PrototypeT[IFunctionNameT]) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.result.coord)
@@ -845,7 +845,7 @@ case class DestroyImmRuntimeSizedArrayTE(
   arrayExpr: ReferenceExpressionTE,
   arrayType: RuntimeSizedArrayTT,
   consumer: ReferenceExpressionTE,
-  consumerMethod: PrototypeT,
+  consumerMethod: PrototypeT[IFunctionNameT],
 ) extends ReferenceExpressionTE {
   arrayType.mutability match {
     case MutabilityTemplataT(ImmutableT) =>
@@ -873,7 +873,7 @@ case class NewImmRuntimeSizedArrayTE(
   region: RegionT,
   sizeExpr: ReferenceExpressionTE,
   generator: ReferenceExpressionTE,
-  generatorMethod: PrototypeT,
+  generatorMethod: PrototypeT[IFunctionNameT],
 ) extends ReferenceExpressionTE {
   arrayType.mutability match {
     case MutabilityTemplataT(ImmutableT) =>

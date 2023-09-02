@@ -14,6 +14,7 @@ import scala.collection.mutable
 
 case class InstantiationBoundArgumentsI(
   runeToFunctionBoundArg: Map[IRuneS, PrototypeI[sI]],
+  callerRuneToCalleeRuneToReachableFunc: Map[IRuneS, Map[IRuneS, PrototypeI[sI]]],
   runeToImplBoundArg: Map[IRuneS, IdI[sI, IImplNameI[sI]]])
 
 case class HinputsI(

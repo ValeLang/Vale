@@ -55,7 +55,7 @@ trait IExpressionCompilerDelegate {
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[CoordT]):
-  IEvaluateFunctionResult
+  IResolveFunctionResult
 
   def evaluateClosureStruct(
     coutputs: CompilerOutputs,
@@ -339,7 +339,9 @@ class ExpressionCompiler(
     val closureStructDef = coutputs.lookupStruct(closureStructRef.id);
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
+        opts.globalOptions.sanityCheck,
         interner, keywords,
+        nenv.functionEnvironment.templateId,
         closureStructRef.id,
         InheritBoundsFromTypeItself)
     // Note, this is where the unordered closuredNames set becomes ordered.
@@ -630,17 +632,17 @@ class ExpressionCompiler(
 
           val templataFromEnv =
             nenv.lookupAllWithImpreciseName(name, Set(ExpressionLookupContext)) match {
-              case Vector(BooleanTemplataT(value)) => ConstantBoolTE(value, region)
-              case Vector(IntegerTemplataT(value)) => {
+              case Array(BooleanTemplataT(value)) => ConstantBoolTE(value, region)
+              case Array(IntegerTemplataT(value)) => {
                 ConstantIntTE(
                   IntegerTemplataT(value),
                   32,
                   region)
               }
-              case Vector(t @ PlaceholderTemplataT(name, IntegerTemplataType())) => {
+              case Array(t @ PlaceholderTemplataT(name, IntegerTemplataType())) => {
                 ConstantIntTE(PlaceholderTemplataT(name, IntegerTemplataType()), 32, region)
               }
-              case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplataT(_, _) => case ExternFunctionTemplataT(_) => }).size == templatas.size => {
+              case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplataT(_, _) => }).size == templatas.size => {
                 if (targetOwnership == MoveP) {
                   throw CompileErrorExceptionT(CantMoveFromGlobal(range :: parentRanges, "Can't move from globals. Name: " + name))
                 }
@@ -649,7 +651,7 @@ class ExpressionCompiler(
               case things if things.size > 1 => {
                 throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _)))
               }
-              case Vector() => {
+              case Array() => {
                 throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range :: parentRanges, name))
                 throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Couldn't find anything named \"" + name + "\" in env:\n" + nenv))
               }
@@ -808,12 +810,13 @@ class ExpressionCompiler(
                 val unsubstitutedMemberType = structMember.tyype.expectReferenceMember().reference;
                 val memberType =
                   TemplataCompiler.getPlaceholderSubstituter(
+                    opts.globalOptions.sanityCheck,
                     interner, keywords,
+                    nenv.functionEnvironment.templateId,
                     structTT.id,
                     // Use the bounds that we supplied to the struct
                     UseBoundsFromContainer(
-                      structDef.runeToFunctionBound,
-                      structDef.runeToImplBound,
+                      structDef.instantiationBoundParams,
                       vassertSome(coutputs.getInstantiationBounds(structTT.id))))
                     .substituteForCoord(coutputs, unsubstitutedMemberType)
 
@@ -1013,7 +1016,7 @@ class ExpressionCompiler(
                 32,
                 region), Set())
             }
-            case pt @ PrototypeTemplataT(_, _) => {
+            case pt @ PrototypeTemplataT(_) => {
               val tinyEnv =
                 nenv.functionEnvironment.makeChildNodeEnvironment(r, life)
                   .addEntries(interner, Vector(ArbitraryNameT() -> TemplataEnvEntry(pt)))
@@ -1391,7 +1394,9 @@ class ExpressionCompiler(
                 val structDef = coutputs.lookupStruct(structTT.id)
                 val substituter =
                   TemplataCompiler.getPlaceholderSubstituter(
+                    opts.globalOptions.sanityCheck,
                     interner, keywords,
+                    nenv.functionEnvironment.templateId,
                     structTT.id,
                     // This type is already phrased in terms of our placeholders, so it can use the
                     // bounds it already has.
@@ -1522,7 +1527,7 @@ class ExpressionCompiler(
       range: List[RangeS],
       arrayMutability: MutabilityT,
       elementCoord: CoordT,
-      generatorPrototype: PrototypeT,
+      generatorPrototype: PrototypeT[IFunctionNameT],
       generatorType: CoordT
   ) = {
     if (generatorPrototype.returnType != elementCoord) {
@@ -1554,7 +1559,7 @@ class ExpressionCompiler(
     callLocation: LocationInDenizen,
     contextRegion: RegionT,
     containedCoord: CoordT):
-  (CoordT, PrototypeT, PrototypeT, IdT[IImplNameT], IdT[IImplNameT]) = {
+  (CoordT, PrototypeT[IFunctionNameT], PrototypeT[IFunctionNameT], IdT[IImplNameT], IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Opt)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceDefinitionTemplataT(_, _)) => it
@@ -1578,10 +1583,10 @@ class ExpressionCompiler(
     val someConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
         coutputs, nenv, range, callLocation, someConstructorTemplata, Vector(CoordTemplataT(containedCoord)), contextRegion, Vector(containedCoord)) match {
-        case fff@EvaluateFunctionFailure(_) => {
+        case fff@ResolveFunctionFailure(_) => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, fff.toString))
         }
-        case EvaluateFunctionSuccess(p, conclusions) => p.prototype
+        case ResolveFunctionSuccess(p, conclusions) => p.prototype
       }
 
     val noneConstructorTemplata =
@@ -1592,12 +1597,12 @@ class ExpressionCompiler(
     val noneConstructor =
       delegate.evaluateGenericFunctionFromCallForPrototype(
         coutputs, nenv, range, callLocation, noneConstructorTemplata, Vector(CoordTemplataT(containedCoord)), contextRegion, Vector()) match {
-        case fff@EvaluateFunctionFailure(_) => {
+        case fff@ResolveFunctionFailure(_) => {
           throw CompileErrorExceptionT(RangedInternalErrorT(
             range,
             fff.toString))
         }
-        case EvaluateFunctionSuccess(p, conclusions) => p.prototype
+        case ResolveFunctionSuccess(p, conclusions) => p.prototype
       }
 
     val someImplId =
@@ -1623,7 +1628,7 @@ class ExpressionCompiler(
     region: RegionT,
     containedSuccessCoord: CoordT,
     containedFailCoord: CoordT):
-  (CoordT, PrototypeT, IdT[IImplNameT], PrototypeT, IdT[IImplNameT]) = {
+  (CoordT, PrototypeT[IFunctionNameT], IdT[IImplNameT], PrototypeT[IFunctionNameT], IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Result)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceDefinitionTemplataT(_, _)) => it
@@ -1656,12 +1661,12 @@ class ExpressionCompiler(
         Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord)),
         region,
         Vector(containedSuccessCoord)) match {
-        case fff@EvaluateFunctionFailure(_) => {
+        case fff@ResolveFunctionFailure(_) => {
           throw CompileErrorExceptionT(RangedInternalErrorT(
             range,
             fff.toString))
         }
-        case EvaluateFunctionSuccess(p, conclusions) => p.prototype
+        case ResolveFunctionSuccess(p, conclusions) => p.prototype
       }
     val okKind = okConstructor.returnType.kind
     val okResultImpl =
@@ -1685,12 +1690,12 @@ class ExpressionCompiler(
         Vector(CoordTemplataT(containedSuccessCoord), CoordTemplataT(containedFailCoord)),
         region,
         Vector(containedFailCoord)) match {
-        case fff@EvaluateFunctionFailure(_) => {
+        case fff@ResolveFunctionFailure(_) => {
           throw CompileErrorExceptionT(RangedInternalErrorT(
             range,
             fff.toString))
         }
-        case EvaluateFunctionSuccess(p, conclusions) => p.prototype
+        case ResolveFunctionSuccess(p, conclusions) => p.prototype
       }
     val errKind = errConstructor.returnType.kind
     val errResultImpl =

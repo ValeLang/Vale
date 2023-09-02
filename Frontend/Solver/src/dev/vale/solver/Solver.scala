@@ -51,11 +51,6 @@ case class SolverConflict[Rune, Conclusion, ErrType](
   newConclusion: Conclusion
 ) extends ISolverError[Rune, Conclusion, ErrType] {
   vpass()
-
-  if (previousConclusion.toString == "CoordTemplata(CoordT(own,PlaceholderT(FullNameT(PackageCoordinate(stdlib,Vector(collections, hashset)),Vector(FunctionTemplateNameT(diff_iter,FileCoordinate(PackageCoordinate(stdlib,Vector(collections, hashset)),/Users/verdagon/Vale/stdlib/src/collections/hashset/hash_set_diff.vale):161)),PlaceholderNameT(PlaceholderTemplateNameT(0))))))" &&
-  newConclusion.toString == "CoordTemplata(CoordT(share,PlaceholderT(FullNameT(PackageCoordinate(stdlib,Vector(collections, hashset)),Vector(FunctionTemplateNameT(diff_iter,FileCoordinate(PackageCoordinate(stdlib,Vector(collections, hashset)),/Users/verdagon/Vale/stdlib/src/collections/hashset/hash_set_diff.vale):161)),PlaceholderNameT(PlaceholderTemplateNameT(0))))))") {
-    vpass()
-  }
 }
 case class RuleError[Rune, Conclusion, ErrType](
 //  ruleIndex: Int,

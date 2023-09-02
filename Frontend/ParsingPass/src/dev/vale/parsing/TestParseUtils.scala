@@ -121,7 +121,7 @@ trait TestParseUtils {
     keywords: Keywords,
     codeMap: FileCoordinateMap[String]):
   Result[FileP, FailedParse] = {
-    val opts = GlobalOptions(true, true, true, true)
+    val opts = GlobalOptions(true, true, true, true, true)
     val p = new Parser(interner, keywords, opts)
     ParseAndExplore.parseAndExploreAndCollect(
       interner,
@@ -184,7 +184,7 @@ trait TestParseUtils {
   }
 
   def compileExpression(code: String): Result[IExpressionPE, IParseError] = {
-    val opts = GlobalOptions(true, false, true, true)
+    val opts = GlobalOptions(true, false, false, true, true)
     val interner = new Interner()
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
@@ -200,7 +200,7 @@ trait TestParseUtils {
   }
 
   def compileBlockContents(code: String): Result[IExpressionPE, IParseError] = {
-    val opts = GlobalOptions(true, false, true, true)
+    val opts = GlobalOptions(true, false, false, true, true)
     val interner = new Interner()
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
@@ -217,7 +217,7 @@ trait TestParseUtils {
   }
 
   def compileStatement(code: String): Result[IExpressionPE, IParseError] = {
-    val opts = GlobalOptions(true, false, true, true)
+    val opts = GlobalOptions(true, false, false, true, true)
     val interner = new Interner()
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)

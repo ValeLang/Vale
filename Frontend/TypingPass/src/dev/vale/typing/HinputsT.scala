@@ -12,23 +12,35 @@ import dev.vale.typing.types._
 
 import scala.collection.mutable
 
-case class InstantiationBoundArgumentsT(
-  runeToFunctionBoundArg: Map[IRuneS, PrototypeT],
-  runeToImplBoundArg: Map[IRuneS, IdT[IImplNameT]])
+case class InstantiationReachableBoundArgumentsT[R <: IFunctionNameT](
+  citizenRuneToReachablePrototype: Map[IRuneS, PrototypeT[R]]
+)
+
+case class InstantiationBoundArgumentsT[BF <: IFunctionNameT, BI <: IImplNameT](
+  // This is the callee's rune to the prototype that satisfies it.
+  // If this is at the call site, then this might be a real function like func drop(int)void.
+  // If this is the instantiation bound params in the definition, then this will be a bound like func drop(T)void.
+  runeToBoundPrototype: Map[IRuneS, PrototypeT[BF]],
+  // This is empty for structs and interfaces.
+  // For functions, this includes all the bounds that are inherited from structs and interfaces.
+  runeToCitizenRuneToReachablePrototype: Map[IRuneS, InstantiationReachableBoundArgumentsT[BF]],
+  // Same as runeToBoundPrototype but for impls.
+  runeToBoundImpl: Map[IRuneS, IdT[BI]]) {
+
+  vassert(!runeToCitizenRuneToReachablePrototype.exists(_._2.citizenRuneToReachablePrototype.isEmpty))
+}
 
 case class HinputsT(
   interfaces: Vector[InterfaceDefinitionT],
   structs: Vector[StructDefinitionT],
-//  emptyPackStructRef: StructTT,
   functions: Vector[FunctionDefinitionT],
-//  immKindToDestructor: Map[KindT, PrototypeT],
 
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   interfaceToEdgeBlueprints: Map[IdT[IInterfaceNameT], InterfaceEdgeBlueprintT],
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   interfaceToSubCitizenToEdge: Map[IdT[IInterfaceNameT], Map[IdT[ICitizenNameT], EdgeT]],
 
-  instantiationNameToInstantiationBounds: Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT],
+  instantiationNameToInstantiationBounds: Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]],
 
   kindExports: Vector[KindExportT],
   functionExports: Vector[FunctionExportT],
@@ -73,7 +85,7 @@ case class HinputsT(
     vassertOne(interfaceToSubCitizenToEdge.flatMap(_._2.values).find(_.edgeId == implId))
   }
 
-  def getInstantiationBoundArgs(instantiationName: IdT[IInstantiationNameT]): InstantiationBoundArgumentsT = {
+  def getInstantiationBoundArgs(instantiationName: IdT[IInstantiationNameT]): InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT] = {
     vassertSome(instantiationNameToInstantiationBounds.get(instantiationName))
   }
 

@@ -153,7 +153,7 @@ class Compiler(
             case StructDefinitionTemplataT(_,_) =>
             case ImplDefinitionTemplataT(_,_) =>
             case CoordListTemplataT(coords) => coords.foreach(c => getPlaceholdersInKind(accum, c.kind))
-            case PrototypeTemplataT(_, prototype) => {
+            case PrototypeTemplataT(prototype) => {
               getPlaceholdersInId(accum, prototype.id)
               prototype.paramTypes.foreach(c => getPlaceholdersInKind(accum, c.kind))
               getPlaceholdersInKind(accum, prototype.returnType.kind)
@@ -376,14 +376,13 @@ class Compiler(
           name: StrI,
           paramCoords: Vector[CoordT],
           returnCoord: CoordT):
-        PrototypeTemplataT = {
+        PrototypeTemplataT[IFunctionNameT] = {
           PrototypeTemplataT(
-            functionRange,
             PrototypeT(
-              envs.selfEnv.id.addStep(
+              envs.originalCallingEnv.id.addStep(
                 interner.intern(
-                  FunctionNameT(
-                    interner.intern(FunctionTemplateNameT(name, functionRange.begin)),
+                  PredictedFunctionNameT(
+                    interner.intern(PredictedFunctionTemplateNameT(name)),
                     Vector(),
                     paramCoords))),
               returnCoord))
@@ -396,16 +395,17 @@ class Compiler(
             name: StrI,
             coords: Vector[CoordT],
             returnType: CoordT):
-        PrototypeT = {
+        PrototypeT[IFunctionNameT] = {
           val result =
             PrototypeT(
-              envs.selfEnv.id.addStep(
+              envs.originalCallingEnv.id.addStep(
                 interner.intern(FunctionBoundNameT(
-                  interner.intern(FunctionBoundTemplateNameT(name, range.begin)), Vector(), coords))),
+                  interner.intern(FunctionBoundTemplateNameT(name)), Vector(), coords))),
               returnType)
 
           // This is a function bound, and there's no such thing as a function bound with function bounds.
-          state.addInstantiationBounds(result.id, InstantiationBoundArgumentsT(Map(), Map()))
+          state.addInstantiationBounds(
+            opts.globalOptions.sanityCheck, interner, envs.originalCallingEnv.denizenTemplateId, result.id, InstantiationBoundArgumentsT(Map(), Map(), Map()))
 
           result
         }
@@ -413,7 +413,7 @@ class Compiler(
         override def assembleImpl(env: InferEnv, range: RangeS, subKind: KindT, superKind: KindT): IsaTemplataT = {
           IsaTemplataT(
             range,
-            env.selfEnv.id.addStep(
+            env.originalCallingEnv.id.addStep(
               interner.intern(
                 ImplBoundNameT(
                   interner.intern(ImplBoundTemplateNameT(range.begin)),
@@ -429,10 +429,8 @@ class Compiler(
           callRange: List[RangeS],
           callLocation: LocationInDenizen,
           templata: InterfaceDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]],
-          verifyConclusions: Boolean):
+          templateArgs: Vector[ITemplataT[ITemplataType]]):
         IResolveOutcome[InterfaceTT] = {
-          vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
           structCompiler.resolveInterface(state, callingEnv, callRange, callLocation, templata, templateArgs)
         }
 
@@ -442,10 +440,8 @@ class Compiler(
           callRange: List[RangeS],
           callLocation: LocationInDenizen,
           templata: StructDefinitionTemplataT,
-          templateArgs: Vector[ITemplataT[ITemplataType]],
-          verifyConclusions: Boolean):
+          templateArgs: Vector[ITemplataT[ITemplataType]]):
         IResolveOutcome[StructTT] = {
-          vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
           structCompiler.resolveStruct(state, callingEnv, callRange,callLocation, templata, templateArgs)
         }
 
@@ -681,7 +677,7 @@ class Compiler(
           explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
           contextRegion: RegionT,
           args: Vector[CoordT]):
-        IEvaluateFunctionResult = {
+        IResolveFunctionResult = {
           functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
             coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args)
         }
@@ -698,11 +694,11 @@ class Compiler(
         }
       })
 
-  val edgeCompiler = new EdgeCompiler(interner, keywords, functionCompiler, overloadResolver, implCompiler)
+  val edgeCompiler = new EdgeCompiler(opts, interner, keywords, functionCompiler, overloadResolver, implCompiler)
 
   val functorHelper = new FunctorHelper(interner, keywords)
   val structConstructorMacro = new StructConstructorMacro(opts, interner, keywords, nameTranslator, destructorCompiler)
-  val structDropMacro = new StructDropMacro(interner, keywords, nameTranslator, destructorCompiler)
+  val structDropMacro = new StructDropMacro(opts, interner, keywords, nameTranslator, destructorCompiler)
 //  val structFreeMacro = new StructFreeMacro(interner, keywords, nameTranslator, destructorCompiler)
 //  val interfaceFreeMacro = new InterfaceFreeMacro(interner, keywords, nameTranslator)
   val asSubtypeMacro = new AsSubtypeMacro(keywords, implCompiler, expressionCompiler, destructorCompiler)
@@ -730,6 +726,11 @@ class Compiler(
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[HinputsT, ICompileErrorT] = {
     try {
       Profiler.frame(() => {
+        if (opts.globalOptions.verboseErrors) {
+          println("Using overload index? " + opts.globalOptions.useOverloadIndex)
+          println("Using sanity check? " + opts.globalOptions.sanityCheck)
+        }
+
         val nameToStructDefinedMacro =
           Map(
             structConstructorMacro.macroName -> structConstructorMacro,
@@ -881,7 +882,7 @@ class Compiler(
                     val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                     val exportOuterEnv =
                       ExportEnvironmentT(
-                        globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
+                        globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
                     val regionPlaceholder = RegionT()
 
@@ -889,14 +890,14 @@ class Compiler(
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
-                        globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
+                        globalEnv, packageEnv, templateId, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
                     val exportPlaceholderedStruct =
                       structCompiler.resolveStruct(
                         coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          throw CompileErrorExceptionT(CouldntEvaluateStruct(range, reason))
+                          throw CompileErrorExceptionT(TypingPassResolvingError(range, reason))
                         }
                       }
 
@@ -924,20 +925,20 @@ class Compiler(
                     val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                     val exportOuterEnv =
                       ExportEnvironmentT(
-                        globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
+                        globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
                     val placeholderedExportName = interner.intern(ExportNameT(templateName, RegionT()))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
-                        globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
+                        globalEnv, packageEnv, templateId, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
                     val exportPlaceholderedKind =
                       structCompiler.resolveInterface(
                         coutputs, exportEnv, List(interfaceA.range), LocationInDenizen(Vector()), templata, Vector()) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
-                          throw CompileErrorExceptionT(CouldntEvaluateInterface(range, reason))
+                          throw CompileErrorExceptionT(TypingPassResolvingError(range, reason))
                         }
                       }
 
@@ -998,7 +999,7 @@ class Compiler(
                       val placeholderedExternId = templateId.copy(localName = placeholderedExternName)
                       val externEnv =
                         ExternEnvironmentT(
-                          globalEnv, packageEnv, placeholderedExternId, TemplatasStore(placeholderedExternId, Map(), Map()))
+                          globalEnv, packageEnv, templateId, placeholderedExternId, TemplatasStore(placeholderedExternId, Map(), Map()))
                       // We evaluate this and then don't do anything for it on purpose, we just do
                       // this to cause the compiler to make instantiation bounds for all the types
                       // in terms of this extern. That way, further below, when we do the
@@ -1013,9 +1014,9 @@ class Compiler(
                           Vector(),
                           regionPlaceholder,
                           Vector()) match {
-                          case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
-                          case EvaluateFunctionFailure(reason) => {
-                            throw CompileErrorExceptionT(CouldntEvaluateFunction(List(functionA.range), reason))
+                          case ResolveFunctionSuccess(prototype, inferences) => prototype.prototype
+                          case ResolveFunctionFailure(reason) => {
+                            throw CompileErrorExceptionT(TypingPassResolvingError(List(functionA.range), reason))
                           }
                         }
 
@@ -1067,6 +1068,9 @@ class Compiler(
                       // Though, we do need to add some instantiation bounds for this new IdT we
                       // just made.
                       coutputs.addInstantiationBounds(
+                        opts.globalOptions.sanityCheck,
+                        interner,
+                        templateId,
                         externPrototype.id,
                         vassertSome(coutputs.getInstantiationBounds(externPlaceholderedWrapperPrototype.id)))
 
@@ -1084,7 +1088,7 @@ class Compiler(
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                       val exportOuterEnv =
                         ExportEnvironmentT(
-                          globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
+                          globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
                       val regionPlaceholder = RegionT()
 
@@ -1092,14 +1096,14 @@ class Compiler(
                       val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                       val exportEnv =
                         ExportEnvironmentT(
-                          globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
+                          globalEnv, packageEnv, templateId, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
                       val exportPlaceholderedPrototype =
                         functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
                           coutputs, List(functionA.range), LocationInDenizen(Vector()), exportEnv, templata, Vector(), regionPlaceholder, Vector()) match {
-                          case EvaluateFunctionSuccess(prototype, inferences) => prototype.prototype
-                          case EvaluateFunctionFailure(reason) => {
-                            throw CompileErrorExceptionT(CouldntEvaluateFunction(List(functionA.range), reason))
+                          case ResolveFunctionSuccess(prototype, inferences) => prototype.prototype
+                          case ResolveFunctionFailure(reason) => {
+                            throw CompileErrorExceptionT(TypingPassResolvingError(List(functionA.range), reason))
                           }
                         }
 
@@ -1134,7 +1138,7 @@ class Compiler(
             val templateId = IdT(packageCoord, Vector(), templateName)
             val exportOuterEnv =
               ExportEnvironmentT(
-                globalEnv, packageEnv, templateId, TemplatasStore(templateId, Map(), Map()))
+                globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
             val regionPlaceholder = RegionT()
 
@@ -1142,15 +1146,15 @@ class Compiler(
             val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
             val exportEnv =
               ExportEnvironmentT(
-                globalEnv, packageEnv, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
+                globalEnv, packageEnv, templateId, placeholderedExportId, TemplatasStore(placeholderedExportId, Map(), Map()))
 
-            val CompleteCompilerSolve(_, templataByRune, _, Vector()) =
+            val CompleteDefineSolve(templataByRune, _) =
               inferCompiler.solveForDefining(
                 InferEnv(exportEnv, List(range), LocationInDenizen(Vector()), exportEnv, regionPlaceholder),
                 coutputs, rules, runeToType, List(range),
                 LocationInDenizen(Vector()), Vector(), Vector(), Vector()) match {
-                case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(List(range), f))
-                case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+                case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(List(range), f))
+                case Ok(c) => c
               }
               templataByRune.get(typeRuneT.rune) match {
                 case Some(KindTemplataT(kind)) => {
@@ -1452,8 +1456,10 @@ class Compiler(
 
             val substituter =
               TemplataCompiler.getPlaceholderSubstituter(
+                opts.globalOptions.sanityCheck,
                 interner,
                 keywords,
+                structDef.templateName,
                 sr.id,
                 InheritBoundsFromTypeItself)
 

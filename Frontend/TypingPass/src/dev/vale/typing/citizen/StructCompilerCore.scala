@@ -152,8 +152,10 @@ class StructCompilerCore(
         mutability,
         members,
         false,
-        runeToFunctionBound,
-        runeToImplBound)
+        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+          runeToFunctionBound,
+          Map(), // Structs don't have reachable bounds
+          runeToImplBound))
 
     coutputs.addStruct(structDefT);
   }
@@ -228,8 +230,10 @@ class StructCompilerCore(
         translateCitizenAttributes(attributesWithoutExportOrMacros),
         interfaceA.weakable,
         mutability,
-        runeToFunctionBound,
-        runeToImplBound,
+        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+          runeToFunctionBound,
+          Map(), // Interfaces don't have reachable bounds
+          runeToImplBound),
         internalMethods)
     coutputs.addInterface(interfaceDef2)
 
@@ -317,7 +321,15 @@ class StructCompilerCore(
       containingFunctionEnv.id.addStep(understructInstantiatedNameT)
 
     // Lambdas have no bounds, so we just supply Map()
-    coutputs.addInstantiationBounds(understructInstantiatedId, InstantiationBoundArgumentsT(Map(), Map()))
+    coutputs.addInstantiationBounds(
+      opts.globalOptions.sanityCheck,
+      interner,
+      understructTemplatedId,
+      understructInstantiatedId,
+      InstantiationBoundArgumentsT(
+        Map(),
+        Map(), // Structs don't have reachable bounds
+        Map()))
     val understructStructTT = interner.intern(StructTT(understructInstantiatedId))
 
     val dropFuncNameT =
@@ -376,8 +388,10 @@ class StructCompilerCore(
         members,
         true,
         // Closures have no function bounds or impl bounds
-        Map(),
-        Map());
+        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+          Map(),
+          Map(), // Structs don't have reachable bounds
+          Map()));
     coutputs.addStruct(closureStructDefinition)
 
     val closuredVarsStructRef = understructStructTT;

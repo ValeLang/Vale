@@ -7,7 +7,7 @@ object PostParserTestCompilation {
   def test(code: String, interner: Interner = new Interner()): ScoutCompilation = {
     val keywords = new Keywords(interner)
     new ScoutCompilation(
-      GlobalOptions(true, true, false, false),
+      GlobalOptions(true, true, true, false, false),
       interner,
       keywords,
       Vector(PackageCoordinate.TEST_TLD(interner, keywords)),

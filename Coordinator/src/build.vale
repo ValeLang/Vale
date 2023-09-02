@@ -222,7 +222,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "--sanity_check",
           FLAG_BOOL(),
           "Whether to run self-diagnostics while compiling.",
-          "true",
+          "false",
           "Whether to run self-diagnostics while compiling."),
         Flag(
           "--force_all_known_live",

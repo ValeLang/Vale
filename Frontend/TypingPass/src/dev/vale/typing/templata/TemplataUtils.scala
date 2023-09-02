@@ -12,7 +12,7 @@ object simpleNameT {
       case LambdaCallFunctionNameT(_, _, _) => Some("__call")
       case LetNameT(_) => None
       case UnnamedLocalNameT(_) => None
-      case FunctionBoundNameT(FunctionBoundTemplateNameT(humanName, _), _, _) => Some(humanName.str)
+      case FunctionBoundNameT(FunctionBoundTemplateNameT(humanName), _, _) => Some(humanName.str)
       case ClosureParamNameT(_) => None
       case MagicParamNameT(_) => None
       case CodeVarNameT(name) => Some(name.str)
@@ -34,7 +34,7 @@ object functionNameT {
   def unapply(header: FunctionHeaderT): Option[String] = {
     simpleNameT.unapply(header.id)
   }
-  def unapply(prototype: PrototypeT): Option[String] = {
+  def unapply(prototype: PrototypeT[IFunctionNameT]): Option[String] = {
     simpleNameT.unapply(prototype.id)
   }
 }

@@ -76,6 +76,26 @@ object RegionCollapserIndividual {
           })
         AnonymousSubstructConstructorNameI[cI](templateC, templateArgsC, paramsC)
       }
+      // case n@OverrideDispatcherNameI(OverrideDispatcherTemplateNameI(implId), templateArgs, parameters) => {
+      //   val map = RegionCounter.countFunctionName(n)
+      //   val templateC = OverrideDispatcherTemplateNameI[cI](collapseImplTemplateId(implId))
+      //   val templateArgsC = templateArgs.map(collapseTemplata(map, _))
+      //   val paramsC =
+      //     parameters.map(param => {
+      //       collapseCoord(param)
+      //     })
+      //   OverrideDispatcherNameI[cI](templateC, templateArgsC, paramsC)
+      // }
+      // case n@CaseFunctionFromImplNameI(CaseFunctionFromImplTemplateNameI(humanName, runeInImpl, runeInCitizen), templateArgs, parameters) => {
+      //   val map = RegionCounter.countFunctionName(n)
+      //   val templateC = CaseFunctionFromImplTemplateNameI[cI](humanName, runeInImpl, runeInCitizen)
+      //   val templateArgsC = templateArgs.map(collapseTemplata(map, _))
+      //   val paramsC =
+      //     parameters.map(param => {
+      //       collapseCoord(param)
+      //     })
+      //   CaseFunctionFromImplNameI[cI](templateC, templateArgsC, paramsC)
+      // }
       case ForwarderFunctionNameI(ForwarderFunctionTemplateNameI(innerTemplate, index), funcName) => {
         ForwarderFunctionNameI(
           ForwarderFunctionTemplateNameI(collapseFunctionTemplateName(innerTemplate), index),
@@ -127,7 +147,7 @@ object RegionCollapserIndividual {
     name: INameI[sI]):
   INameI[cI] = {
     name match {
-      case n @ FunctionNameIX(_, _, _) => collapseFunctionName(n)
+      case n : IFunctionNameI[_] => collapseFunctionName(n.asInstanceOf[IFunctionNameI[sI]])
       case x : IFunctionTemplateNameI[_] => collapseFunctionTemplateName(x.asInstanceOf[IFunctionTemplateNameI[sI]])
       case StructTemplateNameI(humanName) => StructTemplateNameI(humanName)
       case x @ LambdaCitizenNameI(_) => collapseStructName(x)
@@ -277,7 +297,7 @@ object RegionCollapserIndividual {
       case ImplNameI(template, templateArgs, subCitizen) => {
         val map = RegionCounter.countImplName(implName)
         ImplNameI[cI](
-          collapseImplTemplateName(map, template),
+          collapseImplTemplateName(template),
           templateArgs.map(collapseTemplata(map, _)),
           collapseCitizen(subCitizen))
       }
@@ -361,13 +381,21 @@ object RegionCollapserIndividual {
       implId,
       x => collapseImplName(x))
   }
+  //
+  // def collapseImplTemplateId(
+  //     implId: IdI[sI, IImplTemplateNameI[sI]]):
+  // IdI[cI, IImplTemplateNameI[cI]] = {
+  //   collapseId[IImplTemplateNameI[sI], IImplTemplateNameI[cI]](
+  //     implId,
+  //     x => collapseImplTemplateName(x))
+  // }
 
   def collapseImplTemplateName(
-    map: Map[Int, Int],
     structName: IImplTemplateNameI[sI]):
   IImplTemplateNameI[cI] = {
     structName match {
       case ImplTemplateNameI(humanName) => ImplTemplateNameI(humanName)
+      case AnonymousSubstructImplTemplateNameI(interface) => AnonymousSubstructImplTemplateNameI(collapseInterfaceTemplateName(interface))
     }
   }
 

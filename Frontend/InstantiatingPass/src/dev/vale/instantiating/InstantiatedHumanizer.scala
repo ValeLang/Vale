@@ -130,7 +130,7 @@ object InstantiatedHumanizer {
       case TypingPassBlockResultVarNameI(life) => "b:" + life
       case TypingPassFunctionResultVarNameI() => "(result)"
       case TypingPassTemporaryVarNameI(life) => "t:" + life
-      case FunctionBoundTemplateNameI(humanName, codeLocation) => humanName.str
+      case FunctionBoundTemplateNameI(humanName) => humanName.str
       case LambdaCallFunctionTemplateNameI(codeLocation, _) => "λF:" + codeMap(codeLocation)
       case LambdaCitizenTemplateNameI(codeLocation) => "λC:" + codeMap(codeLocation)
       case LambdaCallFunctionNameI(template, templateArgs, parameters) => {

@@ -78,7 +78,7 @@ class AnonymousInterfaceMacro(
 
     val rules =
       //structA.headerRules ++
-      structA.memberRules ++
+      // structA.memberRules ++
       Vector(
         LookupSR(
           structA.range,
@@ -103,7 +103,7 @@ class AnonymousInterfaceMacro(
         .map(rune => rune -> vassertSome(structA.headerRuneToType.get(rune)))
         .toMap ++
 //      structA.headerRuneToType ++
-      structA.membersRuneToType ++
+//       structA.membersRuneToType ++
       Vector(
         (AnonymousSubstructKindRuneS() -> KindTemplataType()),
         (AnonymousSubstructTemplateRuneS() -> structA.tyype),
@@ -176,6 +176,9 @@ class AnonymousInterfaceMacro(
     }
   }
 
+  // These are how the forwarder function refers to runes from the abstract function it's overriding. After all, the
+  // forwarder function copies all the runes and rules from the abstract function, so we rename them here to avoid any
+  // weird collisions.
   private def inheritedMethodRune(interfaceA: InterfaceA, method: FunctionA, rune: IRuneS): IRuneS = {
     AnonymousSubstructMethodInheritedRuneS(interfaceA.name, method.name, rune)
   }
@@ -396,27 +399,55 @@ class AnonymousInterfaceMacro(
     val FunctionA(methodRange, name, attributes, methodOriginalType, methodOriginalIdentifyingRunes, methodOriginalRuneToType, originalParams, maybeRetCoordRune, methodOriginalRules, body) = method
 
     vassert(struct.genericParameters.map(_.rune).startsWith(methodOriginalIdentifyingRunes.map(_.rune)))
-    val genericParams = struct.genericParameters
+    val genericParams =
+      struct.genericParameters
+          .map({ case GenericParameterS(range, RuneUsage(runeRange, rune), tyype, default) =>
+            GenericParameterS(range, RuneUsage(runeRange, inheritedMethodRune(interface, method, rune)), tyype, default)
+          })
 
     val runeToType = mutable.HashMap[IRuneS, ITemplataType]()
-    runeToType ++= struct.headerRuneToType
-    runeToType ++= struct.membersRuneToType
+    val rules = new Accumulator[IRulexSR]()
+
+    // First we're going to pull in all the rules and runes from the parent function. This *would* make our function
+    // identical to the parent function, *if* our parameters used the same coord runes. We won't, we'll do something
+    // different for the overriding param. Still, we'll need all these rules and calculations from our parent.
+    val inheritedRuneToType =
+      methodOriginalRuneToType.map({ case (methodRune, tyype) =>
+        inheritedMethodRune(interface, method, methodRune) -> tyype
+      })
+    runeToType ++= inheritedRuneToType
+    val inheritedMethodRules =
+      methodOriginalRules.map(rule => mapRunes(rule, methodRune => {
+        inheritedMethodRune(interface, method, methodRune)
+      }))
+    rules.addAll(inheritedMethodRules)
+    val inheritedReturnRune = {
+      val originalRetRune = vassertSome(method.maybeRetCoordRune)
+      RuneUsage(
+        originalRetRune.range,
+        inheritedMethodRune(interface, method, originalRetRune.rune))
+    }
+
+    // Now we're going to pull in the struct, which we'll use instead of the interface for the overriding param coord
+    // rune.
+    runeToType ++= struct.genericParameters.map(param => inheritedMethodRune(interface, method, param.rune.rune) -> param.tyype.tyype)
+    // We don't want to pull in all of their rules, we can already reach their bounds, see NBIFP.
+    //   runeToType ++= struct.headerRuneToType
+    //   runeToType ++= struct.membersRuneToType
+
+    // Now let's destructure the interface coord, and make a new coord with the struct to use as the overriding param
+    // coord rune instead.
 
     val selfOwnershipRune = SelfOwnershipRuneS()
     runeToType.put(selfOwnershipRune, OwnershipTemplataType())
-    val interfaceRune = AnonymousSubstructParentInterfaceTemplateRuneS()
-    runeToType.put(interfaceRune, KindTemplataType())
+    val interfaceKindRune = AnonymousSubstructParentInterfaceTemplateRuneS()
+    runeToType.put(interfaceKindRune, KindTemplataType())
     val selfKindRune = SelfKindRuneS()
     runeToType.put(selfKindRune, KindTemplataType())
-    val selfCoordRune = SelfRuneS()
+    val selfCoordRune = SelfCoordRuneS()
     runeToType.put(selfCoordRune, CoordTemplataType())
     val selfKindTemplateRune = SelfKindTemplateRuneS(struct.range.begin)
     runeToType.put(selfKindTemplateRune, structType)
-
-    val rules = new Accumulator[IRulexSR]()
-//    rules.addAll(methodOriginalRules)
-    rules.addAll(struct.headerRules.toIterable)
-    rules.addAll(struct.memberRules.toIterable)
 
     val abstractParamIndex =
       originalParams.indexWhere(param => {
@@ -431,14 +462,16 @@ class AnonymousInterfaceMacro(
     val abstractParamCoordRune =
       RuneUsage(
         abstractParamRange,
+        // This should be the same as one of the runes inherited above.
         inheritedMethodRune(interface, method, vassertSome(abstractParam.pattern.coordRune).rune)) // https://github.com/ValeLang/Vale/issues/370
+    runeToType.put(abstractParamCoordRune.rune, CoordTemplataType())
 
     val destructuringInterfaceRule =
       CoordComponentsSR(
         abstractParamRange,
         abstractParamCoordRune,
         RuneUsage(abstractParamRange, selfOwnershipRune),
-        RuneUsage(abstractParamRange, interfaceRune))
+        RuneUsage(abstractParamRange, interfaceKindRune))
 
     rules.add(destructuringInterfaceRule)
     val lookupStructTemplateRule =
@@ -506,9 +539,7 @@ class AnonymousInterfaceMacro(
       genericParams,
       runeToType.toMap,
       newParams,
-      maybeRetCoordRune.map({ case RuneUsage(range, retCoordRune) =>
-        RuneUsage(range, inheritedMethodRune(interface, method, retCoordRune))
-      }),
+      Some(inheritedReturnRune),
       rules.buildArray().toVector,
       CodeBodyS(
         BodySE(

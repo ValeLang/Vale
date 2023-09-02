@@ -18,6 +18,10 @@ case class IdT[+T <: INameT](
   initSteps: Vector[INameT],
   localName: T
 )  {
+  this match {
+    case _ =>
+  }
+
   // Placeholders should only be the last name, getPlaceholdersInKind assumes it
   initSteps.foreach({
     case KindPlaceholderNameT(_) => vfail()
@@ -195,6 +199,7 @@ case class RawArrayNameT(
   selfRegion: RegionT
 ) extends INameT
 
+// This num is really just here to disambiguate it from other reachable prototypes in the environment
 case class ReachablePrototypeNameT(num: Int) extends INameT
 
 case class StaticSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
@@ -363,36 +368,49 @@ case class ForwarderFunctionNameT(
 
 case class FunctionBoundTemplateNameT(
   humanName: StrI,
-  codeLocation: CodeLocationS
+  // Removed this because we want various function bounds from various places to merge
+  // together, see MFBFDP.
+  // codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
-  this match {
-    case FunctionBoundTemplateNameT(StrI("drop"),CodeLocationS(FileCoordinate(_,"opt.vale"), 67)) => {
-      vpass()
-    }
-    case _ =>
-  }
   vpass()
   override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplataT[ITemplataType]], params: Vector[CoordT]): FunctionBoundNameT = {
     interner.intern(FunctionBoundNameT(this, templateArgs, params))
   }
 }
 
+// We tried splitting this out into a ReachableFunctionNameT, so each function could
+// keep separate its direct instantiation bound params (e.g. where func drop(T)void on
+// the function itself) as opposed to its indirect instantiation bound params (ones
+// declared on the params' kind struct/interfaces' definitions).
+// See RFNTIOB for why we reverted that.
 case class FunctionBoundNameT(
   template: FunctionBoundTemplateNameT,
   templateArgs: Vector[ITemplataT[ITemplataType]],
   parameters: Vector[CoordT]
 ) extends IFunctionNameT
 
+// PredictedFunctionNameT and PredictedFunctionTemplateNameT are special names similar to
+// FunctionBoundNameT, they're temporary ones created during solving, to put into the result
+// runes. At the end of solving, just afterward, they're turned into actual FunctionBoundNameT
+// or resolved from the calling environment.
+case class PredictedFunctionTemplateNameT(
+    humanName: StrI
+) extends INameT with IFunctionTemplateNameT {
+  vpass()
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplataT[ITemplataType]], params: Vector[CoordT]): PredictedFunctionNameT = {
+    interner.intern(PredictedFunctionNameT(this, templateArgs, params))
+  }
+}
+case class PredictedFunctionNameT(
+    template: PredictedFunctionTemplateNameT,
+    templateArgs: Vector[ITemplataT[ITemplataType]],
+    parameters: Vector[CoordT]
+) extends IFunctionNameT
+
 case class FunctionTemplateNameT(
     humanName: StrI,
     codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
-  this match {
-    case FunctionTemplateNameT(StrI("drop"),CodeLocationS(FileCoordinate(_,"opt.vale"), 67)) => {
-      vpass()
-    }
-    case _ =>
-  }
   vpass()
   override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplataT[ITemplataType]], params: Vector[CoordT]): IFunctionNameT = {
     interner.intern(FunctionNameT(this, templateArgs, params))

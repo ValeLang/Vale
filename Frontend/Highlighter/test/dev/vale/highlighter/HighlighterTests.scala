@@ -14,7 +14,7 @@ class HighlighterTests extends FunSuite with Matchers {
   private def highlight(code: String): String = {
     val interner = new Interner()
     val keywords = new Keywords(interner)
-    val opts = GlobalOptions(true, true, true, true)
+    val opts = GlobalOptions(true, true, true, true, true)
     val codeMap = FileCoordinateMap.test(interner, Vector(code))
     ParseAndExplore.parseAndExploreAndCollect(
       interner,

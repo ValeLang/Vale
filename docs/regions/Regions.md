@@ -955,6 +955,30 @@ Perhaps we could do something like a region-specific solver, that just solves th
 If whatever we do is expensive, perhaps we can only do it when we detect that the function receives different regions (the outer regions are different, not talking about the `T` in `List<T>`) or the arguments are different.
 
 
+# Cell Uses Gen Refs to Write Back (CUGRWB)
+
+It would be bad if we move away a cell while someone has it open.
+
+Two solutions:
+
+ * Have a move() function that applies to any inline data.
+    * If we have this anyway, then we can do the bidirectional reference, which would be cool. Though, it would be an unfortunate performance hit.
+ * Bring the cell contents onto the stack, and use a generational reference to the cell to put it back.
+
+Let's talk about that second one.
+
+When we open/lock a cell, we'll set its "locked" to true. We'll move its contents onto the stack. On the stack, we'll have a generational reference that points back to the original cell.
+
+When we close/unlock the cell again, we read the generational reference (which makes sure the thing hasn't been moved away) and we also assert that the bit is still 1 (which makes sure that it still thinks it's locked, which it might not if it's been swapped with another cell.)
+
+So, we'll get the error when we try to put the contents back. Not quite as good as getting the error when we move it away, but it's still pretty solid.
+
+
+
+
+
+
+
 
 how do we deal with arrays?
 

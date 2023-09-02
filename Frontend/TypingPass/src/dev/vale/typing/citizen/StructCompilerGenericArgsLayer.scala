@@ -70,9 +70,9 @@ class StructCompilerGenericArgsLayer(
           Vector())
       inferCompiler.continue(envs, coutputs, solver) match {
         case Ok(()) =>
-        case Err(x) => return ResolveFailure(callRange, x)
+        case Err(x) => return ResolveFailure(callRange, ResolvingSolveFailedOrIncomplete(x))
       }
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+      val CompleteResolveSolve(inferences, runeToFunctionBound) =
         inferCompiler.checkResolvingConclusionsAndResolve(
           envs,
           coutputs,
@@ -94,7 +94,9 @@ class StructCompilerGenericArgsLayer(
       val structName = structTemplateName.makeStructName(interner, finalGenericArgs)
       val id = declaringEnv.id.addStep(structName)
 
-      coutputs.addInstantiationBounds(id, runeToFunctionBound)
+      coutputs.addInstantiationBounds(
+        opts.globalOptions.sanityCheck,
+        interner, originalCallingEnv.denizenTemplateId, id, runeToFunctionBound)
       val structTT = interner.intern(StructTT(id))
 
       ResolveSuccess(structTT)
@@ -265,7 +267,7 @@ class StructCompilerGenericArgsLayer(
       val contextRegion = RegionT()
 
       // This checks to make sure it's a valid use of this template.
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+      val CompleteResolveSolve(inferences, runeToFunctionBound) =
         inferCompiler.solveForResolving(
         InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
         coutputs,
@@ -274,9 +276,8 @@ class StructCompilerGenericArgsLayer(
           callRange,
         callLocation,
           initialKnowns,
-          Vector(),
-        Vector()) match {
-          case Ok(ccs @ CompleteCompilerSolve(_, _, _, _)) => ccs
+          Vector()) match {
+          case Ok(ccs) => ccs
           case Err(x) => return ResolveFailure(callRange, x)
         }
 
@@ -288,7 +289,9 @@ class StructCompilerGenericArgsLayer(
       val interfaceName = interfaceTemplateName.makeInterfaceName(interner, finalGenericArgs)
       val id = declaringEnv.id.addStep(interfaceName)
 
-      coutputs.addInstantiationBounds(id, runeToFunctionBound)
+      coutputs.addInstantiationBounds(
+        opts.globalOptions.sanityCheck,
+        interner, originalCallingEnv.denizenTemplateId, id, runeToFunctionBound)
       val interfaceTT = interner.intern(InterfaceTT(id))
 
       ResolveSuccess(interfaceTT)
@@ -343,12 +346,19 @@ class StructCompilerGenericArgsLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
-      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
-        inferCompiler.checkDefiningConclusionsAndResolve(
-          envs, coutputs, structA.range :: parentRanges, callLocation, allRuneToType, definitionRules, Vector(), solver) match {
-          case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
-          case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+      val inferences =
+        inferCompiler.interpretResults(allRuneToType, solver) match {
+          case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, e))
+          case Ok(conclusions) => conclusions
         }
+      val instantiationBoundArgsUNUSED =
+        inferCompiler.checkDefiningConclusionsAndResolve(
+          envs, coutputs, structA.range :: parentRanges, callLocation, definitionRules, Vector(), inferences) match {
+          case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(structA.range :: parentRanges, DefiningResolveConclusionError(f)))
+          case Ok(c) => c
+        }
+      // We don't care about these, we just wanted things to be added to the coutputs.
+      val _ = instantiationBoundArgsUNUSED
 
 
       structA.maybePredictedMutability match {
@@ -430,12 +440,19 @@ class StructCompilerGenericArgsLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below expectCompleteSolve
       }
-      val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
-        inferCompiler.checkDefiningConclusionsAndResolve(
-          envs, coutputs, interfaceA.range :: parentRanges, callLocation, interfaceA.runeToType, definitionRules, Vector(), solver) match {
-          case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
-          case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+      val inferences =
+        inferCompiler.interpretResults(interfaceA.runeToType, solver) match {
+          case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, e))
+          case Ok(conclusions) => conclusions
         }
+      val instantiationBoundArgsUNUSED =
+        inferCompiler.checkDefiningConclusionsAndResolve(
+          envs, coutputs, interfaceA.range :: parentRanges, callLocation, definitionRules, Vector(), inferences) match {
+          case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(interfaceA.range :: parentRanges, DefiningResolveConclusionError(f)))
+          case Ok(c) => c
+        }
+      // We don't care about these, we just wanted things to be added to the coutputs.
+      val _ = instantiationBoundArgsUNUSED
 
       interfaceA.maybePredictedMutability match {
         case None => {

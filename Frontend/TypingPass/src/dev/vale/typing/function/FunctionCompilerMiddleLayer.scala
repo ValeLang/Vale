@@ -5,11 +5,11 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns._
 import dev.vale.typing.{AbstractMethodOutsideOpenInterface, CompileErrorExceptionT, CompilerOutputs, ConvertHelper, FunctionAlreadyExists, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast, env}
-import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionDefinitionT, ParameterT, PrototypeT, SealedT, SignatureT}
+import dev.vale.typing.ast._
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT, ExpressionLookupContext, FunctionEnvironmentT, IInDenizenEnvironmentT, TemplataLookupContext}
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{AnonymousSubstructConstructorNameT, IdT, IFunctionNameT, IFunctionTemplateNameT, NameTranslator, TypingIgnoredParamNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.templata.CoordTemplataT
 import dev.vale.typing.types._
 import dev.vale.typing.types._
@@ -117,8 +117,9 @@ class FunctionCompilerMiddleLayer(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
-    function1: FunctionA):
-  (PrototypeTemplataT) = {
+    function1: FunctionA,
+    instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT]):
+  (PrototypeTemplataT[IFunctionNameT]) = {
     // Check preconditions
     function1.runeToType.keySet.foreach(templateParam => {
       vassert(runedEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(templateParam)), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
@@ -131,16 +132,16 @@ class FunctionCompilerMiddleLayer(
     val banner = ast.FunctionBannerT(Some(namedEnv.templata), namedEnv.id)//, params2)
 
     coutputs.lookupFunction(SignatureT(banner.name)) match {
-      case Some(FunctionDefinitionT(header, _, _, _)) => {
-        PrototypeTemplataT(function1.range, header.toPrototype)
+      case Some(FunctionDefinitionT(header, _, _)) => {
+        PrototypeTemplataT(header.toPrototype)
       }
       case None => {
         coutputs.declareFunction(callRange, namedEnv.id)
         coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
-        coutputs.declareFunctionInnerEnv(namedEnv.id, runedEnv)
+        coutputs.declareFunctionInnerEnv(namedEnv.id, namedEnv)
 
         val header =
-          core.evaluateFunctionForHeader(namedEnv, coutputs, callRange, callLocation, params2)
+          core.evaluateFunctionForHeader(namedEnv, coutputs, callRange, callLocation, params2, instantiationBoundParams)
         if (!header.toBanner.same(banner)) {
           val bannerFromHeader = header.toBanner
           vfail("wut\n" + bannerFromHeader + "\n" + banner)
@@ -148,7 +149,7 @@ class FunctionCompilerMiddleLayer(
 
         //        delegate.evaluateParent(namedEnv, coutputs, callRange, header)
 
-        PrototypeTemplataT(function1.range, header.toPrototype)
+        PrototypeTemplataT(header.toPrototype)
       }
     }
   }
@@ -163,7 +164,8 @@ class FunctionCompilerMiddleLayer(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
-    function1: FunctionA):
+    function1: FunctionA,
+    instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT]):
   (FunctionHeaderT) = {
 
     // Check preconditions
@@ -181,24 +183,25 @@ class FunctionCompilerMiddleLayer(
     val functionId = assembleName(runedEnv.id, runedEnv.templateArgs, paramTypes2)
     val needleSignature = SignatureT(functionId)
     coutputs.lookupFunction(needleSignature) match {
-      case Some(FunctionDefinitionT(header, _, _, _)) => {
+      case Some(FunctionDefinitionT(header, _, _)) => {
         (header)
       }
       case None => {
         coutputs.declareFunction(callRange, functionId)
         coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
-        coutputs.declareFunctionInnerEnv(functionId, runedEnv)
 
         val params2 = assembleFunctionParams(runedEnv, coutputs, callRange, function1.params)
 
         val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune.map(_.rune))
         val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
 
-//        coutputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
+        coutputs.declareFunctionInnerEnv(functionId, namedEnv)
+
+        //        coutputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
 
         val header =
           core.evaluateFunctionForHeader(
-            namedEnv, coutputs, callRange, callLocation, params2)
+            namedEnv, coutputs, callRange, callLocation, params2, instantiationBoundParams)
         vassert(header.toSignature == needleSignature)
         (header)
       }
@@ -354,7 +357,7 @@ class FunctionCompilerMiddleLayer(
     coutputs: CompilerOutputs,
     callRange: List[RangeS],
     function1: FunctionA):
-  (PrototypeT) = {
+  (PrototypeT[IFunctionNameT]) = {
 
     // Check preconditions
     function1.runeToType.keySet.foreach(templateParam => {

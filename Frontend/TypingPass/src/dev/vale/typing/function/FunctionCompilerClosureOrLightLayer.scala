@@ -89,7 +89,7 @@ class FunctionCompilerClosureOrLightLayer(
     contextRegion: RegionT,
       argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
-    val (variables, entries) = makeClosureVariablesAndEntries(coutputs, closureStructRef)
+    val (variables, entries) = makeClosureVariablesAndEntries(coutputs, callingEnv.denizenTemplateId, closureStructRef)
     val name = parentEnv.id.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
 //    coutputs.declareType(name)
     val outerEnv =
@@ -119,7 +119,7 @@ class FunctionCompilerClosureOrLightLayer(
     contextRegion: RegionT,
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
-    val (variables, entries) = makeClosureVariablesAndEntries(coutputs, closureStructRef)
+    val (variables, entries) = makeClosureVariablesAndEntries(coutputs, callingEnv.denizenTemplateId, closureStructRef)
     val name = outerEnv.id.addStep(nameTranslator.translateGenericTemplateFunctionName(function.name, argTypes))
     val newEnv =
       env.BuildingFunctionEnvironmentWithClosuredsT(
@@ -163,7 +163,7 @@ class FunctionCompilerClosureOrLightLayer(
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[Option[CoordT]]):
-  (IEvaluateFunctionResult) = {
+  (IResolveFunctionResult) = {
     checkNotClosure(function);
 
     val outerEnvId = parentEnv.id.addStep(nameTranslator.translateGenericFunctionName(function.name))
@@ -180,7 +180,7 @@ class FunctionCompilerClosureOrLightLayer(
     callLocation: LocationInDenizen,
     function: FunctionA,
     args: Vector[Option[CoordT]]):
-  IEvaluateFunctionResult = {
+  IDefineFunctionResult = {
     checkNotClosure(function);
     val outerEnvId = parentEnv.id.addStep(nameTranslator.translateGenericFunctionName(function.name))
     val outerEnv = makeEnvWithoutClosureStuff(parentEnv, function, outerEnvId, true)
@@ -436,12 +436,17 @@ class FunctionCompilerClosureOrLightLayer(
     }
   }
 
-  private def makeClosureVariablesAndEntries(coutputs: CompilerOutputs, closureStructRef: StructTT):
+  private def makeClosureVariablesAndEntries(
+      coutputs: CompilerOutputs,
+      originalCallingDenizenId: IdT[ITemplateNameT],
+      closureStructRef: StructTT):
   (Vector[IVariableT], Vector[(INameT, IEnvEntry)]) = {
     val closureStructDef = coutputs.lookupStruct(closureStructRef.id);
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
+        opts.globalOptions.sanityCheck,
         interner, keywords,
+        originalCallingDenizenId,
         closureStructRef.id,
         // This is a parameter, so we can grab bounds from it.
         InheritBoundsFromTypeItself)

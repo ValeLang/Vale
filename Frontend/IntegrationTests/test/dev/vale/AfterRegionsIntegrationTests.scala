@@ -22,9 +22,6 @@ import org.scalatest._
 class AfterRegionsIntegrationTests extends FunSuite with Matchers {
 
   test("TODO") {
-    // see MSBAMFI
-    vimpl()
-
     // only look at function bounds from the caller's environment, dont get any actual functions
     // from there. we can get actual functions from the type's environment, however.
     vimpl()

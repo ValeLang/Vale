@@ -20,7 +20,7 @@ class BuildAction extends HttpFunction {
       Options(
         Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD(interner, keywords), "in.vale", code)),
         Some(""),
-        false, false, true, false, true, None, false, true, true, true)
+        false, false, true, false, true, None, false, true, true, true, true)
     val json =
       PassManager.build(interner, keywords, options) match {
         case Ok(Some(programH)) => jsonifyProgram(vimpl(), programH)

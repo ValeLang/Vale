@@ -267,6 +267,23 @@ case class OverrideDispatcherCaseNameI[+R <: IRegionsModeI](
   override def templateArgs: Vector[ITemplataI[R]] = independentImplTemplateArgs
 }
 
+case class CaseFunctionFromImplNameI[+R <: IRegionsModeI](
+    template: CaseFunctionFromImplTemplateNameI[R],
+    // This will have placeholders in it after the typing pass.
+    templateArgs: Vector[ITemplataI[R]],
+    parameters: Vector[CoordI[R]]
+) extends IFunctionNameI[R] {
+  vpass()
+}
+
+case class CaseFunctionFromImplTemplateNameI[+R <: IRegionsModeI](
+    humanName: StrI,
+    runeInImpl: IRuneS,
+    runeInCitizen: IRuneS
+) extends IFunctionTemplateNameI[R] {
+  vpass()
+}
+
 sealed trait IVarNameI[+R <: IRegionsModeI] extends INameI[R]
 case class TypingPassBlockResultVarNameI[+R <: IRegionsModeI](life: LocationInFunctionEnvironmentI) extends IVarNameI[R]
 case class TypingPassFunctionResultVarNameI[+R <: IRegionsModeI]() extends IVarNameI[R]
@@ -334,7 +351,8 @@ case class ForwarderFunctionNameI[+R <: IRegionsModeI](
 
 case class FunctionBoundTemplateNameI[+R <: IRegionsModeI](
   humanName: StrI,
-  codeLocation: CodeLocationS
+  // We used to have a CodeLocation here, but took it out because we want to merge duplicate bounds, see MFBFDP.
+  //   codeLocation: CodeLocationS
 ) extends INameI[R] with IFunctionTemplateNameI[R] {
 //  override def makeFunctionName(keywords: Keywords, templateArgs: Vector[ITemplataI[R]], params: Vector[CoordI]): FunctionBoundNameI = {
 //    interner.intern(FunctionBoundNameI(this, templateArgs, params))
@@ -345,6 +363,16 @@ case class FunctionBoundNameI[+R <: IRegionsModeI](
   template: FunctionBoundTemplateNameI[R],
   templateArgs: Vector[ITemplataI[R]],
   parameters: Vector[CoordI[R]]
+) extends IFunctionNameI[R]
+
+case class ReachableFunctionTemplateNameI[+R <: IRegionsModeI](
+    humanName: StrI
+) extends INameI[R] with IFunctionTemplateNameI[R]
+
+case class ReachableFunctionNameI[+R <: IRegionsModeI](
+    template: ReachableFunctionTemplateNameI[R],
+    templateArgs: Vector[ITemplataI[R]],
+    parameters: Vector[CoordI[R]]
 ) extends IFunctionNameI[R]
 
 case class FunctionTemplateNameI[+R <: IRegionsModeI](

@@ -308,6 +308,30 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
+  test("Integer is compatible with interface anonymous substruct") {
+    // We had a bug where the forwarder function was trying to solve the interface rules.
+    // But the forwarder function is just:
+    //   struct Forwarder<R, P1, Lam>
+    //   where func __call(Lam, P1)R
+    //   { }
+    //   func forwarder:__call<R, P1, Lam>(&Forwarder<R, P1, Lam>, P1)R { }
+    // and doesn't ever mention the interface.
+    // We would just take out any mention of the interface, but it's hard to inherit everything but the interface.
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.drop.*;
+        |interface AFunction2<R Ref, P1 Ref> {
+        |  func doCall(virtual this &AFunction2<R, P1>, a P1) R;
+        |}
+        |func __call(x6 int, x42 int)str { "hi" }
+        |exported func main() str {
+        |  func = AFunction2<str, int>(6);
+        |  return func.doCall(42);
+        |}
+    """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
   test("Lambda is compatible with interface anonymous substruct") {
     val compile = CompilerTestCompilation.test(
       """
@@ -364,3 +388,4 @@ class CompilerVirtualTests extends FunSuite with Matchers {
   }
 
 }
+

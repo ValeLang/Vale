@@ -35,13 +35,16 @@ object vcheck {
 // A condition that reflects a programmer error.
 object vassert {
   @elidable(elidable.OFF)
-  def apply(condition: => Boolean): Unit = {
+  def apply(condition: => Boolean): Boolean = {
     vassert(condition, "Assertion failed!")
   }
   @elidable(elidable.OFF)
-  def apply(condition: => Boolean, message: => String): Unit = {
+  def apply(condition: => Boolean, message: => String): Boolean = {
     if (!condition) {
       vfail(message)
+      true
+    } else {
+      false
     }
   }
 }

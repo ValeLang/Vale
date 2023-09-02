@@ -101,11 +101,12 @@ class VirtualTests extends FunSuite with Matchers {
   test("Owning interface") {
     val compile = RunCompilation.test(
       """
+        |import v.builtins.opt.*;
         |exported func main() int {
         |  x Opt<int> = Some(7);
         |  return 7;
         |}
-        |""".stripMargin)
+        |""".stripMargin, false)
     compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
@@ -261,6 +262,93 @@ class VirtualTests extends FunSuite with Matchers {
           |func collectHeaders2(header &List<&Header>, this &Header) { }
         """.stripMargin)
     val coutputs = compile.getHamuts()
+  }
+
+  test("Feeding instantiation bounds for something created in same function") {
+    val compile = RunCompilation.test(
+      """
+        |#!DeriveStructDrop
+        |struct Spork<T Ref, Y>
+        |where func splork(Y)void {
+        |  lam Y;
+        |}
+        |
+        |func bork<T, Y>(
+        |  self &Spork<T, Y> // It had trouble here finding the bound for splork
+        |) { }
+        |
+        |func splork(x int) {}
+        |
+        |exported func main() int {
+        |  f = Spork<int>(42);
+        |  f.bork(); // We should be feeding in Spork's instantiation bounds here for the params' reachables?
+        |  [z] = f;
+        |  return z;
+        |}
+  """.stripMargin)
+    compile.evalForKind(Vector())
+  }
+
+  test("Generic interface forwarder with bound") {
+    val compile = RunCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |sealed interface Bork<T Ref>
+        |where func threeify(T)T {
+        |  func bork(virtual self &Bork<T>) int;
+        |}
+        |
+        |#!DeriveStructDrop
+        |struct BorkForwarder<T Ref, Lam>
+        |where func drop(Lam)void, func __call(&Lam)T, func threeify(T)T {
+        |  lam Lam;
+        |}
+        |
+        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
+        |
+        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
+        |  return (self.lam)().threeify();
+        |}
+        |
+        |func threeify(x int) int { 3 }
+        |
+        |exported func main() int {
+        |  f = BorkForwarder<int>({ 7 });
+        |  z = f.bork();
+        |  [_] = f;
+        |  return z;
+        |}
+    """.stripMargin)
+    compile.evalForKind(Vector())
+  }
+
+  test("Generic interface forwarder with drop bound") {
+    val compile = RunCompilation.test(
+      """
+        |sealed interface Bork<T Ref>
+        |where func threeify(T)T {
+        |  func bork(virtual self &Bork<T>) int;
+        |}
+        |
+        |struct BorkForwarder<T Ref, Lam>
+        |where func drop(Lam)void, func __call(&Lam)T, func threeify(T)T {
+        |  lam Lam;
+        |}
+        |
+        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
+        |
+        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
+        |  return (self.lam)().threeify();
+        |}
+        |
+        |func threeify(x int) int { 3 }
+        |
+        |exported func main() int {
+        |  f = BorkForwarder<int>({ 7 });
+        |  return f.bork();
+        |}
+  """.stripMargin)
+    compile.evalForKind(Vector())
   }
 
   test("Open interface constructor") {

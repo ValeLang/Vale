@@ -8,7 +8,7 @@ import dev.vale.postparsing.patterns._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.postparsing.{IEnvironmentS => _, _}
-import dev.vale.typing.OverloadResolver.InferFailure
+import dev.vale.typing.OverloadResolver._
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
@@ -71,8 +71,8 @@ class FunctionCompilerSolvingLayer(
             function.rules, function.genericParameters, explicitTemplateArgs.size)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
-      inferCompiler.solveForResolving(
+    val CompleteDefineSolve(inferredTemplatas, instantiationBoundParams) =
+      inferCompiler.solveForDefining(
         InferEnv(originalCallingEnv, callRange, callLocation, outerEnv, contextRegion),
         coutputs,
         callSiteRules,
@@ -83,7 +83,7 @@ class FunctionCompilerSolvingLayer(
         initialSends,
         Vector()
       ) match {
-        case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
+        case Err(e) => throw CompileErrorExceptionT(TypingPassDefiningError(callRange, e))
         case Ok(i) => (i)
       }
 
@@ -92,14 +92,28 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        reachableBounds)
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
-        outerEnv, runedEnv, coutputs, callRange, callLocation, function)
+        outerEnv, runedEnv, coutputs, callRange, callLocation, function, instantiationBoundParams)
 
-    coutputs.addInstantiationBounds(header.toPrototype.id, runeToFunctionBound)
-    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, header.toPrototype), inferredTemplatas)
+    // Lambdas cant have bounds, right?
+    vcurious(instantiationBoundParams.runeToBoundPrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToCitizenRuneToReachablePrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToBoundImpl.isEmpty)
+    val instantiationBoundArgs =
+      InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT](
+        instantiationBoundParams.runeToBoundPrototype,
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.map({ case (x, InstantiationReachableBoundArgumentsT(y)) =>
+          x -> InstantiationReachableBoundArgumentsT[IFunctionNameT](y)
+        }),
+        instantiationBoundParams.runeToBoundImpl)
+    coutputs.addInstantiationBounds(
+      opts.globalOptions.sanityCheck,
+      interner, outerEnv.denizenTemplateId,
+      header.id, instantiationBoundArgs)
+    EvaluateFunctionSuccess(PrototypeTemplataT(header.toPrototype), inferredTemplatas, instantiationBoundArgs)
   }
 
   // Preconditions:
@@ -125,7 +139,7 @@ class FunctionCompilerSolvingLayer(
             function.rules, function.genericParameters, 0)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) = {
+    val CompleteDefineSolve(inferredTemplatas, instantiationBoundParams) = {
       // We could probably just solveForResolving (see DBDAR) but seems more future-proof to solveForDefining.
       inferCompiler.solveForDefining(
         InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
@@ -138,7 +152,7 @@ class FunctionCompilerSolvingLayer(
         initialSends,
         Vector()
       ) match {
-        case Err(e) => return EvaluateFunctionFailure(InferFailure(e))
+        case Err(e) => return EvaluateFunctionFailure(e)
         case Ok(i) => (i)
       }
     }
@@ -148,15 +162,28 @@ class FunctionCompilerSolvingLayer(
         declaringEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        reachableBounds)
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
-        declaringEnv, runedEnv, coutputs, callRange, callLocation, function)
+        declaringEnv, runedEnv, coutputs, callRange, callLocation, function, instantiationBoundParams)
 
-    coutputs.addInstantiationBounds(prototype.prototype.id, runeToFunctionBound)
-
-    EvaluateFunctionSuccess(prototype, inferredTemplatas)
+    // Lambdas cant have bounds, right?
+    vcurious(instantiationBoundParams.runeToBoundPrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToCitizenRuneToReachablePrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToBoundImpl.isEmpty)
+    val instantiationBoundArgs =
+      InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT](
+        instantiationBoundParams.runeToBoundPrototype,
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.map({ case (x, InstantiationReachableBoundArgumentsT(y)) =>
+          x -> InstantiationReachableBoundArgumentsT[IFunctionNameT](y)
+        }),
+        instantiationBoundParams.runeToBoundImpl)
+    coutputs.addInstantiationBounds(
+      opts.globalOptions.sanityCheck,
+      interner, originalCallingEnv.denizenTemplateId,
+      prototype.prototype.id, instantiationBoundArgs)
+    EvaluateFunctionSuccess(prototype, inferredTemplatas, instantiationBoundArgs)
   }
 
   // This is called while we're trying to figure out what functionSs to call when there
@@ -186,7 +213,7 @@ class FunctionCompilerSolvingLayer(
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
+    val CompleteDefineSolve(inferences, instantiationBoundParams) =
     // We could probably just solveForResolving (see DBDAR) but seems more future-proof to solveForDefining.
       inferCompiler.solveForDefining(
         InferEnv(originalCallingEnv, callRange, callLocation, nearEnv, contextRegion),
@@ -198,7 +225,7 @@ class FunctionCompilerSolvingLayer(
         initialKnowns,
         initialSends,
         Vector()) match {
-      case Err(e) => return EvaluateFunctionFailure(InferFailure(e))
+      case Err(e) => return EvaluateFunctionFailure(e)
       case Ok(inferredTemplatas) => inferredTemplatas
     }
 
@@ -208,14 +235,28 @@ class FunctionCompilerSolvingLayer(
         nearEnv,
         function.genericParameters.map(_.rune.rune),
         inferences,
-        reachableBounds)
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototypeTemplata =
       middleLayer.getOrEvaluateTemplatedFunctionForBanner(
-        nearEnv, runedEnv, coutputs, callRange, callLocation, function)
+        nearEnv, runedEnv, coutputs, callRange, callLocation, function, instantiationBoundParams)
 
-    coutputs.addInstantiationBounds(prototypeTemplata.prototype.id, runeToFunctionBound)
-    EvaluateFunctionSuccess(prototypeTemplata, inferences)
+    // Lambdas cant have bounds, right?
+    vcurious(instantiationBoundParams.runeToBoundPrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToCitizenRuneToReachablePrototype.isEmpty)
+    vcurious(instantiationBoundParams.runeToBoundImpl.isEmpty)
+    val instantiationBoundArgs =
+      InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT](
+        instantiationBoundParams.runeToBoundPrototype,
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.map({ case (x, InstantiationReachableBoundArgumentsT(y)) =>
+          x -> InstantiationReachableBoundArgumentsT[IFunctionNameT](y)
+        }),
+        instantiationBoundParams.runeToBoundImpl)
+    coutputs.addInstantiationBounds(
+      opts.globalOptions.sanityCheck,
+      interner, originalCallingEnv.denizenTemplateId,
+      prototypeTemplata.prototype.id, instantiationBoundArgs)
+    EvaluateFunctionSuccess(prototypeTemplata, inferences, instantiationBoundArgs)
   }
 
   private def assembleKnownTemplatas(
@@ -249,7 +290,7 @@ class FunctionCompilerSolvingLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     identifyingRunes: Vector[IRuneS],
     templatasByRune: Map[IRuneS, ITemplataT[ITemplataType]],
-    reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplataT]
+    reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplataT[IFunctionNameT]]
     // I suspect we'll eventually need some impl bounds here
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT = {
     val BuildingFunctionEnvironmentWithClosuredsT(globalEnv, parentEnv, id, templatas, function, variables, isRootCompilingDenizen) = nearEnv
@@ -294,7 +335,7 @@ class FunctionCompilerSolvingLayer(
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[Option[CoordT]]):
-  (IEvaluateFunctionResult) = {
+  (IResolveFunctionResult) = {
     val function = outerEnv.function
     // Check preconditions
     checkClosureConcernsHandled(outerEnv)
@@ -311,7 +352,8 @@ class FunctionCompilerSolvingLayer(
     val runeToType = function.runeToType
     val invocationRange = callRange
     val initialKnowns = assembleKnownTemplatas(function, explicitTemplateArgs)
-    val includeReachableBoundsForRunes = Vector()
+    val includeReachableBoundsForRunes =
+      function.params.flatMap(_.pattern.coordRune.map(_.rune)) ++ function.maybeRetCoordRune.map(_.rune)
 
     val solver =
       inferCompiler.makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
@@ -348,16 +390,24 @@ class FunctionCompilerSolvingLayer(
           }
         }
       }) match {
-      case Err(f@FailedCompilerSolve(_, _, err)) => {
-        return (EvaluateFunctionFailure(InferFailure(f)))
+      case Err(f@FailedCompilerSolve(_, _, _)) => {
+        return (ResolveFunctionFailure(ResolvingSolveFailedOrIncomplete(f)))
       }
       case Ok(true) =>
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
     }
 
-    val CompleteCompilerSolve(_, inferredTemplatas, runeToFunctionBound, reachableBounds) =
-      inferCompiler.checkResolvingConclusionsAndResolve(envs, coutputs, invocationRange, callLocation, runeToType, rules, includeReachableBoundsForRunes, solver) match {
-        case Err(e) => return (EvaluateFunctionFailure(InferFailure(e)))
+    outerEnv.id match {
+      case IdT(_,Vector(),FunctionTemplateNameT(StrI("Bork"),_)) => {
+        vpass()
+      }
+      case _ =>
+    }
+
+    val CompleteResolveSolve(inferredTemplatas, runeToFunctionBound) =
+      inferCompiler.checkResolvingConclusionsAndResolve(
+        envs, coutputs, invocationRange, callLocation, runeToType, rules, includeReachableBoundsForRunes, solver) match {
+        case Err(e) => return (ResolveFunctionFailure(e))
         case Ok(i) => (i)
       }
 
@@ -366,15 +416,18 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
-        reachableBounds)
+        runeToFunctionBound.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
       middleLayer.getGenericFunctionPrototypeFromCall(
         runedEnv, coutputs, callRange, function)
 
-    coutputs.addInstantiationBounds(prototype.id, runeToFunctionBound)
+    coutputs.addInstantiationBounds(
+      opts.globalOptions.sanityCheck,
+      interner, callingEnv.rootCompilingDenizenEnv.denizenTemplateId,
+      prototype.id, runeToFunctionBound)
 
-    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, prototype), inferredTemplatas)
+    ResolveFunctionSuccess(PrototypeTemplataT(prototype), inferredTemplatas)
   }
 
   def evaluateGenericVirtualDispatcherFunctionForPrototype(
@@ -385,7 +438,7 @@ class FunctionCompilerSolvingLayer(
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
     args: Vector[Option[CoordT]]):
-  IEvaluateFunctionResult = {
+  IDefineFunctionResult = {
     val function = nearEnv.function
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
@@ -446,7 +499,7 @@ class FunctionCompilerSolvingLayer(
     // Now that we have placeholders, let's do the rest of the solve, so we can get a full
     // prototype out of it.
 
-    val CompleteCompilerSolve(_, inferences, runeToFunctionBound, reachableBounds) =
+    val CompleteDefineSolve(inferences, instantiationBoundParams) =
       inferCompiler.solveForDefining(
         InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT()),
         coutputs,
@@ -456,16 +509,16 @@ class FunctionCompilerSolvingLayer(
         callLocation,
         placeholderInitialKnownsFromFunction,
         Vector(),
-        function.params.flatMap(_.pattern.coordRune.map(_.rune))) match {
-        case Err(f) => throw CompileErrorExceptionT(TypingPassSolverError(function.range :: callRange, f))
-        case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+        function.params.flatMap(_.pattern.coordRune.map(_.rune)) ++ function.maybeRetCoordRune.map(_.rune)) match {
+        case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(function.range :: callRange, f))
+        case Ok(c) => c
       }
     val runedEnv =
       addRunedDataToNearEnv(
         nearEnv,
         function.genericParameters.map(_.rune.rune),
         inferences,
-        reachableBounds)
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
       middleLayer.getGenericFunctionPrototypeFromCall(
@@ -473,7 +526,7 @@ class FunctionCompilerSolvingLayer(
 
     // Usually when we call a function, we add instantiation bounds. However, we're
     // not calling a function here, we're defining it.
-    EvaluateFunctionSuccess(PrototypeTemplataT(function.range, prototype), inferences)
+    DefineFunctionSuccess(PrototypeTemplataT(prototype), inferences, instantiationBoundParams)
   }
 
   // Preconditions:
@@ -496,8 +549,8 @@ class FunctionCompilerSolvingLayer(
     val definitionRules = function.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
 
     // This is so we can automatically grab the bounds from parameters and returns, see NBIFP.
-    val paramRunes =
-      function.params.flatMap(_.pattern.coordRune.map(_.rune)).distinct.toVector
+    val paramAndReturnRunes =
+      (function.params.flatMap(_.pattern.coordRune.map(_.rune)) ++ function.maybeRetCoordRune.map(_.rune)).distinct.toVector
 
     val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv, RegionT())
     val solver =
@@ -528,20 +581,34 @@ class FunctionCompilerSolvingLayer(
         case Ok(true) =>
         case Ok(false) => // Incomplete, will be detected in the below checkDefiningConclusionsAndResolve
       }
-    val CompleteCompilerSolve(_, inferences, _, reachableBoundsFromParamsAndReturn) =
+    val inferences =
+      inferCompiler.interpretResults(function.runeToType, solver) match {
+        case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: parentRanges, e))
+        case Ok(conclusions) => conclusions
+      }
+
+    nearEnv.id match {
+      case IdT(_,Vector(),FunctionTemplateNameT(StrI("Bork"),_)) => {
+        vpass()
+      }
+      case _ =>
+    }
+
+    val instantiationBoundParams =
       inferCompiler.checkDefiningConclusionsAndResolve(
-        envs, coutputs, range, callLocation, function.runeToType, definitionRules, paramRunes, solver) match {
-        case Err(f) => throw CompileErrorExceptionT(typing.TypingPassSolverError(range, f))
-        case Ok(c@CompleteCompilerSolve(_, _, _, _)) => c
+        envs, coutputs, range, callLocation, definitionRules, paramAndReturnRunes, inferences) match {
+        case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(range, DefiningResolveConclusionError(f)))
+        case Ok(c) => c
       }
 
     val runedEnv =
       addRunedDataToNearEnv(
-        nearEnv, function.genericParameters.map(_.rune.rune), inferences, reachableBoundsFromParamsAndReturn)
+        nearEnv, function.genericParameters.map(_.rune.rune), inferences,
+        instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val header =
       middleLayer.getOrEvaluateFunctionForHeader(
-        nearEnv, runedEnv, coutputs, parentRanges, callLocation, function)
+        nearEnv, runedEnv, coutputs, parentRanges, callLocation, function, instantiationBoundParams)
 
     // We don't add these here because we aren't instantiating anything here, we're compiling a
     // function

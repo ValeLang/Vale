@@ -476,11 +476,18 @@ class FunctionScout(
 
     val totalParamsS = maybeClosureParam.toVector ++ explicitParamsS ++ magicParams;
 
+    vregionmut() // Put back in regions
     val genericParametersS =
-      extraGenericParamsFromParentS ++
+      (extraGenericParamsFromParentS ++
         functionUserSpecifiedGenericParametersS ++
-        extraGenericParamsFromBodyS// ++
-        vregionmut() // Put back in regions
+        extraGenericParamsFromBodyS)
+          .filter({
+            case GenericParameterS(_, _, RegionGenericParameterTypeS(_), _) => false
+            case _ => true
+          })
+
+    // ++
+
         //maybeRegionGenericParam
         //++ userSpecifiedRunesImplicitRegionRunesS
 
@@ -529,6 +536,11 @@ class FunctionScout(
         userSpecifiedIdentifyingRunes.map(_.rune),
         runeToExplicitType,
         rulesArray)
+          .filter({
+            case (key, RegionTemplataType()) => false
+            case _ => true
+          })
+    vregionmut() // dont filter regions out
 
     postParser.checkIdentifiability(
       rangeS,

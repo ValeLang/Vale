@@ -36,3 +36,4 @@ exported func main() int {
   forEach(&list, { print(_); });
   return 0;
 }
+

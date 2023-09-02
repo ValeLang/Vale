@@ -63,7 +63,7 @@ case class IsaFailed(sub: KindT, suuper: KindT) extends ITypingPassSolverError
 case class WrongNumberOfTemplateArgs(expectedMinNumArgs: Int, expectedMaxNumArgs: Int) extends ITypingPassSolverError
 case class FunctionDoesntHaveName(range: List[RangeS], name: IFunctionNameT) extends ITypingPassSolverError
 case class CantGetComponentsOfPlaceholderPrototype(range: List[RangeS]) extends ITypingPassSolverError
-case class ReturnTypeConflict(range: List[RangeS], expectedReturnType: CoordT, actual: PrototypeT) extends ITypingPassSolverError
+case class ReturnTypeConflict(range: List[RangeS], expectedReturnType: CoordT, actual: PrototypeT[IFunctionNameT]) extends ITypingPassSolverError
 
 trait IInfererDelegate {
 //  def lookupMemberTypes(
@@ -154,7 +154,7 @@ trait IInfererDelegate {
     name: StrI,
     paramCoords: Vector[CoordT],
     returnCoord: CoordT):
-  PrototypeTemplataT
+  PrototypeTemplataT[IFunctionNameT]
 
   def assemblePrototype(
     env: InferEnv,
@@ -163,7 +163,7 @@ trait IInfererDelegate {
     name: StrI,
     coords: Vector[CoordT],
     returnType: CoordT):
-  PrototypeT
+  PrototypeT[IFunctionNameT]
 
   def assembleImpl(
     env: InferEnv,
@@ -595,7 +595,7 @@ class CompilerRuleSolver(
         }
       }
       case PrototypeComponentsSR(range, resultRune, ownershipRune, kindRune) => {
-        val PrototypeTemplataT(_, prototype) = vassertSome(stepState.getConclusion(resultRune.rune))
+        val PrototypeTemplataT(prototype) = vassertSome(stepState.getConclusion(resultRune.rune))
         stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, ownershipRune.rune, CoordListTemplataT(prototype.paramTypes))
         stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, kindRune.rune, CoordTemplataT(prototype.returnType))
         Ok(())
@@ -619,7 +619,7 @@ class CompilerRuleSolver(
         // its return matches.
 
         vassertSome(stepState.getConclusion(prototypeRune.rune)) match {
-          case PrototypeTemplataT(range, prototype) => {
+          case PrototypeTemplataT(prototype) => {
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges,
               paramListRune.rune, CoordListTemplataT(prototype.paramTypes))
             stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges,
@@ -645,7 +645,7 @@ class CompilerRuleSolver(
           delegate.assemblePrototype(env, state, range, name, paramCoords, returnType)
 
         stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges,
-          resultRune.rune, PrototypeTemplataT(range, newPrototype))
+          resultRune.rune, PrototypeTemplataT(newPrototype))
         Ok(())
       }
       case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) => {
@@ -870,9 +870,6 @@ class CompilerRuleSolver(
 
             val innerKind = outerKind
 
-//            val innerCoord = CoordT(innerOwnership, innerRegion, innerKind)
-            // DO NOT SUBMIT
-            // trying out outerRegion here to see if it passes
             val innerCoord = CoordT(innerOwnership, outerRegion, innerKind)
 
             stepState.concludeRune[ITypingPassSolverError](

@@ -1,12 +1,12 @@
 package dev.vale.typing
 
-import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
+import dev.vale.postparsing._
 import dev.vale.typing.ast._
-import dev.vale.typing.env.{CitizenEnvironmentT, FunctionEnvironmentT, IInDenizenEnvironmentT}
+import dev.vale.typing.env._
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names._
 import dev.vale.typing.types._
-import dev.vale.{CodeLocationS, Collector, FileCoordinate, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vpass, vwat}
+import dev.vale._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._
 import dev.vale.typing.types.InterfaceTT
@@ -16,7 +16,7 @@ import scala.collection.mutable
 
 
 case class DeferredEvaluatingFunctionBody(
-  prototypeT: PrototypeT,
+  prototypeT: PrototypeT[IFunctionNameT],
   call: (CompilerOutputs) => Unit)
 
 case class DeferredEvaluatingFunction(
@@ -85,8 +85,8 @@ case class CompilerOutputs() {
   // This map is how we remember it.
   // Here, we'd remember: [drop<int>(Opt<int>), [Rune1337, drop(int)]].
   // We also do this for structs and interfaces too.
-  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT] =
-    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT]()
+  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] =
+    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]]()
 
 //  // Only ArrayCompiler can make an RawArrayT2.
 //  private val staticSizedArrayTypes:
@@ -97,8 +97,8 @@ case class CompilerOutputs() {
 
   // A queue of functions that our code uses, but we don't need to compile them right away.
   // We can compile them later. Perhaps in parallel, someday!
-  private val deferredFunctionBodyCompiles: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunctionBody] = mutable.LinkedHashMap()
-  private val finishedDeferredFunctionBodyCompiles: mutable.LinkedHashSet[PrototypeT] = mutable.LinkedHashSet()
+  private val deferredFunctionBodyCompiles: mutable.LinkedHashMap[PrototypeT[IFunctionNameT], DeferredEvaluatingFunctionBody] = mutable.LinkedHashMap()
+  private val finishedDeferredFunctionBodyCompiles: mutable.LinkedHashSet[PrototypeT[IFunctionNameT]] = mutable.LinkedHashSet()
 
   private val deferredFunctionCompiles: mutable.LinkedHashMap[IdT[INameT], DeferredEvaluatingFunction] = mutable.LinkedHashMap()
   private val finishedDeferredFunctionCompiles: mutable.LinkedHashSet[IdT[INameT]] = mutable.LinkedHashSet()
@@ -114,7 +114,7 @@ case class CompilerOutputs() {
   def peekNextDeferredFunctionBodyCompile(): Option[DeferredEvaluatingFunctionBody] = {
     deferredFunctionBodyCompiles.headOption.map(_._2)
   }
-  def markDeferredFunctionBodyCompiled(prototypeT: PrototypeT): Unit = {
+  def markDeferredFunctionBodyCompiled(prototypeT: PrototypeT[IFunctionNameT]): Unit = {
     vassert(prototypeT == vassertSome(deferredFunctionBodyCompiles.headOption)._1)
     finishedDeferredFunctionBodyCompiles += prototypeT
     deferredFunctionBodyCompiles -= prototypeT
@@ -129,7 +129,7 @@ case class CompilerOutputs() {
     deferredFunctionCompiles -= name
   }
 
-  def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT] = {
+  def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] = {
     instantiationNameToInstantiationBounds.toMap
   }
 
@@ -139,32 +139,105 @@ case class CompilerOutputs() {
 
   def getInstantiationBounds(
     instantiationId: IdT[IInstantiationNameT]):
-  Option[InstantiationBoundArgumentsT] = {
+  Option[InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] = {
     instantiationNameToInstantiationBounds.get(instantiationId)
   }
 
   def addInstantiationBounds(
+    sanityCheck: Boolean,
+    interner: Interner,
+    originalCallingTemplateId: IdT[ITemplateNameT],
     instantiationId: IdT[IInstantiationNameT],
-    functionBoundToRune: InstantiationBoundArgumentsT):
+    instantiationBoundArgs: InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]):
   Unit = {
+    val InstantiationBoundArgumentsT(
+    runeToBoundPrototype,
+    runeToCitizenRuneToReachablePrototype,
+    runeToBoundImpl) = instantiationBoundArgs
+
+    instantiationId match {
+      case IdT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("Bork"),_),Vector(CoordTemplataT(CoordT(_,RegionT(),IntT(32)))),Vector(CoordT(_,RegionT(),IntT(32))))) => {
+        vpass()
+      }
+      case IdT(_,Vector(),InterfaceNameT(InterfaceTemplateNameT(StrI("XOpt")),Vector(CoordTemplataT(CoordT(own,RegionT(),KindPlaceholderT(IdT(_,Vector(InterfaceTemplateNameT(StrI("XOpt")), FunctionTemplateNameT(StrI("harvest"),_), OverrideDispatcherTemplateNameT(IdT(_,Vector(),ImplTemplateNameT(_)))),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0,DispatcherRuneFromImplS(CodeRuneS(StrI("T")))))))))))) => {
+        vpass()
+      }
+      case IdT(_,Vector(),InterfaceNameT(InterfaceTemplateNameT(StrI("IXOption")),Vector(CoordTemplataT(CoordT(own,RegionT(),KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("drop"),_), OverrideDispatcherTemplateNameT(IdT(_,Vector(),ImplTemplateNameT(_)))),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0,DispatcherRuneFromImplS(CodeRuneS(StrI("T")))))))))))) => {
+        vpass()
+      }
+      case _ =>
+    }
+
+    // We do this so that there's no random selection of where we get a particular bound from, see MFBFDP.
+    // Keeps things nice and consistent so we dont run into any oddities with the overload index.
+    runeToCitizenRuneToReachablePrototype.foreach({ case (callerRUne, reachableBoundArgs) =>
+      val InstantiationReachableBoundArgumentsT(citizenAndRuneAndReachablePrototypes) =
+        reachableBoundArgs
+      citizenAndRuneAndReachablePrototypes.foreach({
+        case (calleeRune, reachablePrototype) => {
+          reachablePrototype.id.localName match {
+            case FunctionBoundNameT(_, _, _) => {
+              val reachableFuncSuperTemplateIdInitSteps =
+                TemplataCompiler.getSuperTemplate(reachablePrototype.id).initSteps
+              val originalCallingSuperTemplateIdInitSteps =
+                TemplataCompiler.getSuperTemplate(originalCallingTemplateId).initSteps
+              vassert(reachableFuncSuperTemplateIdInitSteps.startsWith(originalCallingSuperTemplateIdInitSteps))
+            }
+            case _ =>
+          }
+        }
+      })
+    })
+    // If we're instantiating with a bound, then make sure that it's one that comes from our root compiling denizen env;
+    // make sure we imported it correctly, see MFBFDP.
+    // That'll help ensure that we're not doing anything tricky, and ensure we don't trigger any mismatches below.
+    runeToBoundPrototype.foreach({ case (rune, callerBoundArgFunction) =>
+      callerBoundArgFunction.id.localName match {
+        case FunctionBoundNameT(_, _, _) => {
+          if (sanityCheck) {
+            val callerBoundArgFuncSuperTemplateIdInitSteps =
+              TemplataCompiler.getSuperTemplate(callerBoundArgFunction.id).initSteps
+            val originalCallingSuperTemplateIdInitSteps =
+              TemplataCompiler.getSuperTemplate(originalCallingTemplateId).initSteps
+            vassert(callerBoundArgFuncSuperTemplateIdInitSteps.startsWith(originalCallingSuperTemplateIdInitSteps))
+          }
+        }
+        case _ =>
+      }
+    })
+    // TODO: have asserts for the impls too. Might become moot if we don't need to register
+    //   bounds with coutputs one day.
+
+    // If there are any placeholders in the thing we're calling, make sure they're from the original calling template,
+    // otherwise we probably forgot to do a substitution or something.
+    if (sanityCheck) {
+      Collector.all(instantiationId, {
+        case id@IdT(_, initSteps, KindPlaceholderNameT(_)) => {
+          val x: IdT[INameT] = id
+          vassert(
+            TemplataCompiler.getSuperTemplate(x).initSteps
+                .startsWith(TemplataCompiler.getRootSuperTemplate(interner, originalCallingTemplateId).initSteps))
+        }
+      })
+    }
+
     // We'll do this when we can cache instantiations from StructTemplar etc.
     // // We should only add instantiation bounds in exactly one place: the place that makes the
     // // PrototypeT/StructTT/InterfaceTT.
     // vassert(!instantiationNameToInstantiationBounds.contains(instantiationFullName))
     instantiationNameToInstantiationBounds.get(instantiationId) match {
       case Some(existing) => {
-        // Make Sure Bound Args Match For Instantiation (MSBAMFI)
         // Theres some ambiguities or something here. sometimes when we evaluate
         // the same thing twice we get different results.
         // It's gonna be especially tricky because we get each function bounds from the overload
-        // resolver which only returns one. We might need to make it not arbitrarily choose a
-        // function to call. Perhaps it should tiebreak and choose the first bound that works.
-        // vassert(existing == functionBoundToRune)
+        // resolver which only returns one.
+        // We avoid this by merging all sorts of function bounds, see MFBFDP.
+        vassert(existing == instantiationBoundArgs)
       }
       case None =>
     }
 
-    instantiationNameToInstantiationBounds.put(instantiationId, functionBoundToRune)
+    instantiationNameToInstantiationBounds.put(instantiationId, instantiationBoundArgs)
   }
 
 //  // This means we've at least started to evaluate this function's body.
@@ -358,7 +431,7 @@ case class CompilerOutputs() {
     kindExports += KindExportT(range, kind, id, exportedName)
   }
 
-  def addFunctionExport(range: RangeS, function: PrototypeT, exportId: IdT[ExportNameT], exportedName: StrI): Unit = {
+  def addFunctionExport(range: RangeS, function: PrototypeT[IFunctionNameT], exportId: IdT[ExportNameT], exportedName: StrI): Unit = {
     vassert(getInstantiationBounds(function.id).nonEmpty)
     functionExports += FunctionExportT(range, function, exportId, exportedName)
   }
@@ -367,7 +440,7 @@ case class CompilerOutputs() {
     kindExterns += KindExternT(kind, packageCoord, exportedName)
   }
 
-  def addFunctionExtern(range: RangeS, externPlaceholderedId: IdT[ExternNameT], function: PrototypeT, exportedName: StrI): Unit = {
+  def addFunctionExtern(range: RangeS, externPlaceholderedId: IdT[ExternNameT], function: PrototypeT[IFunctionNameT], exportedName: StrI): Unit = {
     functionExterns += FunctionExternT(range, externPlaceholderedId, function, exportedName)
   }
 

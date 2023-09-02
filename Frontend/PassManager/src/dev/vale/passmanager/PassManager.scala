@@ -62,6 +62,7 @@ object PassManager {
     mode: Option[String], // build v run etc
     sanityCheck: Boolean,
     useOptimizedSolver: Boolean,
+    useOverloadIndex: Boolean,
     verboseErrors: Boolean,
     debugOutput: Boolean
   ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
@@ -84,6 +85,9 @@ object PassManager {
       }
       case "--include_builtins" :: value :: tail => {
         parseOpts(interner, opts.copy(includeBuiltins = value.toBoolean), tail)
+      }
+      case "--use_overload_index" :: value :: tail => {
+        parseOpts(interner, opts.copy(useOverloadIndex = value.toBoolean), tail)
       }
       case "--simple_solver" :: value :: tail => {
         parseOpts(interner, opts.copy(useOptimizedSolver = !value.toBoolean), tail)
@@ -209,6 +213,7 @@ object PassManager {
         passmanager.FullCompilationOptions(
           GlobalOptions(
             sanityCheck = opts.sanityCheck,
+            useOverloadIndex = opts.useOverloadIndex,
             useOptimizedSolver = opts.useOptimizedSolver,
             verboseErrors = opts.verboseErrors,
             debugOutput = opts.debugOutput),
@@ -376,6 +381,7 @@ object PassManager {
             mode = None,
             sanityCheck = false,
             useOptimizedSolver = true,
+            useOverloadIndex = true,
             verboseErrors = false,
             debugOutput = false),
           args.toList)
@@ -394,7 +400,7 @@ object PassManager {
               opts.inputs.map(_.packageCoord(interner)).distinct,
               Builtins.getCodeMap(interner, keywords).or(packageCoord => resolvePackageContents(interner, opts.inputs, packageCoord)),
               passmanager.FullCompilationOptions(
-                GlobalOptions(opts.sanityCheck, opts.useOptimizedSolver, opts.verboseErrors, opts.debugOutput),
+                GlobalOptions(opts.sanityCheck, true, opts.useOptimizedSolver, opts.verboseErrors, opts.debugOutput),
                 if (opts.verboseErrors) {
                   (x => {
                     println("##: " + x)

@@ -55,6 +55,13 @@ object ITemplataT {
     }
   }
 
+  def expectPrototypeTemplata(templata: ITemplataT[ITemplataType]): PrototypeTemplataT[IFunctionNameT] = {
+    templata match {
+      case t@PrototypeTemplataT(_) => t
+      case other => vfail(other)
+    }
+  }
+
   def expectIntegerTemplata(templata: ITemplataT[ITemplataType]): IntegerTemplataT = {
     templata match {
       case t @ IntegerTemplataT(_) => t
@@ -327,7 +334,12 @@ case class StringTemplataT(value: String) extends ITemplataT[StringTemplataType]
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def tyype: StringTemplataType = StringTemplataType()
 }
-case class PrototypeTemplataT(declarationRange: RangeS, prototype: PrototypeT) extends ITemplataT[PrototypeTemplataType] {
+case class PrototypeTemplataT[+T <: IFunctionNameT](
+    // Removed this because we want to merge different bound functions from different places, see MFBFDP.
+    //   declarationRange: RangeS,
+    prototype: PrototypeT[T]
+) extends ITemplataT[PrototypeTemplataType] {
+  vpass()
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def tyype: PrototypeTemplataType = PrototypeTemplataType()
 }

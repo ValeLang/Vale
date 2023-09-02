@@ -72,19 +72,44 @@ trait IFunctionCompilerDelegate {
 trait IEvaluateFunctionResult
 
 case class EvaluateFunctionSuccess(
-    prototype: PrototypeTemplataT,
-    inferences: Map[IRuneS, ITemplataT[ITemplataType]]
+    prototype: PrototypeTemplataT[IFunctionNameT],
+    inferences: Map[IRuneS, ITemplataT[ITemplataType]],
+    instantiationBoundArgs: InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]
 ) extends IEvaluateFunctionResult
 
 case class EvaluateFunctionFailure(
-    reason: IFindFunctionFailureReason
+    reason: IDefiningError
 ) extends IEvaluateFunctionResult
+
+trait IDefineFunctionResult
+
+case class DefineFunctionSuccess(
+    prototype: PrototypeTemplataT[IFunctionNameT],
+    inferences: Map[IRuneS, ITemplataT[ITemplataType]],
+    instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT]
+) extends IDefineFunctionResult
+
+case class DefineFunctionFailure(
+    reason: IDefiningError
+) extends IDefineFunctionResult
+
+
+trait IResolveFunctionResult
+
+case class ResolveFunctionSuccess(
+    prototype: PrototypeTemplataT[IFunctionNameT],
+    inferences: Map[IRuneS, ITemplataT[ITemplataType]]
+) extends IResolveFunctionResult
+
+case class ResolveFunctionFailure(
+    reason: IResolvingError
+) extends IResolveFunctionResult
 
 
 trait IStampFunctionResult
 
 case class StampFunctionSuccess(
-  prototype: PrototypeTemplataT,
+  prototype: PrototypeT[IFunctionNameT],
   inferences: Map[IRuneS, ITemplataT[ITemplataType]]
 ) extends IStampFunctionResult
 
@@ -235,7 +260,7 @@ class FunctionCompiler(
     callingEnv: IInDenizenEnvironmentT, // See CSSNCE
     functionTemplata: FunctionTemplataT,
     args: Vector[Option[CoordT]]):
-  IEvaluateFunctionResult = {
+  IDefineFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericVirtualDispatcherFunctionForPrototype(
@@ -252,7 +277,7 @@ class FunctionCompiler(
     explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
     args: Vector[CoordT]):
-  IEvaluateFunctionResult = {
+  IResolveFunctionResult = {
     Profiler.frame(() => {
       val FunctionTemplataT(env, function) = functionTemplata
       closureOrLightLayer.evaluateGenericLightFunctionFromCallForPrototype2(

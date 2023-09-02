@@ -1,17 +1,20 @@
 package dev.vale.typing
 
+import dev.vale.typing.infer._
 import dev.vale.solver.{FailedSolve, RuleError}
 import dev.vale.typing.OverloadResolver.InferFailure
 import dev.vale.typing.ast.{SignatureT, _}
 import dev.vale.typing.infer.SendingNonCitizen
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
+import dev.vale.postparsing._
 import dev.vale.typing.types._
 import dev.vale.{Collector, Err, Ok, vassert, vwat, _}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
 import org.scalatest._
 
 import scala.io.Source
+import OverloadResolver._
 
 class AfterRegionsTests extends FunSuite with Matchers {
 
@@ -256,4 +259,96 @@ class AfterRegionsTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when we give too many args") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |func moo(a int, b bool, s str) int { a }
+        |exported func main() int {
+        |  moo(42, true, "hello", false)
+        |}
+        |""".stripMargin)
+    compile.getCompilerOutputs() match {
+      // Err(     case WrongNumberOfArguments(_, _)) =>
+      case Err(CouldntFindFunctionToCallT(_, fff)) => {
+        vassert(fff.rejectedCalleeToReason.size == 1)
+        fff.rejectedCalleeToReason.head._2 match {
+          case WrongNumberOfArguments(4, 3) =>
+        }
+      }
+    }
+  }
+
+  test("Reports when ownership doesnt match") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |
+        |struct Firefly {}
+        |func getFuel(self &Firefly) int { return 7; }
+        |
+        |exported func main() int {
+        |  f = Firefly();
+        |  return (f).getFuel();
+        |}
+        |""".stripMargin
+    )
+    compile.getCompilerOutputs() match {
+      case Err(CouldntFindFunctionToCallT(range, fff)) => {
+        fff.name match {
+          case CodeNameS(StrI("getFuel")) =>
+        }
+        fff.rejectedCalleeToReason.size shouldEqual 1
+        val reason = fff.rejectedCalleeToReason.head._2
+        reason match {
+          case InferFailure(FailedCompilerSolve(_, _, RuleError(OwnershipDidntMatch(CoordT(OwnT, _, _), BorrowT)))) =>
+          //          case SpecificParamDoesntSend(0, _, _) =>
+          case other => vfail(other)
+        }
+      }
+    }
+  }
+
+  test("Failure to resolve a Prot rule's function doesnt halt") {
+    // In the below example, it should disqualify the first foo() because T = bool
+    // and there exists no moo(bool). Instead, we saw the Prot rule throw and halt
+    // compilation.
+
+    // Instead, we need to bubble up that failure to find the right function, so
+    // it disqualifies the candidate and goes with the other one.
+
+    // Note from later: It seems this isn't detected by the typing phase anymore.
+    // When we try to resolve a func moo(str)void, we actually find one in the overload index,
+    // specifically foo.bound:moo(str).
+    // Obviously we shouldnt be considering that.
+    // Normally, bounds have some sort of placeholder type that acts as a filter so people don't
+    // see them unless they have that placeholder type. Here, not so much.
+
+    // We can solve this in two ways:
+    // - Making a visibility mask for various overloads in the overload set. This one is only visible from foo,
+    //   so when we try to resolve it from main it wont be found.
+    // - Require all bounds have a placeholder type in them. Seems reasonable tbh.
+
+    CompilerTestCompilation.test(
+      """
+        |import v.builtins.drop.*;
+        |
+        |func moo(a str) { }
+        |func foo<T>(f T) void where func drop(T)void, func moo(str)void { }
+        |func foo<T>(f T) void where func drop(T)void, func moo(bool)void { }
+        |func main() { foo("hello"); }
+        |""".stripMargin).expectCompilerOutputs()
+  }
+
+  // Depends on IFunction1, and maybe Generic interface anonymous subclass
+  test("Basic IFunction1 anonymous subclass") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import ifunction.ifunction1.*;
+        |
+        |exported func main() int {
+        |  f = IFunction1<mut, int, int>({_});
+        |  return (f)(7);
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
 }

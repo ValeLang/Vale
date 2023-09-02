@@ -77,7 +77,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
             _,
             _,
             FunctionBoundNameT(
-              FunctionBoundTemplateNameT(StrI("drop"),_),
+              FunctionBoundTemplateNameT(StrI("drop")),
               Vector(),
               Vector(
                 CoordT(
@@ -651,7 +651,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
-  test("Test equivalent identifying runes in struct") {
+  test("IRAGP: Test equivalent identifying runes in struct") {
     // See IRAGP, the original problem was for functions but we use the same solution for structs.
     val compile = CompilerTestCompilation.test(
       """

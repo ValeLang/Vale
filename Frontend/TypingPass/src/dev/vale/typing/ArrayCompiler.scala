@@ -41,6 +41,7 @@ class ArrayCompiler(
   def evaluateStaticSizedArrayFromCallable(
     coutputs: CompilerOutputs,
     callingEnv: IInDenizenEnvironmentT,
+    defaultRegionRune: IRuneS,
     region: RegionT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
@@ -56,7 +57,7 @@ class ArrayCompiler(
         override def lookup(range: RangeS, nameS: IImpreciseNameS):
         Result[IRuneTypeSolverLookupResult, IRuneTypingLookupFailedError] = {
           vimpl()
-          //          vassertOne(callingEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype
+//          vassertOne(callingEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype
         }
       }
 
@@ -82,15 +83,14 @@ class ArrayCompiler(
     // what types we *expect* them to be, so we could coerce.
     // That coercion is good, but lets make it more explicit.
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    explicifyLookups(
-      runeTypingEnv,
-      runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+    explicifyLookups(runeTypingEnv, runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
       case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
       case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
       case Ok(()) =>
     }
     val rulesA = ruleBuilder.toVector
 
+    vimpl() // update to also not use solveExpectComplete
     val CompleteResolveSolve(templatas, _) =
       inferCompiler.solveForResolving(
         InferEnv(callingEnv, parentRanges, callLocation, callingEnv, region),
@@ -129,6 +129,7 @@ class ArrayCompiler(
     callingEnv: NodeEnvironmentT,
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
+    defaultRegionRune: IRuneS,
     region: RegionT,
     rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
     maybeElementTypeRune: Option[IRuneS],
@@ -149,8 +150,8 @@ class ArrayCompiler(
         rulesWithImplicitlyCoercingLookupsS,
         List(),
         true,
-        Map(mutabilityRune -> MutabilityTemplataType()) ++
-            maybeElementTypeRune.map(_ -> CoordTemplataType())) match {
+        Map(mutabilityRune -> MutabilityTemplataType(), defaultRegionRune -> RegionTemplataType()) ++
+          maybeElementTypeRune.map(_ -> CoordTemplataType())) match {
         case Ok(r) => r
         case Err(e) => throw CompileErrorExceptionT(HigherTypingInferError(parentRanges, e))
       }
@@ -162,9 +163,7 @@ class ArrayCompiler(
     // what types we *expect* them to be, so we could coerce.
     // That coercion is good, but lets make it more explicit.
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    explicifyLookups(
-      runeTypingEnv,
-      runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+    explicifyLookups(runeTypingEnv, runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
       case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
       case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
       case Ok(()) =>
@@ -174,7 +173,7 @@ class ArrayCompiler(
     // Elsewhere we do some incremental solving to fill in default generic param values like the
     // context region, but here I think we can just feed it in directly. There's syntactically no
     // way for the user to hand it in as a generic param.
-    val initialKnowns = Vector()
+    val initialKnowns = Vector(InitialKnown(RuneUsage(parentRanges.head, defaultRegionRune), region.region))
 
 //    val CompleteCompilerSolve(_, templatas, _, Vector()) =
 //      inferCompiler.solveExpectComplete(
@@ -195,8 +194,12 @@ class ArrayCompiler(
     inferCompiler.incrementallySolve(
       envs, coutputs, solver,
       (solver) => {
-        // TODO(regions): Sometimes add default region rune
-        false
+        if (solver.getConclusion(defaultRegionRune).isEmpty) {
+          solver.manualStep(Map(defaultRegionRune -> region.region))
+          true
+        } else {
+          false
+        }
       }) match {
       case Err(f @ FailedCompilerSolve(_, _, err)) => {
         throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, f))
@@ -246,7 +249,7 @@ class ArrayCompiler(
         NewImmRuntimeSizedArrayTE(rsaMT, region, sizeTE, callableTE, prototype)
       }
       case MutabilityTemplataT(MutableT) => {
-        val StampFunctionSuccess(prototype, conclusions) =
+        val StampFunctionSuccess(pure, maybeNewRegion, prototype, conclusions) =
           overloadResolver.findFunction(
             callingEnv
               .addEntries(
@@ -274,6 +277,7 @@ class ArrayCompiler(
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(parentRanges, e))
             case Ok(x) => x
           }
+        vcurious(maybeNewRegion.nonEmpty)
 
         val elementType =
           prototype.returnType.kind match {
@@ -296,9 +300,17 @@ class ArrayCompiler(
         })
         vassert(coutputs.getInstantiationBounds(prototype.id).nonEmpty)
         val resultTE =
-          prototype.returnType
+          maybeNewRegion match {
+            case None => prototype.returnType
+            case Some(newRegion) => {
+              // If we get any instances that are part of the newRegion, we need to interpret them
+              // to the contextRegion.
+              TemplataCompiler.mergeCoordRegions(
+                interner, coutputs, Map(newRegion -> region), prototype.returnType)
+            }
+          }
         val callTE =
-          FunctionCallTE(prototype, Vector(sizeTE) ++ maybeCallableTE, resultTE)
+          FunctionCallTE(prototype, pure, maybeNewRegion, Vector(sizeTE) ++ maybeCallableTE, resultTE)
         callTE
         //        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
       }
@@ -306,18 +318,19 @@ class ArrayCompiler(
   }
 
   def evaluateStaticSizedArrayFromValues(
-      coutputs: CompilerOutputs,
-      callingEnv: IInDenizenEnvironmentT,
-      parentRanges: List[RangeS],
+    coutputs: CompilerOutputs,
+    callingEnv: IInDenizenEnvironmentT,
+    parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
-      rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
-      maybeElementTypeRuneA: Option[IRuneS],
-      sizeRuneA: IRuneS,
-      mutabilityRuneA: IRuneS,
-      variabilityRuneA: IRuneS,
-      exprs2: Vector[ReferenceExpressionTE],
-      region: RegionT):
-   StaticArrayFromValuesTE = {
+    rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
+    maybeElementTypeRuneA: Option[IRuneS],
+    sizeRuneA: IRuneS,
+    mutabilityRuneA: IRuneS,
+    variabilityRuneA: IRuneS,
+    exprs2: Vector[ReferenceExpressionTE],
+    defaultRegionRune: IRuneS,
+    region: RegionT):
+  StaticArrayFromValuesTE = {
 
     val runeTypingEnv = TemplataCompiler.createRuneTypeSolverEnv(callingEnv)
 
@@ -334,11 +347,12 @@ class ArrayCompiler(
         Map[IRuneS, ITemplataType](
           sizeRuneA -> IntegerTemplataType(),
           mutabilityRuneA -> MutabilityTemplataType(),
-          variabilityRuneA -> VariabilityTemplataType()) ++
-            (maybeElementTypeRuneA match {
-              case Some(rune) => Map(rune -> CoordTemplataType())
-              case None => Map()
-            })) match {
+          variabilityRuneA -> VariabilityTemplataType(),
+          defaultRegionRune -> RegionTemplataType()) ++
+          (maybeElementTypeRuneA match {
+            case Some(rune) => Map(rune -> CoordTemplataType())
+            case None => Map()
+          })) match {
         case Ok(r) => r
         case Err(e) => throw CompileErrorExceptionT(HigherTypingInferError(parentRanges, e))
       }
@@ -355,16 +369,18 @@ class ArrayCompiler(
     // what types we *expect* them to be, so we could coerce.
     // That coercion is good, but lets make it more explicit.
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    explicifyLookups(
-      runeTypingEnv,
-      runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+    explicifyLookups(runeTypingEnv, runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
       case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
       case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
       case Ok(()) =>
     }
     val rulesA = ruleBuilder.toVector
 
-    val initialKnowns = Vector()
+    val initialKnowns =
+      Vector(
+        InitialKnown(
+          RuneUsage(vassertSome(parentRanges.headOption), defaultRegionRune),
+          region.region))
 
 //    val CompleteCompilerSolve(_, templatas, _, Vector()) =
 //      inferCompiler.solveExpectComplete(
@@ -384,8 +400,12 @@ class ArrayCompiler(
     inferCompiler.incrementallySolve(
       envs, coutputs, solver,
       (solver) => {
-        // TODO(regions): Sometimes add default region
-        false
+        if (solver.getConclusion(defaultRegionRune).isEmpty) {
+          solver.manualStep(Map(defaultRegionRune -> region.region))
+          true
+        } else {
+          false
+        }
       }) match {
       case Err(f @ FailedCompilerSolve(_, _, err)) => {
         throw CompileErrorExceptionT(TypingPassSolverError(invocationRange, f))
@@ -473,6 +493,9 @@ class ArrayCompiler(
         }
       }
 
+    // assert that region is mutable
+    vimpl()
+
     arrayTT.mutability match {
       case PlaceholderTemplataT(_, MutabilityTemplataType()) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't destroy an array whose mutability we don't know!"))
@@ -500,7 +523,10 @@ class ArrayCompiler(
       prototype)
   }
 
-  def compileStaticSizedArray(globalEnv: GlobalEnvironment, coutputs: CompilerOutputs): Unit = {
+  def compileStaticSizedArray(
+    globalEnv: GlobalEnvironment,
+    coutputs: CompilerOutputs):
+  Unit = {
     val builtinPackage = PackageCoordinate.BUILTIN(interner, keywords)
     val templateId =
       IdT(builtinPackage, Vector.empty, interner.intern(StaticSizedArrayTemplateNameT()))
@@ -512,7 +538,8 @@ class ArrayCompiler(
     val arrayOuterEnv =
       CitizenEnvironmentT(
         globalEnv,
-        PackageEnvironmentT(globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
+        PackageEnvironmentT(
+          globalEnv, templateId, globalEnv.nameToTopLevelEnvironment.values.toVector),
         templateId,
         templateId,
         TemplatasStore(templateId, Map(), Map()))
@@ -520,7 +547,7 @@ class ArrayCompiler(
     coutputs.declareTypeOuterEnv(templateId, arrayOuterEnv)
 
     val TemplateTemplataType(types, _) = StaticSizedArrayTemplateTemplataT().tyype
-    val Vector(IntegerTemplataType(), MutabilityTemplataType(), VariabilityTemplataType(), CoordTemplataType()) = types
+    val Vector(IntegerTemplataType(), MutabilityTemplataType(), VariabilityTemplataType(), CoordTemplataType(), RegionTemplataType()) = types
     val sizePlaceholder =
       templataCompiler.createNonKindNonRegionPlaceholderInner(
         templateId, 0, CodeRuneS(interner.intern(StrI("N"))), IntegerTemplataType())
@@ -533,9 +560,18 @@ class ArrayCompiler(
     val elementPlaceholder =
       templataCompiler.createCoordPlaceholderInner(
         coutputs, arrayOuterEnv, templateId, 3, CodeRuneS(interner.intern(StrI("E"))), None, ReadOnlyRegionS, OwnT, true)
+    // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+    val regionPlaceholder =
+      templataCompiler.createRegionPlaceholderInner(
+        templateId, 4, CodeRuneS(interner.intern(StrI("Z"))), Some(0), ReadWriteRegionS)
 
     val placeholders =
-      Vector(sizePlaceholder, mutabilityPlaceholder, variabilityPlaceholder, elementPlaceholder)
+      Vector(
+        sizePlaceholder,
+        mutabilityPlaceholder,
+        variabilityPlaceholder,
+        elementPlaceholder,
+        regionPlaceholder.region)
 
     val id = templateId.copy(localName = templateId.localName.makeCitizenName(interner, placeholders))
     vassert(TemplataCompiler.getTemplate(id) == templateId)
@@ -565,7 +601,10 @@ class ArrayCompiler(
           interner.intern(RawArrayNameT(mutability, type2, region)))))))
   }
 
-  def compileRuntimeSizedArray(globalEnv: GlobalEnvironment, coutputs: CompilerOutputs): Unit = {
+  def compileRuntimeSizedArray(
+    globalEnv: GlobalEnvironment,
+    coutputs: CompilerOutputs):
+  Unit = {
     val builtinPackage = PackageCoordinate.BUILTIN(interner, keywords)
     val templateId =
       IdT(builtinPackage, Vector.empty, interner.intern(RuntimeSizedArrayTemplateNameT()))
@@ -587,15 +626,19 @@ class ArrayCompiler(
 
 
     val TemplateTemplataType(types, _) = RuntimeSizedArrayTemplateTemplataT().tyype
-    val Vector(MutabilityTemplataType(), CoordTemplataType()) = types
+    val Vector(MutabilityTemplataType(), CoordTemplataType(), RegionTemplataType()) = types
     val mutabilityPlaceholder =
       templataCompiler.createNonKindNonRegionPlaceholderInner(
         templateId, 0, CodeRuneS(interner.intern(StrI("M"))), MutabilityTemplataType())
     val elementPlaceholder =
       templataCompiler.createCoordPlaceholderInner(
         coutputs, arrayOuterEnv, templateId, 1, CodeRuneS(interner.intern(StrI("E"))), None, ReadOnlyRegionS,OwnT, true)
+    // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+    val regionPlaceholder =
+      templataCompiler.createRegionPlaceholderInner(
+        templateId, 2, CodeRuneS(interner.intern(StrI("Z"))), Some(0), ReadWriteRegionS)
     val placeholders =
-      Vector(mutabilityPlaceholder, elementPlaceholder)
+      Vector(mutabilityPlaceholder, elementPlaceholder, regionPlaceholder.region)
 
     val id = templateId.copy(localName = templateId.localName.makeCitizenName(interner, placeholders))
 
@@ -630,9 +673,9 @@ class ArrayCompiler(
   }
 
   def lookupInStaticSizedArray(
-      range: RangeS,
-      containerExpr2: ReferenceExpressionTE,
-      indexExpr2: ReferenceExpressionTE,
+    range: RangeS,
+    containerExpr2: ReferenceExpressionTE,
+    indexExpr2: ReferenceExpressionTE,
     at: StaticSizedArrayTT):
   StaticSizedArrayLookupTE = {
     val contentsStaticSizedArrayTT(size, mutability, variabilityTemplata, memberType, selfRegion) = at

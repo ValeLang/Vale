@@ -98,6 +98,10 @@ trait IInDenizenEnvironmentT extends IEnvironmentT {
 
   def denizenId: IdT[INameT]
   def denizenTemplateId: IdT[ITemplateNameT]
+
+  def currentHeight: Int
+  def pureHeight: Option[Int] // DO NOT SUBMIT rename maybeNearestPureHeight
+  def additiveHeight: Option[Int] // DO NOT SUBMIT rename maybeNearestAdditiveHeight
 }
 
 trait IDenizenEnvironmentBoxT extends IInDenizenEnvironmentT {
@@ -174,7 +178,7 @@ object TemplatasStore {
   }
 
   def entryToTemplata(definingEnv: IEnvironmentT, entry: IEnvEntry): ITemplataT[ITemplataType] = {
-    //    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelName2()))
+    //    vassert(env.id != FullName2(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelName2()))
     entry match {
       case FunctionEnvEntry(func) => templata.FunctionTemplataT(definingEnv, func)
       case StructEnvEntry(struct) => templata.StructDefinitionTemplataT(definingEnv, struct)
@@ -451,6 +455,10 @@ case class CitizenEnvironmentT[+T <: INameT, +Y <: ITemplateNameT](
 ) extends IInDenizenEnvironmentT {
   vassert(templatas.templatasStoreName == id)
 
+  override def currentHeight: Int = 0
+  override def pureHeight: Option[Int] = None
+  override def additiveHeight: Option[Int] = None
+
   override def denizenId: IdT[INameT] = templateId
   override def denizenTemplateId: IdT[ITemplateNameT] = templateId
 
@@ -530,30 +538,34 @@ object GeneralEnvironmentT {
 }
 
 case class ExportEnvironmentT(
-    globalEnv: GlobalEnvironment,
-    parentEnv: PackageEnvironmentT[INameT],
+  globalEnv: GlobalEnvironment,
+  parentEnv: PackageEnvironmentT[INameT],
     templateId: IdT[ITemplateNameT],
-    id: IdT[INameT],
-    //  defaultRegion: ITemplata[RegionTemplataType],
-    templatas: TemplatasStore
+  id: IdT[INameT],
+//  defaultRegion: ITemplata[RegionTemplataType],
+  templatas: TemplatasStore
 ) extends IInDenizenEnvironmentT {
   override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = this
   override def denizenId: IdT[INameT] = id
   override def denizenTemplateId: IdT[ITemplateNameT] = templateId
 
+  override def currentHeight: Int = 0
+  override def pureHeight: Option[Int] = None
+  override def additiveHeight: Option[Int] = None
+
   override def lookupWithNameInner(
-      name: INameT,
-      lookupFilter: Set[ILookupContext],
-      getOnlyNearest: Boolean):
+    name: INameT,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
   Array[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
 
   override def lookupWithImpreciseNameInner(
-      name: IImpreciseNameS,
-      lookupFilter: Set[ILookupContext],
-      getOnlyNearest: Boolean):
+    name: IImpreciseNameS,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
   Array[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
@@ -561,30 +573,34 @@ case class ExportEnvironmentT(
 }
 
 case class ExternEnvironmentT(
-    globalEnv: GlobalEnvironment,
-    parentEnv: PackageEnvironmentT[INameT],
+  globalEnv: GlobalEnvironment,
+  parentEnv: PackageEnvironmentT[INameT],
     templateId: IdT[ITemplateNameT],
-    id: IdT[INameT],
-    //  defaultRegion: ITemplata[RegionTemplataType],
-    templatas: TemplatasStore
+  id: IdT[INameT],
+  //  defaultRegion: ITemplata[RegionTemplataType],
+  templatas: TemplatasStore
 ) extends IInDenizenEnvironmentT {
   override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = this
   override def denizenId: IdT[INameT] = id
   override def denizenTemplateId: IdT[ITemplateNameT] = templateId
 
+  override def currentHeight: Int = 0
+  override def pureHeight: Option[Int] = None
+  override def additiveHeight: Option[Int] = None
+
   override def lookupWithNameInner(
-      name: INameT,
-      lookupFilter: Set[ILookupContext],
-      getOnlyNearest: Boolean):
+    name: INameT,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
   Array[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
   }
 
   override def lookupWithImpreciseNameInner(
-      name: IImpreciseNameS,
-      lookupFilter: Set[ILookupContext],
-      getOnlyNearest: Boolean):
+    name: IImpreciseNameS,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
   Array[ITemplataT[ITemplataType]] = {
     EnvironmentHelper.lookupWithImpreciseNameInner(
       this, templatas, parentEnv, name, lookupFilter, getOnlyNearest)
@@ -596,10 +612,15 @@ case class GeneralEnvironmentT[+T <: INameT](
   parentEnv: IInDenizenEnvironmentT,
   templateId: IdT[ITemplateNameT],
   id: IdT[T],
+//  defaultRegion: ITemplata[RegionTemplataType],
   templatas: TemplatasStore
 ) extends IInDenizenEnvironmentT {
   override def denizenId: IdT[INameT] = id
   override def denizenTemplateId: IdT[ITemplateNameT] = templateId
+
+  override def currentHeight: Int = 0
+  override def pureHeight: Option[Int] = None
+  override def additiveHeight: Option[Int] = None
 
   override def equals(obj: Any): Boolean = vcurious();
 

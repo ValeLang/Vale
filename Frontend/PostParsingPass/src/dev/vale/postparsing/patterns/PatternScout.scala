@@ -39,13 +39,13 @@ class PatternScout(
     ruleBuilder: ArrayBuffer[IRulexSR],
     runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     patternPP: PatternPP):
-  AtomSP = {
+  (Option[IRuneS], AtomSP) = {
     val PatternPP(range,maybeCaptureP, maybeTypeP, maybeDestructureP) = patternPP
 
-    val maybeCoordRuneS =
+    val (maybeOuterRegionRune, maybeCoordRuneS) =
       maybeTypeP match {
         case Some(typeP) => {
-          val runeS =
+          val (maybeOuterRegionRune, runeS) =
             templexScout.translateTypeIntoRune(
               stackFrame.parentEnv,
               lidb.child(),
@@ -53,11 +53,10 @@ class PatternScout(
               stackFrame.contextRegion,
               typeP)
           runeToExplicitType += ((runeS.rune, CoordTemplataType()))
-          Some(runeS)
+          (maybeOuterRegionRune, Some(runeS))
         }
         case None => {
-          // This happens in patterns in lets, and in lambdas' parameters that have no types.
-          None
+          (None, None)
         }
       }
 
@@ -68,7 +67,7 @@ class PatternScout(
           Some(
             destructureP.map(
               translatePattern(
-                stackFrame, lidb.child(), ruleBuilder, runeToExplicitType, _)))
+                stackFrame, lidb.child(), ruleBuilder, runeToExplicitType, _)._2))
         }
       }
 
@@ -103,7 +102,7 @@ class PatternScout(
 
     val patternS =
       AtomSP(PostParser.evalRange(stackFrame.file, range), captureS, maybeCoordRuneS, maybePatternsS)
-    patternS
+    (maybeOuterRegionRune, patternS)
   }
 
 }

@@ -70,22 +70,17 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
         runeToExplicitType += ((rune.rune, translateType(tyype)))
         tyype match {
           case CoordTypePR => {
-            vregionmut() // Put back in with regions
-            // if (componentsP.size != 3) {
-            //   vfail("Ref rule should have three components! Found: " + componentsP.size)
-            // }
-            if (componentsP.size != 2) {
-              vfail("Ref rule should have two components! Found: " + componentsP.size)
+            if (componentsP.size != 3) {
+              vfail("Ref rule should have three components! Found: " + componentsP.size)
             }
-            vregionmut() // Put back in with regions
-            // val Vector(ownershipRuneS, regionRuneS, kindRuneS) =
-            val Vector(ownershipRuneS, kindRuneS) =
+            val Vector(ownershipRuneS, regionRuneS, kindRuneS) =
               translateRulexes(env, lidb.child(), builder, runeToExplicitType, contextRegion, componentsP)
             builder +=
               CoordComponentsSR(
                 PostParser.evalRange(env.file, range),
                 rune,
                 ownershipRuneS,
+                regionRuneS,
                 kindRuneS)
           }
           case KindTypePR => {
@@ -132,7 +127,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
         rules.RuneUsage(evalRange(range), rune)
       }
       case TemplexPR(templex) => {
-        templexScout.translateTemplex(env, lidb.child(), builder, contextRegion, templex)
+        templexScout.translateTemplex(env, lidb.child(), builder, contextRegion, templex)._2
       }
       case BuiltinCallPR(range, name, args) => {
         if (name.str == keywords.IS_INTERFACE) {
@@ -229,13 +224,13 @@ object RuleScout {
     val structKindEquivalentRunes = equivalencies.getKindEquivalentRunes(rune)
     val templateRunes =
       rulesS.collect({
-        case MaybeCoercingCallSR(_, resultRune, templateRune, _)
+        case MaybeCoercingCallSR(_, resultRune, _, templateRune, _)
           if structKindEquivalentRunes.contains(resultRune.rune) => templateRune.rune
       })
     val runesToLookFor = structKindEquivalentRunes ++ templateRunes
     val templateNames =
       rulesS.collect({
-        case MaybeCoercingLookupSR(_, rune, name) if runesToLookFor.contains(rune.rune) => name
+        case MaybeCoercingLookupSR(_, rune, _, name) if runesToLookFor.contains(rune.rune) => name
       })
     vassert(templateNames.nonEmpty)
     vcurious(templateNames.size == 1)
@@ -251,18 +246,19 @@ class Equivalencies(rules: IndexedSeq[IRulexSR]) {
     runeToKindEquivalentRunes.getOrElseUpdate(runeB, mutable.HashSet()) += runeA
   }
   rules.foreach({
-    case CoordComponentsSR(_, resultRune, _, kindRune) => markKindEquivalent(resultRune.rune, kindRune.rune)
+    case CoordComponentsSR(_, resultRune, _, _, kindRune) => markKindEquivalent(resultRune.rune, kindRune.rune)
     case KindComponentsSR(_, resultRune, _) =>
     case EqualsSR(_, left, right) => markKindEquivalent(left.rune, right.rune)
     case CallSR(range, resultRune, templateRune, args) =>
-    case MaybeCoercingCallSR(range, resultRune, templateRune, args) =>
+    case MaybeCoercingCallSR(range, resultRune, _, templateRune, args) =>
+    // case CoercingCallSR(range, resultRune, _, templateRune, args) =>
     case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) =>
     case DefinitionCoordIsaSR(range, resultRune, subRune, superRune) =>
     case CoordSendSR(range, senderRune, receiverRune) =>
-    case AugmentSR(range, resultRune, ownership, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
+    case AugmentSR(range, resultRune, ownership, region, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
     case LiteralSR(range, rune, literal) =>
-    case MaybeCoercingLookupSR(range, rune, name) =>
-    case CoerceToCoordSR(range, coordRune, kindRune) => markKindEquivalent(coordRune.rune, kindRune.rune)
+    case MaybeCoercingLookupSR(range, rune, _, name) =>
+    case CoerceToCoordSR(range, coordRune, regionRune, kindRune) => markKindEquivalent(coordRune.rune, kindRune.rune)
 //    case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) =>
 //    case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) =>
     case OneOfSR(range, rune, literals) =>

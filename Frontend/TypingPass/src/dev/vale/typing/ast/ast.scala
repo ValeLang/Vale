@@ -31,6 +31,8 @@ case class ImplT(
 
   templata: ImplDefinitionTemplataT,
 
+  implOuterEnv: IInDenizenEnvironmentT,
+
   instantiatedId: IdT[IImplNameT],
   templateId: IdT[IImplTemplateNameT],
 
@@ -97,6 +99,13 @@ case class InterfaceEdgeBlueprintT(
   superFamilyRootHeaders: Vector[(PrototypeT[IFunctionNameT], Int)]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class OverrideT(
+  // it seems right here we'll need some sort of mapping of abstract func placeholder to the
+  // override impl case placeholders, and perhaps also the existence of the <T>s for the case?
+  // we need to instantiate the override, so its going to need some values for it... i guess
+  // its from the impl, so the impl has it i think. so maybe a map from the impl rune to it
+
+
+
   // This is the name of the conceptual function called by the abstract function.
   // It has enough information to do simple dispatches, but not all cases, it can't handle
   // the Milano case, see OMCNAGP.
@@ -147,8 +156,6 @@ case class EdgeT(
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   abstractFuncToOverrideFunc: Map[IdT[IFunctionNameT], OverrideT]
 ) {
-  vpass()
-
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def equals(obj: Any): Boolean = {
@@ -168,7 +175,6 @@ case class FunctionDefinitionT(
   header: FunctionHeaderT,
   instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT],
   body: ReferenceExpressionTE)  {
-
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   // We always end a function with a ret, whose result is a Never.
@@ -310,7 +316,7 @@ case class FunctionBannerT(
 sealed trait IFunctionAttributeT
 sealed trait ICitizenAttributeT
 case class ExternT(packageCoord: PackageCoordinate) extends IFunctionAttributeT with ICitizenAttributeT { // For optimization later
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+ val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 // There's no Export2 here, we use separate KindExport and FunctionExport constructs.
 //case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
@@ -323,24 +329,38 @@ case class FunctionHeaderT(
   // This one little name field can illuminate much of how the compiler works, see UINIT.
   id: IdT[IFunctionNameT],
   attributes: Vector[IFunctionAttributeT],
+//  regions: Vector[RegionT],
   params: Vector[ParameterT],
   returnType: CoordT,
   maybeOriginFunctionTemplata: Option[FunctionTemplataT]) {
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+//  val perspectiveRegion =
+//    id.localName.templateArgs.last match {
+//      case PlaceholderTemplata(IdT(packageCoord, initSteps, r @ RegionPlaceholderNameT(_, _, _, _, _)), RegionTemplataType()) => {
+//        IdT(packageCoord, initSteps, r)
+//      }
+//      case _ => vwat()
+//    }
+//  if (attributes.contains(PureT)) {
+//    // Instantiator relies on this assumption so that it knows when certain things are pure.
+//    vassert(perspectiveRegion.localName.originalMaybeNearestPureLocation == Some(LocationInDenizen(Vector())))
+//  }
 
   vassert({
     maybeOriginFunctionTemplata match {
       case None =>
       case Some(originFunctionTemplata) => {
         val templateName = TemplataCompiler.getFunctionTemplate(id)
-        val placeholderInThisFunctionNames =
+        val placeholdersInThisFunctionName =
           Collector.all(id, {
             case KindPlaceholderT(name) => name
             case PlaceholderTemplataT(name, _) => name
           })
         // Filter out any placeholders that came from the parent, in case this is a lambda function.
         val selfPlaceholdersInThisFunctionName =
-          placeholderInThisFunctionNames.filter({ case IdT(packageCoord, initSteps, last) =>
+          placeholdersInThisFunctionName.filter({ case IdT(packageCoord, initSteps, last) =>
             val parentName = IdT(packageCoord, initSteps.init, initSteps.last)
             // Not sure which one it is, this should catch both.
             parentName == id || parentName == templateName
@@ -357,12 +377,40 @@ case class FunctionHeaderT(
             // Make sure all the placeholders in the generic parameters exist as template args in
             // the original function definition.
             selfPlaceholdersInThisFunctionName.foreach({
-              case placeholderName @ IdT(_, _, NonKindNonRegionPlaceholderNameT(index,rune)) => {
+              case placeholderName @ IdT(_, _, NonKindNonRegionPlaceholderNameT(index, rune)) => {
                 id.localName.templateArgs(index) match {
                   case PlaceholderTemplataT(placeholderNameAtIndex, _) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
-                  case _ => vfail()
+                  case other => {
+                    println("other: " + other)
+                    println("placeholderName: " + placeholderName)
+                    vfail(other)
+                  }
+                }
+              }
+              case placeholderName @ IdT(_, _, RegionPlaceholderNameT(index, rune, _, _)) => {
+                id.localName.templateArgs(index) match {
+                  case PlaceholderTemplataT(placeholderNameAtIndex, _) => {
+                    vassert(placeholderName == placeholderNameAtIndex)
+                  }
+                  case other => {
+                    println("other: " + other)
+                    println("placeholderName: " + placeholderName)
+                    vfail(other)
+                  }
+                }
+              }
+              case placeholderName@IdT(_, _, CoordGenericParamRegionPlaceholderNameT(index, rune, _, _)) => {
+                id.localName.templateArgs(index) match {
+                  case CoordTemplataT(CoordT(_, RegionT(PlaceholderTemplataT(regionPlaceholderId, _)), KindPlaceholderT(kindPlaceholderId))) => {
+                    vassert(placeholderName == regionPlaceholderId)
+                  }
+                  case other => {
+                    println("other: " + other)
+                    println("placeholderName: " + placeholderName)
+                    vfail(other)
+                  }
                 }
               }
               case placeholderName @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) => {
@@ -398,7 +446,6 @@ case class FunctionHeaderT(
 
   vassert(id.localName.parameters == paramTypes)
 
-  def isExtern = attributes.exists({ case ExternT(_) => true case _ => false })
   //  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
   def isUserFunction = attributes.contains(UserFunctionT)
 //  def getAbstractInterface: Option[InterfaceTT] = toBanner.getAbstractInterface

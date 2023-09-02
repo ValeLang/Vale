@@ -32,8 +32,8 @@ class PatternCompiler(
     opts: TypingPassOptions,
 
     interner: Interner,
-  keywords: Keywords,
-  inferCompiler: InferCompiler,
+    keywords: Keywords,
+    inferCompiler: InferCompiler,
     arrayCompiler: ArrayCompiler,
     convertHelper: ConvertHelper,
     nameTranslator: NameTranslator,
@@ -137,14 +137,15 @@ class PatternCompiler(
 
             val runeAToType =
               mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
+
+            val ruleBuilder = ArrayBuffer[IRulexSR]()
+
             // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
             // loose. We intentionally ignored the types of the things they're looking up, so we could know
             // what types we *expect* them to be, so we could coerce.
             // That coercion is good, but lets make it more explicit.
-            val ruleBuilder = ArrayBuffer[IRulexSR]()
             explicifyLookups(
-              runeTypeSolveEnv,
-              runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
+              runeTypeSolveEnv, runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS) match {
               case Err(RuneTypingTooManyMatchingTypes(range, name)) => throw CompileErrorExceptionT(TooManyTypesWithNameT(range :: parentRanges, name))
               case Err(RuneTypingCouldntFindType(range, name)) => throw CompileErrorExceptionT(CouldntFindTypeT(range :: parentRanges, name))
               case Ok(()) =>
@@ -280,12 +281,12 @@ class PatternCompiler(
               case OwnT => {
                 // We aren't capturing the var, so the destructuring should consume the incoming value.
                 List(
-                  destructureOwning(
+                destructureOwning(
                     coutputs, nenv, life + 1, range :: parentRanges, callLocation, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, region, afterSubPatternSuccessContinuation))
               }
               case BorrowT | ShareT => {
                 List(
-                  destructureNonOwningAndMaybeContinue(
+                destructureNonOwningAndMaybeContinue(
                     coutputs, nenv, life + 2, range :: parentRanges, callLocation, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, region, afterSubPatternSuccessContinuation))
               }
             }
@@ -307,7 +308,9 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
-    val CoordT(OwnT, _, expectedContainerKind) = inputExpr.result.coord
+    val CoordT(OwnT, inputRegion, expectedContainerKind) = inputExpr.result.coord
+    // DO NOT SUBMIT do something with that region
+
     expectedContainerKind match {
       case StructTT(_) => {
         // Example:
@@ -475,8 +478,10 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.name) == initialLiveCaptureLocals.map(_.name).distinct)
 
-    val CoordT(_, _, structTT @ StructTT(_)) = inputStructExpr.result.coord
+    val CoordT(_, sourceRegion, structTT @ StructTT(_)) = inputStructExpr.result.coord
+
     val structDefT = coutputs.lookupStruct(structTT.id)
+
     // We don't pattern match against closure structs.
 
     val substituter =
@@ -594,6 +599,7 @@ class PatternCompiler(
         keywords,
         env.denizenTemplateId,
         structTT.id,
+//        Vector((structDefT.defaultRegion, region)),
         // Use the bounds that we supplied to the struct
         UseBoundsFromContainer(
           structDefT.instantiationBoundParams,
@@ -616,6 +622,6 @@ class PatternCompiler(
       containerAlias: ReferenceExpressionTE,
       index: Int): StaticSizedArrayLookupTE = {
     arrayCompiler.lookupInStaticSizedArray(
-      range, containerAlias, ConstantIntTE(IntegerTemplataT(index), 32, RegionT()), staticSizedArrayT)
+      range, containerAlias, ConstantIntTE(IntegerTemplataT(index), 32, vimpl()), staticSizedArrayT)
   }
 }

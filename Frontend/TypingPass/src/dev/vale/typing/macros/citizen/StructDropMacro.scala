@@ -46,12 +46,16 @@ class StructDropMacro(
     // Use the same runes as the original struct, see MDSFONARFO.
     structA.headerRuneToType.foreach(runeToType += _)
 
+    val defaultRegionRune = structA.regionRune
+
     val voidKindRune = MacroVoidKindRuneS()
     runeToType.put(voidKindRune, KindTemplataType())
-    rules.add(LookupSR(range(-1672147),use(-64002, voidKindRune),interner.intern(CodeNameS(keywords.void))))
+    rules.add(
+      LookupSR(
+        range(-1672147), use(-64002, voidKindRune), interner.intern(CodeNameS(keywords.void))))
     val voidCoordRune = MacroVoidCoordRuneS()
     runeToType.put(voidCoordRune, CoordTemplataType())
-    rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, voidKindRune)))
+    rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, defaultRegionRune),use(-64002, voidKindRune)))
 
     val selfKindTemplateRune = SelfKindTemplateRuneS(structA.range.begin)
     runeToType += (selfKindTemplateRune -> structA.tyype)
@@ -76,6 +80,7 @@ class StructDropMacro(
       CoerceToCoordSR(
         structA.name.range,
         RuneUsage(structA.name.range, selfCoordRune),
+        RuneUsage(structA.name.range, defaultRegionRune),
         RuneUsage(structA.name.range, selfKindRune)))
 
 
@@ -101,11 +106,14 @@ class StructDropMacro(
             range(-1340),
             None,
             false,
+            selfCoordRune,
             AtomSP(
               range(-1340),
               Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)), false)),
-              Some(use(-64002, selfCoordRune)), None))),
+              Some(use(-64002, selfCoordRune)),
+              None))),
         Some(use(-64002, voidCoordRune)),
+        defaultRegionRune,
         rules.buildArray().toVector,
         GeneratedBodyS(dropGeneratorId))
 
@@ -127,6 +135,7 @@ class StructDropMacro(
       Vector(),
       Map(
         CodeRuneS(keywords.DropP1) -> CoordTemplataType(),
+        CodeRuneS(keywords.DropR) -> RegionTemplataType(),
         CodeRuneS(keywords.DropP1K) -> KindTemplataType(),
         CodeRuneS(keywords.DropVK) -> KindTemplataType(),
         CodeRuneS(keywords.DropV) -> CoordTemplataType()),
@@ -135,20 +144,34 @@ class StructDropMacro(
           RangeS.internal(interner, -1342),
           None,
           false,
+          vimpl(),
           AtomSP(
             RangeS.internal(interner, -1342),
             Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)), false)),
-            Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))),
-            None))),
+            Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
       Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV))),
+      CodeRuneS(keywords.DropR),
       Vector(
-        LookupSR(
+        MaybeCoercingLookupSR(
           RangeS.internal(interner, -1672161),
           RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1K)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropR)),
           interner.intern(SelfNameS())),
-        LookupSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK)), interner.intern(CodeNameS(keywords.void))),
-        CoerceToCoordSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV)), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK))),
-        CoerceToCoordSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1)), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1K)))),
+        MaybeCoercingLookupSR(
+          RangeS.internal(interner, -1672162),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropR)),
+          interner.intern(CodeNameS(keywords.void))),
+        CoerceToCoordSR(
+          RangeS.internal(interner, -1672162),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropR)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK))),
+        CoerceToCoordSR(
+          RangeS.internal(interner, -1672162),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropR)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1K)))),
       GeneratedBodyS(dropGeneratorId))
   }
 
@@ -165,27 +188,41 @@ class StructDropMacro(
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val bodyEnv = FunctionEnvironmentBoxT(env)
 
+    val structType = params2.head.tyype
     val structTT =
       params2.head.tyype.kind match {
         case structTT @ StructTT(_) => structTT
         case other => vwat(other)
       }
     val structDef = coutputs.lookupStruct(structTT.id)
-    val structOwnership =
-      structDef.mutability match {
-        case MutabilityTemplataT(MutableT) => OwnT
-        case MutabilityTemplataT(ImmutableT) => ShareT
-        case PlaceholderTemplataT(idT, MutabilityTemplataType()) => OwnT
-      }
-    val structType = CoordT(structOwnership, RegionT(), structTT)
+//    val structOwnership =
+//      structDef.mutability match {
+//        case MutabilityTemplata(MutableT) => OwnT
+//        case MutabilityTemplata(ImmutableT) => ShareT
+//        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => OwnT
+//      }
+//    val structType = CoordT(structOwnership, structTT)
+    structType match {
+      case CoordT(structOwnership, _, structTT) =>
+      case _ => vwat()
+    }
 
-    val ret = CoordT(ShareT, RegionT(), VoidT())
-    val header = ast.FunctionHeaderT(env.id, Vector.empty, params2, ret, Some(env.templata))
+    val ret = vassertSome(maybeRetCoord)
+    val header =
+      ast.FunctionHeaderT(
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        params2,
+        ret,
+        Some(env.templata))
 
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
     val body =
       BlockTE(
+//        LocationInDenizen(Vector()),
+//        false,
         Compiler.consecutive(
           Vector(
             structDef.mutability match {
@@ -200,6 +237,7 @@ class StructDropMacro(
                           interner, keywords,
                           env.denizenTemplateId,
                           structTT.id,
+//                          Vector((structDef.defaultRegion, env.defaultRegion)),
                           // We received an instance of this type, so we can use the bounds from it.
                           InheritBoundsFromTypeItself)
                       val reference = substituter.substituteForCoord(coutputs, unsubstitutedReference)
@@ -221,12 +259,12 @@ class StructDropMacro(
                         coutputs,
                         originFunction1.map(_.range).toList ++ callRange,
                         callLocation,
-                        RegionT(),
+                        env.defaultRegion,
                         UnletTE(v))
                     }))
               }
             },
-            ReturnTE(VoidLiteralTE(RegionT())))))
+            ReturnTE(VoidLiteralTE(ret.region)))))
     (header, body)
   }
 }

@@ -75,24 +75,6 @@ object RegionCollapserConsistent {
           })
         AnonymousSubstructConstructorNameI[nI](templateC, templateArgsC, paramsC)
       }
-      // case OverrideDispatcherNameI(OverrideDispatcherTemplateNameI(implId), templateArgs, parameters) => {
-      //   val templateC = OverrideDispatcherTemplateNameI[nI](collapseImplTemplateId(map, implId))
-      //   val templateArgsC = templateArgs.map(collapseTemplata(map, _))
-      //   val paramsC =
-      //     parameters.map(param => {
-      //       collapseCoord(map, param)
-      //     })
-      //   OverrideDispatcherNameI[nI](templateC, templateArgsC, paramsC)
-      // }
-      // case CaseFunctionFromImplNameI(CaseFunctionFromImplTemplateNameI(humanName, runeInImpl, runeInCitizen), templateArgs, parameters) => {
-      //   val templateC = CaseFunctionFromImplTemplateNameI[nI](humanName, runeInImpl, runeInCitizen)
-      //   val templateArgsC = templateArgs.map(collapseTemplata(map, _))
-      //   val paramsC =
-      //     parameters.map(param => {
-      //       collapseCoord(map, param)
-      //     })
-      //   CaseFunctionFromImplNameI[nI](templateC, templateArgsC, paramsC)
-      // }
       case ForwarderFunctionNameI(ForwarderFunctionTemplateNameI(funcTemplateName, index), funcName) => {
         ForwarderFunctionNameI(
           ForwarderFunctionTemplateNameI(collapseFunctionTemplateName(funcTemplateName), index),

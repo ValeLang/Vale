@@ -1,2 +1,2 @@
 extern("vale_runtime_sized_array_capacity")
-func capacity<M Mutability, E>(arr &[]<M>E) int;
+func capacity<r', M Mutability, E>(arr pre&r'[]<M>E) int;

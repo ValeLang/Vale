@@ -64,6 +64,20 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
     val astrouts = compilation.expectAstrouts()
   }
 
+  test("Recursive generic") {
+    val compilation =
+      HigherTypingTestCompilation.test(
+        """
+          |struct Bork<T> {
+          |  x Bork<T>;
+          |}
+          |""".stripMargin)
+    val astrouts = compilation.expectAstrouts()
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords)))
+    val main = program.lookupStruct("Bork")
+    main.headerRuneToType(CodeRuneS(compilation.keywords.T)) shouldEqual CoordTemplataType()
+  }
+
   test("Template call, recursively evaluate") {
     val compilation =
       HigherTypingTestCompilation.test(

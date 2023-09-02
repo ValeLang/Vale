@@ -36,17 +36,25 @@ class CompilerProjectTests extends FunSuite with Matchers {
     val interner = compile.interner
 
     val packageCoord = interner.intern(PackageCoordinate(interner.intern(StrI("test")),Vector()))
+    val tzCodeLoc = CodeLocationS.testZero(interner)
+
     val mainLoc = CodeLocationS(interner.intern(FileCoordinate(packageCoord, "test.vale")), 0)
     val mainTemplateName = interner.intern(FunctionTemplateNameT(interner.intern(StrI("main")), mainLoc))
     val mainName = interner.intern(FunctionNameT(mainTemplateName, Vector(), Vector()))
+    val mainTemplateId = IdT(packageCoord, Vector(), mainTemplateName)
+    val mainId = IdT(packageCoord, Vector(), mainName)
+//    val region = mainTemplateId.addStep(interner.intern(DenizenDefaultRegionNameT()))
+    val regionName = mainTemplateId.addStep(interner.intern(KindPlaceholderNameT(interner.intern(KindPlaceholderTemplateNameT(0, DenizenDefaultRegionRuneS(FunctionNameS(mainTemplateName.humanName, mainTemplateName.codeLocation)))))))
+    val region = RegionT(PlaceholderTemplataT(regionName, RegionTemplataType()))
+    vimpl() // fulln to id
 
     val lambdaLoc = CodeLocationS(interner.intern(FileCoordinate(packageCoord, "test.vale")), 23)
     val lambdaCitizenTemplateName = interner.intern(LambdaCitizenTemplateNameT(lambdaLoc))
     val lambdaCitizenName = interner.intern(LambdaCitizenNameT(lambdaCitizenTemplateName))
-    val lambdaFuncTemplateName = interner.intern(LambdaCallFunctionTemplateNameT(lambdaLoc, Vector(CoordT(ShareT,RegionT(), interner.intern(StructTT(IdT(packageCoord, Vector(mainName), lambdaCitizenName)))))))
+    val lambdaFuncTemplateName = interner.intern(LambdaCallFunctionTemplateNameT(lambdaLoc, Vector(CoordT(ShareT,region,interner.intern(StructTT(IdT(packageCoord, Vector(mainName), lambdaCitizenName)))))))
     val lambdaCitizenId = IdT(packageCoord, Vector(mainName), lambdaCitizenName)
     val lambdaStruct = interner.intern(StructTT(lambdaCitizenId))
-    val lambdaShareCoord = CoordT(ShareT, RegionT(), lambdaStruct)
+    val lambdaShareCoord = CoordT(ShareT, region, lambdaStruct)
     val lambdaFuncName = interner.intern(LambdaCallFunctionNameT(lambdaFuncTemplateName, Vector(), Vector(lambdaShareCoord)))
     val lambdaFuncId =
       IdT(packageCoord, Vector(mainName, lambdaCitizenTemplateName), lambdaFuncName)

@@ -217,6 +217,10 @@ object ICitizenIT {
 sealed trait ISubKindIT[+R <: IRegionsModeI] extends KindIT[R] {
   def id: IdI[R, ISubKindNameI[R]]
 }
+// Interfaces and placeholders
+sealed trait ISuperKindIT[+R <: IRegionsModeI] extends KindIT[R] {
+  def id: IdI[R, ISuperKindNameI[R]]
+}
 
 sealed trait ICitizenIT[+R <: IRegionsModeI] extends ISubKindIT[R] {
   def id: IdI[R, ICitizenNameI[R]]

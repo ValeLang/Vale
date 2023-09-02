@@ -76,26 +76,17 @@ class PostParsingRuleTests extends FunSuite with Matchers {
 
   test("Predict CoordComponent types") {
     val interner = new Interner()
-    vregionmut() // Put back in with regions
-    // val program =
-    //   compile(
-    //     """
-    //       |func main<T>(a T)
-    //       |where T = Ref[O, R, K], O Ownership, R Region, K Kind {}
-    //       |""".stripMargin, interner)
-    // Take out with regions
     val program =
       compile(
         """
           |func main<T>(a T)
-          |where T = Ref[O, K], O Ownership, K Kind {}
+          |where T = Ref[O, R, K], O Ownership, R Region, K Kind {}
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
 
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType()
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("O"))))) shouldEqual OwnershipTemplataType()
-    vregionmut() // Put back in with regions
-    // vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("R"))))) shouldEqual RegionTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("R"))))) shouldEqual RegionTemplataType()
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("K"))))) shouldEqual KindTemplataType()
   }
 

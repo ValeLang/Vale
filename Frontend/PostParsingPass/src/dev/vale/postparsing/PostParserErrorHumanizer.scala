@@ -130,7 +130,6 @@ object PostParserErrorHumanizer {
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
-      case ArbitraryNameS() => "_arby"
       case SelfNameS() => "_Self"
       case CodeNameS(n) => n.str
 //      case FreeImpreciseNameS() => "_Free"
@@ -156,7 +155,7 @@ object PostParserErrorHumanizer {
       case SelfRuneS() => "(self)"
       case SelfCoordRuneS() => "(self ref)"
       case ReturnRuneS() => "(ret)"
-      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface template)"
+      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface)"
       case ImplDropVoidRuneS() => "(impl drop void)"
       case ImplDropCoordRuneS() => "(impl drop coord)"
       case FreeOverrideInterfaceRuneS() => "(freeing interface)"
@@ -164,7 +163,7 @@ object PostParserErrorHumanizer {
       case AnonymousSubstructKindRuneS() => "(anon substruct kind)"
       case AnonymousSubstructCoordRuneS() => "(anon substruct ref)"
       case AnonymousSubstructTemplateRuneS() => "(anon substruct template)"
-      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface template)"
+      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent template)"
       case AnonymousSubstructParentInterfaceKindRuneS() => "(anon sub parent kind)"
       case AnonymousSubstructParentInterfaceCoordRuneS() => "(anon sub parent ref)"
       case StructNameRuneS(inner) => humanizeName(inner)
@@ -195,7 +194,6 @@ object PostParserErrorHumanizer {
       case ImplicitCoercionTemplateRuneS(_, inner) => humanizeRune(inner) + ".gen"
       case ImplicitRegionRuneS(originalRune) => humanizeRune(originalRune) + ".region"
       case CallRegionRuneS(lid) => "_" + lid.path.mkString("") + ".pcall"
-      case CaseRuneFromImplS(innerRune) => "case:" + humanizeRune(innerRune)
       case DispatcherRuneFromImplS(innerRune) => "disimpl:" + humanizeRune(innerRune)
       case other => vimpl(other)
     }
@@ -225,8 +223,8 @@ object PostParserErrorHumanizer {
       case KindComponentsSR(range, kindRune, mutabilityRune) => {
         humanizeRune(kindRune.rune) + " = Kind[" + humanizeRune(mutabilityRune.rune) + "]"
       }
-      case CoordComponentsSR(range, resultRune, ownershipRune, kindRune) => {
-        humanizeRune(resultRune.rune) + " = Ref[" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(kindRune.rune) + "]"
+      case CoordComponentsSR(range, resultRune, regionRune, ownershipRune, kindRune) => {
+        humanizeRune(resultRune.rune) + " = Ref[" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(regionRune.rune) + ", " + humanizeRune(kindRune.rune) + "]"
       }
       case PrototypeComponentsSR(range, resultRune, paramsRune, returnRune) => {
         humanizeRune(resultRune.rune) + " = Prot[" + humanizeRune(paramsRune.rune) + ", " + humanizeRune(returnRune.rune) + "]"
@@ -240,13 +238,13 @@ object PostParserErrorHumanizer {
       case DefinitionCoordIsaSR(range, resultRune, subRune, superRune) => humanizeRune(resultRune.rune) + " = " + humanizeRune(subRune.rune) + " def-isa " + humanizeRune(superRune.rune)
       case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) => resultRune.map(r => humanizeRune(r.rune)).getOrElse("_") + " = " + humanizeRune(subRune.rune) + " call-isa " + humanizeRune(superRune.rune)
       case CoordSendSR(range, senderRune, receiverRune) => humanizeRune(senderRune.rune) + " -> " + humanizeRune(receiverRune.rune)
-      case CoerceToCoordSR(range, coordRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
-      case MaybeCoercingCallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
-      case MaybeCoercingLookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + "\"" + humanizeImpreciseName(name) + "\""
+      case CoerceToCoordSR(range, coordRune, regionRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(regionRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
+      case MaybeCoercingCallSR(range, resultRune, region, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(region.rune) + "'" + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
+      case MaybeCoercingLookupSR(range, rune, region, name) => humanizeRune(rune.rune) + " = " + humanizeRune(region.rune) + "'\"" + humanizeImpreciseName(name) + "\""
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
       case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = \"" + humanizeImpreciseName(name) + "\""
       case LiteralSR(range, rune, literal) => humanizeRune(rune.rune) + " = " + humanizeLiteral(literal)
-      case AugmentSR(range, resultRune, ownership, innerRune) => humanizeRune(resultRune.rune) + " = " + ownership.map(humanizeOwnership).getOrElse("") + humanizeRune(innerRune.rune)
+      case AugmentSR(range, resultRune, ownership, region, innerRune) => humanizeRune(resultRune.rune) + " = " + ownership.map(humanizeOwnership).getOrElse("") + region.map(x => humanizeRune(x.rune) + "'").getOrElse("") + humanizeRune(innerRune.rune)
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"

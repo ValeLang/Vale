@@ -1,41 +1,42 @@
 
-func void() { }
-
-func str(b bool) str {
-  if (b) { "true" } else { "false" }
-}
-
-func +(i int, s str) str {
-  i.str() + s
-}
-
-func +(i int, s StrSlice) str {
-  i.str() + s.str()
-}
+// func void() { }
+// 
+// func str(b bool) str {
+//   if (b) { "true" } else { "false" }
+// }
+// 
+// func +(i int, s str) str {
+//   i.str() + s
+// }
+// 
+// func +(i int, s StrSlice) str {
+//   i.str() + s.str()
+// }
 
 func +(s str, i int) str {
   s + i.str()
 }
 
-func +(s str, i i64) str {
-  s + i.str()
-}
-func +(i i64, s str) str {
-  i.str() + s
-}
-
-func +(s str, b bool) str {
-  s + str(b)
-}
-
-func +(b bool, s str) str {
-  str(b) + s
-}
-
-func +(f float, s str) str {
-  str(f) + s
-}
-
-func +(s str, f float) str {
-  s + str(f)
-}
+// func +(s str, i i64) str {
+//   s + i.str()
+// }
+// func +(i i64, s str) str {
+//   i.str() + s
+// }
+// 
+// func +(s str, b bool) str {
+//   s + str(b)
+// }
+// 
+// func +(b bool, s str) str {
+//   str(b) + s
+// }
+// 
+// func +(f float, s str) str {
+//   str(f) + s
+// }
+// 
+// func +(s str, f float) str {
+//   s + str(f)
+// }
+// 

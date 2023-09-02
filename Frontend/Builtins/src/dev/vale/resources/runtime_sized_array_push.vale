@@ -1,2 +1,2 @@
 extern("vale_runtime_sized_array_push")
-func push<E>(arr &[]<mut>E, newElement E) void;
+func push<E>(arr pre&[]<mut>E, newElement E) void;

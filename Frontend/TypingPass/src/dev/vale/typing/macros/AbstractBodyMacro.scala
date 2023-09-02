@@ -7,9 +7,10 @@ import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, ast}
 import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionDefinitionT, FunctionHeaderT, InterfaceFunctionCallTE, LocationInFunctionEnvironmentT, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentT, TemplatasStore}
-import dev.vale.typing.types._
-import dev.vale.typing.ast._
 import dev.vale.typing.function._
+import dev.vale.typing.types.CoordT
+import dev.vale.typing.ast._
+
 import dev.vale.typing.templata._
 
 class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver: OverloadResolver) extends IFunctionBodyMacro {
@@ -21,7 +22,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     params2: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
@@ -32,6 +33,7 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
       FunctionHeaderT(
         env.id,
         Vector.empty,
+        //Vector(RegionT(env.defaultRegion.localName, true)),
         params2,
         returnReferenceType2,
         originFunction.map(FunctionTemplataT(env.parentEnv, _)))
@@ -48,14 +50,15 @@ class AbstractBodyMacro(interner: Interner, keywords: Keywords, overloadResolver
         vassertSome(TemplatasStore.getImpreciseName(interner, env.id.localName)),
         Vector(),
         Vector(),
-        RegionT(),
+        env.defaultRegion,
         params2.map(_.tyype),
         Vector(),
         true) match {
-        case Ok(StampFunctionSuccess(prototype, _)) => prototype
+        case Ok(StampFunctionSuccess(_, _, prototype, _)) => prototype
         case Err(fff @ FindFunctionFailure(_, _, _)) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, fff))
       }
 
+    vimpl() // pure?
     val body =
       BlockTE(
         ReturnTE(

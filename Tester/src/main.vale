@@ -185,7 +185,8 @@ exported func main() int {
   if (include_regions.len() == 0) {
     include_regions.add("naive-rc");
     include_regions.add("resilient-v3");
-    //include_regions.add("resilient-v4");
+    include_regions.add("safe");
+    include_regions.add("safe-fastest");
     include_regions.add("unsafe-fast");
   }
 
@@ -279,11 +280,6 @@ exported func main() int {
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--force_all_known_live", "true", "--elide_checks_for_known_live", "false"]), region, false, None<str>());
   }
 
-  //if (include_regions.exists({ _ == "resilient-v4" })) {
-  //  region = "resilient-v4";
-  //  suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region, false);
-  //}
-
   include_regions.each((region) => {
     suite.StartTest(42, "mutswaplocals", samples_path./("programs/mutswaplocals.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(5, "structimm", samples_path./("programs/structs/structimm.vale"), &List<str>(), region, false, None<str>());
@@ -330,7 +326,8 @@ exported func main() int {
     suite.StartTest(42, "panicnot", samples_path./("programs/panicnot.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "nestedblocks", samples_path./("programs/nestedblocks.vale"), &List<str>(), region, false, None<str>());
     suite.StartTest(42, "restackify", samples_path./("programs/restackify.vale"), &List<str>(), region, false, None<str>());
-    
+    suite.StartTest(0, "cellularautomata", samples_path./("programs/cellularautomata.vale"), &List<str>([#]["--no_std", "true"]), region, false, None<str>());
+
     if (region != "naive-rc") {
       suite.StartTest(42, "interfacemutreturnexport", samples_path./("programs/externs/interfacemutreturnexport"), &List<str>(), region, false, None<str>());
       suite.StartTest(42, "interfacemutparamexport", samples_path./("programs/externs/interfacemutparamexport"), &List<str>(), region, false, None<str>());
@@ -342,9 +339,20 @@ exported func main() int {
       suite.StartTest(10, "ssamutparamexport", samples_path./("programs/externs/ssamutparamexport"), &List<str>(), region, false, None<str>());
       suite.StartTest(42, "ssamutreturnexport", samples_path./("programs/externs/ssamutreturnexport"), &List<str>(), region, false, None<str>());
     }
+
+
+    if region == "safe" or region == "resilient-v3" {
+      suite.StartTest(10, "pure_block_produce_ssa", samples_path./("programs/pure/pure_block_produce_ssa.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(10, "pure_block_read_ssa", samples_path./("programs/pure/pure_block_read_ssa.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(42, "pure_func_return_rsa", samples_path./("programs/pure/pure_func_return_rsa.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(10, "pure_func_return_ssa", samples_path./("programs/pure/pure_func_return_ssa.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(10, "pure_func_return_struct", samples_path./("programs/pure/pure_func_return_struct.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(10, "pure_func_take_ssa", samples_path./("programs/pure/pure_func_take_ssa.vale"), &List<str>(), region, false, None<str>());
+      suite.StartTest(42, "multi_region_extern", samples_path./("programs/regions/multi_region_extern.vale"), &List<str>(), region, false, None<str>());
+    }
   });
 
-  if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
+  if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "safe" })) {
     // suite.StartCTest("twinpages", &backend_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
   }
 
@@ -356,7 +364,6 @@ exported func main() int {
     suite.StartTest(0, "stdlib_hashset", stdlib_dir./("src/collections/hashset/test"), &List<str>(), region, true, None<str>());
     suite.StartTest(0, "stdlib_hashmap", stdlib_dir./("src/collections/hashmap/test"), &List<str>(), region, true, None<str>());
   }
-
 
   suite.FinishTests(0);
 

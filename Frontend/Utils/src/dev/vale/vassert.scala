@@ -35,16 +35,13 @@ object vcheck {
 // A condition that reflects a programmer error.
 object vassert {
   @elidable(elidable.OFF)
-  def apply(condition: => Boolean): Boolean = {
+  def apply(condition: => Boolean): Unit = {
     vassert(condition, "Assertion failed!")
   }
   @elidable(elidable.OFF)
-  def apply(condition: => Boolean, message: => String): Boolean = {
+  def apply(condition: => Boolean, message: => String): Unit = {
     if (!condition) {
       vfail(message)
-      true
-    } else {
-      false
     }
   }
 }
@@ -144,6 +141,7 @@ object vregion {
 
 // this is mainly a passthrough, and marks something that needs to be implemented or doublechecked
 // for mutable/immutable region support
+// DO NOT SUBMIT
 object vregionmut {
   def apply[T](obj: T): T = {
     obj

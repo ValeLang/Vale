@@ -2,6 +2,7 @@ package dev.vale.highertyping
 
 import dev.vale.postparsing._
 import dev.vale.{Err, Ok, SourceCodeUtils, StrI, vassert, vfail}
+import dev.vale.postparsing.PostParser
 import org.scalatest._
 import dev.vale.solver._
 
@@ -22,7 +23,8 @@ class ErrorTests extends FunSuite with Matchers  {
 
 
     compileProgramForError(compilation) match {
-      case e @ CouldntSolveRulesA(_,RuneTypeSolveError(_,FailedSolve(_,_,RuleError(RuneTypingCouldntFindType(_,CodeNameS(StrI("Bork"))))))) => {
+      case e @ CouldntFindTypeA(_, CodeNameS(StrI("Bork"))) => {
+
         val codeMap = compilation.getCodeMap().getOrDie()
         val errorText =
           HigherTypingErrorHumanizer.humanize(

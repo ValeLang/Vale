@@ -11,6 +11,7 @@ import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.types.StaticSizedArrayTT
 import dev.vale.typing.ast
+import dev.vale.typing.names._
 
 
 class SSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
@@ -22,26 +23,37 @@ class SSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
     val len =
       header.paramTypes match {
         case Vector(CoordT(_, _, contentsStaticSizedArrayTT(size, _, _, _, _))) => size
-        case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "SSALenMacro received non-SSA param: " + header.paramTypes))
+        case _ => {
+          throw CompileErrorExceptionT(
+            RangedInternalErrorT(
+              callRange, "SSALenMacro received non-SSA param: " + header.paramTypes))
+        }
       }
+    vimpl() // pure?
     val body =
       BlockTE(
         ConsecutorTE(
           Vector(
             DiscardTE(ArgLookupTE(0, paramCoords(0).tyype)),
             ReturnTE(
-              ConstantIntTE(len, 32, RegionT())))))
+              ConstantIntTE(len, 32, vassertSome(maybeRetCoord).region)))))
     (header, body)
   }
 }

@@ -152,7 +152,7 @@ class StructHammer(
           val (boxStructRefH) =
             makeBox(hinputs, hamuts, variability, coord, referenceH)
           // The stack owns the box, closure structs just borrow it.
-          (variability, CoordH(vregionmut(MutableBorrowH), YonderH, boxStructRefH))
+          (variability, CoordH(vimpl(/*BorrowH*/), YonderH, boxStructRefH))
         }
       }
     StructMemberH(
@@ -174,7 +174,7 @@ class StructHammer(
         Vector[INameI[cI]](),
         StructNameI[cI](
           StructTemplateNameI[cI](keywords.BOX_HUMAN_NAME),
-          Vector(CoordTemplataI[cI](RegionTemplataI(0), type2))))
+          Vector(CoordTemplataI[cI](vimpl(), type2))))
     val boxFullNameH = nameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefs.find(_.id == boxFullNameH) match {
       case Some(structDefH) => (structDefH.getRef)

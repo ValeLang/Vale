@@ -47,7 +47,7 @@ case class ProgramS(
 
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
-case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
+case class ExternS(packageCoord: PackageCoordinate, defaultRegionRune: IRuneS) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case object PureS extends IFunctionAttributeS
@@ -59,7 +59,7 @@ case class BuiltinS(generatorName: StrI) extends IFunctionAttributeS with ICitiz
 case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: StrI) extends ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
-case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
+case class ExportS(packageCoordinate: PackageCoordinate, defaultRegionRune: IRuneS) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.
@@ -68,6 +68,7 @@ sealed trait ICitizenS {
   def name: ICitizenDeclarationNameS
   def tyype: TemplateTemplataType
   def genericParams: Vector[GenericParameterS]
+  def regionRune: IRuneS
 }
 
 case class StructS(
@@ -94,26 +95,10 @@ case class StructS(
     membersPredictedRuneToType: Map[IRuneS, ITemplataType],
     memberRules: Vector[IRulexSR],
 
+    regionRune: IRuneS,
+
     members: Vector[IStructMemberS]
 ) extends ICitizenS {
-
-  vassert(
-    !genericParams.exists({ case x =>
-      x.rune.rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-  vassert(
-    !(membersRuneToExplicitType ++ membersPredictedRuneToType ++ headerRuneToExplicitType ++ headerPredictedRuneToType)
-        .keys
-        .exists({ case rune =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 //  vassert(isTemplate == identifyingRunes.nonEmpty)
@@ -157,33 +142,16 @@ case class InterfaceS(
 
   rules: Vector[IRulexSR],
 
+  regionRune: IRuneS,
+
   // See IMRFDI
   internalMethods: Vector[FunctionS]
 ) extends ICitizenS {
-
-  vassert(
-    !genericParams.exists({ case x =>
-      x.rune.rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-  vassert(
-    !(runeToExplicitType ++ predictedRuneToType).exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   internalMethods.foreach(internalMethod => {
-    vregionmut() // Put this back in when we have regions
-    // // .init because every method has a default region as the last region param.
-    // vassert(genericParams == internalMethod.genericParams.init)
-    // Take this out when we have regions
-    vassert(genericParams == internalMethod.genericParams)
+    // .init because every method has a default region as the last region param.
+    vassert(genericParams == internalMethod.genericParams.init)
   })
 
 }
@@ -206,6 +174,8 @@ case class ImplS(
 case class ExportAsS(
   range: RangeS,
   rules: Vector[IRulexSR],
+  regionGenericParam: GenericParameterS,
+  defaultRegionRune: IRuneS,
   exportName: ExportAsNameS,
   rune: RuneUsage,
   exportedName: StrI) {
@@ -251,6 +221,7 @@ case class ParameterS(
   range: RangeS,
   virtuality: Option[AbstractSP],
   preChecked: Boolean,
+  outerRegionRune: IRuneS, // See PMHBRS
   pattern: AtomSP) {
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -351,26 +322,16 @@ case class FunctionS(
   // We need to leave it an option to signal that the compiler can infer the return type.
   maybeRetCoordRune: Option[RuneUsage],
 
+  defaultRegion: IRuneS,
+
   rules: Vector[IRulexSR],
   body: IBodyS
 ) {
   vpass()
 
-  // Put this back in when we have regions
-  // // Every function needs a region generic parameter, see DRIAGP.
-  // vassert(genericParams.nonEmpty)
-  // Take this out when we have regions
-  vassert(
-    !genericParams.exists({ case x =>
-      x.rune.rune match { case DenizenDefaultRegionRuneS(_) => true case _ => false }
-    }))
-  vassert(
-    !runeToPredictedType.exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
+  // Every function needs a region generic parameter, see DRIAGP.
+  vassert(genericParams.nonEmpty)
+  vassert(genericParams.last.rune.rune == defaultRegion)
 
   body match {
     case ExternBodyS | AbstractBodyS | GeneratedBodyS(_) => {

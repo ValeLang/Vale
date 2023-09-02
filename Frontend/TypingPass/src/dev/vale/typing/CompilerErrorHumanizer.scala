@@ -12,7 +12,6 @@ import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.PostParserErrorHumanizer
 import OverloadResolver._
 import dev.vale.highertyping._
-import dev.vale.typing.CompilerErrorHumanizer.humanizeResolvingError
 import dev.vale.typing.ast._
 import dev.vale.typing.infer._
 import dev.vale.typing.names._
@@ -652,7 +651,20 @@ object CompilerErrorHumanizer {
         "(" + coords.map(CoordTemplataT).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case StringTemplataT(value) => "\"" + value + "\""
-      case PlaceholderTemplataT(id, tyype) => {
+      case PlaceholderTemplataT(id@IdT(_, _, RegionPlaceholderNameT(index, rune, _, _)), tyype) => {
+        rune match {
+          case DenizenDefaultRegionRuneS(denizenName) => {
+            PostParserErrorHumanizer.humanizeName(denizenName) + "'"
+          }
+          case ExportDefaultRegionRuneS(denizenName) => {
+            PostParserErrorHumanizer.humanizeName(denizenName) + ".export'"
+          }
+          case _ => {
+            humanizeRune(rune) + "'"
+          }
+        }
+      }
+      case PlaceholderTemplataT(id@IdT(_, _, _), tyype) => {
         tyype match {
           case CoordTemplataType() => "$" + humanizeId(codeMap, id)
           case _ => humanizeTemplataType(tyype) + "$" + humanizeId(codeMap, id)
@@ -663,8 +675,8 @@ object CompilerErrorHumanizer {
   }
 
   private def humanizeCoord(
-      codeMap: CodeLocationS => String,
-      coord: CoordT
+    codeMap: CodeLocationS => String,
+    coord: CoordT
   ) = {
     val CoordT(ownership, region, kind) = coord
 
@@ -675,14 +687,15 @@ object CompilerErrorHumanizer {
         case BorrowT => "&"
         case WeakT => "&&"
       }
+    val regionStr = humanizeTemplata(codeMap, region.region)
     val kindStr = humanizeKind(codeMap, kind, Some(region))
-    ownershipStr + kindStr
+    ownershipStr + regionStr + kindStr
   }
 
   private def humanizeKind(
-      codeMap: CodeLocationS => String,
-      kind: KindT,
-      containingRegion: Option[RegionT] = None
+    codeMap: CodeLocationS => String,
+    kind: KindT,
+    containingRegion: Option[RegionT] = None
   ) = {
     kind match {
       case IntT(bits) => "i" + bits
@@ -694,24 +707,32 @@ object CompilerErrorHumanizer {
       case FloatT() => "float"
       case OverloadSetT(_, name) => {
         "(overloads: " +
-            PostParserErrorHumanizer.humanizeImpreciseName(name) +
-            ")"
+          PostParserErrorHumanizer.humanizeImpreciseName(name) +
+          ")"
       }
       case InterfaceTT(name) => humanizeId(codeMap, name, containingRegion)
       case StructTT(name) => humanizeId(codeMap, name, containingRegion)
       case contentsRuntimeSizedArrayTT(mutability, elementType, region) => {
-        "Array<" +
-            humanizeTemplata(codeMap, mutability) + ", " +
-            humanizeTemplata(codeMap, CoordTemplataT(elementType)) +
+          "Array<" +
+          humanizeTemplata(codeMap, mutability) + ", " +
+            humanizeTemplata(codeMap, CoordTemplataT(elementType)) + ", " +
+            (containingRegion match {
+              case None => humanizeTemplata(codeMap, region.region) + "'"
+              case Some(r) => vassert(r == region); "_"
+            }) +
             ">"
       }
       case contentsStaticSizedArrayTT(size, mutability, variability, elementType, region) => {
-        //        humanizeTemplata(codeMap, region) + "'" +
-        "StaticArray<" +
-            humanizeTemplata(codeMap, size) + ", " +
-            humanizeTemplata(codeMap, mutability) + ", " +
-            humanizeTemplata(codeMap, variability) + ", " +
-            humanizeTemplata(codeMap, CoordTemplataT(elementType)) +
+//        humanizeTemplata(codeMap, region) + "'" +
+          "StaticArray<" +
+          humanizeTemplata(codeMap, size) + ", " +
+          humanizeTemplata(codeMap, mutability) + ", " +
+          humanizeTemplata(codeMap, variability) + ", " +
+          humanizeTemplata(codeMap, CoordTemplataT(elementType)) + ", " +
+            (containingRegion match {
+              case None => humanizeTemplata(codeMap, region.region) + "'"
+              case Some(r) => vassert(r == region); "_"
+            }) +
             ">"
       }
     }
@@ -778,6 +799,9 @@ object CompilerErrorHumanizer {
       }
       case KindPlaceholderNameT(template) => humanizeName(codeMap, template)
       case KindPlaceholderTemplateNameT(index, rune) => humanizeRune(rune)
+      case NonKindNonRegionPlaceholderNameT(index, rune) => humanizeRune(rune)
+      case RegionPlaceholderNameT(index, rune, _, _) => humanizeRune(rune)
+      case CoordGenericParamRegionPlaceholderNameT(index, rune, _, _) => humanizeRune(rune) + "'"
       case CodeVarNameT(name) => name.str
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
       case FunctionTemplateNameT(humanName, codeLoc) => humanName.str
@@ -802,13 +826,15 @@ object CompilerErrorHumanizer {
             case MutabilityTemplataT(MutableT) => "mut"
             case other => humanizeTemplata(codeMap, other)
           }) + ", " +
+          humanizeTemplata(codeMap, region.region) + ">"
           humanizeTemplata(codeMap, CoordTemplataT(elementType))
       }
       case StaticSizedArrayNameT(StaticSizedArrayTemplateNameT(), size, variability, RawArrayNameT(mutability, elementType, region)) => {
         "[]<" +
           humanizeTemplata(codeMap, size) + ", "
           humanizeTemplata(codeMap, mutability) + ", "
-          humanizeTemplata(codeMap, variability) + ">"
+          humanizeTemplata(codeMap, variability) + ", "
+          humanizeTemplata(codeMap, region.region) + ">"
           humanizeTemplata(codeMap, CoordTemplataT(elementType))
       }
       case AnonymousSubstructNameT(interface, templateArgs) => {
@@ -835,7 +861,7 @@ object CompilerErrorHumanizer {
               templateArgs.lastOption.map(region => {
                 containingRegion match {
                   case None => humanizeTemplata(codeMap, region)
-                  case Some(r) => "_"
+                  case Some(r) => vassert(r.region == region); "_"
                 }
               })).mkString(", ") +
           ">"

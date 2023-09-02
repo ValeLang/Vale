@@ -32,9 +32,9 @@ import dev.vale.typing.env._
 import dev.vale.typing.expression.LocalHelper
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
-import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.macros.citizen.StructDropMacro
 import dev.vale.typing.macros.ssa.SSALenMacro
+import dev.vale.typing.templata.ITemplataT.expectRegion
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
@@ -108,17 +108,16 @@ class Compiler(
         }
 
         override def resolveInterface(
-            coutputs: CompilerOutputs,
-            callingEnv: IInDenizenEnvironmentT, // See CSSNCE
-            callRange: List[RangeS],
-            callLocation: LocationInDenizen,
-            interfaceTemplata: InterfaceDefinitionTemplataT,
-            uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+          coutputs: CompilerOutputs,
+          callingEnv: IInDenizenEnvironmentT, // See CSSNCE
+          callRange: List[RangeS],
+          callLocation: LocationInDenizen,
+          interfaceTemplata: InterfaceDefinitionTemplataT,
+          uncoercedTemplateArgs: Vector[ITemplataT[ITemplataType]]):
         IResolveOutcome[InterfaceTT] = {
           structCompiler.resolveInterface(
             coutputs, callingEnv, callRange, callLocation, interfaceTemplata, uncoercedTemplateArgs)
         }
-
       })
   val inferCompiler: InferCompiler =
     new InferCompiler(
@@ -177,12 +176,14 @@ class Compiler(
             case contentsRuntimeSizedArrayTT(mutability, elementType, selfRegion) => {
               getPlaceholdersInTemplata(accum, mutability)
               getPlaceholdersInKind(accum, elementType.kind)
+              getPlaceholdersInTemplata(accum, selfRegion.region)
             }
             case contentsStaticSizedArrayTT(size, mutability, variability, elementType, selfRegion) => {
               getPlaceholdersInTemplata(accum, size)
               getPlaceholdersInTemplata(accum, mutability)
               getPlaceholdersInTemplata(accum, variability)
               getPlaceholdersInKind(accum, elementType.kind)
+              getPlaceholdersInTemplata(accum, selfRegion.region)
             }
             case StructTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
             case InterfaceTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
@@ -289,7 +290,7 @@ class Compiler(
         }
 
         override def getMutability(state: CompilerOutputs, kind: KindT): ITemplataT[MutabilityTemplataType] = {
-            Compiler.getMutability(state, kind)
+          Compiler.getMutability(state, kind)
         }
 
         override def predictStaticSizedArrayKind(
@@ -413,7 +414,7 @@ class Compiler(
         override def assembleImpl(env: InferEnv, range: RangeS, subKind: KindT, superKind: KindT): IsaTemplataT = {
           IsaTemplataT(
             range,
-            env.originalCallingEnv.id.addStep(
+            env.selfEnv.id.addStep(
               interner.intern(
                 ImplBoundNameT(
                   interner.intern(ImplBoundTemplateNameT(range.begin)),
@@ -578,7 +579,7 @@ class Compiler(
         startingNenv: NodeEnvironmentT,
         nenv: NodeEnvironmentBox,
         life: LocationInFunctionEnvironmentT,
-      ranges: List[RangeS],
+        ranges: List[RangeS],
       callLocation: LocationInDenizen,
         region: RegionT,
         exprs: BlockSE
@@ -655,14 +656,14 @@ class Compiler(
       convertHelper,
       new IExpressionCompilerDelegate {
         override def evaluateTemplatedFunctionFromCallForPrototype(
-            coutputs: CompilerOutputs,
-            callingEnv: IInDenizenEnvironmentT, // See CSSNCE
-            callRange: List[RangeS],
+          coutputs: CompilerOutputs,
+          callingEnv: IInDenizenEnvironmentT, // See CSSNCE
+          callRange: List[RangeS],
           callLocation: LocationInDenizen,
-            functionTemplata: FunctionTemplataT,
-            explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+          functionTemplata: FunctionTemplataT,
+          explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
           contextRegion: RegionT,
-            args: Vector[CoordT]):
+          args: Vector[CoordT]):
         IEvaluateFunctionResult = {
           functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
             coutputs, callRange, callLocation, callingEnv, functionTemplata, explicitTemplateArgs, contextRegion, args)
@@ -683,12 +684,12 @@ class Compiler(
         }
 
         override def evaluateClosureStruct(
-            coutputs: CompilerOutputs,
-            containingNodeEnv: NodeEnvironmentT,
-            callRange: List[RangeS],
+          coutputs: CompilerOutputs,
+          containingNodeEnv: NodeEnvironmentT,
+          callRange: List[RangeS],
           callLocation: LocationInDenizen,
-            name: IFunctionDeclarationNameS,
-            function1: FunctionA):
+          name: IFunctionDeclarationNameS,
+          function1: FunctionA):
         StructTT = {
           functionCompiler.evaluateClosureStruct(coutputs, containingNodeEnv, callRange, callLocation, name, function1, true)
         }
@@ -874,19 +875,22 @@ class Compiler(
                 structCompiler.compileStruct(coutputs, List(), LocationInDenizen(Vector()), templata)
 
                 val maybeExport =
-                  structA.attributes.collectFirst { case e@ExportS(_) => e }
+                  structA.attributes.collectFirst { case e@ExportS(_, _) => e }
                 maybeExport match {
                   case None =>
-                  case Some(ExportS(packageCoordinate)) => {
+                  case Some(ExportS(packageCoordinate, defaultRegionRune)) => {
                     val templateName = interner.intern(ExportTemplateNameT(structA.range.begin))
                     val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                     val exportOuterEnv =
                       ExportEnvironmentT(
                         globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
-                    val regionPlaceholder = RegionT()
+                    // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+                    val regionPlaceholder =
+                      templataCompiler.createRegionPlaceholderInner(
+                        templateId, 0, defaultRegionRune, Some(0), ReadWriteRegionS)
 
-                    val placeholderedExportName = interner.intern(ExportNameT(templateName, RegionT()))
+                    val placeholderedExportName = interner.intern(ExportNameT(templateName, regionPlaceholder))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
@@ -894,7 +898,7 @@ class Compiler(
 
                     val exportPlaceholderedStruct =
                       structCompiler.resolveStruct(
-                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector()) match {
+                        coutputs, exportEnv, List(structA.range), LocationInDenizen(Vector()), templata, Vector(regionPlaceholder.region)) match {
                         case ResolveSuccess(kind) => kind
                         case ResolveFailure(range, reason) => {
                           throw CompileErrorExceptionT(TypingPassResolvingError(range, reason))
@@ -917,17 +921,17 @@ class Compiler(
                 structCompiler.compileInterface(coutputs, List(), LocationInDenizen(Vector()), templata)
 
                 val maybeExport =
-                  interfaceA.attributes.collectFirst { case e@ExportS(_) => e }
+                  interfaceA.attributes.collectFirst { case e@ExportS(_, _) => e }
                 maybeExport match {
                   case None =>
-                  case Some(ExportS(packageCoordinate)) => {
+                  case Some(ExportS(packageCoordinate, _)) => {
                     val templateName = interner.intern(ExportTemplateNameT(interfaceA.range.begin))
                     val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                     val exportOuterEnv =
                       ExportEnvironmentT(
                         globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
-                    val placeholderedExportName = interner.intern(ExportNameT(templateName, RegionT()))
+                    val placeholderedExportName = interner.intern(ExportNameT(templateName, vimpl()))
                     val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
                     val exportEnv =
                       ExportEnvironmentT(
@@ -979,12 +983,12 @@ class Compiler(
                 case FunctionEnvEntry(functionA) => {
                   val templata = FunctionTemplataT(packageEnv, functionA)
                   val header =
-                  functionCompiler.evaluateGenericFunctionFromNonCall(
+                    functionCompiler.evaluateGenericFunctionFromNonCall(
                       coutputs, List(), LocationInDenizen(Vector()), templata)
 
-                  functionA.attributes.collectFirst({ case e @ ExternS(_) => e }) match {
+                  functionA.attributes.collectFirst({ case e @ ExternS(_, _) => e }) match {
                     case None =>
-                    case Some(ExternS(packageCoord)) => {
+                    case Some(ExternS(packageCoord, defaultRegionRune)) => {
                       val externName =
                         functionA.name match {
                           case FunctionNameS(name, range) => name
@@ -994,8 +998,12 @@ class Compiler(
                       val templateName = interner.intern(ExternTemplateNameT(functionA.range.begin))
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
 
-                      val regionPlaceholder = RegionT()
-                      val placeholderedExternName = interner.intern(ExternNameT(templateName, RegionT()))
+                      // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+                      val regionPlaceholder =
+                        templataCompiler.createRegionPlaceholderInner(
+                          templateId, 0, defaultRegionRune, Some(0), ReadWriteRegionS)
+
+                      val placeholderedExternName = interner.intern(ExternNameT(templateName, regionPlaceholder))
                       val placeholderedExternId = templateId.copy(localName = placeholderedExternName)
                       val externEnv =
                         ExternEnvironmentT(
@@ -1011,7 +1019,7 @@ class Compiler(
                           LocationInDenizen(Vector()),
                           externEnv,
                           templata,
-                          Vector(),
+                          U.repeat(regionPlaceholder.region, functionA.genericParameters.length),
                           regionPlaceholder,
                           Vector()) match {
                           case ResolveFunctionSuccess(prototype, inferences) => prototype.prototype
@@ -1080,17 +1088,20 @@ class Compiler(
                   }
 
                   val maybeExport =
-                    functionA.attributes.collectFirst { case e@ExportS(_) => e }
+                    functionA.attributes.collectFirst { case e@ExportS(_, _) => e }
                   maybeExport match {
                     case None =>
-                    case Some(ExportS(packageCoordinate)) => {
+                    case Some(ExportS(packageCoordinate, defaultRegionRune)) => {
                       val templateName = interner.intern(ExportTemplateNameT(functionA.range.begin))
                       val templateId = IdT(packageId.packageCoord, Vector(), templateName)
                       val exportOuterEnv =
                         ExportEnvironmentT(
                           globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
-                      val regionPlaceholder = RegionT()
+                      // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+                      val regionPlaceholder =
+                        templataCompiler.createRegionPlaceholderInner(
+                          templateId, 0, defaultRegionRune, Some(0), ReadWriteRegionS)
 
                       val placeholderedExportName = interner.intern(ExportNameT(templateName, regionPlaceholder))
                       val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
@@ -1131,7 +1142,7 @@ class Compiler(
             PackageEnvironmentT.makeTopLevelEnvironment(
               globalEnv, IdT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
 
-          programA.exports.foreach({ case ExportAsA(range, exportedName, rules, runeToType, typeRuneA) =>
+          programA.exports.foreach({ case ExportAsA(range, exportedName, defaultRegionRune, rules, runeToType, typeRuneA) =>
             val typeRuneT = typeRuneA
 
             val templateName = interner.intern(ExportTemplateNameT(range.begin))
@@ -1140,7 +1151,10 @@ class Compiler(
               ExportEnvironmentT(
                 globalEnv, packageEnv, templateId, templateId, TemplatasStore(templateId, Map(), Map()))
 
-            val regionPlaceholder = RegionT()
+            // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+            val regionPlaceholder =
+              templataCompiler.createRegionPlaceholderInner(
+                templateId, 0, defaultRegionRune, Some(0), ReadWriteRegionS)
 
             val placeholderedExportName = interner.intern(ExportNameT(templateName, regionPlaceholder))
             val placeholderedExportId = templateId.copy(localName = placeholderedExportName)
@@ -1159,12 +1173,12 @@ class Compiler(
               templataByRune.get(typeRuneT.rune) match {
                 case Some(KindTemplataT(kind)) => {
                 coutputs.addKindExport(range, kind, placeholderedExportId, exportedName)
-                }
-                case Some(prototype) => {
-                  vimpl()
-                }
-                case _ => vfail()
               }
+              case Some(prototype) => {
+                vimpl()
+              }
+              case _ => vfail()
+            }
           })
         })
 
@@ -1335,7 +1349,7 @@ class Compiler(
             coutputs.getInstantiationNameToFunctionBoundToRune(),
             coutputs.getKindExports,
             coutputs.getFunctionExports,
-            coutputs.getKindExterns,
+//            coutputs.getKindExterns,
             coutputs.getFunctionExterns)
 
         vassert(reachableFunctions.toVector.map(_.header.id).distinct.size == reachableFunctions.toVector.map(_.header.id).size)
@@ -1430,75 +1444,94 @@ class Compiler(
       val exportedKindToExport = packageToKindToExport.getOrElse(funcExport.exportId.packageCoord, Map())
       (Vector(funcExport.prototype.returnType) ++ funcExport.prototype.paramTypes)
         .foreach(paramType => {
-          if (!Compiler.isPrimitive(paramType.kind) && !exportedKindToExport.contains(paramType.kind)) {
-            throw CompileErrorExceptionT(
-              ExportedFunctionDependedOnNonExportedKind(
-                List(funcExport.range), funcExport.exportId.packageCoord, funcExport.prototype.toSignature, paramType.kind))
+          val paramKind = paramType.kind
+          paramKind match {
+            case x if isPrimitive(x) =>
+            case c : ICitizenTT => {
+              val citizenDef = coutputs.lookupCitizen(c)
+              val placeholderedCitizen = citizenDef.instantiatedCitizen
+              println("DO NOT SUBMIT put export checks back in.")
+//              if (!exportedKindToExport.contains(placeholderedCitizen)) {
+//                throw CompileErrorExceptionT(
+//                  ExportedFunctionDependedOnNonExportedKind(
+//                    List(funcExport.range), funcExport.exportId.packageCoord, funcExport.prototype.toSignature, paramType.kind))
+//              }
+            }
+            case RuntimeSizedArrayTT(_) | StaticSizedArrayTT(_) => {
+              vimpl()
+//              val citizenDef = coutputs.lookupCitizen(c)
+//              val placeholderedCitizen = citizenDef.instantiatedCitizen
+//              if (!exportedKindToExport.contains(placeholderedCitizen)) {
+//                throw CompileErrorExceptionT(
+//                  ExportedFunctionDependedOnNonExportedKind(
+//                    List(funcExport.range), funcExport.packageCoordinate, funcExport.prototype.toSignature, paramType.kind))
+//              }
+            }
           }
         })
     })
-    coutputs.getFunctionExterns.foreach(functionExtern => {
-      val exportedKindToExport = packageToKindToExport.getOrElse(functionExtern.externPlaceholderedId.packageCoord, Map())
-      (Vector(functionExtern.prototype.returnType) ++ functionExtern.prototype.paramTypes)
-        .foreach(paramType => {
-          if (!Compiler.isPrimitive(paramType.kind) && !exportedKindToExport.contains(paramType.kind)) {
-            throw CompileErrorExceptionT(
-              ExternFunctionDependedOnNonExportedKind(
-                List(functionExtern.range), functionExtern.externPlaceholderedId.packageCoord, functionExtern.prototype.toSignature, paramType.kind))
-          }
-        })
-    })
-    packageToKindToExport.foreach({ case (packageCoord, exportedKindToExport) =>
-      exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
-        exportedKind match {
-          case sr@StructTT(_) => {
-            val structDef = coutputs.lookupStruct(sr.id)
-
-            val substituter =
-              TemplataCompiler.getPlaceholderSubstituter(
-                opts.globalOptions.sanityCheck,
-                interner,
-                keywords,
-                structDef.templateName,
-                sr.id,
-                InheritBoundsFromTypeItself)
-
-            structDef.members.foreach({
-              case VariadicStructMemberT(name, tyype) => {
-                vimpl()
-              }
-              case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
-                vimpl()
-              }
-              case NormalStructMemberT(_, _, ReferenceMemberTypeT(unsubstitutedMemberCoord)) => {
-                val memberCoord = substituter.substituteForCoord(coutputs, unsubstitutedMemberCoord)
-                val memberKind = memberCoord.kind
-                if (structDef.mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
-                  throw CompileErrorExceptionT(
-                    vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                      List(export.range), packageCoord, exportedKind, memberKind))
-                }
-              }
-            })
-          }
-          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind), _) => {
-            if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
-              throw CompileErrorExceptionT(
-                vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                  List(export.range), packageCoord, exportedKind, elementKind))
-            }
-          }
-          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind), _) => {
-            if (mutability == MutabilityTemplataT(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
-              throw CompileErrorExceptionT(
-                vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                  List(export.range), packageCoord, exportedKind, elementKind))
-            }
-          }
-          case InterfaceTT(_) =>
-        }
-      })
-    })
+    println("DO NOT SUBMIT put export checks back in.")
+//    coutputs.getFunctionExterns.foreach(functionExtern => {
+//      val exportedKindToExport = packageToKindToExport.getOrElse(functionExtern.packageCoordinate, Map())
+//      (Vector(functionExtern.prototype.returnType) ++ functionExtern.prototype.paramTypes)
+//        .foreach(paramType => {
+//          if (!Compiler.isPrimitive(paramType.kind) && !exportedKindToExport.contains(paramType.kind)) {
+//            throw CompileErrorExceptionT(
+//              ExternFunctionDependedOnNonExportedKind(
+//                List(functionExtern.range), functionExtern.packageCoordinate, functionExtern.prototype.toSignature, paramType.kind))
+//          }
+//        })
+//    })
+    println("DO NOT SUBMIT put export checks back in.")
+//    packageToKindToExport.foreach({ case (packageCoord, exportedKindToExport) =>
+//      exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
+//        exportedKind match {
+//          case sr@StructTT(_) => {
+//            val structDef = coutputs.lookupStruct(sr.id)
+//
+//            val substituter =
+//              TemplataCompiler.getPlaceholderSubstituter(
+//                interner,
+//                keywords,
+//                sr.id,
+//                InheritBoundsFromTypeItself)
+//
+//            structDef.members.foreach({
+//              case VariadicStructMemberT(name, tyype) => {
+//                vimpl()
+//              }
+//              case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
+//                vimpl()
+//              }
+//              case NormalStructMemberT(_, _, ReferenceMemberTypeT(unsubstitutedMemberCoord)) => {
+//                val memberCoord = substituter.substituteForCoord(coutputs, unsubstitutedMemberCoord)
+//                val memberKind = memberCoord.kind
+//                if (structDef.mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
+//                  throw CompileErrorExceptionT(
+//                    vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
+//                      List(export.range), packageCoord, exportedKind, memberKind))
+//                }
+//              }
+//            })
+//          }
+//          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind), selfRegion) => {
+//            if (mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+//              throw CompileErrorExceptionT(
+//                vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
+//                  List(export.range), packageCoord, exportedKind, elementKind))
+//            }
+//          }
+//          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind), selfRegion) => {
+//            if (mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+//              throw CompileErrorExceptionT(
+//                vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
+//                  List(export.range), packageCoord, exportedKind, elementKind))
+//            }
+//          }
+//          case InterfaceTT(_) =>
+//        }
+//      })
+//    })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
@@ -1508,20 +1541,20 @@ class Compiler(
       case _ =>
     }
     functionA.attributes.exists({
-      case ExportS(_) => true
-      case ExternS(_) => true
+      case ExportS(_, _) => true
+      case ExternS(_, _) => true
       case _ => false
     })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootStruct(structA: StructA): Boolean = {
-    structA.attributes.exists({ case ExportS(_) => true case _ => false })
+    structA.attributes.exists({ case ExportS(_, _) => true case _ => false })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootInterface(interfaceA: InterfaceA): Boolean = {
-    interfaceA.attributes.exists({ case ExportS(_) => true case _ => false })
+    interfaceA.attributes.exists({ case ExportS(_, _) => true case _ => false })
   }
 }
 

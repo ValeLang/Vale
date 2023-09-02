@@ -36,11 +36,15 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs();
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(CodeVarNameT(StrI("a")), VaryingT, _)), ConstantIntTE(IntegerTemplataT(4), _, _)) => })
+    Collector.only(main, {
+      case MutateTE(
+        LocalLookupTE(_,ReferenceLocalVariableT(CodeVarNameT(StrI("a")), VaryingT, _)),
+        ConstantIntTE(IntegerTemplataT(4), _, _)) =>
+    })
 
-    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
+    val lookup = Collector.only(main, { case l @ LocalLookupTE(_, _) => l })
     val resultCoord = lookup.result.coord
-    resultCoord shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
+    resultCoord shouldEqual CoordT(ShareT, vimpl(), IntT.i32)
   }
 
   test("Test mutable member permission") {
@@ -62,7 +66,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     val resultCoord = lookup.result.coord
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
-      case CoordT(OwnT, _, StructTT(_)) =>
+      case CoordT(OwnT, _,StructTT(_)) =>
       case x => vfail(x.toString)
     }
   }
@@ -167,6 +171,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |import v.builtins.drop.*;
+        |import v.builtins.panicutils.*;
         |
         |exported func main() int {
         |  arr = #[#10]({_});
@@ -177,7 +182,12 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.kind match {
-          case contentsStaticSizedArrayTT(IntegerTemplataT(10),MutabilityTemplataT(ImmutableT),VariabilityTemplataT(FinalT),CoordT(ShareT,_, IntT(_)), _) =>
+          case contentsStaticSizedArrayTT(
+            IntegerTemplataT(10),
+            MutabilityTemplataT(ImmutableT),
+            VariabilityTemplataT(FinalT),
+            CoordT(ShareT,_,IntT(_)),
+            _) =>
         }
       }
     }
@@ -193,7 +203,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
-      case Err(CouldntConvertForMutateT(_, CoordT(ShareT, _, IntT.i32), CoordT(ShareT, RegionT(), StrT()))) =>
+      case Err(CouldntConvertForMutateT(_, CoordT(ShareT, _, IntT.i32), CoordT(ShareT, _, StrT()))) =>
       case _ => vfail()
     }
   }
@@ -219,6 +229,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.arrays.*;
         |import v.builtins.drop.*;
+        |import v.builtins.panicutils.*;
         |
         |exported func main() int {
         |  arr = Array<mut, int>(3);
@@ -262,10 +273,18 @@ class CompilerMutateTests extends FunSuite with Matchers {
     val nameStr = interner.intern(StrI("main"))
     val testPackageCoord = PackageCoordinate.TEST_TLD(interner, keywords)
     val tzCodeLoc = CodeLocationS.testZero(interner)
-    val fireflyKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Firefly")), Vector.empty))))
-    val fireflyCoord = CoordT(OwnT,RegionT(), fireflyKind)
-    val serenityKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Serenity")), Vector.empty))))
-    val serenityCoord = CoordT(OwnT,RegionT(), serenityKind)
+    val funcTemplateName = IdT(testPackageCoord, Vector(), FunctionTemplateNameT(nameStr, tzCodeLoc))
+    val funcName = IdT(testPackageCoord, Vector(), FunctionNameT(FunctionTemplateNameT(nameStr, tzCodeLoc), Vector(), Vector()))
+    val regionName =
+      funcTemplateName.addStep(
+        interner.intern(KindPlaceholderNameT(
+          interner.intern(KindPlaceholderTemplateNameT(
+            0, DenizenDefaultRegionRuneS(FunctionNameS(nameStr, tzCodeLoc)))))))
+    val region = RegionT(PlaceholderTemplataT(regionName, RegionTemplataType()))
+    val fireflyKind = StructTT(IdT(testPackageCoord, Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Firefly")), Vector.empty))))
+    val fireflyCoord = CoordT(OwnT,region,fireflyKind)
+    val serenityKind = StructTT(IdT(testPackageCoord, Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Serenity")), Vector.empty))))
+    val serenityCoord = CoordT(OwnT,region,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
 

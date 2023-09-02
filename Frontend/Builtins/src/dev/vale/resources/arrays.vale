@@ -1,55 +1,56 @@
-import v.builtins.arith.*;
-import v.builtins.drop.*;
-import v.builtins.panic.*;
-import v.builtins.runtime_sized_array_mut_new.*;
-import v.builtins.runtime_sized_array_mut_drop.*;
-import v.builtins.runtime_sized_array_push.*;
-import v.builtins.runtime_sized_array_pop.*;
-import v.builtins.runtime_sized_array_len.*;
-import v.builtins.runtime_sized_array_capacity.*;
-import v.builtins.static_sized_array_mut_drop.*;
-
-func drop_into<V Variability, S Int, E, F>(arr [#S]<imm, V>E, consumer &F) void
-where func(&F, E)void
-{}
-
-func drop<V Variability, S Int, E>(arr [#S]<imm, V>E) void {}
-
-func drop_into<E, F>(arr []<imm>E, consumer &F) void
-where func(&F, &E)void, func drop(E)void
-{
-  i = arr.len() - 1;
-  while (i >= 0) {
-    consumer(arr[i]);
-    set i = i - 1;
-  }
-}
-
-func drop<E>(arr []<imm>E) void
-where func drop(E)void {
-  drop_into(arr, &{_;});
-}
-
-extern("vale_static_sized_array_len")
-func len<M Mutability, V Variability, S Int, E>(arr &[#S]<M Mutability, V>E) int;
-
-func Array<M Mutability, E, G>(n int, generator G) []<M>E
-where
-  M Mutability = mut,
-  func(&G, int)E,
-  func drop(G)void
-{
-  arr = Array<mut, E>(n);
-  i = 0;
-  while (i < n) {
-    arr.push(generator(i));
-    set i = i + 1;
-  }
-  return arr;
-}
-
-extern("vale_runtime_sized_array_imm_new")
-func Array<M Mutability, E Ref imm, G>(n int, generator &G) []<M>E
-where
-  M Mutability = imm,
-  func(&G, int)E;
+// import v.builtins.arith.*;
+// import v.builtins.drop.*;
+// import v.builtins.panic.*;
+// import v.builtins.runtime_sized_array_mut_new.*;
+// import v.builtins.runtime_sized_array_mut_drop.*;
+// import v.builtins.runtime_sized_array_push.*;
+// import v.builtins.runtime_sized_array_pop.*;
+// import v.builtins.runtime_sized_array_len.*;
+// import v.builtins.runtime_sized_array_capacity.*;
+// import v.builtins.static_sized_array_mut_drop.*;
+//
+// func drop_into<V Variability, S Int, E, F>(arr [#S]<imm, V>E, consumer &F) void
+// where func(&F, E)void
+// {}
+//
+// func drop<V Variability, S Int, E>(arr [#S]<imm, V>E) void {}
+//
+// func drop_into<E, F>(arr []<imm>E, consumer &F) void
+// where func(&F, &E)void, func drop(E)void
+// {
+//   i = arr.len() - 1;
+//   while (i >= 0) {
+//     consumer(arr[i]);
+//     set i = i - 1;
+//   }
+// }
+//
+// func drop<E>(arr []<imm>E) void
+// where func drop(E)void {
+//   drop_into(arr, &{_;});
+// }
+//
+// extern("vale_static_sized_array_len")
+// func len<M Mutability, V Variability, S Int, E>(arr &[#S]<M Mutability, V>E) int;
+//
+// func Array<M Mutability, E, G>(n int, generator G) []<M>E
+// where
+//   M Mutability = mut,
+//   func(&G, int)E,
+//   func drop(G)void
+// {
+//   arr = Array<mut, E>(n);
+//   i = 0;
+//   while (i < n) {
+//     arr.push(generator(i));
+//     set i = i + 1;
+//   }
+//   return arr;
+// }
+//
+// extern("vale_runtime_sized_array_imm_new")
+// func Array<M Mutability, E Ref imm, G>(n int, generator &G) []<M>E
+// where
+//   M Mutability = imm,
+//   func(&G, int)E;
+//

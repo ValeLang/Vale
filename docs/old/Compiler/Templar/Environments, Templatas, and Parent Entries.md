@@ -200,34 +200,6 @@ see what all of our runes are. For example:
 Before we parse that V we need to scan ahead to see that it is in fact a
 rune.
 
-## Unstackifieds Can Refer To Variables in Parent Environments
-
-(UCRTVPE)
-
-We need to keep track of what variables have been unstackified. Theres
-two choices:
-
--   In the (possibly parent) environment where the local lives, we can
-    > have an unstackifieds list
-
--   Put it in the current environment
-
-The first one doesnt work well, because if we unstackify from within an
-if-statement like so:
-
-> m = Marine(10);
->
-> if (something) {
->
-> drop(m);
->
-> ret 7;
->
-> }
-
-we don\'t want that unstackify to infect the parent environment. Really,
-we want the if-statement code to handle and propagate any relevant
-unstackifies.
 
 ## Whether To Have Parent Function Environments (WTHPFE)
 

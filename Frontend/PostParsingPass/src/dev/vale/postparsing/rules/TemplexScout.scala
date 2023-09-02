@@ -43,7 +43,7 @@ class TemplexScout(
     nameSN: IImpreciseNameS):
   RuneUsage = {
     val runeS = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-    ruleBuilder += rules.MaybeCoercingLookupSR(rangeS, runeS, nameSN)
+    ruleBuilder += rules.MaybeCoercingLookupSR(rangeS, runeS, RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion), nameSN)
     runeS
   }
 
@@ -61,6 +61,7 @@ class TemplexScout(
   }
 
   // Returns:
+  // - Outer region rune if this is a kind or a coord
   // - Rune for this type
   def translateTemplex(
     env: IEnvironmentS,
@@ -68,21 +69,21 @@ class TemplexScout(
     ruleBuilder: ArrayBuffer[IRulexSR],
     contextRegion: IRuneS, // Nearest enclosing region marker, see RADTGCA.
     templex: ITemplexPT):
-  RuneUsage = {
+  (Option[IRuneS], RuneUsage) = {
     Profiler.frame(() => {
       val evalRange = (range: RangeL) => PostParser.evalRange(env.file, range)
 
       translateValueTemplex(templex) match {
         case Some(x) => {
           val rune = addLiteralRule(lidb.child(), ruleBuilder, evalRange(templex.range), x)
-          rune
+          (None, rune)
         }
         case None => {
           templex match {
             case InlinePT(range, inner) => translateTemplex(env, lidb, ruleBuilder, contextRegion, inner)
             case AnonymousRunePT(range) => {
               val rune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              rune
+              (Some(rune.rune), rune)
             }
             case RegionRunePT(range, None) => {
               vimpl() // isolates
@@ -91,11 +92,11 @@ class TemplexScout(
               val isRuneFromLocalEnv = env.localDeclaredRunes().contains(CodeRuneS(name))
               if (isRuneFromLocalEnv) {
                 val rune = rules.RuneUsage(evalRange(range), CodeRuneS(name))
-                rune
+                (None, rune)
               } else {
                 // It's from a parent env
                 val rune = addRuneParentEnvLookupRule(lidb.child(), ruleBuilder, evalRange(range), CodeRuneS(name))
-                rune
+                (vimpl(), rune)
               }
             }
             case NameOrRunePT(NameP(range, nameOrRune)) => {
@@ -104,18 +105,18 @@ class TemplexScout(
                 val isRuneFromLocalEnv = env.localDeclaredRunes().contains(CodeRuneS(nameOrRune))
                 if (isRuneFromLocalEnv) {
                   val rune = rules.RuneUsage(evalRange(range), CodeRuneS(nameOrRune))
-                  rune
+                  (Some(rune.rune), rune)
                 } else {
                   // It's from a parent env
                   val rune = addRuneParentEnvLookupRule(lidb.child(), ruleBuilder, evalRange(range), CodeRuneS(nameOrRune))
-                  rune
+                  (None, rune)
                 }
               } else {
                 // e.g. "int"
                 val name = interner.intern(CodeNameS(nameOrRune))
                 val rune = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), contextRegion, name)
                 // For lookups like these, we bring them into the current region.
-                rune
+                (Some(contextRegion), rune)
               }
             }
             case InterpretedPT(range, ownership, maybeRegion, innerP) => {
@@ -139,12 +140,17 @@ class TemplexScout(
                   case Some(rune) => rune.rune
                 }
 
-              val innerRuneS =
+              val (maybeOuterRegionRuneFromInner, innerRuneS) =
                 translateTemplex(env, lidb.child(), ruleBuilder, newRegion, innerP)
 
-              ruleBuilder += rules.AugmentSR(evalRange(range), resultRuneS, ownership.map(_.ownership), innerRuneS)
+              ruleBuilder += rules.AugmentSR(evalRange(range), resultRuneS, ownership.map(_.ownership), maybeRegionRune, innerRuneS)
 
-              resultRuneS
+              val outerRegionRune =
+                maybeRegionRune match {
+                  case Some(x) => Some(x.rune)
+                  case None => maybeOuterRegionRuneFromInner
+                }
+              (outerRegionRune, resultRuneS)
             }
             case CallPT(rangeP, template, args) => {
               val rangeS = evalRange(rangeP)
@@ -153,9 +159,10 @@ class TemplexScout(
                 rules.MaybeCoercingCallSR(
                   rangeS,
                   resultRuneS,
-                  translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, template),
-                  args.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)))
-              resultRuneS
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
+                  translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, template)._2,
+                  args.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)._2))
+              (Some(contextRegion), resultRuneS)
             }
             case FunctionPT(rangeP, mutability, paramsPack, returnType) => {
               val rangeS = evalRange(rangeP)
@@ -166,30 +173,31 @@ class TemplexScout(
               val mutabilityRuneS =
                 mutability match {
                   case None => addLiteralRule(lidb.child(), ruleBuilder, rangeS, rules.MutabilityLiteralSL(MutableP))
-                  case Some(m) => translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, m)
+                  case Some(m) => translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, m)._2
                 }
               ruleBuilder +=
                 rules.MaybeCoercingCallSR(
                   rangeS,
                   resultRuneS,
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
                   templateNameRuneS,
                   Vector(
                     mutabilityRuneS,
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion,  paramsPack),
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, returnType)))
-              resultRuneS
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion,  paramsPack)._2,
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, returnType)._2))
+              (Some(contextRegion), resultRuneS)
             }
             case FuncPT(range, NameP(nameRange, name), paramsRangeL, paramsP, returnTypeP) => {
               val rangeS = PostParser.evalRange(env.file, range)
               val paramsRangeS = PostParser.evalRange(env.file, paramsRangeL)
               val paramsS =
                 paramsP.map(paramP => {
-                  translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, paramP)
+                  translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, paramP)._2
                 })
               val paramListRuneS = rules.RuneUsage(paramsRangeS, ImplicitRuneS(lidb.child().consume()))
               ruleBuilder += PackSR(paramsRangeS, paramListRuneS, paramsS.toVector)
 
-              val returnRuneS = translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, returnTypeP)
+              val returnRuneS = translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, returnTypeP)._2
 
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
 
@@ -200,7 +208,7 @@ class TemplexScout(
               // Only appears in call site; filtered out when solving definition
               ruleBuilder += ResolveSR(rangeS, resultRuneS, name, paramListRuneS, returnRuneS)
 
-              resultRuneS
+              (Some(contextRegion), resultRuneS)
             }
             case PackPT(rangeP, members) => {
               val rangeS = PostParser.evalRange(env.file, rangeP)
@@ -210,17 +218,19 @@ class TemplexScout(
                 MaybeCoercingLookupSR(
                   rangeS,
                   templateRuneS,
-                  CodeNameS(keywords.tupleHumanName(members.length)))
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
+                  CodeNameS(keywords.tupleHumanName))
 
               val resultRuneS = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
               ruleBuilder += MaybeCoercingCallSR(
                 rangeS,
                 resultRuneS,
+                RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
                 templateRuneS,
-                members.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)))
+                members.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)._2))
 
 
-              resultRuneS
+              (Some(contextRegion), resultRuneS)
 //              val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
 //              ruleBuilder +=
 //                rules.PackSR(
@@ -242,13 +252,14 @@ class TemplexScout(
                 MaybeCoercingCallSR(
                   rangeS,
                   resultRuneS,
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
                   templateRuneS,
                   Vector(
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, size),
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, mutability),
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, variability),
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, element)))
-              resultRuneS
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, size)._2,
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, mutability)._2,
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, variability)._2,
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, element)._2))
+              (Some(contextRegion), resultRuneS)
             }
             case RuntimeSizedArrayPT(rangeP, mutability, element) => {
               val rangeS = evalRange(rangeP)
@@ -263,11 +274,12 @@ class TemplexScout(
                 MaybeCoercingCallSR(
                   rangeS,
                   resultRuneS,
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
                   templateRuneS,
                   Vector(
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, mutability),
-                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, element)))
-              resultRuneS
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, mutability)._2,
+                    translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, element)._2))
+              (Some(contextRegion), resultRuneS)
             }
             case TuplePT(rangeP, elements) => {
               val rangeS = evalRange(rangeP)
@@ -277,13 +289,15 @@ class TemplexScout(
                 rules.MaybeCoercingLookupSR(
                   rangeS,
                   templateRuneS,
-                  interner.intern(CodeNameS(keywords.tupleHumanName(elements.length))))
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
+                  interner.intern(CodeNameS(keywords.TUP)))
               ruleBuilder +=
                 rules.MaybeCoercingCallSR(
                   rangeS,
                   resultRuneS,
+                  RuneUsage(RangeS(rangeS.begin, rangeS.begin), contextRegion),
                   templateRuneS,
-                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)))
+                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, _)._2))
 //              ruleBuilder +=
 //                rules.CallSR(
 //                  evalRange(range),
@@ -295,7 +309,7 @@ class TemplexScout(
 //                  evalRange(range),
 //                  packRuneS,
 //                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
-              resultRuneS
+              (Some(contextRegion), resultRuneS)
             }
           }
         }
@@ -304,6 +318,7 @@ class TemplexScout(
   }
 
   // Returns:
+  // - Outer region rune if this is a kind or a coord
   // - Rune for this type
   def translateTypeIntoRune(
     env: IEnvironmentS,
@@ -311,13 +326,13 @@ class TemplexScout(
     ruleBuilder: ArrayBuffer[IRulexSR],
     contextRegion: IRuneS, // Nearest enclosing region marker, see RADTGCA.
     typeP: ITemplexPT):
-  RuneUsage = {
+  (Option[IRuneS], RuneUsage) = {
     typeP match {
       case NameOrRunePT(NameP(range, nameOrRune)) if env.allDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val resultRuneS = rules.RuneUsage(PostParser.evalRange(env.file, range), CodeRuneS(nameOrRune))
         //        ruleBuilder += ValueLeafSR(range, resultRuneS, EnvRuneLookupSR(CodeRuneS(nameOrRune)))
         //        resultRuneS
-        resultRuneS
+        (Some(resultRuneS.rune), resultRuneS)
       }
       case nonRuneTemplexP => {
         translateTemplex(env, lidb.child(), ruleBuilder, contextRegion, nonRuneTemplexP)
@@ -326,6 +341,7 @@ class TemplexScout(
   }
 
   // Returns:
+  // - Outer region rune if this is a kind or a coord
   // - Rune for this type
   def translateMaybeTypeIntoRune(
     env: IEnvironmentS,
@@ -334,11 +350,11 @@ class TemplexScout(
     ruleBuilder: ArrayBuffer[IRulexSR],
     contextRegion: IRuneS, // Nearest enclosing region marker, see RADTGCA.
     maybeTypeP: Option[ITemplexPT]):
-  RuneUsage = {
+  (Option[IRuneS], RuneUsage) = {
     maybeTypeP match {
       case None => {
         val resultRuneS = rules.RuneUsage(range, ImplicitRuneS(lidb.child().consume()))
-        resultRuneS
+        (Some(resultRuneS.rune), resultRuneS)
       }
       case Some(typeP) => {
         translateTypeIntoRune(env, lidb, ruleBuilder, contextRegion, typeP)
@@ -360,7 +376,7 @@ class TemplexScout(
     } else {
       Some(
         translateMaybeTypeIntoRune(
-          env, lidb.child(), range, ruleBuilder, contextRegion, maybeTypeP))
+          env, lidb.child(), range, ruleBuilder, contextRegion, maybeTypeP)._2)
     }
   }
 }

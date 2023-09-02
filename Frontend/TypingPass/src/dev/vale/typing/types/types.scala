@@ -14,7 +14,7 @@ import dev.vale.typing.types._
 
 import scala.collection.immutable.List
 
-sealed trait OwnershipT  {
+sealed trait OwnershipT {
 }
 case object ShareT extends OwnershipT {
   override def toString: String = "share"
@@ -56,11 +56,9 @@ case object YonderT extends LocationT {
   override def toString: String = "heap"
 }
 
-case class RegionT()
 
 case class CoordT(
   ownership: OwnershipT,
-  // TODO(regions): Replace with an actual region.
   // Usually these will just be placeholders, but one day we might want to say e.g. host'
   region: RegionT,
   kind: KindT)  {
@@ -70,6 +68,33 @@ case class CoordT(
   kind match {
     case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT(_) => {
       vassert(ownership == ShareT)
+    }
+    case RuntimeSizedArrayTT(IdT(_, _, RuntimeSizedArrayNameT(_, RawArrayNameT(_, _, arrRegion)))) => {
+      region match {
+        case RegionT(PlaceholderTemplataT(_, _)) => {
+          vassert(arrRegion == region)
+        }
+        case _ => // In instantiator, the coord region might differ.
+      }
+    }
+    case StaticSizedArrayTT(IdT(_, _, StaticSizedArrayNameT(_, _, _, RawArrayNameT(_, _, arrRegion)))) => {
+      region match {
+        case RegionT(PlaceholderTemplataT(_, _)) => {
+          vassert(arrRegion == region)
+        }
+        case _ => // In instantiator, the coord region might differ.
+      }
+    }
+    case StructTT(IdT(_, _, localName)) => {
+      region match {
+        case RegionT(PlaceholderTemplataT(_, _)) => {
+          vassert(localName.templateArgs.last == region.region)
+        }
+        case _ => // In instantiator, the coord region might differ.
+      }
+    }
+    case InterfaceTT(IdT(_, _, localName)) => {
+      vassert(localName.templateArgs.last == region.region)
     }
     case _ =>
   }
@@ -153,6 +178,7 @@ object contentsStaticSizedArrayTT {
     Some((size, mutability, variability, coord, selfRegion))
   }
 }
+
 case class StaticSizedArrayTT(
   name: IdT[StaticSizedArrayNameT]
 ) extends KindT with IInterning {
@@ -177,6 +203,11 @@ case class RuntimeSizedArrayTT(
   override def isPrimitive: Boolean = false
   def mutability = name.localName.arr.mutability
   def elementType = name.localName.arr.elementType
+
+//  name.localName.arr.selfRegion match {
+//    case RegionTemplata(false) => vwat()
+//    case _ =>
+//  }
 }
 
 object ICitizenTT {

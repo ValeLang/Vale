@@ -21,13 +21,18 @@ class SameInstanceMacro(keywords: Keywords) extends IFunctionBodyMacro {
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     val body =
       BlockTE(
         ReturnTE(

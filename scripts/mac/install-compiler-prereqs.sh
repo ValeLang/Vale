@@ -33,10 +33,15 @@ curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0
 unzip /tmp/BootstrappingValec.zip -d $BOOTSTRAPPING_VALEC_DIR
 
 # Install misc dependencies
+<<<<<<< HEAD
+echo "Downloading and unzipping depdendencies and LLVM..."
+brew install llvm@16 sbt cmake coreutils
+=======
 echo "Downloading and installing depdendencies and LLVM..."
 brew install coreutils
 brew install cmake
 brew install sbt
 brew install llvm@16
+>>>>>>> master
 # coreutils is for greadlink which we use in build-compiler.sh
 

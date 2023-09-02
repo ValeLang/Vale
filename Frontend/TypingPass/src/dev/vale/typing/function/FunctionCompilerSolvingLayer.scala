@@ -4,6 +4,7 @@ import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, typing, va
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.citizen.StructCompiler
+
 import dev.vale.postparsing.patterns._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -34,16 +35,19 @@ import scala.collection.immutable.{List, Set}
 // There's a layer to take care of each of these things.
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionCompilerSolvingLayer(
-    opts: TypingPassOptions,
-    interner: Interner,
-    keywords: Keywords,
-    nameTranslator: NameTranslator,
-    templataCompiler: TemplataCompiler,
-    inferCompiler: InferCompiler,
-    convertHelper: ConvertHelper,
-    structCompiler: StructCompiler,
-    delegate: IFunctionCompilerDelegate) {
-  val middleLayer = new FunctionCompilerMiddleLayer(opts, interner, keywords, nameTranslator, templataCompiler, convertHelper, structCompiler, delegate)
+  opts: TypingPassOptions,
+  interner: Interner,
+  keywords: Keywords,
+  nameTranslator: NameTranslator,
+  templataCompiler: TemplataCompiler,
+  inferCompiler: InferCompiler,
+  convertHelper: ConvertHelper,
+  structCompiler: StructCompiler,
+  delegate: IFunctionCompilerDelegate
+) {
+  val middleLayer = new FunctionCompilerMiddleLayer(
+    opts, interner, keywords, nameTranslator,
+    templataCompiler, convertHelper, structCompiler, delegate)
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
@@ -67,8 +71,8 @@ class FunctionCompilerSolvingLayer(
     checkClosureConcernsHandled(outerEnv)
 
     val callSiteRules =
-        TemplataCompiler.assembleCallSiteRules(
-            function.rules, function.genericParameters, explicitTemplateArgs.size)
+      TemplataCompiler.assembleCallSiteRules(
+        function.rules, function.genericParameters, explicitTemplateArgs.size)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteDefineSolve(inferredTemplatas, instantiationBoundParams) =
@@ -92,6 +96,7 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
+        function.defaultRegionRune,
         instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val header =
@@ -120,23 +125,24 @@ class FunctionCompilerSolvingLayer(
   // - either no closured vars, or they were already added to the env.
   // - env is the environment the templated function was made in
   def evaluateTemplatedFunctionFromCallForBanner(
-      // The environment the function was defined in.
-      declaringEnv: BuildingFunctionEnvironmentWithClosuredsT,
-      coutputs: CompilerOutputs,
-      originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
-      callRange: List[RangeS],
-      callLocation: LocationInDenizen,
-      alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    // The environment the function was defined in.
+    declaringEnv: BuildingFunctionEnvironmentWithClosuredsT,
+    coutputs: CompilerOutputs,
+    originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
+    callRange: List[RangeS],
+    callLocation: LocationInDenizen,
+    alreadySpecifiedTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
-      args: Vector[CoordT]):
+    args: Vector[CoordT]
+  ):
   (IEvaluateFunctionResult) = {
     val function = declaringEnv.function
     // Check preconditions
     checkClosureConcernsHandled(declaringEnv)
 
     val callSiteRules =
-        TemplataCompiler.assembleCallSiteRules(
-            function.rules, function.genericParameters, 0)
+      TemplataCompiler.assembleCallSiteRules(
+        function.rules, function.genericParameters, 0)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args.map(Some(_)))
     val CompleteDefineSolve(inferredTemplatas, instantiationBoundParams) = {
@@ -162,6 +168,7 @@ class FunctionCompilerSolvingLayer(
         declaringEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
+        function.defaultRegionRune,
         instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
@@ -190,15 +197,16 @@ class FunctionCompilerSolvingLayer(
   // are a lot of overloads available.
   // This assumes it met any type bound restrictions (or, will; not implemented yet)
   def evaluateTemplatedLightBannerFromCall(
-      // The environment the function was defined in.
-      nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
-      coutputs: CompilerOutputs,
+    // The environment the function was defined in.
+    nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
+    coutputs: CompilerOutputs,
     originalCallingEnv: IInDenizenEnvironmentT, // See CSSNCE
     callRange: List[RangeS],
     callLocation: LocationInDenizen,
-      explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]],
     contextRegion: RegionT,
-      args: Vector[CoordT]):
+    args: Vector[CoordT]
+  ):
   (IEvaluateFunctionResult) = {
     val function = nearEnv.function
     // Check preconditions
@@ -226,8 +234,8 @@ class FunctionCompilerSolvingLayer(
         initialSends,
         Vector()) match {
       case Err(e) => return EvaluateFunctionFailure(e)
-      case Ok(inferredTemplatas) => inferredTemplatas
-    }
+        case Ok(inferredTemplatas) => inferredTemplatas
+      }
 
     // See FunctionCompiler doc for what outer/runes/inner envs are.
     val runedEnv =
@@ -235,6 +243,7 @@ class FunctionCompilerSolvingLayer(
         nearEnv,
         function.genericParameters.map(_.rune.rune),
         inferences,
+        function.defaultRegionRune,
         instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototypeTemplata =
@@ -261,7 +270,8 @@ class FunctionCompilerSolvingLayer(
 
   private def assembleKnownTemplatas(
     function: FunctionA,
-    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]]):
+    explicitTemplateArgs: Vector[ITemplataT[ITemplataType]]
+  ):
   Vector[InitialKnown] = {
     function.genericParameters.zip(explicitTemplateArgs).map({
       case (genericParam, explicitArg) => {
@@ -290,10 +300,13 @@ class FunctionCompilerSolvingLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsT,
     identifyingRunes: Vector[IRuneS],
     templatasByRune: Map[IRuneS, ITemplataT[ITemplataType]],
+    defaultRegionRune: IRuneS,
     reachableBoundsFromParamsAndReturn: Vector[PrototypeTemplataT[IFunctionNameT]]
     // I suspect we'll eventually need some impl bounds here
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT = {
-    val BuildingFunctionEnvironmentWithClosuredsT(globalEnv, parentEnv, id, templatas, function, variables, isRootCompilingDenizen) = nearEnv
+    val BuildingFunctionEnvironmentWithClosuredsT(
+    globalEnv, parentEnv, id, templatas,
+    function, variables, isRootCompilingDenizen) = nearEnv
 
     val identifyingTemplatas = identifyingRunes.map(templatasByRune)
 
@@ -301,11 +314,13 @@ class FunctionCompilerSolvingLayer(
       templatas.addEntries(
         interner,
         reachableBoundsFromParamsAndReturn.zipWithIndex.toVector
-          .map({ case (t, i) => (interner.intern(ReachablePrototypeNameT(i)), TemplataEnvEntry(t)) }) ++
-        templatasByRune.toVector
-          .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) }))
+          .map({ case (t, i) => (interner.intern(ReachablePrototypeNameT(i)), TemplataEnvEntry(t)
+          )
+          }) ++
+          templatasByRune.toVector
+            .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) }))
 
-    val defaultRegion = RegionT()
+    val defaultRegion = RegionT(expectRegionPlaceholder(expectRegion(vassertSome(templatasByRune.get(defaultRegionRune)))))
 
     BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT(
       globalEnv,
@@ -341,11 +356,10 @@ class FunctionCompilerSolvingLayer(
     checkClosureConcernsHandled(outerEnv)
 
     val callSiteRules =
-        TemplataCompiler.assembleCallSiteRules(
-            function.rules, function.genericParameters, explicitTemplateArgs.size)
+      TemplataCompiler.assembleCallSiteRules(
+        function.rules, function.genericParameters, explicitTemplateArgs.size)
 
     val initialSends = assembleInitialSendsFromArgs(callRange.head, function, args)
-
 
     val envs = InferEnv(callingEnv, callRange, callLocation, outerEnv, contextRegion)
     val rules = callSiteRules
@@ -369,7 +383,7 @@ class FunctionCompilerSolvingLayer(
         }
         loopCheck = loopCheck - 1
 
-        TemplataCompiler.getFirstUnsolvedIdentifyingRune(
+        TemplataCompiler.getFirstUnsolvedIdentifyingGenericParam(
           function.genericParameters,
           (rune) => solver.getConclusion(rune).nonEmpty) match {
           case None => false
@@ -384,7 +398,14 @@ class FunctionCompilerSolvingLayer(
               }
               case None => {
                 // There are no defaults for this.
-                false
+
+                // If it's the default region rune, then supply the context rune.
+                if (function.defaultRegionRune == genericParam.rune.rune) {
+                  solver.manualStep(Map(genericParam.rune.rune -> contextRegion.region))
+                  true
+                } else {
+                  false
+                }
               }
             }
           }
@@ -395,13 +416,6 @@ class FunctionCompilerSolvingLayer(
       }
       case Ok(true) =>
       case Ok(false) => // Incomplete, will be detected as IncompleteCompilerSolve below.
-    }
-
-    outerEnv.id match {
-      case IdT(_,Vector(),FunctionTemplateNameT(StrI("Bork"),_)) => {
-        vpass()
-      }
-      case _ =>
     }
 
     val CompleteResolveSolve(inferredTemplatas, runeToFunctionBound) =
@@ -416,6 +430,7 @@ class FunctionCompilerSolvingLayer(
         outerEnv,
         function.genericParameters.map(_.rune.rune),
         inferredTemplatas,
+        function.defaultRegionRune,
         runeToFunctionBound.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
@@ -453,7 +468,7 @@ class FunctionCompilerSolvingLayer(
     //   func map<T, F>(self Opt<T>, f F, t T) { ... }
     // into a:
     //   func map<F>(self Opt<$0>, f F, t $0) { ... }
-    val preliminaryEnvs = InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT())
+    val preliminaryEnvs = InferEnv(callingEnv, callRange, callLocation, nearEnv, vimpl())
     val preliminarySolver =
       inferCompiler.makeSolver(
         preliminaryEnvs,
@@ -501,7 +516,7 @@ class FunctionCompilerSolvingLayer(
 
     val CompleteDefineSolve(inferences, instantiationBoundParams) =
       inferCompiler.solveForDefining(
-        InferEnv(callingEnv, callRange, callLocation, nearEnv, RegionT()),
+        InferEnv(callingEnv, callRange, callLocation, nearEnv, vimpl()),
         coutputs,
         functionDefinitionRules,
         function.runeToType,
@@ -518,6 +533,7 @@ class FunctionCompilerSolvingLayer(
         nearEnv,
         function.genericParameters.map(_.rune.rune),
         inferences,
+        function.defaultRegionRune,
         instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val prototype =
@@ -552,21 +568,47 @@ class FunctionCompilerSolvingLayer(
     val paramAndReturnRunes =
       (function.params.flatMap(_.pattern.coordRune.map(_.rune)) ++ function.maybeRetCoordRune.map(_.rune)).distinct.toVector
 
-    val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv, RegionT())
+    // Before doing the incremental solving/placeholdering, add a placeholder for the default
+    // region, see SIPWDR.
+    val defaultRegionGenericParamIndex =
+      nearEnv.function.genericParameters.indexWhere(genericParam => {
+        genericParam.rune.rune == nearEnv.function.defaultRegionRune
+      })
+    vassert(defaultRegionGenericParamIndex >= 0)
+    val defaultRegionGenericParam = nearEnv.function.genericParameters(defaultRegionGenericParamIndex)
+    val defaultRegionGenericParamType = IGenericParameterTypeS.expectRegion(defaultRegionGenericParam.tyype)
+//    val defaultRegionMutable = vimpl()//defaultRegionGenericParamType.mutability == ReadWriteRegionS
+    vassert(IGenericParameterTypeS.expectRegion(defaultRegionGenericParam.tyype).mutability == ReadWriteRegionS)
+    val defaultRegionPlaceholderTemplata =
+      templataCompiler.createRegionPlaceholderInner(
+        functionTemplateId, defaultRegionGenericParamIndex, defaultRegionGenericParam.rune.rune,
+        Some(0), defaultRegionGenericParamType.mutability)
+        //TemplataCompiler.getRegionPlaceholderPureHeight(defaultRegionGenericParam))
+//        None,
+//        LocationInDenizen(Vector()),
+//        defaultRegionMutable)
+    // we inform the solver of this placeholder below.
+
+    val envs = InferEnv(nearEnv, parentRanges, callLocation, nearEnv, defaultRegionPlaceholderTemplata)
     val solver =
       inferCompiler.makeSolver(
         envs, coutputs, definitionRules, function.runeToType, range, Vector(), Vector())
+
+    // Inform the solver of the default region's placeholder, see SIPWDR.
+    solver.manualStep(Map(defaultRegionGenericParam.rune.rune -> defaultRegionPlaceholderTemplata.region))
+
     // Incrementally solve and add placeholders, see IRAGP.
     inferCompiler.incrementallySolve(
       envs, coutputs, solver,
       // Each step happens after the solver has done all it possibly can. Sometimes this can lead
       // to races, see RRBFS.
       (solver) => {
-        TemplataCompiler.getFirstUnsolvedIdentifyingRune(function.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+        TemplataCompiler.getFirstUnsolvedIdentifyingGenericParam(function.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
           case None => false
           case Some((genericParam, index)) => {
+            val placeholderPureHeight =
+              TemplataCompiler.getRegionPlaceholderPureHeight(genericParam)
             // Make a placeholder for every argument even if it has a default, see DUDEWCD.
-            val placeholderPureHeight = vregionmut(None)
             val templata =
               templataCompiler.createPlaceholder(
                 coutputs, nearEnv, functionTemplateId, genericParam, index, function.runeToType, placeholderPureHeight, true)
@@ -587,13 +629,6 @@ class FunctionCompilerSolvingLayer(
         case Ok(conclusions) => conclusions
       }
 
-    nearEnv.id match {
-      case IdT(_,Vector(),FunctionTemplateNameT(StrI("Bork"),_)) => {
-        vpass()
-      }
-      case _ =>
-    }
-
     val instantiationBoundParams =
       inferCompiler.checkDefiningConclusionsAndResolve(
         envs, coutputs, range, callLocation, definitionRules, paramAndReturnRunes, inferences) match {
@@ -604,6 +639,7 @@ class FunctionCompilerSolvingLayer(
     val runedEnv =
       addRunedDataToNearEnv(
         nearEnv, function.genericParameters.map(_.rune.rune), inferences,
+        function.defaultRegionRune,
         instantiationBoundParams.runeToCitizenRuneToReachablePrototype.values.flatMap(_.citizenRuneToReachablePrototype.values).toVector.map(PrototypeTemplataT(_)))
 
     val header =
@@ -618,13 +654,18 @@ class FunctionCompilerSolvingLayer(
     header
   }
 
-  private def assembleInitialSendsFromArgs(callRange: RangeS, function: FunctionA, args: Vector[Option[CoordT]]):
+  private def assembleInitialSendsFromArgs(
+    callRange: RangeS, function: FunctionA,
+    args: Vector[Option[CoordT]]
+  ):
   Vector[InitialSend] = {
     function.params.map(_.pattern.coordRune.get).zip(args).zipWithIndex
       .flatMap({
         case ((_, None), _) => None
         case ((paramRune, Some(argTemplata)), argIndex) => {
-          Some(InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplataT(argTemplata)))
+          Some(InitialSend(
+            RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune,
+            CoordTemplataT(argTemplata)))
         }
       })
   }

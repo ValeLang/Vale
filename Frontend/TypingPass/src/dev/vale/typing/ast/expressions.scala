@@ -281,7 +281,6 @@ case class TransmigrateTE(
   override def result = ReferenceResultT(sourceExpr.result.coord.copy(region = targetRegion))
 }
 
-
 case class ReturnTE(
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
@@ -305,10 +304,9 @@ case class BreakTE(region: RegionT) extends ReferenceExpressionTE {
 
 // Block2 is required to unlet all the variables it introduces.
 case class BlockTE(
-    inner: ReferenceExpressionTE
+  inner: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-
   override def result = inner.result
 }
 
@@ -518,9 +516,9 @@ case class StaticSizedArrayLookupTE(
 
 case class RuntimeSizedArrayLookupTE(
   range: RangeS,
-    arrayExpr: ReferenceExpressionTE,
-    arrayType: RuntimeSizedArrayTT,
-    indexExpr: ReferenceExpressionTE,
+  arrayExpr: ReferenceExpressionTE,
+  arrayType: RuntimeSizedArrayTT,
+  indexExpr: ReferenceExpressionTE,
   // See RMLRMO for why we dont have a targetOwnership field here.
   variability: VariabilityT
 ) extends AddressExpressionTE {
@@ -539,15 +537,16 @@ case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpr
 }
 
 case class ReferenceMemberLookupTE(
-    range: RangeS,
-    structExpr: ReferenceExpressionTE,
-    memberName: IVarNameT,
+  range: RangeS,
+  structExpr: ReferenceExpressionTE,
+  memberName: IVarNameT,
   // We include this so the instantiator doesn't have to translate the entire struct definition to
   // figure out what type it's pulling out.
   // See RMLRMO for why this is the same ownership as the original field.
-    memberReference: CoordT,
-    // See RMLRMO for why we dont have a targetOwnership field here.
-    variability: VariabilityT) extends AddressExpressionTE {
+  memberReference: CoordT,
+  // See RMLRMO for why we dont have a targetOwnership field here.
+  variability: VariabilityT
+) extends AddressExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = {
     // See RMLRMO why we just return the member type.
@@ -594,15 +593,31 @@ case class ExternFunctionCallTE(
 }
 
 case class FunctionCallTE(
-  callable: PrototypeT[IFunctionNameT],
+    callable: PrototypeT[IFunctionNameT],
+  // See NPFCASTN for why we need a pure boolean here.
+  // If true, then this call introduces a conceptual pure block (but not actually, see NPFCASTN)
+  pure: Boolean,
+  maybeNewRegion: Option[RegionT],
   args: Vector[ReferenceExpressionTE],
   // We have this not only for convenience, but also because sometimes a call's result is in a different region than
   // what the prototype thinks.
   returnType: CoordT
 ) extends ReferenceExpressionTE {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious();
+
+  override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
+  args.map(_.result.coord).foreach(argCoord => {
+    val isPrimitive =
+      argCoord.kind match {
+        case IntT(_) | BoolT() | VoidT() | FloatT() => true
+        case _ => false
+      }
+    if ( /*argCoord.ownership == OwnT || */ isPrimitive) {
+      vassert(argCoord.region.region == callable.id.localName.templateArgs.last)
+    }
+  })
   args.map(_.result.coord).zip(callable.paramTypes).foreach({
     case (CoordT(_, _, NeverT(_)), _) =>
     case (a, b) => vassert(a == b)

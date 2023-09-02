@@ -10,7 +10,6 @@ import org.scalatest._
 
 
 class IntegrationTestsB extends FunSuite with Matchers {
-
   test("Tests single expression and single statement functions' returns") {
     val compile = RunCompilation.test(
       """
@@ -53,7 +52,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-    compile.evalForKind(Vector()) match { case VonInt(9) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(9) =>
+    }
   }
 
   test("Test int generic") {
@@ -70,7 +71,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
         |  return v.values.2;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(5) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(5) =>
+    }
   }
 
   test("Tests upcasting from a struct to an interface") {
@@ -80,7 +83,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
 
   test("Tests upcasting from if") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/if/upcastif.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Tests lambda") {
@@ -157,22 +162,22 @@ class IntegrationTestsB extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
-//  test("Test getting generic value out of lambda") {
-//    val compile = RunCompilation.test(
-//      """
-//        |#!DeriveStructDrop
-//        |struct MyStruct<A Ref imm, B Ref imm, C Ref imm, D Ref imm> imm { a A; b B; c C; d D; }
-//        |
-//        |func bork<A, B, C, D>(m &MyStruct<A, B, C, D>) &D {
-//        |  return { m.d }();
-//        |}
-//        |exported func main() int {
-//        |  x = MyStruct(true, 1, "hello", 3);
-//        |  return bork(&x);
-//        |}
-//        |""".stripMargin)
-//    compile.evalForKind(Vector()) match { case VonInt(5) => }
-//  }
+  //  test("Test getting generic value out of lambda") {
+  //    val compile = RunCompilation.test(
+  //      """
+  //        |#!DeriveStructDrop
+  //        |struct MyStruct<A Ref imm, B Ref imm, C Ref imm, D Ref imm> imm { a A; b B; c C; d D; }
+  //        |
+  //        |func bork<A, B, C, D>(m &MyStruct<A, B, C, D>) &D {
+  //        |  return { m.d }();
+  //        |}
+  //        |exported func main() int {
+  //        |  x = MyStruct(true, 1, "hello", 3);
+  //        |  return bork(&x);
+  //        |}
+  //        |""".stripMargin)
+  //    compile.evalForKind(Vector()) match { case VonInt(5) => }
+  //  }
 
   test("Tests double closure") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/lambdas/doubleclosure.vale"))
@@ -181,7 +186,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
 
   test("Tests from subdir file") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/round.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(8) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(8) =>
+    }
   }
 
   test("Test generic param default") {
@@ -190,12 +197,16 @@ class IntegrationTestsB extends FunSuite with Matchers {
         |func bork<N Int = 42>() int { return N; }
         |exported func main() int { bork() }
       """.stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Tests calling a virtual function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/calling.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(7) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(7) =>
+    }
   }
 
   test("Tests making a variable with a pattern") {
@@ -216,7 +227,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
         |	 return doSomething(x);
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(9) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(9) =>
+    }
   }
 
 
@@ -228,25 +241,29 @@ class IntegrationTestsB extends FunSuite with Matchers {
 
   test("Tests a templated linked list") {
     val compile = RunCompilation.test(
-        Tests.loadExpected("programs/genericvirtuals/templatedlinkedlist.vale"))
+      Tests.loadExpected("programs/genericvirtuals/templatedlinkedlist.vale"))
     compile.evalForKind(Vector())
   }
 
   test("Tests calling an abstract function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/callingAbstract.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(4) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(4) =>
+    }
   }
 
   test("Template overrides are stamped") {
     // See TIBANFC: Translate Impl Bound Argument Names For Case
     val compile = RunCompilation.test(
-        Tests.loadExpected("programs/genericvirtuals/templatedoption.vale"), false)
-    compile.evalForKind(Vector()) match { case VonInt(1) => }
+      Tests.loadExpected("programs/genericvirtuals/templatedoption.vale"), false)
+    compile.evalForKind(Vector()) match {
+      case VonInt(1) =>
+    }
   }
 
   test("Tests a foreach for a linked list") {
     val compile = RunCompilation.test(
-        Tests.loadExpected("programs/genericvirtuals/foreachlinkedlist.vale"))
+      Tests.loadExpected("programs/genericvirtuals/foreachlinkedlist.vale"))
     compile.evalForStdout(Vector()) shouldEqual "102030"
   }
 
@@ -256,15 +273,17 @@ class IntegrationTestsB extends FunSuite with Matchers {
   // Virtual starts a function family.
   // So, this checks that it and its three ancestors are all stamped and all get their own
   // function families.
-//  test("Stamp multiple ancestors") {
-//    val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
-//    val coutputs = compile.expectCompilerOutputs()
-//    compile.evalForKind(Vector())
-//  }
+  //  test("Stamp multiple ancestors") {
+  //    val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
+  //    val coutputs = compile.expectCompilerOutputs()
+  //    compile.evalForKind(Vector())
+  //  }
 
   test("Tests recursion") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/recursion.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(120) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(120) =>
+    }
   }
 
   test("Tests generic recursion") {
@@ -286,6 +305,9 @@ class IntegrationTestsB extends FunSuite with Matchers {
         |  return factorial(1, 5);
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(120) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(120) =>
+    }
   }
+
 }

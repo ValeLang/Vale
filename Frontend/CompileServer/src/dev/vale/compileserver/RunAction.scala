@@ -22,7 +22,7 @@ class RunAction extends HttpFunction {
       Options(
         Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD(interner, keywords), "in.vale", code)),
         Some(""),
-        false, false, true, false, true, None, false, true, true, true, true)
+        false, false, true, false, true, None, false, true, true, true)
     val program =
       PassManager.build(interner, keywords, options) match {
         case Ok(Some(programH)) => programH

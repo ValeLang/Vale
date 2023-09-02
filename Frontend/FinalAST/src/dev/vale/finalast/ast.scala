@@ -224,7 +224,6 @@ case class FunctionH(
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[KindHT]) {
-
   vpass()
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();

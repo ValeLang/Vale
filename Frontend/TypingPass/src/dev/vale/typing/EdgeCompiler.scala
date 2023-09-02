@@ -164,7 +164,7 @@ class EdgeCompiler(
     //   val placeholderName =
     //     PlaceholderNameT(PlaceholderTemplateNameT(placeholderToSubstitution.size))
     //   val placeholderId =
-    //     FullNameT(packageCoord, abstractFuncTemplateFullName.steps, placeholderName)
+    //     IdT(packageCoord, abstractFuncTemplateId.steps, placeholderName)
     //
     // It would even mostly work, because the abstract function was already compiled, already
     // made a bunch of placeholders, and registered them and their envs with the coutputs so
@@ -216,11 +216,20 @@ class EdgeCompiler(
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
           KindTemplataT(KindPlaceholderT(placeholderId))
         }
-        case CoordTemplataT(CoordT(ownership, _, KindPlaceholderT(originalPlaceholderId))) => {
+        case CoordTemplataT(CoordT(ownership, region, KindPlaceholderT(originalPlaceholderId))) => {
           val originalPlaceholderTemplateId = TemplataCompiler.getPlaceholderTemplate(originalPlaceholderId)
           val mutability = coutputs.lookupMutability(originalPlaceholderTemplateId)
           coutputs.declareTypeMutability(placeholderTemplateId, mutability)
-          CoordTemplataT(CoordT(ownership, RegionT(), KindPlaceholderT(placeholderId)))
+
+          vimpl()
+//          // We're replacing the impl region with the dispatcher region here
+//          region.initSteps.last match {
+//            case x : IImplTemplateNameT =>
+//            case _ => vcurious()
+//          }
+          val newRegion = vimpl()//vassertOne(implToDispatcherRegionSubstitutions.filter(_._1 == region))._2
+
+          CoordTemplataT(CoordT(ownership, newRegion, KindPlaceholderT(placeholderId)))
         }
         case other => vwat(other)
       }
@@ -259,6 +268,8 @@ class EdgeCompiler(
       interner.intern(OverrideDispatcherTemplateNameT(impl.templateId))
     val dispatcherTemplateId =
       abstractFuncTemplateId.addStep(dispatcherTemplateName)
+    val dispatcherTemplateDefaultRegion =
+      vimpl()
     val dispatcherOuterEnv =
       GeneralEnvironmentT.childOf(
         interner,
@@ -275,6 +286,12 @@ class EdgeCompiler(
     // - We need to do the abstract function from the abstract function's environment
     // - We need to do at least the override resolve from the abstract function's environment
     //   (or something under it) so that we can have the bounds that come from the abstract function.
+
+    // See TRWGM
+    val implToDispatcherRegionSubstitutions =
+      Vector((
+        vimpl(),
+        dispatcherTemplateDefaultRegion))
 
     // This is a straight mapping from the impl placeholders to the new dispatcher placeholders.
     // This might have some placeholders that won't actually be part of the dispatcher generic args,
@@ -332,7 +349,7 @@ class EdgeCompiler(
       functionCompiler.evaluateGenericVirtualDispatcherFunctionForPrototype(
         coutputs,
         List(range, impl.templata.impl.range),
-        callLocation,
+        vimpl(),
         dispatcherOuterEnv,
         originFunctionTemplata,
         abstractFunctionPrototype.paramTypes.indices.map(_ => None)
@@ -391,7 +408,7 @@ class EdgeCompiler(
 
     val partialResolveConclusions =
       implCompiler.partialResolveImpl(
-        coutputs,
+                coutputs,
         List(range),
         callLocation,
         dispatcherInnerEnv,
@@ -457,7 +474,7 @@ class EdgeCompiler(
           })
     val dispatcherInnerEnvWithBoundsForSubCitizen =
       GeneralEnvironmentT.childOf(
-        interner,
+                interner,
         dispatcherInnerEnv,
         dispatcherInnerEnv.templateId,
         dispatcherInnerEnv.id,
@@ -490,7 +507,7 @@ class EdgeCompiler(
             // the impl will receive it and match it to its own unknown runes appropriately.
             KindTemplataT(dispatcherPlaceholderedInterface))) ++
             implIndependentRuneToCasePlaceholder
-                .map({ case (rune, templata) => InitialKnown(RuneUsage(range, rune), templata) }),
+          .map({ case (rune, templata) => InitialKnown(RuneUsage(range, rune), templata) }),
         impl.templata) match {
         case Ok(CompleteResolveSolve(conclusions, InstantiationBoundArgumentsT(_, reachableBoundsFromFullSolve, _))) => (conclusions, reachableBoundsFromFullSolve)
         case Err(e) => throw CompileErrorExceptionT(TypingPassResolvingError(List(range), e))
@@ -551,7 +568,7 @@ class EdgeCompiler(
         overrideImpreciseName,
         Vector.empty,
         Vector.empty,
-        RegionT(),
+        vimpl(),
         overrideFunctionParamTypes,
         Vector(
           coutputs.getOuterEnvForType(List(range, impl.templata.impl.range), interfaceTemplateId),

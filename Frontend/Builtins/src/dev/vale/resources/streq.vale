@@ -1,9 +1,9 @@
 
-extern func streq(
-  aContainerStr str,
+extern func streq<a', b'>(
+  aContainerStr a'str,
   aBegin int,
   aEnd int,
-  bContainerStr str,
+  bContainerStr b'str,
   bBegin int,
   bEnd int)
 bool;

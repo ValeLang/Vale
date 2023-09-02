@@ -14,18 +14,20 @@ import dev.vale.typing.function._
 import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
+
 import dev.vale.typing.names._
 
 import scala.collection.immutable.List
 
 class CallCompiler(
-    opts: TypingPassOptions,
-    interner: Interner,
-    keywords: Keywords,
-    templataCompiler: TemplataCompiler,
-    convertHelper: ConvertHelper,
-    localHelper: LocalHelper,
-    overloadCompiler: OverloadResolver) {
+  opts: TypingPassOptions,
+  interner: Interner,
+  keywords: Keywords,
+  templataCompiler: TemplataCompiler,
+  convertHelper: ConvertHelper,
+  localHelper: LocalHelper,
+  overloadCompiler: OverloadResolver
+) {
 
   private def evaluateCall(
     coutputs: CompilerOutputs,
@@ -72,7 +74,12 @@ class CallCompiler(
           }
         val argsExprs2 =
           convertHelper.convertExprs(
-            nenv.snapshot, coutputs, range, callLocation, givenArgsExprs2, prototype.prototype.paramTypes)
+            nenv.snapshot,
+            coutputs,
+            range,
+            callLocation,
+            givenArgsExprs2,
+            prototype.prototype.paramTypes)
 
         checkTypes(
           coutputs,
@@ -84,9 +91,18 @@ class CallCompiler(
           exact = true)
 
         vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+        // DO NOT SUBMIT merge this with the other code before FunctionCallTE's elsewhere
         val resultTE =
-          prototype.prototype.returnType
-        ast.FunctionCallTE(prototype.prototype, argsExprs2, resultTE)
+          maybeNewRegion match {
+            case None => prototype.prototype.returnType
+            case Some(newRegion) => {
+              // If we get any instances that are part of the newRegion, we need to interpret them
+              // to the contextRegion.
+              TemplataCompiler.mergeCoordRegions(
+                interner, coutputs, Map(newRegion -> contextRegion), prototype.prototype.returnType)
+            }
+          }
+        FunctionCallTE(prototype.prototype, pure, maybeNewRegion, argsExprs2, resultTE)
       }
       case other => {
         evaluateCustomCall(
@@ -96,7 +112,7 @@ class CallCompiler(
           range,
           callLocation,
           contextRegion,
-          callableExpr.result.coord.kind,
+          callableExpr.result.coord,
           explicitTemplateArgRulesS,
           explicitTemplateArgRunesS,
           callableExpr,
@@ -126,12 +142,13 @@ class CallCompiler(
     range: List[RangeS],
     callLocation: LocationInDenizen,
     contextRegion: RegionT,
-    kind: KindT,
+    coord: CoordT,
     explicitTemplateArgRulesS: Vector[IRulexSR],
     explicitTemplateArgRunesS: Vector[IRuneS],
     givenCallableUnborrowedExpr2: ReferenceExpressionTE,
-    givenArgsExprs2: Vector[ReferenceExpressionTE]):
-    (FunctionCallTE) = {
+    givenArgsExprs2: Vector[ReferenceExpressionTE]
+  ):
+  (FunctionCallTE) = {
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.coord match {
@@ -150,14 +167,16 @@ class CallCompiler(
       }
 
     val env = nenv.snapshot
-//    val env = coutputs.getEnvForKind(kind)
-//      citizenRef match {
-//        case sr @ StructTT(_) => coutputs.getEnvForKind(sr) // coutputs.envByStructRef(sr)
-//        case ir @ InterfaceTT(_) => coutputs.getEnvForKind(ir) // coutputs.envByInterfaceRef(ir)
-//      }
+    //    val env = coutputs.getEnvForKind(kind)
+    //      citizenRef match {
+    //        case sr @ StructTT(_) => coutputs.getEnvForKind(sr) // coutputs.envByStructRef(sr)
+    //        case ir @ InterfaceTT(_) => coutputs.getEnvForKind(ir) // coutputs
+    //        .envByInterfaceRef(ir)
+    //      }
 
     val argsTypes2 = givenArgsExprs2.map(_.result.coord)
-    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, RegionT(), kind)
+    vcurious(coord.ownership == givenCallableBorrowExpr2.result.coord.ownership)
+    val closureParamType = coord
     val paramFilters = Vector(closureParamType) ++ argsTypes2
     val resolved =
       overloadCompiler.findFunction(
@@ -176,7 +195,7 @@ class CallCompiler(
         case Ok(x) => x
       }
 
-    val mutability = Compiler.getMutability(coutputs, kind)
+    val mutability = Compiler.getMutability(coutputs, coord.kind)
     val ownership =
       mutability match {
         case MutabilityTemplataT(MutableT) => BorrowT
@@ -188,18 +207,40 @@ class CallCompiler(
 
     val actualArgsExprs2 = Vector(actualCallableExpr2) ++ givenArgsExprs2
 
-    val StampFunctionSuccess(prototype, inferences) = resolved
+    val StampFunctionSuccess(pure, maybeNewRegion, prototype, inferences) = resolved
+
     val argTypes = actualArgsExprs2.map(_.result.coord)
     if (argTypes != resolved.prototype.paramTypes) {
-      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.paramTypes + " args: " + argTypes))
+      throw CompileErrorExceptionT(RangedInternalErrorT(
+        range,
+        "arg param type mismatch. params: " +
+          prototype.paramTypes +
+          " args: " +
+          argTypes))
     }
 
-    checkTypes(coutputs, env, range, callLocation, resolved.prototype.paramTypes, argTypes, exact = true)
+    checkTypes(
+      coutputs,
+      env,
+      range,
+      callLocation,
+      resolved.prototype.paramTypes,
+      argTypes,
+      exact = true)
 
     vassert(coutputs.getInstantiationBounds(resolved.prototype.id).nonEmpty)
+    // DO NOT SUBMIT merge this with the other place that calculates the call result
     val resultTE =
-      prototype.returnType
-    val resultingExpr2 = FunctionCallTE(resolved.prototype, actualArgsExprs2, resultTE);
+      maybeNewRegion match {
+        case None => prototype.returnType
+        case Some(newRegion) => {
+          // If we get any instances that are part of the newRegion, we need to interpret them
+          // to the contextRegion.
+          TemplataCompiler.mergeCoordRegions(
+            interner, coutputs, Map(newRegion -> contextRegion), prototype.returnType)
+        }
+      }
+    val resultingExpr2 = FunctionCallTE(resolved.prototype, pure, maybeNewRegion, actualArgsExprs2, vimpl());
 
     (resultingExpr2)
   }
@@ -212,7 +253,8 @@ class CallCompiler(
     callLocation: LocationInDenizen,
     params: Vector[CoordT],
     args: Vector[CoordT],
-    exact: Boolean):
+    exact: Boolean
+  ):
   Unit = {
     vassert(params.size == args.size)
     params.zip(args).foreach({ case (paramsHead, argsHead) =>
@@ -220,7 +262,13 @@ class CallCompiler(
 
       } else {
         if (!exact) {
-          templataCompiler.isTypeConvertible(coutputs, callingEnv, parentRanges, callLocation, argsHead, paramsHead) match {
+          templataCompiler.isTypeConvertible(
+            coutputs,
+            callingEnv,
+            parentRanges,
+            callLocation,
+            argsHead,
+            paramsHead) match {
             case (true) => {
 
             }
@@ -247,8 +295,6 @@ class CallCompiler(
         }
       }
     })
-//    checkTypes(params.tail, args.tail)
-//    vassert(argTypes == callableType.paramTypes, "arg param type mismatch. params: " + callableType.paramTypes + " args: " + argTypes)
   }
 
   def evaluatePrefixCall(

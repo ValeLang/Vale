@@ -71,8 +71,17 @@ class ConvertHelper(
       case _ =>
     }
 
-    val CoordT(targetOwnership, _, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, _, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetRegion, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourceRegion, sourceType) = sourcePointerType;
+
+    if (targetRegion != sourceRegion) {
+      if (sourceType.isPrimitive) {
+        // Fine, will convert
+      } else {
+        throw CompileErrorExceptionT(
+          RangedInternalErrorT(range, "Region mismatch!")) // DO NOT SUBMIT
+      }
+    }
 
     targetPointerType.kind match {
       case NeverT(_) => vcurious()
@@ -98,22 +107,30 @@ class ConvertHelper(
       case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a " + sourceOwnership + " but target wants " + targetOwnership))
     }
 
-    val sourceExprConverted =
+    val sourceExprPerhapsUpcast =
       if (sourceType == targetType) {
         sourceExpr
       } else {
         (sourceType, targetType) match {
           case (s : ISubKindTT, i : ISuperKindTT) => {
-            convert(env, coutputs, range, callLocation, sourceExpr, s, i)
+            upcast(env, coutputs, range, callLocation, sourceExpr, s, i)
           }
           case _ => vfail()
         }
       };
 
-    (sourceExprConverted)
+    val sourceExprPerhapsUpcastPerhapsTransmigrated =
+      if (sourceRegion == targetRegion) {
+        sourceExprPerhapsUpcast
+      } else {
+        vassert(sourceType.isPrimitive)
+        TransmigrateTE(sourceExprPerhapsUpcast, targetRegion)
+      }
+
+    (sourceExprPerhapsUpcastPerhapsTransmigrated)
   }
 
-  def convert(
+  def upcast(
     callingEnv: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     range: List[RangeS],

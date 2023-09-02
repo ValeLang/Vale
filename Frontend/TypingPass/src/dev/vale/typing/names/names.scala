@@ -18,10 +18,6 @@ case class IdT[+T <: INameT](
   initSteps: Vector[INameT],
   localName: T
 )  {
-  this match {
-    case _ =>
-  }
-
   // Placeholders should only be the last name, getPlaceholdersInKind assumes it
   initSteps.foreach({
     case KindPlaceholderNameT(_) => vfail()
@@ -152,7 +148,7 @@ sealed trait IRegionNameT extends INameT
 
 case class ExportTemplateNameT(codeLoc: CodeLocationS) extends ITemplateNameT
 case class ExportNameT(template: ExportTemplateNameT, region: RegionT) extends IInstantiationNameT {
-  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector()
+  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector(region.region)
 }
 
 case class ImplTemplateNameT(codeLocationS: CodeLocationS) extends IImplTemplateNameT {
@@ -199,25 +195,26 @@ case class RawArrayNameT(
   selfRegion: RegionT
 ) extends INameT
 
-// This num is really just here to disambiguate it from other reachable prototypes in the environment
 case class ReachablePrototypeNameT(num: Int) extends INameT
 
 case class StaticSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
   override def makeCitizenName(interner: Interner, templateArgs: Vector[ITemplataT[ITemplataType]]): ICitizenNameT = {
-    vassert(templateArgs.size == 4)
+    vassert(templateArgs.size == 5)
     val size = expectInteger(templateArgs(0))
     val mutability = expectMutability(templateArgs(1))
     val variability = expectVariability(templateArgs(2))
     val elementType = expectCoordTemplata(templateArgs(3)).coord
-    val selfRegion = vregionmut(RegionT())
+    val selfRegion = RegionT(expectRegionPlaceholder(expectRegion(templateArgs(4))))
     interner.intern(StaticSizedArrayNameT(this, size, variability, interner.intern(RawArrayNameT(mutability, elementType, selfRegion))))
   }
 }
+
 case class StaticSizedArrayNameT(
   template: StaticSizedArrayTemplateNameT,
   size: ITemplataT[IntegerTemplataType],
   variability: ITemplataT[VariabilityTemplataType],
   arr: RawArrayNameT) extends ICitizenNameT {
+
   override def templateArgs: Vector[ITemplataT[ITemplataType]] = {
     Vector(size, arr.mutability, variability, CoordTemplataT(arr.elementType))
   }
@@ -225,10 +222,10 @@ case class StaticSizedArrayNameT(
 
 case class RuntimeSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
   override def makeCitizenName(interner: Interner, templateArgs: Vector[ITemplataT[ITemplataType]]): ICitizenNameT = {
-    vassert(templateArgs.size == 2)
+    vassert(templateArgs.size == 3)
     val mutability = expectMutability(templateArgs(0))
     val elementType = expectCoordTemplata(templateArgs(1)).coord
-    val region = vregionmut(RegionT())
+    val region = RegionT(expectRegionPlaceholder(expectRegion(templateArgs(2))))
     interner.intern(RuntimeSizedArrayNameT(this, interner.intern(RawArrayNameT(mutability, elementType, region))))
   }
 }
@@ -254,9 +251,40 @@ case class KindPlaceholderNameT(template: KindPlaceholderTemplateNameT) extends 
   override def index: Int = template.index
 }
 
+// DO NOT SUBMIT figure out if kind/non-kind is the best distinction here.
 // This exists because we need a different way to refer to a coord generic param's other components,
 // see MNRFGC.
 case class NonKindNonRegionPlaceholderNameT(index: Int, rune: IRuneS) extends IPlaceholderNameT
+
+case class RegionPlaceholderNameT(
+  index: Int,
+  rune: IRuneS,
+//  // Used for TTTDRM to determine other regions' mutabilities from this region's perspective.
+//  originalMaybeNearestPureLocation: Option[LocationInDenizen],
+//  originallyIntroducedLocation: LocationInDenizen,
+//  originallyMutable: Boolean
+
+  // If None, it comes from a template parameter
+  height: Option[Int],
+  originalMutability: IRegionMutabilityS
+) extends IRegionNameT with IPlaceholderNameT {
+
+}
+
+case class CoordGenericParamRegionPlaceholderNameT(
+    index: Int,
+    rune: IRuneS,
+    //  // Used for TTTDRM to determine other regions' mutabilities from this region's perspective.
+    //  originalMaybeNearestPureLocation: Option[LocationInDenizen],
+    //  originallyIntroducedLocation: LocationInDenizen,
+    //  originallyMutable: Boolean
+
+    // If None, it comes from a template parameter
+    height: Option[Int],
+    originalMutability: IRegionMutabilityS
+) extends IRegionNameT with IPlaceholderNameT {
+  vcurious(height.isEmpty) // shouldnt it always be None?
+}
 
 // See NNSPAFOC.
 case class OverrideDispatcherTemplateNameT(
@@ -333,7 +361,7 @@ case class ExternNameT(
   template: ExternTemplateNameT,
   templateArg: RegionT
 ) extends IInstantiationNameT {
-  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector()
+  override def templateArgs: Vector[ITemplataT[ITemplataType]] = Vector(templateArg.region)
 }
 
 case class ExternFunctionNameT(

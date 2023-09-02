@@ -21,7 +21,7 @@ import dev.vale.testvm.ReferenceV
 import scala.collection.immutable.List
 
 case class FullCompilationOptions(
-  globalOptions: GlobalOptions = GlobalOptions(false, true, true, false, false),
+  globalOptions: GlobalOptions = GlobalOptions(false, true, false, false),
   debugOut: (=> String) => Unit = (x => {
     println("##: " + x)
   }),

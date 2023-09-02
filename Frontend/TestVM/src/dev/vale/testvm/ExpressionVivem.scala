@@ -1,7 +1,7 @@
 package dev.vale.testvm
 
 import dev.vale.finalast._
-import dev.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vregionmut, vwat, finalast => m}
+import dev.vale._
 import dev.vale.finalast._
 
 import scala.collection.mutable
@@ -405,7 +405,7 @@ object ExpressionVivem {
         vassert(weakRef.ownership == WeakH)
 
         if (heap.containsLiveObject(weakRef)) {
-          val expectedRef = CoordH(vregionmut(MutableBorrowH), YonderH, sourceExpr.resultType.kind)
+          val expectedRef = CoordH(vimpl(/*BorrowH*/), YonderH, sourceExpr.resultType.kind)
           val constraintRef = heap.transmute(weakRef, sourceExpr.resultType, expectedRef)
 
           heap.vivemDout.println()

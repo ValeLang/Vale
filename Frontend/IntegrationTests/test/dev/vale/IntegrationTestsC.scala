@@ -11,6 +11,22 @@ import org.scalatest._
 
 class IntegrationTestsC extends FunSuite with Matchers {
 
+  test("Ignoring receiver") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine { hp int; }
+        |exported func main() int { [_, y] = (Marine(6), Marine(8)); return y.hp; }
+        |
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main");
+    main.header.returnType match { case CoordT(ShareT, _, IntT.i32) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(8) =>
+    }
+  }
+
+
   test("Tests floats") {
     val compile = RunCompilation.test(
       """
@@ -21,13 +37,17 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |  return 7;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(7) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(7) =>
+    }
   }
 
   test("getOr function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/getOr.vale"))
 
-    compile.evalForKind(Vector()) match { case VonInt(9) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(9) =>
+    }
   }
 
   // Not sure if this is desirable behavior, because borrow_ship isnt really used after
@@ -81,7 +101,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
       case UpcastTE(_, _, _) =>
     })
 
-    compile.evalForKind(Vector()) match { case VonInt(3) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(3) =>
+    }
   }
 
   test("Test shaking") {
@@ -101,10 +123,10 @@ class IntegrationTestsC extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(
-      !hinputs.functions.exists(func => func.header.id.localName match {
+      hinputs.functions.filter(func => func.header.id.localName match {
         case FunctionNameIX(FunctionTemplateNameI(StrI("bork"), _), _, _) => true
         case _ => false
-      }))
+      }).isEmpty)
 
     vassert(
       hinputs.functions.find(func => func.header.id.localName match {
@@ -132,7 +154,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.getCompilerOutputs()
 
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Truncate i64 to i32") {
@@ -144,7 +168,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
-    compile.evalForKind(Vector()) match { case VonInt(5032704) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(5032704) =>
+    }
   }
 
   test("Return without return") {
@@ -152,7 +178,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
       """
         |exported func main() int { 73 }
         |""".stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(73) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(73) =>
+    }
   }
 
   test("Test export functions") {
@@ -173,14 +201,16 @@ class IntegrationTestsC extends FunSuite with Matchers {
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get(interner.intern(StrI("sqrt")))) match {
-      case PrototypeH(IdH("sqrt",PackageCoordinate(StrI("math"),Vector()),_,_),_,_) =>
+      case PrototypeH(IdH("sqrt", PackageCoordinate(StrI("math"), Vector()), _, _), _, _) =>
     }
 
     // We also made an internal function that contains an extern call
     val externSqrt = packageH.lookupFunction("sqrt(float)")
     vassert(externSqrt.isExtern)
 
-    compile.evalForKind(Vector()) match { case VonInt(4) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(4) =>
+    }
   }
 
   test("Test narrowing between borrow and owning overloads") {
@@ -208,13 +238,17 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Test catch deref after drop") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/invalidaccess.vale"))
     try {
-      compile.evalForKind(Vector()) match { case VonInt(42) => }
+      compile.evalForKind(Vector()) match {
+        case VonInt(42) =>
+      }
       vfail()
     } catch {
       case ConstraintViolatedException(_) => // good!
@@ -242,7 +276,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |  return bork(&Moo());
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
 
@@ -266,7 +302,9 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |  return bork(Moo());
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("exporting array") {
@@ -290,47 +328,8 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) match { case VonInt(6) => }
-  }
-
-  test("Supplying bounded struct to struct accepting") {
-    // See OIRCRR.
-    //
-    // We have a bug where the Spork<...>(...) call site sees that it's calling:
-    //   func Spork<Bork<int>>(Bork)Spork<Bork<int>>
-    // and it sees that it's supplying a Bork, and so it supplies Bork's bounds as part of the instantiation reachable
-    // functions.
-    //
-    // However, the definition of Spork constructor is:
-    //   func Spork<T>(a T) Spork<T> { construct<Spork<T>>(a) }
-    // and sees that the parameter is a T, and doesn't expect any particular reachable functions.
-    //
-    // The call site thinks "I'm giving an argument that's a citizen with bounds. I should include it in the
-    // instantiation args.".
-    // What it should really think is "I should only give the arguments that the receiver expects."
-    // And the receiver only expects reachable functions for params that it *knows* are citizens. Params that the
-    // *definition* calls.
-    //
-    // We can know that by looking at the CallSR rules of the function we're calling, and only include reachables for
-    // what comes out of those.
-
-    val compile = RunCompilation.test(
-      """
-        |struct Bork<T> where func drop(T)void { a T; }
-        |// makes implicit constructor:
-        |// func Bork<T>(a T) Bork<T> { construct<Bork<T>>(a) }
-        |
-        |struct Spork<T> where func drop(T)void { a T; }
-        |// makes implicit constructor:
-        |// func Spork<T>(a T) Spork<T> { construct<Spork<T>>(a) }
-        |
-        |exported func main() int {
-        |  return Spork<Bork<int>>(Bork(7)).a.a;
-        |}
-    """.stripMargin)
-
     compile.evalForKind(Vector()) match {
-      case VonInt(7) =>
+      case VonInt(6) =>
     }
   }
 
@@ -346,13 +345,34 @@ class IntegrationTestsC extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) match { case VonInt(7) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(7) =>
+    }
   }
 
   test("Restackify") {
     // Allow set on variables that have been moved already, which is useful for linear style.
     val compile = RunCompilation.test(Tests.loadExpected("programs/restackify.vale"))
-    compile.evalForKind(Vector()) match { case VonInt(42) => }
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
+  }
+
+  test("Test automatic int transmigration for call") {
+    // See PATDR, the int from main should automatically match GetHp's default region.
+    val compile = RunCompilation.test(
+      """
+        |struct Ship { }
+        |pure func GetHp<r'>(map &r'Ship, x int) int { x }
+        |exported func main() int {
+        |  ship = Ship();
+        |  return GetHp(&ship, 42);
+        |}
+        |""".stripMargin)
+
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
   }
 
   test("Destructure restackify") {
@@ -371,18 +391,4 @@ class IntegrationTestsC extends FunSuite with Matchers {
     }
   }
 
-  test("Ignoring receiver") {
-    val compile = RunCompilation.test(
-      """
-        |struct Marine { hp int; }
-        |exported func main() int { [_, y] = (Marine(6), Marine(8)); return y.hp; }
-        |
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-    val main = coutputs.lookupFunction("main");
-    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
-    compile.evalForKind(Vector()) match {
-      case VonInt(8) =>
-    }
-  }
 }

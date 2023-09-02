@@ -13,6 +13,8 @@ import dev.vale.postparsing.CodeRuneS
 import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.function.DestructorCompiler
+import dev.vale.typing.names._
+import dev.vale.typing.templata.ITemplataT._
 import dev.vale.typing.templata.PrototypeTemplataT
 import dev.vale.typing.types._
 
@@ -32,14 +34,19 @@ class RSAImmutableNewMacro(
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
       FunctionHeaderT(
-        env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
     val CoordTemplataT(elementType) =
@@ -53,13 +60,15 @@ class RSAImmutableNewMacro(
           env.lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(CodeRuneS(keywords.M))), Set(TemplataLookupContext))))
 
-    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, RegionT())
+    val region = RegionT(expectRegionPlaceholder(expectRegion(vassertSome(env.id.localName.templateArgs.lastOption))))
+
+    val arrayTT = arrayCompiler.resolveRuntimeSizedArray(elementType, mutability, region)
 
     val generatorArgCoord =
       paramCoords(1).tyype match {
-        case CoordT(ShareT, _, kind) => CoordT(ShareT, RegionT(), kind)
-        case CoordT(BorrowT, _, kind) => CoordT(BorrowT, RegionT(), kind)
-        case CoordT(OwnT, _, kind) => vwat() // shouldnt happen, signature takes in an &
+        case c @ CoordT(ShareT, _, _) => c
+        case c @ CoordT(BorrowT, _, _) => c
+        case CoordT(OwnT, _, _) => vwat() // shouldnt happen, signature takes in an &
       }
 
     val generatorPrototype =
@@ -71,8 +80,8 @@ class RSAImmutableNewMacro(
         interner.intern(CodeNameS(keywords.underscoresCall)),
         Vector(),
         Vector(),
-        RegionT(),
-        Vector(generatorArgCoord, CoordT(ShareT, RegionT(), IntT(32))),
+        region,
+        Vector(generatorArgCoord, CoordT(ShareT, paramCoords(0).tyype.region, IntT(32))),
         Vector(),
         false) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
@@ -84,12 +93,13 @@ class RSAImmutableNewMacro(
     val sizeTE = ArgLookupTE(0, paramCoords(0).tyype)
     val generatorTE = ArgLookupTE(1, paramCoords(1).tyype)
 
+    vimpl() // pure?
     val body =
       BlockTE(
         ReturnTE(
           NewImmRuntimeSizedArrayTE(
             arrayTT,
-            RegionT(),
+            vassertSome(maybeRetCoord).region,
             sizeTE,
             generatorTE,
             generatorPrototype.prototype)))

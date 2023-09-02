@@ -40,19 +40,14 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     val program1 = compile("""func main<T>(moo T) { }""")
     val main = program1.lookupFunction("main")
 
-    vregionmut() // Take out with regions
     // Should have T, the default region, and the return rune
-    vassert(main.runeToPredictedType.size == 2)
-    // // Should have T, the default region, and the return rune
-    // vassert(main.runeToPredictedType.size == 3)
+    vassert(main.runeToPredictedType.size == 3)
 
-    vregionmut() // see below
     main.genericParams match {
       case Vector(
-        GenericParameterS(_, RuneUsage(_, CodeRuneS(StrI("T"))), CoordGenericParameterTypeS(_, _, _), None)
-        // Put this back in when we have regions
-        // , _ // implicit default region
-        ) =>
+        GenericParameterS(_, RuneUsage(_, CodeRuneS(StrI("T"))), CoordGenericParameterTypeS(_, _, _), None),
+        // implicit default region
+        _) =>
 //      case Vector(
 //        GenericParameterS(
 //          RangeS(_:10, _:11),RuneUsage(RangeS(_:0, _:23),CodeRuneS(StrI(T))),CoordTemplataType(),None,Vector(),None),
@@ -82,6 +77,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
         case ParameterS(_,
           _,
           false,
+          _,
           AtomSP(_,
             Some(CaptureS(CodeVarNameS(StrI("moo")), false)),
             Some(RuneUsage(_, tcr @ ImplicitRuneS(_))),
@@ -90,7 +86,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val tCoordRuneFromRules =
       main.rules shouldHave {
-        case AugmentSR(_, tcr, Some(BorrowP), RuneUsage(_, CodeRuneS(StrI("T")))) => tcr
+        case AugmentSR(_, tcr, Some(BorrowP), None, RuneUsage(_, CodeRuneS(StrI("T")))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune
@@ -103,12 +99,9 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     val paramRune =
       param match {
         case ParameterS(_,
-          None,false,
-          AtomSP(_,
-            Some(CaptureS(CodeVarNameS(StrI(_)),false)),Some(RuneUsage(_,ImplicitRuneS(LocationInDenizen(Vector(2, 1, 1, 1, 1))))),None)) =>
-        case ParameterS(_,
           _,
           false,
+          _,
           AtomSP(_,
             None,
             Some(RuneUsage(_, pr @ ImplicitRuneS(_))),
@@ -116,28 +109,26 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       }
 
     main.rules shouldHave {
-      case MaybeCoercingLookupSR(_, pr, CodeNameS(StrI("int"))) => vassert(pr.rune == paramRune)
+      case MaybeCoercingLookupSR(_, pr, _, CodeNameS(StrI("int"))) => vassert(pr.rune == paramRune)
     }
   }
 
-  vregionmut() // Put back in with regions
-  // test("Regioned pure function") {
-  //   val bork = compile("pure func main<r', t'>(ship &r'Spaceship) t'{ }")
-  //
-  //   val main = bork.lookupFunction("main")
-  //   main.genericParams.size shouldEqual 2
-  // }
+  test("Regioned pure function") {
+    val bork = compile("pure func main<r', t'>(ship &r'Spaceship) t'{ }")
 
-  vregionmut() // Put back in with regions
-  // test("Regioned additive function") {
-  //   val bork = compile("additive func main<r', t'>(ship &r'Spaceship) t'{ }")
-  //
-  //   val main = bork.lookupFunction("main")
-  //   main.genericParams.size shouldEqual 2
-  //   main.genericParams(0) match {
-  //     case GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))),RegionGenericParameterTypeS(ReadOnlyRegionS),None) =>
-  //   }
-  // }
+    val main = bork.lookupFunction("main")
+    main.genericParams.size shouldEqual 2
+  }
+
+  test("Regioned additive function") {
+    val bork = compile("additive func main<r', t'>(ship &r'Spaceship) t'{ }")
+
+    val main = bork.lookupFunction("main")
+    main.genericParams.size shouldEqual 2
+    main.genericParams(0) match {
+      case GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))),RegionGenericParameterTypeS(AdditiveRegionS),None) =>
+    }
+  }
 
   test("Test param-less lambda identifying runes") {
     val bork = compile(
@@ -146,15 +137,9 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")
-    vregionmut() // Put this back in when we have regions
-    // main.genericParams.size shouldEqual 1 // only the default region
-    // Take this out when we have regions
-    main.genericParams.size shouldEqual 0
+    main.genericParams.size shouldEqual 1 // only the default region
     val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
-    vregionmut() // Put this back in when we have regions
-    // lambda.function.genericParams.size shouldEqual 1 // only the default region
-    // Take this out when we have regions
-    lambda.function.genericParams.size shouldEqual 0
+    lambda.function.genericParams.size shouldEqual 1 // only the default region
   }
 
   test("Test one-param lambda identifying runes") {
@@ -164,21 +149,43 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")
-    vregionmut() // Put this back in when we have regions
-    // main.genericParams.size shouldEqual 1 // Only the default region
-    // Take this out when we have regions
-    main.genericParams.size shouldEqual 0
+    main.genericParams.size shouldEqual 1 // Only the default region
     val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
-    vregionmut() // Put this back in when we have regions
-    // // magic param + default region
-    // lambda.function.genericParams.size shouldEqual 2
-    // Take this out when we have regions
-    lambda.function.genericParams.size shouldEqual 1
+    // magic param + default region
+    lambda.function.genericParams.size shouldEqual 2
   }
 
   test("Report that default region must be mentioned in generic params") {
     compileForError("pure func main<r'>(ship &r'Spaceship) t'{ }") match {
       case CouldntFindRuneS(range, "t") =>
     }
+  }
+
+  test("Regioned param's outer region rune is correct") {
+    val c = compile("pure func main<r'>(ship &r'Spaceship) { }")
+
+    val main = c.lookupFunction("main")
+    main.params.head.outerRegionRune match { case CodeRuneS(StrI("r")) => }
+  }
+
+  test("Augmented generic param's outer region rune is correct") {
+    val c = compile("pure func main<T>(ship &T) { }")
+
+    val main = c.lookupFunction("main")
+    main.params.head.outerRegionRune match { case CodeRuneS(StrI("T")) => }
+  }
+
+  test("Generic param's outer region rune is correct") {
+    val c = compile("pure func main<T>(ship T) { }")
+
+    val main = c.lookupFunction("main")
+    main.params.head.outerRegionRune match { case CodeRuneS(StrI("T")) => }
+  }
+
+  test("Normal param's outer region rune is correct") {
+    val c = compile("pure func main(ship int) { }")
+
+    val main = c.lookupFunction("main")
+    main.params.head.outerRegionRune match { case DenizenDefaultRegionRuneS(_) => }
   }
 }

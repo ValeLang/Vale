@@ -53,7 +53,7 @@ class FunctionCompilerCore(
       life: LocationInFunctionEnvironmentT,
       parentRanges: List[RangeS],
       callLocation: LocationInDenizen,
-        region: RegionT,
+      region: RegionT,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
@@ -73,13 +73,6 @@ class FunctionCompilerCore(
     params2: Vector[ParameterT],
     instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT]):
   (FunctionHeaderT) = {
-    fullEnv.id match {
-      case IdT(_, Vector(), FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), Vector(CoordTemplataT(CoordT(_, RegionT(), KindPlaceholderT(IdT(_, Vector(FunctionTemplateNameT(StrI("drop"), _)), KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, CodeRuneS(StrI("T0")))))))), CoordTemplataT(CoordT(_, RegionT(), KindPlaceholderT(IdT(_, Vector(FunctionTemplateNameT(StrI("drop"), _)), KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, CodeRuneS(StrI("T1"))))))))), Vector(CoordT(_, RegionT(), StructTT(IdT(_, Vector(), StructNameT(StructTemplateNameT(StrI("Tup2")), Vector(CoordTemplataT(CoordT(_, RegionT(), KindPlaceholderT(IdT(_, Vector(FunctionTemplateNameT(StrI("drop"), _)), KindPlaceholderNameT(KindPlaceholderTemplateNameT(0, CodeRuneS(StrI("T0")))))))), CoordTemplataT(CoordT(_, RegionT(), KindPlaceholderT(IdT(_, Vector(FunctionTemplateNameT(StrI("drop"), _)), KindPlaceholderNameT(KindPlaceholderTemplateNameT(1, CodeRuneS(StrI("T1")))))))))))))))) => {
-        vpass()
-      }
-      case _ =>
-    }
-
 //    opts.debugOut("Evaluating function " + fullEnv.fullName)
 
 //    val functionTemplateName = TemplataCompiler.getFunctionTemplate(fullEnv.fullName)
@@ -96,7 +89,7 @@ class FunctionCompilerCore(
         })
 
     val maybeExport =
-      fullEnv.function.attributes.collectFirst { case e@ExportS(_) => e }
+      fullEnv.function.attributes.collectFirst { case e@ExportS(_, _) => e }
 
     val signature2 = SignatureT(fullEnv.id);
     val maybeRetTemplata =
@@ -121,7 +114,7 @@ class FunctionCompilerCore(
         case CodeBodyS(body) => {
           val attributesWithoutExport =
             fullEnv.function.attributes.filter({
-              case ExportS(_) => false
+              case ExportS(_, _) => false
               case _ => true
             })
           val attributesT = translateAttributes(attributesWithoutExport)
@@ -156,7 +149,12 @@ class FunctionCompilerCore(
               coutputs,
               fullEnv,
               fullEnv.function.range,
-              translateFunctionAttributes(fullEnv.function.attributes),
+              translateFunctionAttributes(
+                fullEnv.function.attributes.filter({
+                  case ExternS(_, _) => false
+                  case PureS => false
+                  case _ => true
+                })),
               params2,
               retCoord,
               Some(FunctionTemplataT(fullEnv.parentEnv, fullEnv.function)))
@@ -267,10 +265,10 @@ class FunctionCompilerCore(
   }
 
   def finalizeHeader(
-      fullEnv: FunctionEnvironmentT,
-      coutputs: CompilerOutputs,
-      attributesT: Vector[IFunctionAttributeT],
-      paramsT: Vector[ParameterT],
+    fullEnv: FunctionEnvironmentT,
+    coutputs: CompilerOutputs,
+    attributesT: Vector[IFunctionAttributeT],
+    paramsT: Vector[ParameterT],
     returnCoord: CoordT):
   FunctionHeaderT = {
     val header =
@@ -357,7 +355,17 @@ class FunctionCompilerCore(
       maybeOrigin: Option[FunctionTemplataT]):
   (FunctionHeaderT) = {
     env.id.localName match {
-      case FunctionNameT(FunctionTemplateNameT(humanName, _), Vector(), params) => {
+      case FunctionNameT(FunctionTemplateNameT(humanName, codeLoc), templateArgs, params) => {
+        // Exports' template args can only be regions
+        val allTemplateArgsAreRegions =
+          templateArgs.forall({
+            case PlaceholderTemplataT(_, RegionTemplataType()) => true
+            case _ => false
+          })
+        if (!allTemplateArgsAreRegions) {
+          throw CompileErrorExceptionT(RangedInternalErrorT(List(range), "Exports' template args can only be regions!"))
+        }
+
         val header =
           ast.FunctionHeaderT(
             env.id,
@@ -398,8 +406,8 @@ class FunctionCompilerCore(
   def translateFunctionAttributes(a: Vector[IFunctionAttributeS]): Vector[IFunctionAttributeT] = {
     U.map[IFunctionAttributeS, IFunctionAttributeT](a, {
       case UserFunctionS => UserFunctionT
-      case ExternS(packageCoord) => ExternT(packageCoord)
-      case x => vimpl(x)
+//      case ExternS(packageCoord) => ExternT(packageCoord)
+      case x => vimpl(x.toString)
     })
   }
 

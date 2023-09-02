@@ -25,11 +25,11 @@ class SequenceCompiler(
     env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     exprs2: Vector[ReferenceExpressionTE]):
   (ReferenceExpressionTE) = {
     val types2 = exprs2.map(_.result.expectReference().coord)
-    val region = RegionT()
+    val region = vimpl()
     val finalExpr = TupleTE(exprs2, makeTupleCoord(env, coutputs, parentRanges, callLocation, region, types2))
     (finalExpr)
   }
@@ -38,13 +38,13 @@ class SequenceCompiler(
     env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     types2: Vector[CoordT]):
   StructTT = {
     val tupleTemplate @ StructDefinitionTemplataT(_, _) =
       vassertSome(
         env.lookupNearestWithName(
-          interner.intern(StructTemplateNameT(keywords.tupleHumanName(types2.length))), Set(TemplataLookupContext)))
+          interner.intern(StructTemplateNameT(keywords.tupleHumanName)), Set(TemplataLookupContext)))
     structCompiler.resolveStruct(
       coutputs,
       env,
@@ -59,7 +59,7 @@ class SequenceCompiler(
     env: IInDenizenEnvironmentT,
     coutputs: CompilerOutputs,
     parentRanges: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     region: RegionT,
     types2: Vector[CoordT]):
   CoordT = {

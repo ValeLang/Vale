@@ -1,55 +1,55 @@
-import v.builtins.panicutils.*;
-import v.builtins.drop.*;
-
-#!DeriveInterfaceDrop
-sealed interface Opt<T> where T Ref { }
-#!DeriveStructDrop
-struct Some<T> where T Ref { value T; }
-
-impl<T> Opt<T> for Some<T>;
-#!DeriveStructDrop
-struct None<T> where T Ref { }
-
-impl<T> Opt<T> for None<T>;
-
-abstract func drop<T>(virtual opt Opt<T>)
-where func drop(T)void;
-
-func drop<T>(opt Some<T>)
-where func drop(T)void
-{
-  [x] = opt;
-}
-
-func drop<T>(opt None<T>) {
-  [ ] = opt;
-}
-
-abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
-func isEmpty<T>(opt &None<T>) bool { return true; }
-func isEmpty<T>(opt &Some<T>) bool { return false; }
-
-abstract func isEmpty<T>(virtual opt Opt<T>) bool
-where func drop(T)void;
-func isEmpty<T>(opt None<T>) bool
-where func drop(T)void
-{ return true; }
-
-func isEmpty<T>(opt Some<T>) bool
-where func drop(T)void
-{ return false; }
-
-abstract func get<T>(virtual opt Opt<T>) T;
-func get<T>(opt None<T>) T { panic("Called get() on a None!"); }
-func get<T>(opt Some<T>) T {
-  [value] = opt;
-  return value;
-}
-
-abstract func get<T>(virtual opt &Opt<T>) &T;
-func get<T>(opt &None<T>) &T { panic("Called get() on a None!"); }
-func get<T>(opt &Some<T>) &T { return &opt.value; }
-
-abstract func expect_none<T>(virtual opt Opt<T>) None<T>;
-func expect_none<T>(opt Some<T>) None<T> { panic("Called expect_none() on a Some!"); }
-func expect_none<T>(opt None<T>) None<T> { opt }
+// import v.builtins.panicutils.*;
+// import v.builtins.drop.*;
+//
+// #!DeriveInterfaceDrop
+// sealed interface Opt<T> where T Ref { }
+// #!DeriveStructDrop
+// struct Some<T> where T Ref { value T; }
+//
+// impl<T> Opt<T> for Some<T>;
+// #!DeriveStructDrop
+// struct None<T> where T Ref { }
+//
+// impl<T> Opt<T> for None<T>;
+//
+// abstract func drop<T>(virtual opt Opt<T>)
+// where func drop(T)void;
+//
+// func drop<T>(opt Some<T>)
+// where func drop(T)void
+// {
+//   [x] = opt;
+// }
+//
+// func drop<T>(opt None<T>) {
+//   [ ] = opt;
+// }
+//
+// abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
+// func isEmpty<T>(opt &None<T>) bool { return true; }
+// func isEmpty<T>(opt &Some<T>) bool { return false; }
+//
+// abstract func isEmpty<T>(virtual opt Opt<T>) bool
+// where func drop(T)void;
+// func isEmpty<T>(opt None<T>) bool
+// where func drop(T)void
+// { return true; }
+//
+// func isEmpty<T>(opt Some<T>) bool
+// where func drop(T)void
+// { return false; }
+//
+// abstract func get<T>(virtual opt Opt<T>) T;
+// func get<T>(opt None<T>) T { panic("Called get() on a None!"); }
+// func get<T>(opt Some<T>) T {
+//   [value] = opt;
+//   return value;
+// }
+//
+// abstract func get<T>(virtual opt &Opt<T>) &T;
+// func get<T>(opt &None<T>) &T { panic("Called get() on a None!"); }
+// func get<T>(opt &Some<T>) &T { return &opt.value; }
+//
+// abstract func expect_none<T>(virtual opt Opt<T>) None<T>;
+// func expect_none<T>(opt Some<T>) None<T> { panic("Called expect_none() on a Some!"); }
+// func expect_none<T>(opt None<T>) None<T> { opt }

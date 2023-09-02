@@ -14,6 +14,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.types._
 import dev.vale.typing.ast
+import dev.vale.typing.names._
 
 class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFunctionBodyMacro {
   val generatorId: StrI = keywords.vale_runtime_sized_array_pop
@@ -24,15 +25,19 @@ class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFuncti
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
       FunctionHeaderT(
-        env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
-
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     val body =
       BlockTE(
         ReturnTE(

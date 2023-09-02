@@ -17,7 +17,7 @@ object InstantiatingCompilation {
         .or(FileCoordinateMap.test(interner, code.toVector))
         .or(Tests.getPackageToResourceResolver),
       InstantiatorCompilationOptions(
-        GlobalOptions(true, true, true, true, true)))
+        GlobalOptions(true, true, true, true)))
   }
 }
 

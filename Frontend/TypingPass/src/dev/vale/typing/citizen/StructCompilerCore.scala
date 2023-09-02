@@ -52,7 +52,7 @@ class StructCompilerCore(
 
     val attributesWithoutExportOrMacros =
       structA.attributes.filter({
-        case ExportS(_) => false
+        case ExportS(_, _) => false
         case MacroCallS(range, dontCall, macroName) => false
         case _ => true
       })
@@ -153,7 +153,7 @@ class StructCompilerCore(
         members,
         false,
         InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
-          runeToFunctionBound,
+        runeToFunctionBound,
           Map(), // Structs don't have reachable bounds
           runeToImplBound))
 
@@ -194,13 +194,12 @@ class StructCompilerCore(
 
     val attributesWithoutExportOrMacros =
       interfaceA.attributes.filter({
-        case ExportS(_) => false
+        case ExportS(_, _) => false
         case MacroCallS(range, dontCall, macroName) => false
         case _ => true
       })
     val maybeExport =
-      interfaceA.attributes.collectFirst { case e@ExportS(_) => e }
-
+      interfaceA.attributes.collectFirst { case e@ExportS(_, _) => e }
 
     val mutability =
       ITemplataT.expectMutability(
@@ -226,16 +225,33 @@ class StructCompilerCore(
       InterfaceDefinitionT(
         templateIdT,
         placeholderedInterfaceTT,
-        interner.intern(placeholderedInterfaceTT),
+        placeholderedInterfaceTT,
         translateCitizenAttributes(attributesWithoutExportOrMacros),
         interfaceA.weakable,
         mutability,
         InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
-          runeToFunctionBound,
+        runeToFunctionBound,
           Map(), // Interfaces don't have reachable bounds
           runeToImplBound),
         internalMethods)
     coutputs.addInterface(interfaceDef2)
+
+    maybeExport match {
+      case None =>
+      case Some(exportPackageCoord) => {
+        vimpl()
+//        val exportedName =
+//          placeholderedFullNameT.localName match {
+//            case InterfaceNameT(InterfaceTemplateNameT(humanName), _) => humanName
+//            case _ => vfail("Can't export something that doesn't have a human readable name!")
+//          }
+//        coutputs.addKindExport(
+//          interfaceA.range,
+//          placeholderedInterfaceTT,
+//          exportPackageCoord.packageCoordinate,
+//          exportedName)
+      }
+    }
 
     (interfaceDef2)
   }
@@ -314,6 +330,7 @@ class StructCompilerCore(
     val understructTemplatedId =
       containingFunctionEnv.id
         .addStep(understructTemplateNameT)
+    val defaultRegion = vimpl()
 
     val understructInstantiatedNameT =
       understructTemplateNameT.makeStructName(interner, Vector())
@@ -389,7 +406,7 @@ class StructCompilerCore(
         true,
         // Closures have no function bounds or impl bounds
         InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
-          Map(),
+        Map(),
           Map(), // Structs don't have reachable bounds
           Map()));
     coutputs.addStruct(closureStructDefinition)

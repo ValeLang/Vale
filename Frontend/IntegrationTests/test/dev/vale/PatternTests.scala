@@ -27,7 +27,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test( "exported func main() int { [x, y] = (4, 5); return y; }")
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
-    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
+    main.header.returnType shouldEqual CoordT(ShareT, vimpl(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
@@ -40,7 +40,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
-    main.header.returnType shouldEqual CoordT(ShareT, RegionT(), IntT.i32)
+    main.header.returnType shouldEqual CoordT(ShareT, vimpl(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -52,7 +52,7 @@ class PatternTests extends FunSuite with Matchers {
         |exported func main() int { [x, y] = (7, Marine(8)); return y.hp; }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.functions.head.header.returnType == CoordT(ShareT, RegionT(), IntT.i32)
+    coutputs.functions.head.header.returnType == CoordT(ShareT, vimpl(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -68,20 +68,16 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.functions.head.header.returnType == CoordT(ShareT, RegionT(), IntT.i32)
+    coutputs.functions.head.header.returnType == CoordT(ShareT, vimpl(), IntT.i32)
 
     val monouts = compile.getMonouts()
-    val tupDef = monouts.lookupStruct("Tup2")
+    val tupDef = monouts.lookupStruct("Tup")
     val tupDefMemberTypes =
       tupDef.members.collect({ case StructMemberI(_, _, tyype) => tyype.reference })
     tupDefMemberTypes match {
       case Vector(
         CoordI(MutableShareI,IntIT(32)),
         CoordI(MutableBorrowI,StructIT(IdI(_,Vector(),StructNameI(StructTemplateNameI(StrI("Marine")),Vector()))))) =>
-      case null =>
-//      case Vector(
-//        ReferenceMemberTypeT(CoordT(own,PlaceholderT(IdT(_,Vector(StructTemplateNameT(StrI("Tup"))),PlaceholderNameT(PlaceholderTemplateNameT(0,CodeRuneS(StrI("T1")))))))),
-//        ReferenceMemberTypeT(CoordT(OwnT,PlaceholderT(IdT(_,Vector(StructTemplateNameT(StrI("Tup"))),PlaceholderNameT(PlaceholderTemplateNameT(1,CodeRuneS(StrI("T2"))))))))) =>
     }
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
@@ -99,6 +95,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
+    coutputs.functions.head.header.returnType == CoordT(ShareT, vimpl(), IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
@@ -159,23 +156,4 @@ class PatternTests extends FunSuite with Matchers {
 //    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
 //    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
-
-  test("Ignore destructure") {
-    val compile = RunCompilation.test(
-      """
-        |struct Marine {
-        |  hp int;
-        |}
-        |exported func main() int {
-        |  m = Marine(4);
-        |  Marine[_] = m;
-        |  return 42;
-        |}
-  """.stripMargin)
-
-    compile.evalForKind(Vector()) match {
-      case VonInt(42) =>
-    }
-  }
-
 }

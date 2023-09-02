@@ -398,7 +398,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
               GenericParameterP(_, NameP(_, StrI("A")), None, None, Vector(), None),
               GenericParameterP(_, NameP(_, StrI("F")), None, None, Vector(), None)))),
           None,
-          Some(ParamsP(_, Vector(ParameterP(_, _, _, _, Some(Patterns.capturedWithTypeRune("a", "A")))))),
+          Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None)),
         Some(BlockPE(_, None, None, VoidPE(_)))) =>
     }

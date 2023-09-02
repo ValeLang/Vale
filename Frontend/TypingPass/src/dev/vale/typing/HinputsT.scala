@@ -33,7 +33,9 @@ case class InstantiationBoundArgumentsT[BF <: IFunctionNameT, BI <: IImplNameT](
 case class HinputsT(
   interfaces: Vector[InterfaceDefinitionT],
   structs: Vector[StructDefinitionT],
+//  emptyPackStructRef: StructTT,
   functions: Vector[FunctionDefinitionT],
+//  immKindToDestructor: Map[KindT, PrototypeT],
 
   // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   interfaceToEdgeBlueprints: Map[IdT[IInterfaceNameT], InterfaceEdgeBlueprintT],
@@ -44,7 +46,7 @@ case class HinputsT(
 
   kindExports: Vector[KindExportT],
   functionExports: Vector[FunctionExportT],
-  kindExterns: Vector[KindExternT],
+//  kindExterns: Vector[KindExternT],
   functionExterns: Vector[FunctionExternT],
 ) {
 

@@ -441,7 +441,7 @@ class LetHammer(
               val (boxStructRefH) =
                 structHammer.makeBox(hinputs, hamuts, variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
-              val localBoxType = CoordH(vregionmut(MutableBorrowH), YonderH, boxStructRefH)
+              val localBoxType = CoordH(vimpl(/*BorrowH*/), YonderH, boxStructRefH)
               val localIndex = locals.addHammerLocal(localBoxType, Final)
 
               (remainingDestinationReferenceLocalVariables, previousLocalTypes :+ localBoxType, previousLocalIndices :+ localIndex)

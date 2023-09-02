@@ -144,14 +144,14 @@ class MutateHammer(
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // Remember, structs can never own boxes, they only borrow them
-    val expectedStructBoxMemberType = CoordH(vregionmut(MutableBorrowH), YonderH, boxStructRefH)
+    val expectedStructBoxMemberType = CoordH(vimpl(/*BorrowH*/), YonderH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
     val nameH = nameHammer.translateFullName(hinputs, hamuts, INameI.addStep(currentFunctionHeader.id, memberName))
     val loadResultType =
       CoordH(
-        vregionmut(MutableBorrowH),
+        vimpl(/*BorrowH*/),
         YonderH,
         boxStructRefH)
     val loadBoxNode =

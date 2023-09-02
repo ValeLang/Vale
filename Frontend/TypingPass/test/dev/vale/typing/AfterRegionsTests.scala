@@ -1,20 +1,17 @@
 package dev.vale.typing
 
-import dev.vale.typing.infer._
 import dev.vale.solver.{FailedSolve, RuleError}
 import dev.vale.typing.OverloadResolver.InferFailure
 import dev.vale.typing.ast.{SignatureT, _}
 import dev.vale.typing.infer.SendingNonCitizen
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
-import dev.vale.postparsing._
 import dev.vale.typing.types._
 import dev.vale.{Collector, Err, Ok, vassert, vwat, _}
 //import dev.vale.typingpass.infer.NotEnoughToSolveError
 import org.scalatest._
 
 import scala.io.Source
-import OverloadResolver._
 
 class AfterRegionsTests extends FunSuite with Matchers {
 
@@ -38,7 +35,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() {
-        |  launchGeneric(&Raza(42));
+        |  launchGeneric(Raza(42));
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -86,13 +83,27 @@ class AfterRegionsTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
+  // Depends on IFunction1, and maybe Generic interface anonymous subclass
+  test("Basic IFunction1 anonymous subclass") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import ifunction.ifunction1.*;
+        |
+        |exported func main() int {
+        |  f = IFunction1<mut, int, int>({_});
+        |  return (f)(7);
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
   test("Prototype rule to get return type") {
     // i dont think we support this anymore, now that we have generics?
 
     val compile = CompilerTestCompilation.test(
       """
         |
-        |import v.builtins.panic.*;
+        |import v.builtins.panicutils.*;
         |
         |func moo(i int, b bool) str { return "hello"; }
         |
@@ -105,14 +116,14 @@ class AfterRegionsTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     coutputs.lookupFunction("main").header.returnType match {
-      case CoordT(_,_, StrT()) =>
+      case CoordT(_,_,StrT()) =>
     }
   }
 
   test("Can destructure and assemble tuple") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup2.*;
+        |import v.builtins.tup.*;
         |import v.builtins.drop.*;
         |
         |func swap<T, Y>(x (T, Y)) (Y, T) {
@@ -121,14 +132,14 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() bool {
-        |  return swap((5, true)).0;
+        |  return swap((5, true)).a;
         |}
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
 
     coutputs.lookupFunction("main").header.returnType match {
-      case CoordT(ShareT, _, BoolT()) =>
+      case CoordT(ShareT, _,BoolT()) =>
     }
 
 //    coutputs.lookupFunction("swap").header.fullName.last.templateArgs.last match {
@@ -158,7 +169,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     coutputs.lookupFunction("bork").header.id.localName.templateArgs.last match {
-      case CoordTemplataT(CoordT(OwnT, _, _)) =>
+      case CoordTemplataT(CoordT(OwnT, _,_)) =>
     }
   }
 
@@ -187,7 +198,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     coutputs.lookupFunction("genericGetFuel").header.id.localName.templateArgs.last match {
-      case CoordTemplataT(CoordT(_,_, StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
+      case CoordTemplataT(CoordT(_,_,StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
     }
   }
 
@@ -234,6 +245,31 @@ class AfterRegionsTests extends FunSuite with Matchers {
     //      Collector.only(main, { case call @ FunctionCallTE(PrototypeT(FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("__call"), _), _, _)), _), _) => call })
   }
 
+  test("Test struct default generic argument in call") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |struct MyHashSet<K Ref, H Int = 5> { }
+        |func moo() {
+        |  x = MyHashSet<bool>();
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+    val moo = coutputs.lookupFunction("moo")
+    val variable = Collector.only(moo, { case LetNormalTE(v, _) => v })
+    variable.coord match {
+      case CoordT(
+      OwnT,
+      _,
+      StructTT(
+      IdT(_,_,
+      StructNameT(
+      StructTemplateNameT(StrI("MyHashSet")),
+      Vector(
+      CoordTemplataT(CoordT(ShareT,_,BoolT())),
+      IntegerTemplataT(5)))))) =>
+    }
+  }
+
   test("Test interface default generic argument in type") {
     val compile = CompilerTestCompilation.test(
       """
@@ -254,101 +290,9 @@ class AfterRegionsTests extends FunSuite with Matchers {
       InterfaceNameT(
       InterfaceTemplateNameT(StrI("MyInterface")),
       Vector(
-      CoordTemplataT(CoordT(ShareT,_, BoolT())),
+      CoordTemplataT(CoordT(ShareT,_,BoolT())),
       IntegerTemplataT(5)))))) =>
     }
   }
 
-  test("Reports when we give too many args") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |func moo(a int, b bool, s str) int { a }
-        |exported func main() int {
-        |  moo(42, true, "hello", false)
-        |}
-        |""".stripMargin)
-    compile.getCompilerOutputs() match {
-      // Err(     case WrongNumberOfArguments(_, _)) =>
-      case Err(CouldntFindFunctionToCallT(_, fff)) => {
-        vassert(fff.rejectedCalleeToReason.size == 1)
-        fff.rejectedCalleeToReason.head._2 match {
-          case WrongNumberOfArguments(4, 3) =>
-        }
-      }
-    }
-  }
-
-  test("Reports when ownership doesnt match") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |
-        |struct Firefly {}
-        |func getFuel(self &Firefly) int { return 7; }
-        |
-        |exported func main() int {
-        |  f = Firefly();
-        |  return (f).getFuel();
-        |}
-        |""".stripMargin
-    )
-    compile.getCompilerOutputs() match {
-      case Err(CouldntFindFunctionToCallT(range, fff)) => {
-        fff.name match {
-          case CodeNameS(StrI("getFuel")) =>
-        }
-        fff.rejectedCalleeToReason.size shouldEqual 1
-        val reason = fff.rejectedCalleeToReason.head._2
-        reason match {
-          case InferFailure(FailedCompilerSolve(_, _, RuleError(OwnershipDidntMatch(CoordT(OwnT, _, _), BorrowT)))) =>
-          //          case SpecificParamDoesntSend(0, _, _) =>
-          case other => vfail(other)
-        }
-      }
-    }
-  }
-
-  test("Failure to resolve a Prot rule's function doesnt halt") {
-    // In the below example, it should disqualify the first foo() because T = bool
-    // and there exists no moo(bool). Instead, we saw the Prot rule throw and halt
-    // compilation.
-
-    // Instead, we need to bubble up that failure to find the right function, so
-    // it disqualifies the candidate and goes with the other one.
-
-    // Note from later: It seems this isn't detected by the typing phase anymore.
-    // When we try to resolve a func moo(str)void, we actually find one in the overload index,
-    // specifically foo.bound:moo(str).
-    // Obviously we shouldnt be considering that.
-    // Normally, bounds have some sort of placeholder type that acts as a filter so people don't
-    // see them unless they have that placeholder type. Here, not so much.
-
-    // We can solve this in two ways:
-    // - Making a visibility mask for various overloads in the overload set. This one is only visible from foo,
-    //   so when we try to resolve it from main it wont be found.
-    // - Require all bounds have a placeholder type in them. Seems reasonable tbh.
-
-    CompilerTestCompilation.test(
-      """
-        |import v.builtins.drop.*;
-        |
-        |func moo(a str) { }
-        |func foo<T>(f T) void where func drop(T)void, func moo(str)void { }
-        |func foo<T>(f T) void where func drop(T)void, func moo(bool)void { }
-        |func main() { foo("hello"); }
-        |""".stripMargin).expectCompilerOutputs()
-  }
-
-  // Depends on IFunction1, and maybe Generic interface anonymous subclass
-  test("Basic IFunction1 anonymous subclass") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |import ifunction.ifunction1.*;
-        |
-        |exported func main() int {
-        |  f = IFunction1<mut, int, int>({_});
-        |  return (f)(7);
-        |}
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-  }
 }

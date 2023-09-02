@@ -76,10 +76,11 @@ case class CoordComponentsSR(
   range: RangeS,
   resultRune: RuneUsage,
   ownershipRune: RuneUsage,
+  regionRune: RuneUsage,
   kindRune: RuneUsage
 ) extends IRulexSR {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, ownershipRune, kindRune)
+  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, ownershipRune, regionRune, kindRune)
 }
 
 case class PrototypeComponentsSR(
@@ -165,10 +166,11 @@ case class IsStructSR(
 case class CoerceToCoordSR(
   range: RangeS,
   coordRune: RuneUsage,
+  regionRune: RuneUsage,
   kindRune: RuneUsage
 ) extends IRulexSR {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(coordRune, kindRune)
+  override def runeUsages: Vector[RuneUsage] = Vector(coordRune, regionRune, kindRune)
 }
 
 case class RefListCompoundMutabilitySR(
@@ -192,11 +194,13 @@ case class LiteralSR(
 case class MaybeCoercingLookupSR(
   range: RangeS,
   rune: RuneUsage,
+  // The region to use *if* we're coercing this lookup to a coord, see LNTKTR.
+  contextRegionRune: RuneUsage,
   name: IImpreciseNameS
 ) extends IRulexSR {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
-  override def runeUsages: Vector[RuneUsage] = Vector(rune)
+  override def runeUsages: Vector[RuneUsage] = Vector(rune, contextRegionRune)
 }
 
 // A rule that looks up something that's not a Kind, so it doesn't need a default region.
@@ -210,22 +214,44 @@ case class LookupSR(
   override def runeUsages: Vector[RuneUsage] = Vector(rune)
 }
 
+// This comes out of the post-parser, it's not sure whether it'll be coercing the call result to a coord or not.
+// The higher-typer will turn this into a CallSR or a CoercingCallSR.
 case class MaybeCoercingCallSR(
   range: RangeS,
   resultRune: RuneUsage,
+  // The region to use *if* we're coercing this call result to a coord, see LNTKTR.
+  contextRegionRune: RuneUsage,
   templateRune: RuneUsage,
   args: Vector[RuneUsage]
 ) extends IRulexSR {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
+  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, contextRegionRune, templateRune) ++ args
 }
 
+// // This rule coerces the call result to a coord, which is why it has a region.
+// case class CoercingCallSR(
+//     range: RangeS,
+//     resultRune: RuneUsage,
+//     // The region to use *if* we're coercing this call result to a coord, see LNTKTR.
+//     contextRegionRune: RuneUsage,
+//     templateRune: RuneUsage,
+//     args: Vector[RuneUsage]
+// ) extends IRulexSR {
+//   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+//   override def runeUsages: Vector[RuneUsage] = Vector(resultRune, contextRegionRune, templateRune) ++ args
+// }
+
+// This doesn't do any coercing.
+// ...this might not ever even get to the typing phase. Vale doesn't yet have any templates that don't produce kinds.
 case class CallSR(
   range: RangeS,
   resultRune: RuneUsage,
   templateRune: RuneUsage,
   args: Vector[RuneUsage]
 ) extends IRulexSR {
+  vpass()
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
 }
@@ -256,11 +282,12 @@ case class AugmentSR(
   range: RangeS,
   resultRune: RuneUsage,
   ownership: Option[OwnershipP],
+  region: Option[RuneUsage],
   innerRune: RuneUsage
 ) extends IRulexSR {
   vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, innerRune)
+  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, innerRune) ++ region
 }
 
 case class PackSR(

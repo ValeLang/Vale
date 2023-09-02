@@ -61,12 +61,20 @@ class DestructorCompiler(
         case CoordT(ShareT, _, NeverT(_)) => undestructedExpr2
         case CoordT(ShareT, _, _) => DiscardTE(undestructedExpr2)
         case r@CoordT(OwnT, _, _) => {
-          val StampFunctionSuccess(destructorPrototype, _) =
-            getDropFunction(env, coutputs, callRange, callLocation, RegionT(), r)
+          val StampFunctionSuccess(pure, maybeNewRegion, destructorPrototype, _) =
+            getDropFunction(env, coutputs, callRange, callLocation, contextRegion, r)
           vassert(coutputs.getInstantiationBounds(destructorPrototype.id).nonEmpty)
           val resultTT =
-            destructorPrototype.returnType
-          FunctionCallTE(destructorPrototype, Vector(undestructedExpr2), resultTT)
+            maybeNewRegion match {
+              case None => destructorPrototype.returnType
+              case Some(newRegion) => {
+                // If we get any instances that are part of the newRegion, we need to interpret them
+                // to the contextRegion.
+                TemplataCompiler.mergeCoordRegions(
+                  interner, coutputs, Map(newRegion -> contextRegion), destructorPrototype.returnType)
+              }
+            }
+          FunctionCallTE(destructorPrototype, pure, maybeNewRegion, Vector(undestructedExpr2), resultTT)
         }
         case CoordT(BorrowT, _, _) => (DiscardTE(undestructedExpr2))
         case CoordT(WeakT, _, _) => (DiscardTE(undestructedExpr2))

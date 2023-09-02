@@ -191,6 +191,7 @@ case class StaticArrayFromValuesSE(
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
+  neededDefaultRegionRune: IRuneS,
   elements: Vector[IExpressionSE]
 ) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -202,6 +203,7 @@ case class StaticArrayFromCallableSE(
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
+  neededDefaultRegionRune: IRuneS,
   callable: IExpressionSE
 ) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -212,6 +214,7 @@ case class NewRuntimeSizedArraySE(
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   size: IExpressionSE,
+  neededDefaultRegionRune: IRuneS,
   callable: Option[IExpressionSE]
 ) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()

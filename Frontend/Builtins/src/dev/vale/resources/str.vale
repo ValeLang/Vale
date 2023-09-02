@@ -1,6 +1,6 @@
 
-func +(a str, b str) str { return addStr(a, 0, len(a), b, 0, len(b)); }
-extern func addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str;
+func +<a', b'>(a a'str, b b'str) str { return addStr(a, 0, len(a), b, 0, len(b)); }
+extern func addStr<a', b'>(a a'str, aBegin int, aEnd int, b b'str, bBegin int, bEnd int) str;
 
 func str(x int) str { return castI32Str(x); }
 extern func castI32Str(x int) str;
@@ -11,8 +11,8 @@ extern func castI64Str(x i64) str;
 func str(x float) str { return castFloatStr(x); }
 extern func castFloatStr(x float) str;
 
-func len(s str) int { return __vbi_strLength(s); }
-extern func __vbi_strLength(s str) int;
+func len<r'>(s r'str) int { return __vbi_strLength(s); }
+extern func __vbi_strLength<r'>(s r'str) int;
 
 extern func strtoascii(s str, begin int, end int) int;
 extern func strfromascii(code int) str;

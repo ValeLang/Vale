@@ -35,8 +35,8 @@ We still need the generation+tether for nav and escapePods and shield.
 Firstly, we want to reduce the number of generations.
 
 In solving this, we'll need to be careful:
-* We need to be able to produce a borrow ref from any normal ref, and vice versa. This means that we need to know how to get to the tether and the generation from both.
-* We'd like to avoid where a reference to one part of a struct forbids setting something in an unrelated part of the struct.
+ * We need to be able to produce a borrow ref from any normal ref, and vice versa. This means that we need to know how to get to the tether and the generation from both.
+ * We'd like to avoid where a reference to one part of a struct forbids setting something in an unrelated part of the struct.
     * Sometimes, we can actually skip a check on a set, if its completely shape-stable.
 
 # Approaches
@@ -46,12 +46,12 @@ In solving this, we'll need to be careful:
 This isn't that big a deal.
 
 It's only a problem when all of these are true:
-* The inline thing is varying
-* The inline thing isn't an interface (so, its a struct or enum)
-* The inling thing has a final owning pointer
+ * The inline thing is varying
+ * The inline thing isn't an interface (so, its a struct or enum)
+ * The inling thing has a final owning pointer
     * Which we can't make varying
-* The inline thing can't be unique
-* We care about the size of the struct
+ * The inline thing can't be unique
+ * We care about the size of the struct
 
 That's a lot of things that have to go wrong.
 
@@ -89,19 +89,19 @@ struct Spaceship {
 
 Note:
 
-* These are above the allocation, with the generation, not really in the Spaceship object.
-* There's a shield.project tether. All the allocation's generations are deeply here in the header, except for unions like weapon.
+ * These are above the allocation, with the generation, not really in the Spaceship object.
+ * There's a shield.project tether. All the allocation's generations are deeply here in the header, except for unions like weapon.
 
 A borrow ref becomes:
 
-* 64b Pointer to object
-* 16b Positive offset to subtract from objptr to get to the i8 scope tether
-* 16b Positive offset to subtract from tether to get to the generation
+ * 64b Pointer to object
+ * 16b Positive offset to subtract from objptr to get to the i8 scope tether
+ * 16b Positive offset to subtract from tether to get to the generation
 
 We can add and remove from those two 32bs at the same time, **with some cleverness.** For example, if we had a borrow ref to the Spaceship, it might be \[0x120, 8, 8\] and if we wanted:
 
-* A borrow ref to the contained .engine which is 32 bytes forward, we'd add 32 to the objptr, and also 32 to the scope tether so it's the same one.
-* A borrow ref to the contained .nav which is 40 bytes forward and has the next scope tether, we'd add 40 to the objptr and EITHER:
+ * A borrow ref to the contained .engine which is 32 bytes forward, we'd add 32 to the objptr, and also 32 to the scope tether so it's the same one.
+ * A borrow ref to the contained .nav which is 40 bytes forward and has the next scope tether, we'd add 40 to the objptr and EITHER:
     * Add 39 and 1 to the offsets to get 47 and 9, OR
     * **Add (39\*2^16 + 1) to the combined u64 spanning the offsets.**
 
@@ -111,10 +111,10 @@ involve an &) and add it to the object pointer.
 
 A normal ref becomes:
 
-* 64b Pointer to object
-* 16b Positive offset to subtract from objptr to get to the i8 scope tether
-* 16b Positive offset to subtract from tether to get to the generation
-* 32b Generation
+ * 64b Pointer to object
+ * 16b Positive offset to subtract from objptr to get to the i8 scope tether
+ * 16b Positive offset to subtract from tether to get to the generation
+ * 32b Generation
 
 ## C: Array Of Scope Tether Bits
 
@@ -127,13 +127,13 @@ need more than 16, we can make a second generation)
 
 A borrow ref is:
 
-* 64b Pointer to object
-* 16b Positive offset to subtract from object pointer to get to the generation
-* 16b Mask to see where the scope tether bit is in those 24 bits.
+ * 64b Pointer to object
+ * 16b Positive offset to subtract from object pointer to get to the generation
+ * 16b Mask to see where the scope tether bit is in those 24 bits.
 
 For example, if we had a borrow ref to the Spaceship, it might be \[0x120, 8, 1\] and if we wanted:
-* A borrow ref to the contained .engine which is 32 bytes forward, we'd add 32 to the objptr, and also 32 to the offset so it points to the same place it did.
-* A borrow ref to the contained .nav which is 40 bytes forward and has the next scope tether, we'd add 40 to the objptr, 40 to the offset, and **left-shift the mask by 1.**
+ * A borrow ref to the contained .engine which is 32 bytes forward, we'd add 32 to the objptr, and also 32 to the offset so it points to the same place it did.
+ * A borrow ref to the contained .nav which is 40 bytes forward and has the next scope tether, we'd add 40 to the objptr, 40 to the offset, and **left-shift the mask by 1.**
 
 This actually makes it a bit easier to detect when there are any
 references anywhere inside something. If we're about to change
@@ -143,10 +143,10 @@ first by 0b111 (aka 7).
 
 A normal ref becomes:
 
-* 64b Pointer to object
-* 16b Positive offset to subtract from object pointer to get to the generation
-* 16b Mask to see where the scope tether bit is in those 24 bits.
-* 32b Generation
+ * 64b Pointer to object
+ * 16b Positive offset to subtract from object pointer to get to the generation
+ * 16b Mask to see where the scope tether bit is in those 24 bits.
+ * 32b Generation
 
 ## D: Array of Scope Tether Bytes, by Depth
 
@@ -179,9 +179,9 @@ try it anyway.)
 The only weird part is that sometimes our tether is ahead of us. Perhaps
 we could phrase our borrow ref as:
 
-* 64b Pointer to object
-* 16b Positive or negative offset to add to the objptr to get to the scope tether
-* 16b Positive offset to subtract from the scope tether to get to the generation
+ * 64b Pointer to object
+ * 16b Positive or negative offset to add to the objptr to get to the scope tether
+ * 16b Positive offset to subtract from the scope tether to get to the generation
 
 The scope tether will have to be at the top end of the u32, so the
 overflow bit doesn't mess with things.
@@ -198,9 +198,9 @@ terrible though.
 
 There are three interesting kinds of inlines:
 
-* Unions: these have their own generation and scope tether, so not a problem.
-* Structs: we can put the scope tether in some padding at the end, or in a FOP.
-* Inline arrays: We'll likely need an extra byte afterward.
+ * Unions: these have their own generation and scope tether, so not a problem.
+ * Structs: we can put the scope tether in some padding at the end, or in a FOP.
+ * Inline arrays: We'll likely need an extra byte afterward.
 
 This will increase the space needed.
 
@@ -221,8 +221,8 @@ A).
 ## H: Interior Scope Tether (IST)
 
 We can have two scope tethers in the object:
-* "container tether" for references that point directly to the container (e.g. the Spaceship).
-* "contents tether" for references that point somewhere inside the container (e.g. shield).
+ * "container tether" for references that point directly to the container (e.g. the Spaceship).
+ * "contents tether" for references that point somewhere inside the container (e.g. shield).
 
 When we need to tether something inside, such as nav or escapePods or
 shield, we tether the contents tether.
@@ -231,9 +231,9 @@ When we try to set anything inside the allocation, such as the shield,
 we assert contents tether is 0.
 
 A borrow reference would need these three things:
-* Pointer to object
-* Offset to generation
-* Offset to tether (to check when we set something)
+ * Pointer to object
+ * Offset to generation
+ * Offset to tether (to check when we set something)
 
 When we get a borrow reference to something inside, such as to .shield,
 we'll scope tether the contents tether.
@@ -270,30 +270,30 @@ bunch of inlines but has no FOPs.
 
 # Comparison
 
-* A: Do nothing isn't as good as J. J is more flexible, and its complexity is opt-in.
-* B: Array of Scope Tether Bytes isn't quite as good as E, which saves much more space.
-* D: Array of Scope Tether Bytes, by Depth isn't good, it has spooky panics at a distance.
-* G: Just Tether the FOP's Target causes some cache misses in normal code. An okay last resort.
-* H: Interior Scope Tether isn't very good, it doesn't let us modify things freely.
-* F: Every Object Has A Tether could work, depending on how much padding is used by most structs.
+ * A: Do nothing isn't as good as J. J is more flexible, and its complexity is opt-in.
+ * B: Array of Scope Tether Bytes isn't quite as good as E, which saves much more space.
+ * D: Array of Scope Tether Bytes, by Depth isn't good, it has spooky panics at a distance.
+ * G: Just Tether the FOP's Target causes some cache misses in normal code. An okay last resort.
+ * H: Interior Scope Tether isn't very good, it doesn't let us modify things freely.
+ * F: Every Object Has A Tether could work, depending on how much padding is used by most structs.
     * Could be good, but will likely take some space.
     * **A good fallback.**
-* J: Manual Inner Generations are pretty good.
+ * J: Manual Inner Generations are pretty good.
     * They're honest, give more control to the programmer, make them aware of the problems.
     * **A good fallback.**
-* C: Array of Scope Tether Bits could be good.
+ * C: Array of Scope Tether Bits could be good.
     * Drawback: Requires some instructions:
-        * Borrow inline varying thing needs one bitshift
-        * To scope tether, need to load, b-or, store
+       * Borrow inline varying thing needs one bitshift
+       * To scope tether, need to load, b-or, store
     * Benefit: Can check multiple tethers at a time when setting.
     * **Not bad, pretty simple.**
     * Might be even better if we had three separate things: obj ptr, gen ptr, tether mask.
-* E: Use Top Byte of FFOP could be good.
+ * E: Use Top Byte of FFOP could be good.
     * Drawback: Needs masking to dereference owning heap pointer, unless theres padding.
     * Drawback: Requires some instructions:
-        * Borrow inline varying thing needs an extra add
-        * Borrow inline final thing needs an extra add
-        * To get tether pointer, need shift, zext, add
+       * Borrow inline varying thing needs an extra add
+       * Borrow inline final thing needs an extra add
+       * To get tether pointer, need shift, zext, add
     * Might be better to just have three separate pointers: obj, tether, gen. **Then, no real drawbacks.**
 
 I'd say **C is the most promising.** Definitely worth exploring E more,

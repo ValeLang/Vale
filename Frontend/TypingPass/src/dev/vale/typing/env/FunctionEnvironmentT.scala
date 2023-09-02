@@ -19,6 +19,7 @@ case class BuildingFunctionEnvironmentWithClosuredsT(
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironmentT,
   id: IdT[IFunctionTemplateNameT],
+//  defaultRegion: ITemplata[RegionTemplataType],
   templatas: TemplatasStore,
   function: FunctionA,
   variables: Vector[IVariableT],
@@ -28,6 +29,25 @@ case class BuildingFunctionEnvironmentWithClosuredsT(
   def templata = FunctionTemplataT(parentEnv, function)
 
   override def denizenTemplateId: IdT[ITemplateNameT] = id
+
+  override def currentHeight: Int = 0
+
+  override def pureHeight: Option[Int] = {
+    if (function.attributes.exists({ case PureS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
+
+  override def additiveHeight: Option[Int] = {
+    if (function.attributes.exists({ case AdditiveS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
+
   override def denizenId: IdT[INameT] = id
 
   val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
@@ -88,6 +108,24 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgsT(
   isRootCompilingDenizen: Boolean,
   defaultRegion: RegionT
 ) extends IInDenizenEnvironmentT {
+
+  override def currentHeight: Int = 0
+
+  override def pureHeight: Option[Int] = {
+    if (function.attributes.exists({ case PureS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
+
+  override def additiveHeight: Option[Int] = {
+    if (function.attributes.exists({ case AdditiveS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
 
   override def denizenTemplateId: IdT[ITemplateNameT] = id
   override def denizenId: IdT[INameT] = id
@@ -156,6 +194,12 @@ case class NodeEnvironmentT(
   restackifiedLocals: Set[IVarNameT],
 
   defaultRegion: RegionT,
+
+  currentHeight: Int,
+  // The location-in-denizen of the nearest enclosing pure block, if there is one. Otherwise, None.
+  // This is used to know whether a region is currently mutable or immutable.
+  pureHeight: Option[Int],
+  additiveHeight: Option[Int],
 ) extends IInDenizenEnvironmentT {
   vassert(declaredLocals.map(_.name) == declaredLocals.map(_.name).distinct)
 
@@ -163,7 +207,7 @@ case class NodeEnvironmentT(
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
     obj match {
-      case that @ NodeEnvironmentT(_, _, _, _, _, _, _, _, _) => {
+      case that @ NodeEnvironmentT(_, _, _, _, _, _, _, _, _, _, _, _) => {
         id == that.id && life == that.life
       }
     }
@@ -245,7 +289,10 @@ case class NodeEnvironmentT(
       declaredLocals ++ newVars,
       unstackifiedLocals,
       restackifiedLocals,
-      defaultRegion)
+      defaultRegion,
+      currentHeight,
+      pureHeight,
+      additiveHeight)
   }
   def addVariable(newVar: IVariableT): NodeEnvironmentT = {
     NodeEnvironmentT(
@@ -257,7 +304,10 @@ case class NodeEnvironmentT(
       declaredLocals :+ newVar,
       unstackifiedLocals,
       restackifiedLocals,
-      defaultRegion)
+      defaultRegion,
+      currentHeight,
+      pureHeight,
+      additiveHeight)
   }
 
   def getAllRestackifiedLocals(): Vector[IVarNameT] = {
@@ -281,7 +331,10 @@ case class NodeEnvironmentT(
         declaredLocals,
         unstackifiedLocals,
         restackifiedLocals - newUnstackified,
-        defaultRegion)
+        defaultRegion,
+        currentHeight,
+        pureHeight,
+        additiveHeight)
     } else {
       // Even if the local belongs to a parent env, we still mark it unstackified here, see UCRTVPE.
       NodeEnvironmentT(
@@ -293,7 +346,10 @@ case class NodeEnvironmentT(
         declaredLocals,
         unstackifiedLocals + newUnstackified,
         restackifiedLocals,
-        defaultRegion)
+        defaultRegion,
+        currentHeight,
+        pureHeight,
+        additiveHeight)
     }
   }
 
@@ -313,7 +369,10 @@ case class NodeEnvironmentT(
         declaredLocals,
         unstackifiedLocals - newRestackified,
         restackifiedLocals,
-        defaultRegion)
+        defaultRegion,
+        currentHeight,
+        pureHeight,
+        additiveHeight)
     } else {
       // Even if the local belongs to a parent env, we still mark it restackified here, see UCRTVPE.
       NodeEnvironmentT(
@@ -325,7 +384,10 @@ case class NodeEnvironmentT(
         declaredLocals,
         unstackifiedLocals,
         restackifiedLocals + newRestackified,
-        defaultRegion)
+        defaultRegion,
+        currentHeight,
+        pureHeight,
+        additiveHeight)
     }
   }
 
@@ -376,8 +438,11 @@ case class NodeEnvironmentT(
   }
 
   def makeChild(
-      node: IExpressionSE,
-      maybeNewDefaultRegion: Option[RegionT]):
+    node: IExpressionSE,
+    maybeNewDefaultRegion: Option[RegionT],
+    maybeNewHeight: Option[Int],
+    maybeNewPureHeight: Option[Option[Int]],
+    maybeNewAdditiveHeight: Option[Option[Int]]):
   NodeEnvironmentT = {
     NodeEnvironmentT(
       parentFunctionEnv,
@@ -387,8 +452,12 @@ case class NodeEnvironmentT(
       TemplatasStore(id, Map(), Map()),
       declaredLocals, // See WTHPFE.
       unstackifiedLocals, // See WTHPFE
-      restackifiedLocals,
-      maybeNewDefaultRegion.getOrElse(defaultRegion)) // See WTHPFE.
+      restackifiedLocals, // See WTHPFE.
+      maybeNewDefaultRegion.getOrElse(defaultRegion),
+      // DO NOT SUBMIT cant we just do +1 here since it's a child?
+      maybeNewHeight.getOrElse(currentHeight),
+      maybeNewPureHeight.getOrElse(pureHeight),
+      maybeNewAdditiveHeight.getOrElse(additiveHeight))
   }
 
   def addEntry(interner: Interner, name: INameT, entry: IEnvEntry): NodeEnvironmentT = {
@@ -401,7 +470,10 @@ case class NodeEnvironmentT(
       declaredLocals,
       unstackifiedLocals,
       restackifiedLocals,
-      defaultRegion)
+      defaultRegion,
+      currentHeight,
+      pureHeight,
+      additiveHeight)
   }
   def addEntries(interner: Interner, newEntries: Vector[(INameT, IEnvEntry)]): NodeEnvironmentT = {
     NodeEnvironmentT(
@@ -413,7 +485,10 @@ case class NodeEnvironmentT(
       declaredLocals,
       unstackifiedLocals,
       restackifiedLocals,
-      defaultRegion)
+      defaultRegion,
+      currentHeight,
+      pureHeight,
+      additiveHeight)
   }
 
   def nearestBlockEnv(): Option[(NodeEnvironmentT, BlockSE)] = {
@@ -502,9 +577,13 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironmentT) {
 
   def makeChild(
     node: IExpressionSE,
-    maybeNewDefaultRegion: Option[RegionT]):
+    maybeNewDefaultRegion: Option[RegionT],
+    maybeNewHeight: Option[Int],
+    maybeNewPureHeight: Option[Option[Int]],
+    maybeNewAdditiveHeight: Option[Option[Int]]):
   NodeEnvironmentT = {
-    nodeEnvironment.makeChild(node, maybeNewDefaultRegion)
+    nodeEnvironment.makeChild(
+      node, maybeNewDefaultRegion, maybeNewHeight, maybeNewPureHeight, maybeNewAdditiveHeight)
   }
 
   def addEntry(interner: Interner, name: INameT, entry: IEnvEntry): Unit = {
@@ -545,6 +624,24 @@ case class FunctionEnvironmentT(
   // environments in the global environment.
 ) extends IInDenizenEnvironmentT {
   val hash = runtime.ScalaRunTime._hashCode(id); override def hashCode(): Int = hash;
+
+  override def currentHeight: Int = 0
+
+  override def pureHeight: Option[Int] = {
+    if (function.attributes.exists({ case PureS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
+
+  override def additiveHeight: Option[Int] = {
+    if (function.attributes.exists({ case AdditiveS => true case _ => false})) {
+      Some(0)
+    } else {
+      None
+    }
+  }
 
   override def denizenTemplateId: IdT[ITemplateNameT] = templateId
   override def denizenId: IdT[INameT] = templateId
@@ -614,7 +711,6 @@ case class FunctionEnvironmentT(
   }
 
   private[env] override def lookupWithImpreciseNameInner(
-
     name: IImpreciseNameS,
     lookupFilter: Set[ILookupContext],
     getOnlyNearest: Boolean):
@@ -628,11 +724,15 @@ case class FunctionEnvironmentT(
     // locals from the parent function.
     val (declaredLocals, unstackifiedLocals, restackifiedLocals) =
       parentEnv match {
-        case NodeEnvironmentT(_, _, _, _, _, declaredLocals, unstackifiedLocals, restackifiedLocals, _) => {
+        case NodeEnvironmentT(_, _, _, _, _, declaredLocals, unstackifiedLocals, restackifiedLocals, _, _, _, _) => {
           (declaredLocals, unstackifiedLocals, restackifiedLocals)
         }
         case _ => (Vector(), Set[IVarNameT](), Set[IVarNameT]())
       }
+
+    val currentHeight = 0
+    val pureHeight = None
+    val additiveHeight = None
 
     NodeEnvironmentT(
       this,
@@ -643,12 +743,15 @@ case class FunctionEnvironmentT(
       declaredLocals, // See WTHPFE.
       unstackifiedLocals, // See WTHPFE.
       restackifiedLocals, // See WTHPFE.
-      defaultRegion)
+      defaultRegion,
+      currentHeight,
+      pureHeight,
+      additiveHeight)
   }
 
   def getClosuredDeclaredLocals(): Vector[IVariableT] = {
     parentEnv match {
-      case n @ NodeEnvironmentT(_, _, _, _, _, _, _, _, _) => n.declaredLocals
+      case n @ NodeEnvironmentT(_, _, _, _, _, _, _, _, _, _, _, _) => n.declaredLocals
       case f @ FunctionEnvironmentT(_, _, _, _, _, _, _, _, _, _) => f.getClosuredDeclaredLocals()
       case _ => Vector()
     }
@@ -666,6 +769,10 @@ case class FunctionEnvironmentT(
 }
 
 case class FunctionEnvironmentBoxT(var functionEnvironment: FunctionEnvironmentT) extends IDenizenEnvironmentBoxT {
+  override def currentHeight: Int = functionEnvironment.currentHeight
+  override def pureHeight: Option[Int] = functionEnvironment.pureHeight
+  override def additiveHeight: Option[Int] = functionEnvironment.additiveHeight
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   override def denizenTemplateId: IdT[ITemplateNameT] = functionEnvironment.denizenTemplateId
@@ -675,6 +782,8 @@ case class FunctionEnvironmentBoxT(var functionEnvironment: FunctionEnvironmentT
   def id: IdT[IFunctionNameT] = functionEnvironment.id
   def function: FunctionA = functionEnvironment.function
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
+
+//  override def defaultRegion: ITemplata[RegionTemplataType] = functionEnvironment.defaultRegion
   override def globalEnv: GlobalEnvironment = functionEnvironment.globalEnv
   override def templatas: TemplatasStore = functionEnvironment.templatas
   override def rootCompilingDenizenEnv: IInDenizenEnvironmentT = functionEnvironment.rootCompilingDenizenEnv

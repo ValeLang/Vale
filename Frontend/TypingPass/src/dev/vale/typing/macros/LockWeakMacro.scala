@@ -31,11 +31,16 @@ class LockWeakMacro(
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
 
     val borrowCoord = paramCoords.head.tyype.copy(ownership = BorrowT)
     val (optCoord, someConstructor, noneConstructor, someImplId, noneImplId) =
-      expressionCompiler.getOption(coutputs, env, callRange, callLocation, RegionT(), borrowCoord)
+      expressionCompiler.getOption(coutputs, env, callRange, callLocation, env.defaultRegion, borrowCoord)
     val lockExpr =
       LockWeakTE(
         ArgLookupTE(0, paramCoords.head.tyype),
@@ -45,6 +50,7 @@ class LockWeakMacro(
         someImplId,
         noneImplId)
 
+    vimpl() // pure?
     val body = BlockTE(ReturnTE(lockExpr))
 
     (header, body)

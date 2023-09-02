@@ -142,15 +142,22 @@ class LocalHelper(
   }
 
   def softLoad(
-      nenv: NodeEnvironmentBox,
-      loadRange: List[RangeS],
-      a: AddressExpressionTE,
+    nenv: NodeEnvironmentBox,
+    loadRange: List[RangeS],
+    a: AddressExpressionTE,
     loadAsP: LoadAsP,
     region: RegionT):
   ReferenceExpressionTE = {
     a.result.coord.ownership match {
       case ShareT => {
-        SoftLoadTE(a, ShareT)
+        val loadedTE = SoftLoadTE(a, ShareT)
+        val perhapsTransmigratedLoadedTE =
+          if (loadedTE.kind.isPrimitive && loadedTE.result.coord.region != region) {
+            TransmigrateTE(loadedTE, region)
+          } else {
+            loadedTE
+          }
+        perhapsTransmigratedLoadedTE
       }
       case OwnT => {
         loadAsP match {

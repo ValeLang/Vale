@@ -3,18 +3,19 @@ func println(s str) void {
   print(s + "\n");
 }
 
-func println(i int) void {
-  print(str(i) + "\n");
-}
-
-func println(b bool) void {
-  print(str(b) + "\n");
-}
-
-func print(i int) void {
-  print(str(i));
-}
-
-func print(b bool) void {
-  print(str(b));
-}
+// func println(i int) void {
+//   print(str(i) + "\n");
+// }
+// 
+// func println(b bool) void {
+//   print(str(b) + "\n");
+// }
+// 
+// func print(i int) void {
+//   print(str(i));
+// }
+// 
+// func print(b bool) void {
+//   print(str(b));
+// }
+// 

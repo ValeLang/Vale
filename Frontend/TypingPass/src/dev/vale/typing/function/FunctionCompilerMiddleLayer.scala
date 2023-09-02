@@ -189,6 +189,7 @@ class FunctionCompilerMiddleLayer(
       case None => {
         coutputs.declareFunction(callRange, functionId)
         coutputs.declareFunctionOuterEnv(outerEnv.id, outerEnv)
+        coutputs.declareFunctionInnerEnv(functionId, runedEnv)
 
         val params2 = assembleFunctionParams(runedEnv, coutputs, callRange, function1.params)
 
@@ -197,7 +198,7 @@ class FunctionCompilerMiddleLayer(
 
         coutputs.declareFunctionInnerEnv(functionId, namedEnv)
 
-        //        coutputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
+//        coutputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
 
         val header =
           core.evaluateFunctionForHeader(

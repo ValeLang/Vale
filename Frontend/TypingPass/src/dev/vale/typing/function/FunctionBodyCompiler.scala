@@ -29,7 +29,7 @@ trait IBodyCompilerDelegate {
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     region: RegionT,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
@@ -80,16 +80,16 @@ class BodyCompiler(
           val (body2, returns) =
             evaluateFunctionBody(
                 funcOuterEnv,
-              coutputs,
-              life,
-              parentRanges,
+                coutputs,
+                life,
+                parentRanges,
               funcOuterEnv.functionEnvironment.defaultRegion,
-              callLocation,
-              function1.params,
-              params2,
-              bodyS,
-              isDestructor,
-              None) match {
+                callLocation,
+                function1.params,
+                params2,
+                bodyS,
+                isDestructor,
+                None) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
                 throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range :: parentRanges, function1.name, expectedType, actualType))
 
@@ -120,7 +120,7 @@ class BodyCompiler(
                 life,
                 parentRanges,
               funcOuterEnv.functionEnvironment.defaultRegion,
-              callLocation,
+                callLocation,
                 function1.params,
                 params2,
                 bodyS,
@@ -133,7 +133,6 @@ class BodyCompiler(
             }
 
 
-          vcurious(returns.size <= 1)
           (returns.headOption, body2.result.kind) match {
             case (Some(x), _) if x == explicitRetCoord => {
               // Let it through, it returns the expected type.
@@ -168,7 +167,7 @@ class BodyCompiler(
     life: LocationInFunctionEnvironmentT,
     parentRanges: List[RangeS],
     region: RegionT,
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     params1: Vector[ParameterS],
     params2: Vector[ParameterT],
     body1: BodySE,
@@ -250,12 +249,12 @@ class BodyCompiler(
 
   // Produce the lets at the start of a function.
   private def evaluateLets(
-      nenv: NodeEnvironmentBox,
+    nenv: NodeEnvironmentBox,
       coutputs: CompilerOutputs,
-      life: LocationInFunctionEnvironmentT,
-      range: List[RangeS],
+    life: LocationInFunctionEnvironmentT,
+    range: List[RangeS],
       callLocation: LocationInDenizen,
-      region: RegionT,
+    region: RegionT,
       params1: Vector[ParameterS],
       params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
@@ -269,7 +268,7 @@ class BodyCompiler(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterS(_, _, _, AtomSP(_, Some(CaptureS(name, false)), _, _)) => {
+      case ParameterS(_, _, _, _, AtomSP(_, Some(CaptureS(name, false)), _, _)) => {
         if (!nenv.declaredLocals.exists(_.name == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }

@@ -10,6 +10,7 @@ import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
 import dev.vale.typing.ast
+import dev.vale.typing.names._
 
 
 class RSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
@@ -21,13 +22,20 @@ class RSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
+    // DO NOT SUBMIT pure?
     val body =
       BlockTE(
         ReturnTE(

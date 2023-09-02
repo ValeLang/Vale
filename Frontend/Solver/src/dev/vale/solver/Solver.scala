@@ -140,16 +140,16 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](
   }
 
   def addRule(rule: Rule): Unit = {
-      val ruleIndex = solverState.addRule(rule)
-      if (sanityCheck) {
-        solverState.sanityCheck()
-      }
-      ruleToPuzzles(rule).foreach(puzzleRunes => {
-        solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
-      })
-      if (sanityCheck) {
-        solverState.sanityCheck()
-      }
+    val ruleIndex = solverState.addRule(rule)
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
+    ruleToPuzzles(rule).foreach(puzzleRunes => {
+      solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
+    })
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
   }
 
   def manualStep(newConclusions: Map[Rune, Conclusion]):

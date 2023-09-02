@@ -14,14 +14,8 @@ exported func main() {
   all_args = all_args_list.toImmArray();
 
 
-  maybe_passmanager_path = FindProgramInPath(all_args_list.get(0));
-  passmanager_path =
-    if maybe_passmanager_path.isEmpty() {
-      (maybe_passmanager_path);
-      Path(all_args_list.get(0).resolve())
-    } else {
-      (maybe_passmanager_path).get()
-    };
+  // TODO: perhaps use FindProgramInPath if resolve can't find this
+  passmanager_path = Path(all_args_list.get(0))&.resolve();
   if (not passmanager_path.exists()) {
     panic("Path {passmanager_path.str()} does not exist!");
   }

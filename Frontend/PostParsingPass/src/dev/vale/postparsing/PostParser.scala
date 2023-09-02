@@ -293,7 +293,7 @@ object PostParser {
             val first = remainingAttributes0P.head
             throw CompileErrorExceptionS(BadRuneAttributeErrorS(evalRange(env.file, first.range), first))
           }
-          vregionmut() // we really need to figure out this kind immutable stuff.
+          // DO NOT SUBMIT we really need to figure out this kind immutable stuff.
           val kindMutable = immutableAttrs.isEmpty
           val regionMutable = mutableAttrs.nonEmpty
           CoordGenericParameterTypeS(None, kindMutable, regionMutable)
@@ -329,14 +329,14 @@ object PostParser {
     val defaultS =
       maybeDefault.map(defaultPT => {
         val uncategorizedRules = ArrayBuffer[IRulexSR]()
-        val resultRune = templexScout.translateTemplex(env, lidb, uncategorizedRules, contextRegion, defaultPT)
+        val resultRune = templexScout.translateTemplex(env, lidb, uncategorizedRules, contextRegion, defaultPT)._2
         uncategorizedRules += EqualsSR(genericParamRangeS, runeS, resultRune)
 
         val rulesToLeaveInDefaultArgument = new Accumulator[IRulexSR]()
         uncategorizedRules.foreach({
           case r @ PackSR(_, _, _) => ruleBuilder += r // Hoist it up into regular rules
           case r @ LiteralSR(_, _, _) => rulesToLeaveInDefaultArgument.add(r)
-          case r @ MaybeCoercingLookupSR(_, _, _) => rulesToLeaveInDefaultArgument.add(r)
+          case r @ MaybeCoercingLookupSR(_, _, _, _) => rulesToLeaveInDefaultArgument.add(r)
           case r @ ResolveSR(_, _, _, _, _) => rulesToLeaveInDefaultArgument.add(r)
           case r @ EqualsSR(_, _, _) => ruleBuilder += r // Hoist it up into regular rules
           case r @ CallSiteFuncSR(_, _, _, _, _) => ruleBuilder += r // Hoist it up into regular rules
@@ -447,8 +447,7 @@ class PostParser(
     {
       val regionRange = RangeS(rangeS.end, rangeS.end)
       val rune = DenizenDefaultRegionRuneS(implName)
-      vregionmut() // Put back in when we have regions
-      // runeToExplicitType += ((rune, RegionTemplataType()))
+      runeToExplicitType += ((rune, RegionTemplataType()))
       val implicitRegionGenericParam =
         GenericParameterS(regionRange, RuneUsage(regionRange, rune), RegionGenericParameterTypeS(ReadWriteRegionS), None)
       (regionRange, rune, Some(implicitRegionGenericParam))
@@ -483,7 +482,7 @@ class PostParser(
         rangeS,
         ruleBuilder,
         defaultRegionRuneS,
-        Some(struct))
+        Some(struct))._2
 
     val interfaceRune =
       templexScout.translateMaybeTypeIntoRune(
@@ -492,7 +491,7 @@ class PostParser(
         rangeS,
         ruleBuilder,
         defaultRegionRuneS,
-        Some(interface))
+        Some(interface))._2
 
     val subCitizenImpreciseName =
       struct match {
@@ -549,9 +548,9 @@ class PostParser(
       (regionRange, rune, implicitRegionGenericParam)
     }
 
-    val runeS = templexScout.translateTemplex(exportEnv, lidb, ruleBuilder, defaultRegionRuneS, templexP)
+    val runeS = templexScout.translateTemplex(exportEnv, lidb, ruleBuilder, defaultRegionRuneS, templexP)._2
 
-    postparsing.ExportAsS(rangeS, ruleBuilder.toVector, exportName, runeS, exportedName.str)
+    postparsing.ExportAsS(rangeS, ruleBuilder.toVector, regionGenericParam, defaultRegionRuneS, exportName, runeS, exportedName.str)
   }
 
   private def scoutImport(file: FileCoordinate, importP: ImportP): ImportS = {
@@ -613,8 +612,7 @@ class PostParser(
         case None => {
           val regionRange = RangeS(bodyRangeS.begin, bodyRangeS.begin)
           val rune = DenizenDefaultRegionRuneS(structName)
-          vregionmut() // Put back in when we have regions
-          // headerRuneToExplicitType += ((rune, RegionTemplataType()))
+          headerRuneToExplicitType += ((rune, RegionTemplataType()))
           val implicitRegionGenericParam =
             GenericParameterS(regionRange, RuneUsage(regionRange, rune), RegionGenericParameterTypeS(ReadWriteRegionS), None)
           (regionRange, rune, Some(implicitRegionGenericParam))
@@ -639,9 +637,8 @@ class PostParser(
 //    val userSpecifiedRunesImplicitRegionRunesS = userSpecifiedRunesImplicitRegionRunesUnflattenedS.flatten
 
     val genericParametersS =
-      structUserSpecifiedGenericParametersS
-        vregionmut() // Put back in when we have regions
-        //++ maybeRegionGenericParam
+      structUserSpecifiedGenericParametersS ++
+        maybeRegionGenericParam
         //++ userSpecifiedRunesImplicitRegionRunesS
 
     ruleScout.translateRulexes(structEnv, lidb.child(), headerRuleBuilder, headerRuneToExplicitType, defaultRegionRuneS, templateRulesP)
@@ -653,7 +650,7 @@ class PostParser(
       mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRangeP.begin, bodyRangeP.begin), MutableP))
     val mutabilityRuneS =
       templexScout.translateTemplex(
-        structEnv, lidb.child(), headerRuleBuilder, defaultRegionRuneS, mutability)
+        structEnv, lidb.child(), headerRuleBuilder, defaultRegionRuneS, mutability)._2
     headerRuneToExplicitType += ((mutabilityRuneS.rune, MutabilityTemplataType()))
 
     val membersS =
@@ -661,14 +658,14 @@ class PostParser(
         case NormalStructMemberP(range, name, variability, memberType) => {
           val memberRune =
             templexScout.translateTemplex(
-              structEnv, lidb.child(), memberRuleBuilder, defaultRegionRuneS, memberType)
+              structEnv, lidb.child(), memberRuleBuilder, defaultRegionRuneS, memberType)._2
           membersRuneToExplicitType.put(memberRune.rune, CoordTemplataType())
           Vector(NormalStructMemberS(PostParser.evalRange(structEnv.file, range), name.str, variability, memberRune))
         }
         case VariadicStructMemberP(range, variability, memberType) => {
           val memberRune =
             templexScout.translateTemplex(
-              structEnv, lidb.child(), memberRuleBuilder, defaultRegionRuneS, memberType)
+              structEnv, lidb.child(), memberRuleBuilder, defaultRegionRuneS, memberType)._2
           membersRuneToExplicitType.put(memberRune.rune, PackTemplataType(CoordTemplataType()))
           Vector(VariadicStructMemberS(PostParser.evalRange(structEnv.file, range), variability, memberRune))
         }
@@ -714,12 +711,13 @@ class PostParser(
       membersRuneToExplicitType.toMap,
       membersRuneToPredictedType,
       memberRulesS,
+      defaultRegionRuneS,
       membersS)
   }
 
   def translateCitizenAttributes(file: FileCoordinate, denizenName: INameS, attrsP: Vector[IAttributeP]): Vector[ICitizenAttributeS] = {
     attrsP.map({
-      case ExportAttributeP(_) => ExportS(file.packageCoordinate)
+      case ExportAttributeP(_) => ExportS(file.packageCoordinate, ExportDefaultRegionRuneS(denizenName))
       case SealedAttributeP(_) => SealedS
       case MacroCallP(range, dontCall, NameP(_, str)) => MacroCallS(PostParser.evalRange(file, range), dontCall, str)
       case x => vimpl(x.toString)
@@ -820,8 +818,7 @@ class PostParser(
         case None => {
           val regionRange = RangeS(bodyRangeS.begin, bodyRangeS.begin)
           val rune = DenizenDefaultRegionRuneS(interfaceFullName)
-          vregionmut() // Put this back in when we have regions
-          // runeToExplicitType += ((rune, RegionTemplataType()))
+          runeToExplicitType += ((rune, RegionTemplataType()))
           val implicitRegionGenericParam =
             GenericParameterS(regionRange, RuneUsage(regionRange, rune), RegionGenericParameterTypeS(ReadWriteRegionS), None)
           (regionRange, rune, Some(implicitRegionGenericParam))
@@ -853,7 +850,7 @@ class PostParser(
       mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRangeP.begin, bodyRangeP.begin), MutableP))
     val mutabilityRuneS =
       templexScout.translateTemplex(
-        interfaceEnv, lidb.child(), ruleBuilder, defaultRegionRuneS, mutability)
+        interfaceEnv, lidb.child(), ruleBuilder, defaultRegionRuneS, mutability)._2
 
 
     val rulesS = ruleBuilder.toVector
@@ -895,6 +892,7 @@ class PostParser(
         tyype,
 //        isTemplate,
         rulesS,
+        defaultRegionRuneS,
 //        runeSToCanonicalRune,
         internalMethodsS)
 

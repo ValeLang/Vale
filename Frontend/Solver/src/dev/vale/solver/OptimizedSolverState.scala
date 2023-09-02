@@ -1,6 +1,6 @@
 package dev.vale.solver
 
-import dev.vale.{Err, Ok, RangeS, Result, vassert, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Ok, RangeS, Result, vassert, vcurious, vfail, vimpl, vpass, vwat}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -12,6 +12,7 @@ object OptimizedSolverState {
       mutable.HashMap[Rune, Int](),
       mutable.HashMap[Int, Rune](),
       mutable.ArrayBuffer[Rule](),
+//      mutable.ArrayBuffer[Vector[Int]](),
       mutable.ArrayBuffer[Int](),
       mutable.ArrayBuffer[Array[Int]](),
       mutable.ArrayBuffer[mutable.ArrayBuffer[Int]](),
@@ -21,9 +22,8 @@ object OptimizedSolverState {
       mutable.ArrayBuffer[Int](),
       mutable.ArrayBuffer[Array[Int]](),
       mutable.ArrayBuffer[Int](),
-      // We sometimes hit the limits of these arrays with long generics calls, perhaps we should vector them?
-      0.to(20).map(_ => 0).toArray,
-      0.to(20).map(_ => mutable.ArrayBuffer[Int]()).toArray,
+      0.to(20).map(_ => 0).toArray, // DO NOT SUBMIT happens with long generics calls
+      0.to(20).map(_ => mutable.ArrayBuffer[Int]()).toArray, // DO NOT SUBMIT happens with long generics calls
       mutable.ArrayBuffer[Option[Conclusion]]())
   }
 }
@@ -327,7 +327,6 @@ case class OptimizedSolverState[Rule, Rune, Conclusion](
     numUnknownsToNumPuzzles(numUnknowns) += 1
 
     // Every entry in this table should have enough room for all rules to be in there at the same time
-    // TODO(optimize): zipWithIndex taking 1% of total time
     numUnknownsToPuzzles.zipWithIndex.foreach({ case (puzzles, numUnknowns) =>
       puzzles += -1
 //      vassert(puzzles.length == puzzleToRule.length)

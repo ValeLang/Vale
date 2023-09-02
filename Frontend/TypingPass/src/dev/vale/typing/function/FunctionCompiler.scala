@@ -109,6 +109,8 @@ case class ResolveFunctionFailure(
 trait IStampFunctionResult
 
 case class StampFunctionSuccess(
+  pure: Boolean,
+  maybeNewRegion: Option[RegionT],
   prototype: PrototypeT[IFunctionNameT],
   inferences: Map[IRuneS, ITemplataT[ITemplataType]]
 ) extends IStampFunctionResult

@@ -21,7 +21,6 @@ import dev.vale.testvm.ReferenceV
 import org.scalatest._
 import dev.vale.passmanager.FullCompilation
 import dev.vale.finalast.IdH
-import dev.vale.instantiating.ast.HinputsI
 import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ast._
@@ -32,6 +31,8 @@ import scala.collection.immutable.List
 
 
 class IntegrationTestsA extends FunSuite with Matchers {
+
+
   //  test("Scratch scratch") {
   //    val compile =
   //      RunCompilation.test(
@@ -83,11 +84,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
   test("Simple program with tup") {
-    val compile = RunCompilation.test("import v.builtins.tup2.*; exported func main() int { return 3; }", false)
+    val compile = RunCompilation.test("import v.builtins.tup.*; exported func main() int { return 3; }", false)
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
   test("Simple program with panic") {
-    val compile = RunCompilation.test("import v.builtins.panic.*; exported func main() int { return 3; }", false)
+    val compile = RunCompilation.test("import v.builtins.panicutils.*; exported func main() int { return 3; }", false)
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
   test("Simple program with opt") {
@@ -339,5 +340,4 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //    val hamuts = compile.getHamuts();
 //    compile.evalForKind(Vector()) match { case VonInt(60) => }
 //  }
-
 }

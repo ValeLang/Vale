@@ -194,9 +194,6 @@ class StructTests extends FunSuite with Matchers {
   test("Panic function") {
     val compile = RunCompilation.test(
       """
-        |import v.builtins.panic.*;
-        |import v.builtins.drop.*;
-        |
         |sealed interface XOpt<T Ref>
         |where func drop(T)void {
         |  func get(virtual opt &XOpt<T>) &T;
@@ -213,7 +210,7 @@ class StructTests extends FunSuite with Matchers {
         |  m XOpt<int> = XNone<int>();
         |  return m.get();
         |}
-      """.stripMargin, false)
+      """.stripMargin)
 
     try {
       compile.evalForKind(Vector())

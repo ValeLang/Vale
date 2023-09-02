@@ -13,9 +13,9 @@ func invoke_clang(
 Subprocess {
   program =
     if maybe_clang_path_override.isEmpty() {
-    if (windows) {
-      "cl.exe"
-    } else {
+      if (windows) {
+        "cl.exe"
+      } else {
         "clang"
       }
     } else {

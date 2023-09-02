@@ -390,6 +390,18 @@ No particularly strong reason for this, it just seems best to hide DRIAGP from t
 When we call a struct template and give it args, like `Map<int, str>`, one would think that `int` and `str` are the only arguments we're handing in. There's one hidden one, the struct's region.
 
 
+## HigherTyping Explicifies Default Region for Kind Calls (HTEDRKC)
+
+can we figure out at highertyping time whether we'll hand in a context region to a given CallSR?
+
+yes for types. not for functions.
+
+functions have overloads, so we're never sure if we've already handed in the region or not, we need to know the receiving function's type, which we don't know until overload resolutions which happens in the typing phase.
+
+but for structs and interfaces, we can know, because there's no overloading for those.
+
+actually wait, we couldnt specify the default region via parameter if we _tried_. so maybe it's fine to add it in. the only oddity is making sure it's the last parameter, coming even after all the default generic parameters.
+
 
 # Every Function Receives a Mutable Region (EFRMR)
 
@@ -953,30 +965,6 @@ This is just a temporary solution until we figure out something good to do.
 Perhaps we could do something like a region-specific solver, that just solves the regions of things, kind of like we currently have the kind equivalency solver.
 
 If whatever we do is expensive, perhaps we can only do it when we detect that the function receives different regions (the outer regions are different, not talking about the `T` in `List<T>`) or the arguments are different.
-
-
-# Cell Uses Gen Refs to Write Back (CUGRWB)
-
-It would be bad if we move away a cell while someone has it open.
-
-Two solutions:
-
- * Have a move() function that applies to any inline data.
-    * If we have this anyway, then we can do the bidirectional reference, which would be cool. Though, it would be an unfortunate performance hit.
- * Bring the cell contents onto the stack, and use a generational reference to the cell to put it back.
-
-Let's talk about that second one.
-
-When we open/lock a cell, we'll set its "locked" to true. We'll move its contents onto the stack. On the stack, we'll have a generational reference that points back to the original cell.
-
-When we close/unlock the cell again, we read the generational reference (which makes sure the thing hasn't been moved away) and we also assert that the bit is still 1 (which makes sure that it still thinks it's locked, which it might not if it's been swapped with another cell.)
-
-So, we'll get the error when we try to put the contents back. Not quite as good as getting the error when we move it away, but it's still pretty solid.
-
-
-
-
-
 
 
 

@@ -39,19 +39,18 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
   }
 
-  vregionmut() // Put this back in with regions
-  // test("Every function gets region generic param") {
-  //   val program1 = compile("func moo() int { 3 }")
-  //
-  //   val moo = program1.lookupFunction("moo")
-  //   moo.genericParams match {
-  //     case Vector(
-  //       GenericParameterS(_,
-  //         RuneUsage(_,DenizenDefaultRegionRuneS(_)),
-  //         RegionGenericParameterTypeS(ReadWriteRegionS),
-  //         None)) =>
-  //   }
-  // }
+  test("Every function gets region generic param") {
+    val program1 = compile("func moo() int { 3 }")
+
+    val moo = program1.lookupFunction("moo")
+    moo.genericParams match {
+      case Vector(
+        GenericParameterS(_,
+          RuneUsage(_,DenizenDefaultRegionRuneS(_)),
+          RegionGenericParameterTypeS(ReadWriteRegionS),
+          None)) =>
+    }
+  }
 
   // See: User Must Specify Enough Identifying Runes (UMSEIR)
   test("Test UMSEIR") {
@@ -95,7 +94,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
       case LiteralSR(_, r, MutabilityLiteralSL(MutableP)) => vassert(r == imoo.mutabilityRune)
     }
     imoo.memberRules shouldHave {
-      case MaybeCoercingLookupSR(_, m, CodeNameS(StrI("int"))) => vassert(m == imoo.members(0).typeRune)
+      case MaybeCoercingLookupSR(_, m, _, CodeNameS(StrI("int"))) => vassert(m == imoo.members(0).typeRune)
     }
     imoo.members match {
       case Vector(NormalStructMemberS(_, StrI("x"), FinalP, _)) =>
@@ -108,21 +107,26 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
     val lambda =
       Collector.only(expr, {
-        case ReturnSE(_, FunctionCallSE(_, _, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
+        case ReturnSE(_, FunctionCallSE(_, _, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
       })
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.genericParams match {
       case Vector(
-        GenericParameterS(_,RuneUsage(_,mp1b @ MagicParamRuneS(_)),CoordGenericParameterTypeS(None,_,false),None),
-        GenericParameterS(_,RuneUsage(_,mp2b @ MagicParamRuneS(_)),CoordGenericParameterTypeS(None,_,false),None)
-        // Put this back in when we have regions
-        // , _
-        ) => {
+//        // See MNRFGC for why this implicit region param is here
+//        GenericParameterS(_, RuneUsage(_, ImplicitRegionRuneS(mp1a @ MagicParamRuneS(_))), RegionTemplataType(), None, _, None),
+        GenericParameterS(_, RuneUsage(_, mp1b @ MagicParamRuneS(_)), CoordGenericParameterTypeS(None, false, false), None),
+//        // See MNRFGC for why this implicit region param is here
+//        GenericParameterS(_, RuneUsage(_, ImplicitRegionRuneS(mp2a @ MagicParamRuneS(_))), RegionTemplataType(), None, _, None),
+        GenericParameterS(_, RuneUsage(_, mp2b @ MagicParamRuneS(_)), CoordGenericParameterTypeS(None, false, false), None),
+        _) => {
         vassert(mp1b != mp2b) // Two different runes
+
+//        vassert(mp1a == mp1b)
+//        vassert(mp1a == mp1c)
+//        vassert(mp2a == mp2b)
+//        vassert(mp2a == mp2c)
       }
     }
-
-    vregionmut() // see above
   }
 
   test("Interface") {
@@ -158,10 +162,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val program1 = compile("impl IMoo for Moo;")
     val impl = program1.impls.head
     impl.rules shouldHave {
-      case MaybeCoercingLookupSR(_, r, CodeNameS(StrI("Moo"))) => vassert(r == impl.structKindRune)
+      case MaybeCoercingLookupSR(_, r, _, CodeNameS(StrI("Moo"))) => vassert(r == impl.structKindRune)
     }
     impl.rules shouldHave {
-      case MaybeCoercingLookupSR(_, r, CodeNameS(StrI("IMoo"))) => vassert(r == impl.interfaceKindRune)
+      case MaybeCoercingLookupSR(_, r, _, CodeNameS(StrI("IMoo"))) => vassert(r == impl.interfaceKindRune)
     }
   }
 
@@ -184,35 +188,31 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     Collector.only(ret, { case FunctionCallSE(_, _, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(LocalLoadSE(_,CodeVarNameS(StrI("x")), UseP))) => })
   }
 
-  vregionmut() // Put this back in with regions
-  // test("Pure regioned function") {
-  //   val program1 = compile("pure func moo<r'>(ship &r'Spaceship) { }")
-  //   val moo = program1.lookupFunction("moo")
-  //
-  //   moo.genericParams match {
-  //     case Vector(
-  //       GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI(r))),RegionGenericParameterTypeS(ReadOnlyRegionS),None)
-  //       // Put this back in when we have regions
-  //       // ,GenericParameterS(_,RuneUsage(_,DenizenDefaultRegionRuneS(FunctionNameS(StrI("moo"),_))),RegionGenericParameterTypeS(ReadWriteRegionS),None)
-  //     ) =>
-  //   }
-  // }
+  test("Pure regioned function") {
+    val program1 = compile("pure func moo<r'>(ship &r'Spaceship) { }")
+    val moo = program1.lookupFunction("moo")
 
-  vregionmut() // Put this back in with regions
-//   test("Pure regioned function with explicit self region") {
-//     val program1 = compile("pure func moo<r', t' rw>(ship &r'Spaceship) t'{ }")
-//     val moo = program1.lookupFunction("moo")
-//
-//     moo.genericParams match {
-// //      case Vector(
-// //        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))),Vector(),None),
-// //        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("t"))),Vector(),None),
-// //        GenericParameterS(_,RuneUsage(_,DefaultRegionRuneS()),Vector(ReadWriteRuneAttributeS(_)),None)) (of class scala.collection.immutable.Vector)
-//       case Vector(
-//         GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))), RegionGenericParameterTypeS(ReadOnlyRegionS), None),
-//         GenericParameterS(_, RuneUsage(_,CodeRuneS(StrI("t"))), RegionGenericParameterTypeS(ReadWriteRegionS), None)) =>
-//     }
-//   }
+    moo.genericParams match {
+      case Vector(
+        GenericParameterS(_, RuneUsage(_,CodeRuneS(StrI("r"))), RegionGenericParameterTypeS(ImmutableRegionS), None),
+        GenericParameterS(_, RuneUsage(_,DenizenDefaultRegionRuneS(_)), RegionGenericParameterTypeS(ReadWriteRegionS), None)) =>
+    }
+  }
+
+  test("Pure regioned function with explicit self region") {
+    val program1 = compile("pure func moo<r', t' rw>(ship &r'Spaceship) t'{ }")
+    val moo = program1.lookupFunction("moo")
+
+    moo.genericParams match {
+//      case Vector(
+//        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))),Vector(),None),
+//        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("t"))),Vector(),None),
+//        GenericParameterS(_,RuneUsage(_,DefaultRegionRuneS()),Vector(ReadWriteRuneAttributeS(_)),None)) (of class scala.collection.immutable.Vector)
+      case Vector(
+        GenericParameterS(_,RuneUsage(_,CodeRuneS(StrI("r"))), RegionGenericParameterTypeS(ReadOnlyRegionS), None),
+        GenericParameterS(_, RuneUsage(_,CodeRuneS(StrI("t"))), RegionGenericParameterTypeS(ReadWriteRegionS), None)) =>
+    }
+  }
 
   test("Function with magic lambda and regular lambda") {
     // There was a bug that confused the two, and an underscore would add a magic param to every lambda after it
@@ -230,10 +230,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val BlockSE(_, _, ConsecutorSE(things)) = block
     val lambdas = Collector.all(things, { case f @ FunctionSE(_) => f }).toList
     lambdas.head.function.params match {
-      case Vector(_, ParameterS(_, _, false, AtomSP(_, Some(CaptureS(MagicParamNameS(_), false)), Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
+      case Vector(_, ParameterS(_, _, false, _, AtomSP(_, Some(CaptureS(MagicParamNameS(_), false)), Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
     }
     lambdas.last.function.params match {
-      case Vector(_, ParameterS(_, _, false, AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")), false)), Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
+      case Vector(_, ParameterS(_, _, false, _, AtomSP(_, Some(CaptureS(CodeVarNameS(StrI("a")), false)), Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
     }
   }
 

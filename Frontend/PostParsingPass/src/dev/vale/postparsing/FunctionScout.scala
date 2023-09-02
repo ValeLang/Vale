@@ -157,9 +157,7 @@ class FunctionScout(
         case None => {
           val regionRange = RangeS(headerRangeS.end, headerRangeS.end)
           val rune = DenizenDefaultRegionRuneS(funcName)
-          vassert(!runeToExplicitType.exists(_._1 == rune))
-          vregionmut() // Put this back in with regions
-          // runeToExplicitType += ((rune, RegionTemplataType()))
+          runeToExplicitType += ((rune, RegionTemplataType()))
           val implicitRegionGenericParam =
             GenericParameterS(
               regionRange, RuneUsage(regionRange, rune), RegionGenericParameterTypeS(ReadWriteRegionS), None)
@@ -188,8 +186,8 @@ class FunctionScout(
         vassert(templateRulesP.isEmpty)
       }
       case ParentInterface(interfaceEnv, _, interfaceRules, interfaceRuneToExplicitType) => {
-        // ruleBuilder ++= interfaceRules
-        // runeToExplicitType ++= interfaceRuneToExplicitType
+        ruleBuilder ++= interfaceRules
+        runeToExplicitType ++= interfaceRuneToExplicitType
         ruleScout.translateRulexes(
           interfaceEnv,
           lidb.child(),
@@ -252,26 +250,18 @@ class FunctionScout(
                 runeToExplicitType += ((rune.rune, CoordTemplataType()))
                 val patternS =
                   AtomSP(rangeS, Some(CaptureS(CodeVarNameS(keywords.self), false)), Some(rune), None)
-                ParameterS(rangeS, maybeAbstractS, maybePreChecked.nonEmpty, patternS)
+                ParameterS(rangeS, maybeAbstractS, maybePreChecked.nonEmpty, defaultRegionRuneS, patternS)
               }
               case (None, Some(patternP)) => {
-                val patternPerhapsWithoutCoordRuneS =
+                val (maybeOuterRegionRune, patternS) =
                   patternScout.translatePattern(
                     myStackFrameWithoutParams,
                     lidb.child(),
                     ruleBuilder,
                     runeToExplicitType,
                     patternP)
-                val patternS =
-                  patternPerhapsWithoutCoordRuneS.coordRune match {
-                    case None => {
-                      val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-                      runeToExplicitType += ((rune.rune, CoordTemplataType()))
-                      patternPerhapsWithoutCoordRuneS.copy(coordRune = Some(rune))
-                    }
-                    case Some(_) => patternPerhapsWithoutCoordRuneS
-                  }
-                ParameterS(rangeS, maybeAbstractS, maybePreChecked.nonEmpty, patternS)
+                val outerRegionRune = vassertSome(maybeOuterRegionRune)
+                ParameterS(rangeS, maybeAbstractS, maybePreChecked.nonEmpty, outerRegionRune, patternS)
               }
             }
           }
@@ -321,6 +311,7 @@ class FunctionScout(
                 MaybeCoercingLookupSR(
                   rangeS,
                   rune,
+                  RuneUsage(RangeS(retRangeS.begin, retRangeS.begin), defaultRegionRuneS),
                   interner.intern(CodeNameS(keywords.void)))
               Some(rune)
             }
@@ -476,19 +467,11 @@ class FunctionScout(
 
     val totalParamsS = maybeClosureParam.toVector ++ explicitParamsS ++ magicParams;
 
-    vregionmut() // Put back in regions
     val genericParametersS =
-      (extraGenericParamsFromParentS ++
+      extraGenericParamsFromParentS ++
         functionUserSpecifiedGenericParametersS ++
-        extraGenericParamsFromBodyS)
-          .filter({
-            case GenericParameterS(_, _, RegionGenericParameterTypeS(_), _) => false
-            case _ => true
-          })
-
-    // ++
-
-        //maybeRegionGenericParam
+        extraGenericParamsFromBodyS ++
+        maybeRegionGenericParam
         //++ userSpecifiedRunesImplicitRegionRunesS
 
     val unfilteredRulesArray = ruleBuilder.toVector
@@ -509,8 +492,8 @@ class FunctionScout(
       filteredAttrs.map({
         case AbstractAttributeP(_) => vwat() // Should have been filtered out, typingpass cares about abstract directly
         case AdditiveAttributeP(_) => AdditiveS
-        case ExportAttributeP(_) => ExportS(file.packageCoordinate)
-        case ExternAttributeP(_) => ExternS(file.packageCoordinate)
+        case ExportAttributeP(_) => ExportS(file.packageCoordinate, ExportDefaultRegionRuneS(funcName))
+        case ExternAttributeP(_) => ExternS(file.packageCoordinate, ExternDefaultRegionRuneS(funcName))
         case PureAttributeP(_) => PureS
         case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
         case x => vimpl(x.toString)
@@ -536,11 +519,6 @@ class FunctionScout(
         userSpecifiedIdentifyingRunes.map(_.rune),
         runeToExplicitType,
         rulesArray)
-          .filter({
-            case (key, RegionTemplataType()) => false
-            case _ => true
-          })
-    vregionmut() // dont filter regions out
 
     postParser.checkIdentifiability(
       rangeS,
@@ -559,6 +537,7 @@ class FunctionScout(
         tyype,
         totalParamsS,
         maybeRetCoordRune,
+        defaultRegionRuneS,
         rulesArray,
         maybeBody1)
     (functionS, variableUses)
@@ -594,6 +573,7 @@ class FunctionScout(
       CoerceToCoordSR(
         closureParamRange,
         RuneUsage(closureParamRange, closureStructCoordRune),
+        RuneUsage(closureParamRange, closureStructRegionRune),
         RuneUsage(closureParamRange, closureStructKindRune))
 
     val closureParamTypeRune =
@@ -603,12 +583,13 @@ class FunctionScout(
         closureParamRange,
         closureParamTypeRune,
         Some(BorrowP),
+        None,
         RuneUsage(closureParamRange, closureStructCoordRune))
 
     val capture = CaptureS(closureParamName, false)
     val closurePattern =
       AtomSP(closureParamRange, Some(capture), Some(closureParamTypeRune), None)
-    ParameterS(closureParamRange, None, false, closurePattern)
+    ParameterS(closureParamRange, None, false, vimpl(), closurePattern)
   }
 
   private def createMagicParameters(
@@ -627,6 +608,7 @@ class FunctionScout(
             magicParamRange,
             None,
             false,
+            vimpl(),
             AtomSP(
               magicParamRange,
               Some(patterns.CaptureS(mpn, false)), Some(magicParamRune), None))

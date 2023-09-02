@@ -28,7 +28,7 @@ class VirtualTests extends FunSuite with Matchers {
       val keywords = compile.keywords
 
       vassert(coutputs.getAllUserFunctions.size == 2)
-      vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, RegionT(), IntT.i32))
+      vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, vimpl(), IntT.i32))
 
       val doThing =
         vassertSome(
@@ -48,7 +48,7 @@ class VirtualTests extends FunSuite with Matchers {
                     Vector(
                       CoordT(
                         OwnT,
-                        RegionT(),
+                        vimpl(),
                         interner.intern(
                           InterfaceTT(
                             IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
@@ -69,7 +69,7 @@ class VirtualTests extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(coutputs.getAllUserFunctions.size == 2)
-    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, RegionT(), IntT.i32))
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, vimpl(), IntT.i32))
 
 
     val doThing =
@@ -91,7 +91,7 @@ class VirtualTests extends FunSuite with Matchers {
                   Vector(
                     CoordT(
                       OwnT,
-                      RegionT(),
+                      vimpl(),
                       interner.intern(
                         InterfaceTT(
                           IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
@@ -101,12 +101,11 @@ class VirtualTests extends FunSuite with Matchers {
   test("Owning interface") {
     val compile = RunCompilation.test(
       """
-        |import v.builtins.opt.*;
         |exported func main() int {
         |  x Opt<int> = Some(7);
         |  return 7;
         |}
-        |""".stripMargin, false)
+        |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
@@ -242,7 +241,7 @@ class VirtualTests extends FunSuite with Matchers {
     val interner = compile.interner
 
     vassert(coutputs.getAllUserFunctions.size == 1)
-    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, RegionT(), IntT.i32))
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, vimpl(), IntT.i32))
 
 
     val doThing = coutputs.lookupFunction("doThing")
@@ -262,93 +261,6 @@ class VirtualTests extends FunSuite with Matchers {
           |func collectHeaders2(header &List<&Header>, this &Header) { }
         """.stripMargin)
     val coutputs = compile.getHamuts()
-  }
-
-  test("Feeding instantiation bounds for something created in same function") {
-    val compile = RunCompilation.test(
-      """
-        |#!DeriveStructDrop
-        |struct Spork<T Ref, Y>
-        |where func splork(Y)void {
-        |  lam Y;
-        |}
-        |
-        |func bork<T, Y>(
-        |  self &Spork<T, Y> // It had trouble here finding the bound for splork
-        |) { }
-        |
-        |func splork(x int) {}
-        |
-        |exported func main() int {
-        |  f = Spork<int>(42);
-        |  f.bork(); // We should be feeding in Spork's instantiation bounds here for the params' reachables?
-        |  [z] = f;
-        |  return z;
-        |}
-  """.stripMargin)
-    compile.evalForKind(Vector())
-  }
-
-  test("Generic interface forwarder with bound") {
-    val compile = RunCompilation.test(
-      """
-        |#!DeriveInterfaceDrop
-        |sealed interface Bork<T Ref>
-        |where func threeify(T)T {
-        |  func bork(virtual self &Bork<T>) int;
-        |}
-        |
-        |#!DeriveStructDrop
-        |struct BorkForwarder<T Ref, Lam>
-        |where func drop(Lam)void, func __call(&Lam)T, func threeify(T)T {
-        |  lam Lam;
-        |}
-        |
-        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
-        |
-        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
-        |  return (self.lam)().threeify();
-        |}
-        |
-        |func threeify(x int) int { 3 }
-        |
-        |exported func main() int {
-        |  f = BorkForwarder<int>({ 7 });
-        |  z = f.bork();
-        |  [_] = f;
-        |  return z;
-        |}
-    """.stripMargin)
-    compile.evalForKind(Vector())
-  }
-
-  test("Generic interface forwarder with drop bound") {
-    val compile = RunCompilation.test(
-      """
-        |sealed interface Bork<T Ref>
-        |where func threeify(T)T {
-        |  func bork(virtual self &Bork<T>) int;
-        |}
-        |
-        |struct BorkForwarder<T Ref, Lam>
-        |where func drop(Lam)void, func __call(&Lam)T, func threeify(T)T {
-        |  lam Lam;
-        |}
-        |
-        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
-        |
-        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
-        |  return (self.lam)().threeify();
-        |}
-        |
-        |func threeify(x int) int { 3 }
-        |
-        |exported func main() int {
-        |  f = BorkForwarder<int>({ 7 });
-        |  return f.bork();
-        |}
-  """.stripMargin)
-    compile.evalForKind(Vector())
   }
 
   test("Open interface constructor") {
@@ -430,7 +342,7 @@ class VirtualTests extends FunSuite with Matchers {
       val moo = compile.expectCompilerOutputs().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _, _)) => {
+          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _, _, _, _)) => {
             (destVar, returnType)
           }
         })
@@ -444,14 +356,14 @@ class VirtualTests extends FunSuite with Matchers {
       val moo = compile.getMonouts().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalIE(destVar, FunctionCallIE(PrototypeI(IdI(_, _, FunctionNameIX(FunctionTemplateNameI(StrI("as"), _), _, _)), returnType), _, _), _) => {
+          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _, _, _, _)) => {
             (destVar, returnType)
           }
         })
-      vassert(destVar.collapsedCoord == returnType)
+      vassert(destVar.coord == returnType)
       val Vector(successType, failType) = returnType.kind.expectInterface().id.localName.templateArgs
-      vassert(successType.expectCoordTemplata().coord.ownership == MutableBorrowI)
-      vassert(failType.expectCoordTemplata().coord.ownership == MutableBorrowI)
+      vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
+      vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
     }
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }

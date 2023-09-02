@@ -33,7 +33,5 @@ case class TemplateTemplataType(
   paramTypes: Vector[ITemplataType],
   returnType: ITemplataType
 ) extends ITemplataType {
-  vassert(!paramTypes.contains(RegionTemplataType()))
-
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }

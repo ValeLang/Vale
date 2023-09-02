@@ -1,7 +1,7 @@
 package dev.vale.typing.ast
 
 import dev.vale.postparsing._
-import dev.vale.typing.{InstantiationBoundArgumentsT, TemplataCompiler}
+import dev.vale.typing._
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
@@ -28,7 +28,13 @@ case class StructDefinitionT(
   isClosure: Boolean,
   instantiationBoundParams: InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT]
 ) extends CitizenDefinitionT {
-  def defaultRegion: RegionT = RegionT()
+  def defaultRegion: RegionT = {
+    instantiatedCitizen.id.localName.templateArgs.last match {
+      case PlaceholderTemplataT(idT, RegionTemplataType()) =>  {
+        RegionT(PlaceholderTemplataT(idT, RegionTemplataType()))
+      }
+    }
+  }
 
   override def genericParamTypes: Vector[ITemplataType] = {
     instantiatedCitizen.id.localName.templateArgs.map(_.tyype)
@@ -117,7 +123,13 @@ case class InterfaceDefinitionT(
   // See IMRFDI for why we need to remember only the internal methods here.
   internalMethods: Vector[(PrototypeT[IFunctionNameT], Int)]
 ) extends CitizenDefinitionT {
-  def defaultRegion: RegionT = RegionT()
+  def defaultRegion: RegionT = {
+    instantiatedInterface.id.localName.templateArgs.last match {
+      case PlaceholderTemplataT(idT, RegionTemplataType()) =>  {
+        RegionT(PlaceholderTemplataT(idT, RegionTemplataType()))
+      }
+    }
+  }
 
   override def genericParamTypes: Vector[ITemplataType] = {
     instantiatedCitizen.id.localName.templateArgs.map(_.tyype)

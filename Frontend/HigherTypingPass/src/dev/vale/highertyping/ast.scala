@@ -36,14 +36,14 @@ case class ProgramA(
     val matches = interfaces.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: INameS) = {
     val matches = structs.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: String) = {
@@ -77,6 +77,8 @@ case class StructA(
   headerRuneToType: Map[IRuneS, ITemplataType],
   headerRules: Vector[IRulexSR],
 
+  regionRune: IRuneS,
+
   // These are separated so they can be skipped during resolving, see SMRASDR.
   membersRuneToType: Map[IRuneS, ITemplataType],
   memberRules: Vector[IRulexSR],
@@ -89,35 +91,13 @@ case class StructA(
 
   // These should be removed by the higher typer
   headerRules.collect({
-    case MaybeCoercingCallSR(_, _, _, _) => vwat()
-    case MaybeCoercingLookupSR(_, _, _) => vwat()
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
   })
   memberRules.collect({
-    case MaybeCoercingCallSR(_, _, _, _) => vwat()
-    case MaybeCoercingLookupSR(_, _, _) => vwat()
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
   })
-
-  vassert(
-    !genericParameters.exists({ case x =>
-      x.rune.rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-  vassert(
-    !headerRuneToType.exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-  vassert(
-    !membersRuneToType.exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[StructA]) { return false }
@@ -142,8 +122,8 @@ case class ImplA(
 
   // These should be removed by the higher typer
   rules.collect({
-    case MaybeCoercingCallSR(_, _, _, _) => vwat()
-    case MaybeCoercingLookupSR(_, _, _) => vwat()
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
   })
 
   val hash = range.hashCode() + name.hashCode()
@@ -158,6 +138,7 @@ case class ImplA(
 case class ExportAsA(
   range: RangeS,
   exportedName: StrI,
+  defaultRegionRune: IRuneS,
   rules: Vector[IRulexSR],
   runeToType: Map[IRuneS, ITemplataType],
   typeRune: RuneUsage)
@@ -194,29 +175,16 @@ case class InterfaceA(
   runeToType: Map[IRuneS, ITemplataType],
   rules: Vector[IRulexSR],
 
+  regionRune: IRuneS,
+
   // See IMRFDI
   internalMethods: Vector[FunctionA]
 ) extends CitizenA {
   // These should be removed by the higher typer
   rules.collect({
-    case MaybeCoercingCallSR(_, _, _, _) => vwat()
-    case MaybeCoercingLookupSR(_, _, _) => vwat()
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
   })
-
-  vassert(
-    !genericParameters.exists({ case x =>
-      x.rune.rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-  vassert(
-    !runeToType.exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
 
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
@@ -283,6 +251,8 @@ case class FunctionA(
     // We need to leave it an option to signal that the compiler can infer the return type.
     maybeRetCoordRune: Option[RuneUsage],
 
+    defaultRegionRune: IRuneS,
+
     rules: Vector[IRulexSR],
     body: IBodyS
 ) {
@@ -291,23 +261,17 @@ case class FunctionA(
 
   // These should be removed by the higher typer
   rules.collect({
-    case MaybeCoercingCallSR(_, _, _, _) => vwat()
-    case MaybeCoercingLookupSR(_, _, _) => vwat()
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
   })
 
-  vassert(
-    !genericParameters.exists({ case x =>
-      x.rune.rune match { case DenizenDefaultRegionRuneS(_) => true case _ => false }
-    }))
-  vassert(
-    !runeToType.exists({ case (rune, _) =>
-      rune match {
-        case DenizenDefaultRegionRuneS(_) => true
-        case _ => false
-      }
-    }))
-
   vassert(range.begin.file.packageCoordinate == name.packageCoordinate)
+
+  // These should be removed by the higher typer
+  rules.collect({
+    case MaybeCoercingCallSR(_, _, _, _, _) => vwat()
+    case MaybeCoercingLookupSR(_, _, _, _) => vwat()
+  })
 
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {

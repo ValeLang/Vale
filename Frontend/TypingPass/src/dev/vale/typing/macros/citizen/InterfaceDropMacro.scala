@@ -46,7 +46,7 @@ class InterfaceDropMacro(
     rules.add(LookupSR(range(-1672147),use(-64002, voidKindRune),interner.intern(CodeNameS(keywords.void))))
     val voidCoordRune = MacroVoidCoordRuneS()
     runeToType.put(voidCoordRune, CoordTemplataType())
-    rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, voidKindRune)))
+    rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),vimpl(),use(-64002, voidKindRune)))
 
     val selfTemplateRune = MacroSelfKindTemplateRuneS()
     runeToType += (selfTemplateRune -> interfaceA.tyype)
@@ -59,9 +59,10 @@ class InterfaceDropMacro(
     val selfKindRune = MacroSelfKindRuneS()
     runeToType += (selfKindRune -> KindTemplataType())
     rules.add(
-      CallSR(
+      MaybeCoercingCallSR(
         interfaceA.name.range,
         use(-64002, selfKindRune),
+        vimpl(),
         RuneUsage(interfaceA.name.range, selfTemplateRune),
         interfaceA.genericParameters.map(_.rune).toVector))
 
@@ -71,6 +72,7 @@ class InterfaceDropMacro(
       CoerceToCoordSR(
         interfaceA.name.range,
         RuneUsage(interfaceA.name.range, selfCoordRune),
+        vimpl(),
         RuneUsage(interfaceA.name.range, selfKindRune)))
 
     // Use the same generic parameters as the interface, see MDSFONARFO.
@@ -94,11 +96,14 @@ class InterfaceDropMacro(
             range(-1340),
             Some(AbstractSP(range(-64002), true)),
             false,
+            vimpl(),
             AtomSP(
               range(-1340),
               Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)), false)),
-              Some(use(-64002, selfCoordRune)), None))),
+              Some(use(-64002, selfCoordRune)),
+              None))),
         Some(use(-64002, voidCoordRune)),
+        vimpl(),
         rules.buildArray().toVector,
         AbstractBodyS)
 

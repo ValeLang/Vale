@@ -7,10 +7,11 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.{ArrayCompiler, CompilerOutputs}
 import dev.vale.typing.macros.IFunctionBodyMacro
-import dev.vale.typing.types._
+import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBoxT
 import dev.vale.typing.ast
+import dev.vale.typing.names._
 
 class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends IFunctionBodyMacro {
   val generatorId: StrI = keywords.vale_static_sized_array_drop_into
@@ -21,15 +22,22 @@ class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
     val fate = FunctionEnvironmentBoxT(env)
+    vimpl() // pure?
     val body =
       BlockTE(
         ReturnTE(
@@ -40,7 +48,7 @@ class SSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
             callLocation,
             ArgLookupTE(0, paramCoords(0).tyype),
             ArgLookupTE(1, paramCoords(1).tyype),
-            RegionT())))
+            env.defaultRegion)))
     (header, body)
   }
 }

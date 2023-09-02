@@ -14,6 +14,10 @@ import dev.vale.typing.types._
 
 import scala.collection.immutable.List
 
+// This is a temporary wrapper class, to help us with the regions migration.
+// In the master branch, it contains nothing. In the regions branch, it contains an actual region.
+// TODO(regions): Remove this and use the ITemplataT directly once the regions migration is complete.
+case class RegionT(region: PlaceholderTemplataT[RegionTemplataType])
 
 object ITemplataT {
   def expectMutability(templata: ITemplataT[ITemplataType]): ITemplataT[MutabilityTemplataType] = {
@@ -21,6 +25,25 @@ object ITemplataT {
       case t @ MutabilityTemplataT(_) => t
       case PlaceholderTemplataT(idT, MutabilityTemplataType()) => PlaceholderTemplataT(idT, MutabilityTemplataType())
       case _ => vfail()
+    }
+  }
+
+  def expectRegion(templata: ITemplataT[ITemplataType]): ITemplataT[RegionTemplataType] = {
+    templata match {
+      case PlaceholderTemplataT(idT, RegionTemplataType()) => PlaceholderTemplataT(idT, RegionTemplataType())
+      case _ => vfail()
+    }
+  }
+
+  def expectRegionPlaceholder(templata: ITemplataT[RegionTemplataType]): PlaceholderTemplataT[RegionTemplataType] = {
+    templata match {
+      case PlaceholderTemplataT(IdT(packageCoord, initSteps, r @ RegionPlaceholderNameT(_, _, _, _)), RegionTemplataType()) => {
+        PlaceholderTemplataT(IdT(packageCoord, initSteps, r), RegionTemplataType())
+      }
+      case PlaceholderTemplataT(IdT(packageCoord, initSteps, r@CoordGenericParamRegionPlaceholderNameT(_, _, _, _)), RegionTemplataType()) => {
+        PlaceholderTemplataT(IdT(packageCoord, initSteps, r), RegionTemplataType())
+      }
+      case other => vfail(other)
     }
   }
 
@@ -126,11 +149,11 @@ case class KindTemplataT(kind: KindT) extends ITemplataT[KindTemplataType] {
 }
 case class RuntimeSizedArrayTemplateTemplataT() extends ITemplataT[TemplateTemplataType] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def tyype: TemplateTemplataType = TemplateTemplataType(Vector(MutabilityTemplataType(), CoordTemplataType()), KindTemplataType())
+  override def tyype: TemplateTemplataType = TemplateTemplataType(Vector(MutabilityTemplataType(), CoordTemplataType(), RegionTemplataType()), KindTemplataType())
 }
 case class StaticSizedArrayTemplateTemplataT() extends ITemplataT[TemplateTemplataType] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def tyype: TemplateTemplataType = TemplateTemplataType(Vector(IntegerTemplataType(), MutabilityTemplataType(), VariabilityTemplataType(), CoordTemplataType()), KindTemplataType())
+  override def tyype: TemplateTemplataType = TemplateTemplataType(Vector(IntegerTemplataType(), MutabilityTemplataType(), VariabilityTemplataType(), CoordTemplataType(), RegionTemplataType()), KindTemplataType())
 }
 
 

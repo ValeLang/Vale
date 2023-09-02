@@ -14,87 +14,162 @@ func List<E>() List<E> {
   List<E>(0)
 }
 
-func List<E, V Variability, N Int>(arr [#N]<mut, V>E) List<E> {
-  list = List<E>(arr.len());
-  migrate(arr, &list.array);
-  return list;
+func List<'s rw, E, V, N>(
+  source_arr 's [#N]<mut, V>E) // HGM: live
+'o List<E> {
+  list_arr = 'o Array<mut, E>(source_arr.len()); // No overhead, source_arr is own
+
+  migrate(source_arr, &list_arr);
+  // O(2n) checks, but we should replace this with a primitive which
+  // would reduce it to 2 checks
+  // HGM: would further reduce this to zero checks.
+
+  return List<E>(list_arr);
 }
 
-func List<E Ref imm, V Variability, N Int>(arr [#N]<imm, V>E) List<E> {
-  list = List<E>(arr.len());
+pure func List<'r imm, 'o rw, E Ref imm, V, N>(
+  source_arr 'r [#N]<imm, V>E)
+'o List<E> {
+  list_arr = Array<mut, E>(source_arr.len());
+
   i = 0;
-  while i < arr.len() {
-    list.array.push(arr[i]);
+  while i < source_arr.len() {
+    list_arr.push(source_arr[i]); // No overhead, source_arr is pure
     set i = i + 1;
   }
-  return list;
+
+  return List<E>(list_arr);
 }
 
-func drop<E>(self List<E>)
+func drop<E>(
+  self List<E>)
+void
 where func drop(E)void {
   [array] = self;
   drop(array);
 }
 
-func maybeExpand<E>(list &List<E>) {
-  oldCapacity = list.array.capacity();
-  if list.len() == oldCapacity {
+pure func len<'r imm, E>(
+  list 'r &List<E>)
+int {
+  len(&list.array) // No overhead, list is pure
+}
+
+func add<'l rw, E>(
+  list 'l &List<E>, // live
+  newElement E)
+void {
+  list.maybeExpand();
+  list.array.push(newElement); // 2 overhead
+  // static analysis would reduce it to 1
+  // HGM: would reduce it to 0
+}
+
+func add<'l rw, E>(
+  list 'l List<E>,
+  newElement E)
+'l List<E> {
+  list.add(newElement); // 0 overhead: own sender, live receiver
+  return list;
+}
+
+func maybeExpand<'l rw, E>(
+  list 'l &List<E>) // live
+void {
+  oldCapacity = list.array.capacity(); // 2 checks.
+  // static analysis would reduce it to 1
+  // HGM would reduce it to 0
+
+  if list.len() == oldCapacity { // 1 check, HGM: 0
     newCapacity = if (oldCapacity > 0) { oldCapacity * 2 } else { 1 };
     newArray = Array<mut, E>(newCapacity);
-    oldArray = set list.array = newArray;
-    migrate(oldArray, &list.array);
+    oldArray = set list.array = newArray; // 1 check, HGM: 0
+    migrate(oldArray, &list.array); // 2 checks, HGM: 0
   }
 }
 
-func len<E>(list &List<E>) int { len(&list.array) }
-func add<E>(list &List<E>, newElement E) {
-  list.maybeExpand();
-  list.array.push(newElement);
-}
-func add<E>(list List<E>, newElement E) List<E> {
-  list.add(newElement);
-  return list;
-}
-func get<E>(list &List<E>, index int) &E {
-  a = list.array;
-  a[index]
+pure func get<'l imm, E>(
+  list 'l &List<E>,
+  index int)
+&E {
+  a = list.array; // 0 checks, list pure
+  a[index] // 0 checks, a pure
 }
 
-func each<E, F>(list &List<E>, func F) void
-where func drop(F)void, func(&F, &E)void {
+func each<'l rw, E, F>(
+  list 'l &List<E>, // live
+  func F)
+void
+where func drop(F)void,
+      func(&F, &E)void
+{
   i = 0;
-  l = len(list);
-  while i < l {
-    func(list.get(i));
+  n = len(list); // 1 check. HGM: zero
+  while i < n {
+    func(list.get(i)); // O(n) checks. HGM: zero
     set i = i + 1;
   }
 }
 
-func map<T, E, F>(list &List<E>, func &F) List<T>
+// There might be an opportunity to optimize this... if we can know that the given functor is
+// pure then this can be pure as well.
+// Can we inherit the purity of that lambda somehow?
+func map<'l rw, 'o rw, T, E, F>(
+  list 'l &List<E>, // live
+  func &F) // live
+'o List<T>
 where func(&F, &E)T {
   result = List<T>();
-  list.each({ result.add((func)(_)); });
+
+  // list.each({ result.add((func)(_)); });
+
+  i = 0;
+  n = len(list); // 1 check. HGM: zero
+  while i < n {
+    result.add(func(list.get(i))); // O(2n) checks (func, and list.get). HGM: zero
+    set i = i + 1;
+  }
+
   return result;
 }
 
-func toImmArray<E Ref imm>(list &List<E>) Array<imm, E> {
-  Array<imm, E>(list.len(), &{ list.get(_) })
+pure func toImmArray<'l imm, 'o rw, E Ref imm>(
+  list 'l &List<E>)
+'o Array<imm, E> {
+  'o Array<imm, E>(
+      list.len(), // no checks, pure
+      &{ list.get(_) }) // O(n) checks because it's calling this borrow lambda every time, list is pure though.
+  // 0 if we can send in an owning lambda.
+  // or 0 if we have HGM and Array takes in a live lambda
 }
 
-func toImmArray<E Ref imm>(list List<E>) Array<imm, E>
+pure func toImmArray<'l, E Ref imm>(
+  list List<E>)
+Array<imm, E>
 where func drop(E)void {
   [arr] = list;
-  Array<imm, E>(arr.len(), &{ arr[_] })
+  Array<imm, E>(
+      arr.len(), // no checks, pure
+      &{ arr[_] }) // O(n) checks because it's calling this borrow lambda every time, list is pure though.
+  // 0 if we can send in an owning lambda.
+  // or 0 if we have HGM and Array takes in a live lambda
 }
 
-// Below here is untested
 
-
-func set<E>(list &List<E>, index int, value E) E {
+func set<E>(
+  list &List<E>,
+  index int,
+  value E)
+E {
   set list.array[index] = value
+  // 1 check. could do live here... not sure if worth it though.
+  // this would be a good candidate for inlining, and some sort of optimizer
 }
 
-func remove<E>(list &List<E>, removeAtIndex int) E {
+func remove<E>(
+  list &List<E>,
+  removeAtIndex int)
+E {
   if removeAtIndex < 0 {
     panic("Can't remove at negative index!");
   }
@@ -102,30 +177,41 @@ func remove<E>(list &List<E>, removeAtIndex int) E {
     panic("Can't remove, index out of bounds!");
   }
 
-  temp Opt<E> = Some<E>(list.array.pop());
-  i = list.len() - 1;
+  // live
+  arr = list.arr; // 1 check
+
+  temp Opt<E> = Some<E>(arr.pop()); // 1 check, HGM: 0
+  i = arr.len() - 1; // 1 check, HGM: 0
   while i >= removeAtIndex {
-    (set temp = Some(set list.array[i] = (set temp = None<E>()).get())).expect_none();
+    // O(n) checks for the arr[i]
+    // HGM: 0, but O(n) if we move the elements and theyre lockable.
+    (set temp = Some(set arr[i] = (set temp = None<E>()).get())).expect_none();
     set i = i - 1;
   }
 
   return (temp).get();
 }
 
-func indexOf<E>(list &List<E>, element &E) Opt<int>
+pure func indexOf<l', o', E>(
+  list l'&List<E>,
+  element &E)
+o'Opt<int>
 where func ==(&E, &E)bool {
   i = 0;
-  l = len(&list);
+  l = len(&list); // 0 checks
   while i < l {
-    if list.get(i) == element {
-      return Some(i);
+    if list.get(i) == element { // 0 checks
+      return o'Some(i);
     }
     set i = i + 1;
   }
-  return None<int>();
+  return o'None<int>();
 }
 
-func indexWhere<E, F>(list &List<E>, func F) Opt<int>
+pure func indexWhere<E, F>(
+  list &List<E>,
+  func F)
+Opt<int>
 where func(&F, &E)bool, func drop(F)void {
   i = 0;
   l = len(&list);

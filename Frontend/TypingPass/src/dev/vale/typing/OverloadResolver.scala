@@ -14,11 +14,13 @@ import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.solver.FailedSolve
 import OverloadResolver._
 import dev.vale.highertyping.HigherTypingPass.explicifyLookups
+import dev.vale.parsing.ast.ReadOnlyRegionRuneAttributeP
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
+import dev.vale.typing.templata.ITemplataT.expectRegionPlaceholder
 
 import scala.collection.immutable.{Map, Set}
 import scala.collection.mutable
@@ -235,15 +237,10 @@ class OverloadResolver(
   Result[PrototypeT[IFunctionNameT], IFindFunctionFailureReason] = {
     candidate match {
       case FunctionCalleeCandidate(ft@FunctionTemplataT(declaringEnv, function)) => {
-        // See OFCBT.
-//        if (ft.function.isTemplate) {
-//          function.tyype match {
-//            case TemplateTemplataType(identifyingRuneTemplataTypes, FunctionTemplataType()) => {
         val identifyingRuneTemplataTypes = function.tyype.paramTypes
         if (explicitTemplateArgRunesS.size > identifyingRuneTemplataTypes.size) {
           Err(WrongNumberOfTemplateArguments(explicitTemplateArgRunesS.size, identifyingRuneTemplataTypes.size))
         } else {
-
           // Now that we know what types are expected, we can FINALLY rule-type these explicitly
           // specified template args! (The rest of the rule-typing happened back in the astronomer,
           // this is the one time we delay it, see MDRTCUT).
@@ -261,6 +258,12 @@ class OverloadResolver(
                 callingEnv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
                   case Some(x) => Ok(TemplataLookupResult(x.tyype))
                   case None => Err(RuneTypingCouldntFindType(range, nameS))
+//                        {
+//                          throw CompileErrorExceptionT(
+//                            RangedInternalErrorT(
+//                              callRange,
+//                              "Couldn't find a: " + PostParserErrorHumanizer.humanizeImpreciseName(nameS)))
+//                        }
                 }
               }
             }
@@ -304,7 +307,7 @@ class OverloadResolver(
               val rulesWithoutImplicitCoercionsA = ruleBuilder.toVector
 
               // We preprocess out the rune parent env lookups, see MKRFA.
-              val (initialKnowns, rulesWithoutRuneParentEnvLookups) =
+              val (initialKnownsWithoutDefaultRegion, rulesWithoutRuneParentEnvLookups) =
                 rulesWithoutImplicitCoercionsA.foldLeft((Vector[InitialKnown](), Vector[IRulexSR]()))({
                   case ((previousConclusions, remainingRules), RuneParentEnvLookupSR(_, rune)) => {
                     val templata =
@@ -318,10 +321,16 @@ class OverloadResolver(
                     (previousConclusions, remainingRules :+ rule)
                   }
                 })
-
-//                  val callEnv =
-//                    GeneralEnvironment.childOf(
-//                      interner, callingEnv, callingEnv.fullName.addStep(CallEnvNameT()))
+              // If the rules ask for a default region, here's where we supply it
+              val initialKnowns =
+               if (runeAToType.contains(contextRegion.region.idT.localName.rune)) {
+                 initialKnownsWithoutDefaultRegion :+
+                   InitialKnown(
+                     RuneUsage(callRange.head, contextRegion.region.idT.localName.rune),
+                     contextRegion.region)
+               } else {
+                  initialKnownsWithoutDefaultRegion
+               }
 
               // We only want to solve the template arg runes
               inferCompiler.solveForResolving(
@@ -346,16 +355,114 @@ class OverloadResolver(
                       coutputs, callingEnv, callRange, callLocation, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, contextRegion, args) match {
                       case (EvaluateFunctionFailure(reason)) => Err(CouldntEvaluateTemplateError(reason))
                       case (EvaluateFunctionSuccess(prototype, conclusions, _)) => {
-                        paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
+                              paramsMatch(coutputs, callingEnv, callRange, callLocation, args, prototype.prototype.paramTypes, exact) match {
                           case Err(rejectionReason) => Err(rejectionReason)
                           case Ok(()) => {
                             vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
-                            Ok(prototype.prototype)
+                            vregionmut() // check regions?
+                            Ok(ast.ValidPrototypeTemplataCalleeCandidate(vimpl(), vimpl(), prototype))
                           }
                         }
                       }
                     }
                   } else {
+                    def makeNewDefaultRegion(newHeight: Int): RegionT = {
+                      // The callee is going to reinterpret everything as additive/pure, so we
+                      // need to make a new region for it to use as its default region.
+                      RegionT(
+                        PlaceholderTemplataT(
+                          callingEnv.denizenId
+                            .addStep(
+                              interner.intern(RegionPlaceholderNameT(
+                                -1,
+                                CallRegionRuneS(callLocation),
+                                Some(newHeight),
+                                // All context regions are readwrite
+                                ReadWriteRegionS))),
+                          RegionTemplataType()))
+                    }
+
+                    // (This is all for pure merging)
+                    //
+                    //// Per PMHBRS, we need to do some pure merging logic before the actual solving,
+                    //// because the solver isn't smart enough to know when it can merge two regions.
+                    //val paramRegionRuneToArgRegion =
+                    //  mutable.HashMap[IRuneS, Set[ITemplataT[RegionTemplataType]]]()
+                    //args.zip(function.params).foreach({ case (arg, param) =>
+                    //  val existingSet =
+                    //    paramRegionRuneToArgRegion.getOrElse(param.outerRegionRune, Set())
+                    //  paramRegionRuneToArgRegion.put(
+                    //    param.outerRegionRune, existingSet + arg.region)
+                    //})
+                    //// As a temporary solution, if any regions need to be merged, we'll merge *all*
+                    //// regions, see PMHBRS.
+                    //val anyMerging = paramRegionRuneToArgRegion.values.exists(_.size > 1)
+                    //
+                    //val perhapsMergedArgCoords =
+                    //  if (anyMerging) {
+                    //    // Recall the callee's context region is at callingEnv.currentHeight + 1, so
+                    //    // it's fine to have a new region at callingEnv.currentHeight.
+                    //    val mergedRegionHeight = callingEnv.currentHeight
+                    //    val mergedRegion =
+                    //      PlaceholderTemplataT(
+                    //        callingEnv.denizenId
+                    //          .addStep(
+                    //            interner.intern(RegionPlaceholderNameT(
+                    //              -1,
+                    //              CallPureMergeRegionRuneS(callLocation),
+                    //              Some(mergedRegionHeight),
+                    //              ImmutableRegionS))),
+                    //        RegionTemplataType())
+                    //    paramRegionRuneToArgRegion
+                    //
+                    //    args.map({ case CoordT(ownership, region, kind) =>
+                    //      ownership match {
+                    //        case BorrowT => // good
+                    //        case ShareT => // good
+                    //        case _ => vimpl()
+                    //      }
+                    //      kind match {
+                    //        case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT(_) =>
+                    //        case StructTT(structName) => {
+                    //          if (structName.localName.templateArgs.nonEmpty) {
+                    //            vimpl()
+                    //          }
+                    //        }
+                    //
+                    //      }
+                    //      CoordT(ownership, mergedRegion, kind)
+                    //    })
+                    //  } else {
+                    //
+                    //  }
+
+                    val (calleeContextRegion, isPure, newMaybeNearestPureHeight, newMaybeNearestAdditiveHeight) =
+                      if (ft.function.attributes.collectFirst({ case PureS => }).nonEmpty) {
+                        val newHeight = callingEnv.currentHeight + 1
+                        // The callee is going to reinterpret everything as pure, so we
+                        // need to make a new region for it to use as its default region.
+                        (makeNewDefaultRegion(newHeight), true, Some(newHeight), callingEnv.additiveHeight)
+                      } else if (ft.function.attributes.collectFirst({ case AdditiveS => }).nonEmpty) {
+                        val newHeight = callingEnv.currentHeight + 1
+                        // The callee is going to reinterpret everything as pure, so we
+                        // need to make a new region for it to use as its default region.
+                        (makeNewDefaultRegion(newHeight), false, callingEnv.pureHeight, Some(newHeight))
+                      } else {
+                        (contextRegion, false, callingEnv.pureHeight, callingEnv.additiveHeight)
+                      }
+
+                    val perhapsTransmigratedArgs =
+                      if (contextRegion == calleeContextRegion) {
+                        args
+                      } else {
+                        args.map({
+                          case x if x.kind.isPrimitive => {
+                            x.copy(region = calleeContextRegion)
+                          }
+                          case other => other
+                        })
+                      }
+
                     // We pass in our env because the callee needs to see functions declared here, see CSSNCE.
                     functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
                       coutputs, callRange, callLocation, callingEnv, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, RegionT(), args) match {
@@ -365,6 +472,10 @@ class OverloadResolver(
                           case Err(rejectionReason) => Err(rejectionReason)
                           case Ok(()) => {
                             vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+                            checkRegions(ft, newMaybeNearestPureHeight, newMaybeNearestAdditiveHeight, conclusions) match {
+                              case Err(e) => return Err(e)
+                              case Ok(()) =>
+                            }
                             Ok(prototype.prototype)
                           }
                         }
@@ -378,6 +489,8 @@ class OverloadResolver(
         }
       }
       case HeaderCalleeCandidate(header) => {
+        vregionmut() // what if its a pure call
+
         paramsMatch(coutputs, callingEnv, callRange, callLocation, args, header.paramTypes, exact) match {
           case Ok(_) => {
             Ok(header.toPrototype)
@@ -386,12 +499,14 @@ class OverloadResolver(
         }
       }
       case PrototypeTemplataCalleeCandidate(prototype) => {
+        vregionmut() // what if its a pure call
+
         // We get here if we're considering a function that's being passed in as a bound.
+        vcurious(prototype.id.localName.templateArgs.isEmpty)
         val substituter =
           TemplataCompiler.getPlaceholderSubstituter(
             opts.globalOptions.sanityCheck,
-            interner,
-            keywords,
+            interner, keywords,
             callingEnv.denizenTemplateId,
             prototype.id,
             // These types are phrased in terms of the calling denizen already, so we can grab their
@@ -412,12 +527,137 @@ class OverloadResolver(
             val bounds = Map[IRuneS, PrototypeTemplataT[IFunctionNameT]]()
 
             vassert(coutputs.getInstantiationBounds(prototype.id).nonEmpty)
-            Ok(prototype)
+            // Supplying false here because we don't have any pure bounds yet.
+            Ok(ValidPrototypeTemplataCalleeCandidate(vregionmut(false), None, PrototypeTemplataT(declarationRange, prototype)))
           }
           case Err(fff) => Err(fff)
         }
       }
     }
+  }
+
+  private def getRegionMutability(
+    maybeNearestPureHeight: Option[Int],
+    maybeNearestAdditiveHeight: Option[Int],
+    region: RegionPlaceholderNameT):
+  IRegionMutabilityS = {
+    (region.height, maybeNearestPureHeight) match {
+      case (None, None) => {
+        // region height None means it was handed in and has an unknown height, see RGPPHASZ.
+        // maybeNearestPureHeight means there was no pure block, and the function isn't pure.
+        // Continue on.
+      }
+      case (Some(height), None) => {
+        // This region was introduced during the function.
+        // However, there's no pure block, so we can't yet conclude its immutable.
+        // Continue on.
+      }
+      case (None, Some(nearestPureHeight)) => {
+        // region height None means it was handed in and has an unknown height, see RGPPHASZ.
+        // There was a pure block since then (or the function is pure) so we know it's immutable.
+        return ImmutableRegionS
+      }
+      case (Some(height), Some(nearestPureHeight)) => {
+        // This region was introduced during the function.
+        // There was a pure block since then (or the function is pure).
+        // If the region was introduced before the pure, then it's immutable.
+        if (height < nearestPureHeight) {
+          return ImmutableRegionS
+        } else {
+          // Otherwise, we can't conclude it's immutable yet.
+        }
+      }
+    }
+
+    (region.height, maybeNearestAdditiveHeight) match {
+      case (None, None) => {
+        // region height None means it was handed in and has an unknown height, see RGPPHASZ.
+        // maybeNearestAdditiveHeight means there was no additive block, and the function isn't additive.
+        // Continue on.
+      }
+      case (Some(height), None) => {
+        // This region was introduced during the function.
+        // However, there's no additive block, so we can't yet conclude its additive.
+        // Continue on.
+      }
+      case (None, Some(nearestAdditiveHeight)) => {
+        // region height None means it was handed in and has an unknown height, see RGPPHASZ.
+        // There was a additive block since then (or the function is additive) so we know it's additive.
+        return AdditiveRegionS
+      }
+      case (Some(height), Some(nearestAdditiveHeight)) => {
+        // This region was introduced during the function.
+        // There was a additive block since then (or the function is additive).
+        // If the region was introduced before the additive, then it's additive.
+        if (height < nearestAdditiveHeight) {
+          return AdditiveRegionS
+        } else {
+          // Otherwise, we can't conclude it's additive yet.
+        }
+      }
+    }
+
+    // If we get here, then fall back to the region's original mutability.
+    region.originalMutability
+  }
+
+  private def checkRegions(
+    ft: FunctionTemplataT,
+    maybeNearestPureHeight: Option[Int],
+    maybeNearestAdditiveHeight: Option[Int],
+    conclusions: Map[IRuneS, ITemplataT[ITemplataType]]):
+  Result[Unit, IFindFunctionFailureReason] = {
+    // The only place we can specify a region's mutability in the receiving function
+    // is in the generic parameter declaration. So all we need to do is loop
+    // through the generic parameter declarations and make sure the region we
+    // give for them has the right mutability.
+    ft.function.genericParameters.foreach(genericParam => {
+      genericParam.tyype match {
+        case RegionGenericParameterTypeS(calleeMutability) => {
+          calleeMutability match {
+            case ReadOnlyRegionS => {
+              // Do nothing, it can receive any region mutability
+            }
+            case ReadWriteRegionS | AdditiveRegionS | ImmutableRegionS => {
+              conclusions.get(genericParam.rune.rune) match {
+                case Some(PlaceholderTemplataT(IdT(_, _, argRegion @ RegionPlaceholderNameT(index, rune, maybeArgRegionHeight, argRegionOriginalMutability)), RegionTemplataType())) => {
+                  val argRegionMutability =
+                    getRegionMutability(
+                      maybeNearestPureHeight, maybeNearestAdditiveHeight, argRegion)
+
+                  val compatible =
+                    (argRegionMutability, calleeMutability) match {
+                      case (ReadWriteRegionS, ReadWriteRegionS) => true
+                      case (ReadWriteRegionS, AdditiveRegionS) => true
+                      case (ReadWriteRegionS, ReadOnlyRegionS) => true
+                      case (ReadWriteRegionS, ImmutableRegionS) => false
+                      case (AdditiveRegionS, ReadWriteRegionS) => false
+                      case (AdditiveRegionS, AdditiveRegionS) => true
+                      case (AdditiveRegionS, ReadOnlyRegionS) => true
+                      case (AdditiveRegionS, ImmutableRegionS) => false
+                      case (ReadOnlyRegionS, ReadWriteRegionS) => false
+                      case (ReadOnlyRegionS, AdditiveRegionS) => false
+                      case (ReadOnlyRegionS, ReadOnlyRegionS) => true
+                      case (ReadOnlyRegionS, ImmutableRegionS) => false
+                      case (ImmutableRegionS, ReadWriteRegionS) => false
+                      case (ImmutableRegionS, AdditiveRegionS) => false
+                      case (ImmutableRegionS, ReadOnlyRegionS) => true
+                      case (ImmutableRegionS, ImmutableRegionS) => true
+                    }
+                  if (!compatible) {
+                    // DO NOT SUBMIT test this
+                    return Err(SpecificParamRegionDoesntMatch(genericParam.rune.rune, argRegionMutability, calleeMutability))
+                  }
+                }
+                case other => vwat(other)
+              }
+            }
+          }
+        }
+        case _ =>
+      }
+    })
+    Ok(())
   }
 
   // Gets all the environments for all the arguments.
@@ -492,21 +732,21 @@ class OverloadResolver(
   (Option[Vector[Boolean]]) = {
     val initial: Option[Vector[Boolean]] = Some(Vector())
     val result =
-    candidate.paramTypes.zip(argTypes)
-      .foldLeft(initial)({
-        case (None, _) => None
-        case (Some(previous), (paramType, argType)) => {
-          if (argType == paramType) {
-            Some(previous :+ false)
-          } else {
-            if (templataCompiler.isTypeConvertible(coutputs, callingEnv, parentRanges, callLocation, argType, paramType)) {
-              Some(previous :+ true)
+      candidate.paramTypes.zip(argTypes)
+        .foldLeft(initial)({
+          case (None, _) => None
+          case (Some(previous), (paramType, argType)) => {
+            if (argType == paramType) {
+              Some(previous :+ false)
             } else {
-              None
+            if (templataCompiler.isTypeConvertible(coutputs, callingEnv, parentRanges, callLocation, argType, paramType)) {
+                Some(previous :+ true)
+              } else {
+                None
+              }
             }
           }
-        }
-      })
+        })
     result match {
       case Some(a) => vassert(a.length == argTypes.length)
       case None =>
@@ -603,9 +843,9 @@ class OverloadResolver(
                 }
                 case other => {
                   ((index -> other) :: normalCandidates, boundCandidates)
-                }
-              }
             }
+          }
+      }
           })
 
     val finalBannerIndex =
@@ -667,7 +907,7 @@ class OverloadResolver(
 //        vassert(coutputs.getInstantiationBounds(header.toPrototype.id).nonEmpty)
 //        PrototypeTemplataT(header.toPrototype)
 //      }
-//    }
+//        }
 //  }
 
 //  private def stampPotentialFunctionForPrototype(
@@ -714,7 +954,7 @@ class OverloadResolver(
 //      case ValidPrototypeTemplataCalleeCandidate(prototype) => {
 //        vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
 //        StampFunctionSuccess(prototype, Map())
-//      }
+//          }
 //    }
 //  }
 
@@ -730,7 +970,7 @@ class OverloadResolver(
     val paramFilters =
       Vector(
         callableTE.result.underlyingCoord,
-        CoordT(ShareT, RegionT(), IntT.i32))
+        CoordT(ShareT, vimpl(), IntT.i32))
       findFunction(
         callingEnv, coutputs, range, callLocation, funcName, Vector.empty, Vector.empty, contextRegion,
         paramFilters, Vector.empty, false) match {

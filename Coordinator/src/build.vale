@@ -123,12 +123,6 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "O0",
           "Optimization level, between O0 and O3."),
         Flag(
-          "--print_mem_overhead",
-          FLAG_BOOL(),
-          "Whether to output number of generation checks.",
-          "false",
-          "Whether to output number of generation checks."),
-        Flag(
           "-g",
           FLAG_NOTHING(),
           "Include debug symbols.",
@@ -222,7 +216,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "--sanity_check",
           FLAG_BOOL(),
           "Whether to run self-diagnostics while compiling.",
-          "false",
+          "true",
           "Whether to run self-diagnostics while compiling."),
         Flag(
           "--force_all_known_live",
@@ -369,7 +363,10 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   project_non_vale_input_declarations = List<ProjectNonValeInputDeclaration>();
 
   if not no_std {
+    println("including stdlib!");
     project_directory_declarations.add(ProjectDirectoryDeclaration("stdlib", compiler_dir./("stdlib")./("src")));
+  } else {
+    println("not including stdlib!");
   }
 
 

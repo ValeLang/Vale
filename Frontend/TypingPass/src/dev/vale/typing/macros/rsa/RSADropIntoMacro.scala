@@ -21,14 +21,21 @@ class RSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
     generatorId: StrI,
     life: LocationInFunctionEnvironmentT,
     callRange: List[RangeS],
-      callLocation: LocationInDenizen,
+    callLocation: LocationInDenizen,
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.id, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
+      FunctionHeaderT(
+        env.id,
+        Vector.empty,
+//        Vector(RegionT(env.defaultRegion.localName, true)),
+        paramCoords,
+        maybeRetCoord.get,
+        Some(env.templata))
     val fate = FunctionEnvironmentBoxT(env)
+    vimpl() // pure?
     val body =
       BlockTE(
         ReturnTE(
@@ -39,7 +46,7 @@ class RSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
             callLocation,
             ArgLookupTE(0, paramCoords(0).tyype),
             ArgLookupTE(1, paramCoords(1).tyype),
-            RegionT())))
+            env.defaultRegion)))
     (header, body)
   }
 }

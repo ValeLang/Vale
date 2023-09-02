@@ -40,7 +40,7 @@ object InstantiatedHumanizer {
         humanizeId(codeMap, prototype.id)
       }
       case CoordTemplataI(region, coord) => {
-        humanizeCoord(codeMap, coord)
+        humanizeTemplata(codeMap, region) + "'" + humanizeCoord(codeMap, coord)
       }
       case KindTemplataI(kind) => {
         humanizeKind(codeMap, kind)

@@ -23,11 +23,11 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     val moo = compile.expectCompilerOutputs().lookupFunction("moo")
     moo.header.params match {
-      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, _, CoordT(BorrowT,_, _))) =>
+      case Vector(ParameterT(CodeVarNameT(StrI("m")), _, _, CoordT(BorrowT, _, _))) =>
     }
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("moo"), _), templateArgs, _)), _), _, _) => {
+      case FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("moo"), _), templateArgs, _)), _), _, _, _, _) => {
         templateArgs match {
           case Vector(CoordTemplataT(CoordT(OwnT, _, StructTT(IdT(x, Vector(), StructNameT(StructTemplateNameT(StrI("Muta")), Vector())))))) => {
             vassert(x.isTest)

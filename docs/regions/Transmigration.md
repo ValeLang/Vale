@@ -8,6 +8,7 @@ When we return an object from a pure function, making it cross over from the tem
 Alternatively, we could copy the objects out, if that makes blasting away the pure function a little faster (perhaps using mi_heap_destroy).
 
 
+
 # How to Isolate an Object Hierarchy
 
 First, make a random 32-bit number X. Then, recurse through the entire object, incrementing all non-owning references by X and incrementing all object generations by X.

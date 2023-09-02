@@ -1,12 +1,13 @@
-
-// See TAVWG for what it would take to re-enable variadic tuples.
-// struct Tup<T RefList> {
-//  _ ..T;
-// }
-
-#!DeriveStructDrop
-struct Tup2<T0, T1> { 0 T0; 1 T1; }
-func drop<T0, T1>(tup Tup2<T0, T1>)
-where func drop(T0)void,
-    func drop(T1)void
-{ [a, b] = tup; }
+//
+// // See TAVWG for what it would take to re-enable variadic tuples.
+// // struct Tup<T RefList> {
+// //  _ ..T;
+// // }
+//
+// #!DeriveStructDrop
+// struct Tup2<T0, T1> { 0 T0; 1 T1; }
+// func drop<T0, T1>(tup Tup2<T0, T1>)
+// where func drop(T0)void,
+//     func drop(T1)void
+// { [a, b] = tup; }
+//

@@ -109,15 +109,6 @@ object RegionCounter {
         countName(counter, funcTemplateName)
         countFunctionName(counter, funcName)
       }
-    //   case OverrideDispatcherNameI(OverrideDispatcherTemplateNameI(implId), templateArgs, parameters) => {
-    //     countId(counter, implId, x => countName(counter, x))
-    //     templateArgs.foreach(countTemplata(counter, _))
-    //     parameters.foreach(countCoord(counter, _))
-    //   }
-    //   case CaseFunctionFromImplNameI(CaseFunctionFromImplTemplateNameI(humanName, runeInImpl, runeInCitizen), templateArgs, parameters) => {
-    //     templateArgs.foreach(countTemplata(counter, _))
-    //     parameters.foreach(countCoord(counter, _))
-    //   }
     }
   }
 
@@ -159,7 +150,7 @@ object RegionCounter {
   Unit = {
     name match {
       case z : IFunctionNameI[_] => {
-        // Scala can't seem to match generics.
+        // Scala can't seem to match generics DO NOT SUBMIT try again
         val x = z.asInstanceOf[IFunctionNameI[sI]]
         countFunctionName(counter, x)
       }
@@ -184,9 +175,6 @@ object RegionCounter {
         countName(counter, interface)
       }
       case FunctionTemplateNameI(humanName, codeLocation) =>
-      // case AnonymousSubstructImplTemplateNameI(interface) => {
-      //   countName(counter, interface)
-      // }
       case other => vimpl(other)
     }
   }
@@ -310,8 +298,8 @@ object RegionCounter {
   }
 
   def countStructTemplateName(
-      counter: Counter,
-      structName: IStructTemplateNameI[sI]):
+    counter: Counter,
+    structName: IStructTemplateNameI[sI]):
   Unit = {
     structName match {
       case StructTemplateNameI(humanName) => StructTemplateNameI(humanName)

@@ -133,6 +133,7 @@ class StructCompiler(
     val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
 
     val interfaceTemplateId = templataCompiler.resolveInterfaceTemplate(interfaceTemplata)
+    val defaultRegion = vimpl()
 
     coutputs.declareType(interfaceTemplateId)
 
@@ -234,6 +235,7 @@ class StructCompiler(
 
     success
   }
+
 
   def compileInterface(
     coutputs: CompilerOutputs,

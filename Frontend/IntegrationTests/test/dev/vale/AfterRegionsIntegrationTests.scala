@@ -22,6 +22,9 @@ import org.scalatest._
 class AfterRegionsIntegrationTests extends FunSuite with Matchers {
 
   test("TODO") {
+    // see MSBAMFI
+    vimpl()
+
     // only look at function bounds from the caller's environment, dont get any actual functions
     // from there. we can get actual functions from the type's environment, however.
     vimpl()
@@ -90,6 +93,17 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
+  test("Simple tuple with one int") {
+    val compile = RunCompilation.test( "exported func main() int { return (9,).0; }")
+
+    val coutputs = compile.expectCompilerOutputs()
+    coutputs.lookupFunction("main").header.returnType.kind shouldEqual IntT.i32
+    // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
+    Collector.only(coutputs.lookupFunction("main"), { case TupleTE(_, _) => })
+
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
+  }
+
   test("Upcasting in a generic function") {
     // This is testing two things:
     //  - Upcasting inside a generic function
@@ -104,9 +118,10 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
       """
         |func upcast<SuperKind Kind, SubType Ref>(left SubType) SuperType
         |where O Ownership,
+        |  R Region,
         |  SubKind Kind,
-        |  SuperType Ref = Ref[O, SuperKind],
-        |  SubType Ref = Ref[O, SubKind],
+        |  SuperType Ref = Ref[O, R, SuperKind],
+        |  SubType Ref = Ref[O, R, SubKind],
         |  implements(SubType, SuperType)
         |{
         |  left
@@ -232,4 +247,17 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
+
+  test("Ignoring receiver") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine { hp int; }
+        |exported func main() int { [_, y] = (Marine(6), Marine(8)); return y.hp; }
+        |
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main");
+    main.header.returnType shouldEqual CoordT(ShareT, vimpl(), IntT.i32)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
+  }
 }

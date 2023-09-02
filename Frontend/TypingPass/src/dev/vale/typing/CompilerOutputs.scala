@@ -75,7 +75,7 @@ case class CompilerOutputs() {
 
   private val kindExports: mutable.ArrayBuffer[KindExportT] = mutable.ArrayBuffer()
   private val functionExports: mutable.ArrayBuffer[FunctionExportT] = mutable.ArrayBuffer()
-  private val kindExterns: mutable.ArrayBuffer[KindExternT] = mutable.ArrayBuffer()
+//  private val kindExterns: mutable.ArrayBuffer[KindExternT] = mutable.ArrayBuffer()
   private val functionExterns: mutable.ArrayBuffer[FunctionExternT] = mutable.ArrayBuffer()
 
   // When we call a function, for example this one:
@@ -85,8 +85,8 @@ case class CompilerOutputs() {
   // This map is how we remember it.
   // Here, we'd remember: [drop<int>(Opt<int>), [Rune1337, drop(int)]].
   // We also do this for structs and interfaces too.
-  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] =
-    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]]()
+  private val instantiationIdToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] =
+  mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]]()
 
 //  // Only ArrayCompiler can make an RawArrayT2.
 //  private val staticSizedArrayTypes:
@@ -130,7 +130,7 @@ case class CompilerOutputs() {
   }
 
   def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] = {
-    instantiationNameToInstantiationBounds.toMap
+    instantiationIdToInstantiationBounds.toMap
   }
 
   def lookupFunction(signature: SignatureT): Option[FunctionDefinitionT] = {
@@ -140,7 +140,7 @@ case class CompilerOutputs() {
   def getInstantiationBounds(
     instantiationId: IdT[IInstantiationNameT]):
   Option[InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]] = {
-    instantiationNameToInstantiationBounds.get(instantiationId)
+    instantiationIdToInstantiationBounds.get(instantiationId)
   }
 
   def addInstantiationBounds(
@@ -154,19 +154,6 @@ case class CompilerOutputs() {
     runeToBoundPrototype,
     runeToCitizenRuneToReachablePrototype,
     runeToBoundImpl) = instantiationBoundArgs
-
-    instantiationId match {
-      case IdT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("Bork"),_),Vector(CoordTemplataT(CoordT(_,RegionT(),IntT(32)))),Vector(CoordT(_,RegionT(),IntT(32))))) => {
-        vpass()
-      }
-      case IdT(_,Vector(),InterfaceNameT(InterfaceTemplateNameT(StrI("XOpt")),Vector(CoordTemplataT(CoordT(own,RegionT(),KindPlaceholderT(IdT(_,Vector(InterfaceTemplateNameT(StrI("XOpt")), FunctionTemplateNameT(StrI("harvest"),_), OverrideDispatcherTemplateNameT(IdT(_,Vector(),ImplTemplateNameT(_)))),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0,DispatcherRuneFromImplS(CodeRuneS(StrI("T")))))))))))) => {
-        vpass()
-      }
-      case IdT(_,Vector(),InterfaceNameT(InterfaceTemplateNameT(StrI("IXOption")),Vector(CoordTemplataT(CoordT(own,RegionT(),KindPlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("drop"),_), OverrideDispatcherTemplateNameT(IdT(_,Vector(),ImplTemplateNameT(_)))),KindPlaceholderNameT(KindPlaceholderTemplateNameT(0,DispatcherRuneFromImplS(CodeRuneS(StrI("T")))))))))))) => {
-        vpass()
-      }
-      case _ =>
-    }
 
     // We do this so that there's no random selection of where we get a particular bound from, see MFBFDP.
     // Keeps things nice and consistent so we dont run into any oddities with the overload index.
@@ -224,9 +211,10 @@ case class CompilerOutputs() {
     // We'll do this when we can cache instantiations from StructTemplar etc.
     // // We should only add instantiation bounds in exactly one place: the place that makes the
     // // PrototypeT/StructTT/InterfaceTT.
-    // vassert(!instantiationNameToInstantiationBounds.contains(instantiationFullName))
-    instantiationNameToInstantiationBounds.get(instantiationId) match {
+    // vassert(!instantiationIdToInstantiationBounds.contains(instantiationFullName))
+    instantiationIdToInstantiationBounds.get(instantiationId) match {
       case Some(existing) => {
+        // Make Sure Bound Args Match For Instantiation (MSBAMFI)
         // Theres some ambiguities or something here. sometimes when we evaluate
         // the same thing twice we get different results.
         // It's gonna be especially tricky because we get each function bounds from the overload
@@ -237,7 +225,7 @@ case class CompilerOutputs() {
       case None =>
     }
 
-    instantiationNameToInstantiationBounds.put(instantiationId, instantiationBoundArgs)
+    instantiationIdToInstantiationBounds.put(instantiationId, instantiationBoundArgs)
   }
 
 //  // This means we've at least started to evaluate this function's body.
@@ -436,9 +424,9 @@ case class CompilerOutputs() {
     functionExports += FunctionExportT(range, function, exportId, exportedName)
   }
 
-  def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
-    kindExterns += KindExternT(kind, packageCoord, exportedName)
-  }
+//  def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
+//    kindExterns += KindExternT(kind, packageCoord, exportedName)
+//  }
 
   def addFunctionExtern(range: RangeS, externPlaceholderedId: IdT[ExternNameT], function: PrototypeT[IFunctionNameT], exportedName: StrI): Unit = {
     functionExterns += FunctionExternT(range, externPlaceholderedId, function, exportedName)
@@ -574,9 +562,9 @@ case class CompilerOutputs() {
   def getFunctionExports: Vector[FunctionExportT] = {
     functionExports.toVector
   }
-  def getKindExterns: Vector[KindExternT] = {
-    kindExterns.toVector
-  }
+//  def getKindExterns: Vector[KindExternT] = {
+//    kindExterns.toVector
+//  }
   def getFunctionExterns: Vector[FunctionExternT] = {
     functionExterns.toVector
   }

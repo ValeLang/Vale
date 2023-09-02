@@ -18,6 +18,4 @@ removeextra.sh
 target
 project
 .metals
-Frontend/.idea/librariesadoptopenjdk.tar.gz
-jdk-11.0.10+9-jre
-adoptopenjdk.tar.gz
+Frontend/.idea/libraries

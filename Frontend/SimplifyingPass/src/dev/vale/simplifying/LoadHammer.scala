@@ -39,7 +39,7 @@ class LoadHammer(
         }
         case LocalLookupIE(AddressibleLocalVariableI(varId, variability, localReference2), _) => {
           // DO NOI SUBMIT combine this with below
-          val combinedTargetOwnership = vregionmut()
+          val combinedTargetOwnership = vimpl()
 //            (targetOwnership, sourceRegion) match {
 //              case (OwnI, _) => OwnI
 //              case (BorrowI, RegionTemplata(true)) => MutableBorrowI
@@ -48,7 +48,7 @@ class LoadHammer(
 //              case (ShareI, RegionTemplata(false)) => ImmutableShareI
 //              case (WeakI, _) => vimpl()
 //            }
-          translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, vregionmut(targetOwnership))
+          translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, combinedTargetOwnership)
         }
         case ReferenceMemberLookupIE(_,structExpr2, memberName, memberType2, _) => {
 //          val sourceRegion: ITemplata[RegionTemplataType] = vimpl()
@@ -67,7 +67,7 @@ class LoadHammer(
         case AddressMemberLookupIE(structExpr2, memberName, memberType2, _) => {
 //          val sourceRegion: ITemplataI[RegionTemplataType] = vimpl()
           // DO NOI SUBMIT combine this with below
-          vregionmut()
+          val combinedTargetOwnership = vimpl()
 //          val combinedTargetOwnership =
 //            (targetOwnership, sourceRegion) match {
 //              case (OwnI, _) => OwnI
@@ -77,7 +77,7 @@ class LoadHammer(
 //              case (ShareI, RegionTemplata(false)) => ImmutableShareI
 //              case (WeakI, _) => vimpl()
 //            }
-          translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, vregionmut(targetOwnership))
+          translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, combinedTargetOwnership)
         }
         case RuntimeSizedArrayLookupIE(arrayExpr2, indexExpr2, _, _) => {
 //          val sourceRegion: ITemplataI[RegionTemplataType] = vimpl()
@@ -253,7 +253,7 @@ class LoadHammer(
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
-    val boxInStructCoord = CoordH(vregionmut(MutableBorrowH), YonderH, boxStructRefH)
+    val boxInStructCoord = CoordH(vimpl(/*BorrowH*/), YonderH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
@@ -354,7 +354,7 @@ class LoadHammer(
     val loadBoxNode =
         LocalLoadH(
           local,
-          vregionmut(MutableBorrowH),
+          vimpl(/*BorrowH*/),
           varNameH)
 
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipI)
@@ -410,7 +410,7 @@ class LoadHammer(
       lookup2: LocalLookupIE):
   (ExpressionH[KindHT]) = {
     val LocalLookupIE(localVar, _) = lookup2;
-    vregionmut()
+    vimpl()
 
     val local = locals.get(localVar.name).get
     vassert(!locals.unstackifiedVars.contains(local.id))
@@ -422,7 +422,7 @@ class LoadHammer(
     val loadBoxNode =
       LocalLoadH(
         local,
-        vregionmut(MutableBorrowH),
+        vimpl(/*BorrowH*/),
         nameHammer.translateFullName(hinputs, hamuts, INameI.addStep(currentFunctionHeader.id, localVar.name)))
     loadBoxNode
   }
@@ -467,14 +467,14 @@ class LoadHammer(
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // We expect a borrow because structs never own boxes, they only borrow them
-    val expectedStructBoxMemberType = CoordH(vregionmut(MutableBorrowH), YonderH, boxStructRefH)
+    val expectedStructBoxMemberType = CoordH(vimpl(/*BorrowH*/), YonderH, boxStructRefH)
 
     val loadResultType =
       CoordH(
         // Boxes are either owned or borrowed. We only own boxes from locals,
         // and we're loading from a struct here, so we're getting a borrow to the
         // box from the struct.
-        vregionmut(MutableBorrowH),
+        vimpl(/*BorrowH*/),
         YonderH,
         boxStructRefH)
 

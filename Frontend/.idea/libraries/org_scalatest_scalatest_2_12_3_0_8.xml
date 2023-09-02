@@ -3,9 +3,7 @@
     <properties maven-id="org.scalatest:scalatest_2.12:3.0.8" />
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/scalatest_2.12-3.0.8.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/scala-library-2.12.8.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/scalactic_2.12-3.0.8.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/scala-reflect-2.12.8.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/scala-xml_2.12-1.2.0.jar!/" />
     </CLASSES>
     <JAVADOC />

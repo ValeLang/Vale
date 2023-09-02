@@ -17,6 +17,7 @@ import dev.vale.typing.templata._
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
+import dev.vale.typing.templata.ITemplataT.{expectRegion, expectRegionPlaceholder}
 
 import scala.collection.immutable.{List, Set}
 
@@ -55,7 +56,10 @@ class StructCompilerGenericArgsLayer(
         TemplataCompiler.assembleCallSiteRules(
           structA.headerRules.toVector, structA.genericParameters, templateArgs.size)
 
-      val contextRegion = RegionT()
+      // Context region is the last template arg, inserted by the higher typer, see HTEDRKC.
+      // Not entirely certain if it's really needed when we're predicting a struct, but we'll supply it anyway because
+      // InferEnv wants it. We might need it to resolve function bounds perhaps?
+      val contextRegion = RegionT(expectRegionPlaceholder(expectRegion(vassertSome(templateArgs.lastOption))))
 
       // Check if its a valid use of this template
       val envs = InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion)
@@ -134,15 +138,12 @@ class StructCompilerGenericArgsLayer(
       val runeToTypeForPrediction =
         runesForPrediction.toVector.map(r => r -> interfaceA.runeToType(r)).toMap
 
-      val contextRegion = RegionT()
-
       // This *doesnt* check to make sure it's a valid use of the template. Its purpose is really
       // just to populate any generic parameter default values.
-
       // We're just predicting, see STCMBDP.
       val inferences =
         inferCompiler.partialSolve(
-          InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, contextRegion),
+          InferEnv(originalCallingEnv, callRange, callLocation, declaringEnv, vimpl()),
           coutputs,
           callSiteRules,
           runeToTypeForPrediction,
@@ -206,7 +207,10 @@ class StructCompilerGenericArgsLayer(
 
       // Maybe we should make this incremental too, like when solving definitions?
 
-      val contextRegion = RegionT()
+      // Context region is the last template arg, inserted by the higher typer, see HTEDRKC.
+      // Not entirely certain if it's really needed when we're predicting a struct, but we'll supply it anyway because
+      // InferEnv wants it. We might need it to resolve function bounds perhaps?
+      val contextRegion = RegionT(expectRegionPlaceholder(expectRegion(vassertSome(templateArgs.lastOption))))
 
       val inferences =
       // We're just predicting, see STCMBDP.
@@ -264,7 +268,7 @@ class StructCompilerGenericArgsLayer(
         TemplataCompiler.assembleCallSiteRules(
           interfaceA.rules.toVector, interfaceA.genericParameters, templateArgs.size)
 
-      val contextRegion = RegionT()
+      val contextRegion = vimpl()
 
       // This checks to make sure it's a valid use of this template.
       val CompleteResolveSolve(inferences, runeToFunctionBound) =
@@ -276,7 +280,7 @@ class StructCompilerGenericArgsLayer(
           callRange,
         callLocation,
           initialKnowns,
-          Vector()) match {
+        Vector()) match {
           case Ok(ccs) => ccs
           case Err(x) => return ResolveFailure(callRange, x)
         }
@@ -317,24 +321,54 @@ class StructCompilerGenericArgsLayer(
       val allRuneToType = structA.headerRuneToType ++ structA.membersRuneToType
       val definitionRules = allRulesS.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      val envs = InferEnv(outerEnv, List(structA.range), callLocation, outerEnv, RegionT())
+      // Before doing the incremental solving/placeholdering, add a placeholder for the default
+      // region, see SIPWDR.
+      val defaultRegionGenericParamIndex =
+        structA.genericParameters.indexWhere(genericParam => {
+          genericParam.rune.rune == structA.regionRune
+        })
+      vassert(defaultRegionGenericParamIndex >= 0)
+      val defaultRegionGenericParam = structA.genericParameters(defaultRegionGenericParamIndex)
+      val defaultRegionPlaceholderTemplata =
+        templataCompiler.createRegionPlaceholderInner(
+          structTemplateId,
+          defaultRegionGenericParamIndex,
+          defaultRegionGenericParam.rune.rune,
+          // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+          Some(0),
+          ReadWriteRegionS)
+      // we inform the solver of this placeholder below.
+
+      val envs = InferEnv(outerEnv, List(structA.range), LocationInDenizen(Vector()), outerEnv, defaultRegionPlaceholderTemplata)
       val solver =
         inferCompiler.makeSolver(
           envs, coutputs, definitionRules, allRuneToType, structA.range :: parentRanges, Vector(), Vector())
+
+      // Inform the solver of the default region's placeholder, see SIPWDR.
+      solver.manualStep(Map(defaultRegionGenericParam.rune.rune -> defaultRegionPlaceholderTemplata.region))
+
       // Incrementally solve and add placeholders, see IRAGP.
       inferCompiler.incrementallySolve(
         envs, coutputs, solver,
         // Each step happens after the solver has done all it possibly can. Sometimes this can lead
         // to races, see RRBFS.
         (solver) => {
-          TemplataCompiler.getFirstUnsolvedIdentifyingRune(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+          TemplataCompiler.getFirstUnsolvedIdentifyingGenericParam(structA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
             case None => false
             case Some((genericParam, index)) => {
-              val placeholderPureHeight = vregionmut(None)
+              val placeholderPureHeight =
+                TemplataCompiler.getRegionPlaceholderPureHeight(genericParam)
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.
               val templata =
                 templataCompiler.createPlaceholder(
-                  coutputs, outerEnv, structTemplateId, genericParam, index, allRuneToType, placeholderPureHeight, true)
+                  coutputs,
+                  outerEnv,
+                  structTemplateId,
+                  genericParam,
+                  index,
+                  allRuneToType,
+                  placeholderPureHeight,
+                  true)
               solver.manualStep(Map(genericParam.rune.rune -> templata))
               true
             }
@@ -411,17 +445,38 @@ class StructCompilerGenericArgsLayer(
 
       val definitionRules = interfaceA.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
 
-      val envs = InferEnv(outerEnv, List(interfaceA.range), callLocation, outerEnv, RegionT())
+      // Before doing the incremental solving/placeholdering, add a placeholder for the default
+      // region, see SIPWDR.
+      val defaultRegionGenericParamIndex =
+      interfaceA.genericParameters.indexWhere(genericParam => {
+        genericParam.rune.rune == interfaceA.regionRune
+      })
+      vassert(defaultRegionGenericParamIndex >= 0)
+      val defaultRegionGenericParam = interfaceA.genericParameters(defaultRegionGenericParamIndex)
+
+      val defaultRegionPlaceholderTemplata =
+        templataCompiler.createRegionPlaceholderInner(
+          interfaceTemplateId, defaultRegionGenericParamIndex, defaultRegionGenericParam.rune.rune,
+          // We later look for Some(0) to know if a region is mutable or not, see RGPPHASZ.
+          Some(0),
+          ReadWriteRegionS)
+      // we inform the solver of this placeholder below.
+
+      val envs = InferEnv(outerEnv, List(interfaceA.range), LocationInDenizen(Vector()), outerEnv, defaultRegionPlaceholderTemplata)
       val solver =
         inferCompiler.makeSolver(
           envs, coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, Vector(), Vector())
+
+      // Inform the solver of the default region's placeholder, see SIPWDR.
+      solver.manualStep(Map(defaultRegionGenericParam.rune.rune -> defaultRegionPlaceholderTemplata.region))
+
       // Incrementally solve and add placeholders, see IRAGP.
       inferCompiler.incrementallySolve(
         envs, coutputs, solver,
         // Each step happens after the solver has done all it possibly can. Sometimes this can lead
         // to races, see RRBFS.
         (solver) => {
-          TemplataCompiler.getFirstUnsolvedIdentifyingRune(interfaceA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
+          TemplataCompiler.getFirstUnsolvedIdentifyingGenericParam(interfaceA.genericParameters, (rune) => solver.getConclusion(rune).nonEmpty) match {
             case None => false
             case Some((genericParam, index)) => {
               // Make a placeholder for every argument even if it has a default, see DUDEWCD.

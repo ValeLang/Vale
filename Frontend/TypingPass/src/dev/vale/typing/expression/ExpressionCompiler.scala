@@ -1582,6 +1582,7 @@ class ExpressionCompiler(
 
           val resultCoord =
             TemplataCompiler.mergeCoordRegions(
+              opts.globalOptions.sanityCheck,
               interner, coutputs, Map(newRegion -> region), innerExpr.result.coord)
           val pureTE = PureTE(newRegion, innerExpr, resultCoord)
           (pureTE, returnsFromExprs)

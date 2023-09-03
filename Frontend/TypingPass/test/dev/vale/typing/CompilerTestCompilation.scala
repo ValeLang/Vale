@@ -19,7 +19,7 @@ object CompilerTestCompilation {
         .or(FileCoordinateMap.test(interner, code))
         .or(Tests.getPackageToResourceResolver),
       TypingPassOptions(
-        GlobalOptions(true, true, true, true),
+        GlobalOptions(true, false, true, true, true),
         x => println(x),
         false))
   }

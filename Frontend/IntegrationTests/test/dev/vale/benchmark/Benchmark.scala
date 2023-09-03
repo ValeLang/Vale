@@ -41,6 +41,7 @@ object Benchmark {
             GlobalOptions(
               sanityCheck = false,
               useOptimization,
+              true,
               false,
               false),
             debugOut = (_) => {}))
@@ -66,8 +67,8 @@ object Benchmark {
     timer.getNanosecondsSoFar()
   }
 
-  def main(args: Vector[String]): Unit = {
-    val compareOptimization = false
+  def main(args: Array[String]): Unit = {
+    val compareOptimization = true
 
     println("Starting benchmarking...")
     if (compareOptimization) {

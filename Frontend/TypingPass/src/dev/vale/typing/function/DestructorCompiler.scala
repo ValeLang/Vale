@@ -71,6 +71,7 @@ class DestructorCompiler(
                 // If we get any instances that are part of the newRegion, we need to interpret them
                 // to the contextRegion.
                 TemplataCompiler.mergeCoordRegions(
+                  opts.globalOptions.sanityCheck,
                   interner, coutputs, Map(newRegion -> contextRegion), destructorPrototype.returnType)
               }
             }

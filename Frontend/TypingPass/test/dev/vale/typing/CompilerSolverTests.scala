@@ -77,7 +77,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
             _,
             _,
             FunctionBoundNameT(
-              FunctionBoundTemplateNameT(StrI("drop"),_),
+              FunctionBoundTemplateNameT(StrI("drop")),
               Vector(),
               Vector(
                 CoordT(

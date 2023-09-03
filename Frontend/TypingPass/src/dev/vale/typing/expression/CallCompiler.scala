@@ -56,7 +56,7 @@ class CallCompiler(
         // we might be in the middle of a recursive call like:
         // func main():Int(main())
 
-        val prototype =
+        val StampFunctionSuccess(pure, maybeNewRegion, prototype, inferences) =
           overloadCompiler.findFunction(
             overloadSetEnv,
             coutputs,
@@ -79,30 +79,31 @@ class CallCompiler(
             range,
             callLocation,
             givenArgsExprs2,
-            prototype.prototype.paramTypes)
+            prototype.paramTypes)
 
         checkTypes(
           coutputs,
           nenv.snapshot,
           range,
           callLocation,
-          prototype.prototype.paramTypes,
+          prototype.paramTypes,
           argsExprs2.map(a => a.result.coord),
           exact = true)
 
-        vassert(coutputs.getInstantiationBounds(prototype.prototype.id).nonEmpty)
+        vassert(coutputs.getInstantiationBounds(prototype.id).nonEmpty)
         // DO NOT SUBMIT merge this with the other code before FunctionCallTE's elsewhere
         val resultTE =
           maybeNewRegion match {
-            case None => prototype.prototype.returnType
+            case None => prototype.returnType
             case Some(newRegion) => {
               // If we get any instances that are part of the newRegion, we need to interpret them
               // to the contextRegion.
               TemplataCompiler.mergeCoordRegions(
-                interner, coutputs, Map(newRegion -> contextRegion), prototype.prototype.returnType)
+                opts.globalOptions.sanityCheck,
+                interner, coutputs, Map(newRegion -> contextRegion), prototype.returnType)
             }
           }
-        FunctionCallTE(prototype.prototype, pure, maybeNewRegion, argsExprs2, resultTE)
+        FunctionCallTE(prototype, pure, maybeNewRegion, argsExprs2, resultTE)
       }
       case other => {
         evaluateCustomCall(
@@ -237,6 +238,7 @@ class CallCompiler(
           // If we get any instances that are part of the newRegion, we need to interpret them
           // to the contextRegion.
           TemplataCompiler.mergeCoordRegions(
+            opts.globalOptions.sanityCheck,
             interner, coutputs, Map(newRegion -> contextRegion), prototype.returnType)
         }
       }

@@ -117,6 +117,7 @@ object TemplataCompiler {
   }
 
   def mergeCoordRegions(
+    sanityCheck: Boolean,
     interner: Interner,
     coutputs: CompilerOutputs,
     oldToNewRegion: Map[RegionT, RegionT],
@@ -125,11 +126,12 @@ object TemplataCompiler {
     val CoordT(ownership, region, kind) = coord
     CoordT(
       ownership,
-      mergeRegionTemplataRegions(interner, coutputs, oldToNewRegion, region),
-      mergeKindRegions(interner, coutputs, oldToNewRegion, kind))
+      mergeRegionTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, region),
+      mergeKindRegions(sanityCheck, interner, coutputs, oldToNewRegion, kind))
   }
 
   def mergeRegionTemplataRegions(
+    sanityCheck: Boolean,
     interner: Interner,
     coutputs: CompilerOutputs,
     oldToNewRegion: Map[RegionT, RegionT],
@@ -139,6 +141,7 @@ object TemplataCompiler {
   }
 
   def mergeTemplataRegions(
+    sanityCheck: Boolean,
     interner: Interner,
     coutputs: CompilerOutputs,
     oldToNewRegion: Map[RegionT, RegionT],
@@ -159,6 +162,7 @@ object TemplataCompiler {
   }
 
   def mergeNameRegions(
+    sanityCheck: Boolean,
     interner: Interner,
     coutputs: CompilerOutputs,
     oldToNewRegion: Map[RegionT, RegionT],
@@ -170,6 +174,7 @@ object TemplataCompiler {
   }
 
   def mergeKindRegions(
+    sanityCheck: Boolean,
     interner: Interner,
     coutputs: CompilerOutputs,
     oldToNewRegion: Map[RegionT, RegionT],
@@ -183,13 +188,13 @@ object TemplataCompiler {
           interner.intern(StructTT(
             IdT(
               packageCoord,
-              initSteps.map(mergeNameRegions(interner, coutputs, oldToNewRegion, _)),
+              initSteps.map(mergeNameRegions(sanityCheck, interner, coutputs, oldToNewRegion, _)),
               interner.intern(StructNameT(
                 template,
-                templateArgs.map(mergeTemplataRegions(interner, coutputs, oldToNewRegion, _)))))))
+                templateArgs.map(mergeTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, _)))))))
 
         val instantiationBounds = vassertSome(coutputs.getInstantiationBounds(id))
-        val emptyBounds = InstantiationBoundArgumentsT(Map(), Map(), Map())
+        val emptyBounds = InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT](Map(), Map(), Map())
         if (instantiationBounds == emptyBounds) {
           // DO NOT SUBMIT
           // If we don't have instantiation bounds for the new struct, then we hit errors later on.
@@ -198,7 +203,7 @@ object TemplataCompiler {
           // but should be possible.
           coutputs.getInstantiationBounds(newStruct.id) match {
             case Some(b) => vassert(b == emptyBounds)
-            case None => coutputs.addInstantiationBounds(newStruct.id, emptyBounds)
+            case None => coutputs.addInstantiationBounds(sanityCheck, interner, vimpl(), newStruct.id, emptyBounds)
           }
         } else {
           vimpl()
@@ -212,15 +217,15 @@ object TemplataCompiler {
         interner.intern(StaticSizedArrayTT(
           IdT(
             packageCoord,
-            initSteps.map(mergeNameRegions(interner, coutputs, oldToNewRegion, _)),
+            initSteps.map(mergeNameRegions(sanityCheck, interner, coutputs, oldToNewRegion, _)),
             interner.intern(StaticSizedArrayNameT(
               template,
-              expectInteger(mergeTemplataRegions(interner, coutputs, oldToNewRegion, size)),
-              expectVariability(mergeTemplataRegions(interner, coutputs, oldToNewRegion, variability)),
+              expectInteger(mergeTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, size)),
+              expectVariability(mergeTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, variability)),
               interner.intern(RawArrayNameT(
-                expectMutability(mergeTemplataRegions(interner, coutputs, oldToNewRegion, mutability)),
-                mergeCoordRegions(interner, coutputs, oldToNewRegion, elementType),
-                mergeRegionTemplataRegions(interner, coutputs, oldToNewRegion, selfRegion))))))))
+                expectMutability(mergeTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, mutability)),
+                mergeCoordRegions(sanityCheck, interner, coutputs, oldToNewRegion, elementType),
+                mergeRegionTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, selfRegion))))))))
       }
       case RuntimeSizedArrayTT(IdT(packageCoord, initSteps, RuntimeSizedArrayNameT(template, RawArrayNameT(mutability, elementType, selfRegion)))) => {
         // DO NOT SUBMIT
@@ -229,13 +234,13 @@ object TemplataCompiler {
         interner.intern(RuntimeSizedArrayTT(
           IdT(
             packageCoord,
-            initSteps.map(mergeNameRegions(interner, coutputs, oldToNewRegion, _)),
+            initSteps.map(mergeNameRegions(sanityCheck, interner, coutputs, oldToNewRegion, _)),
             interner.intern(RuntimeSizedArrayNameT(
               template,
               interner.intern(RawArrayNameT(
-                expectMutability(mergeTemplataRegions(interner, coutputs, oldToNewRegion, mutability)),
-                mergeCoordRegions(interner, coutputs, oldToNewRegion, elementType),
-                mergeRegionTemplataRegions(interner, coutputs, oldToNewRegion, selfRegion))))))))
+                expectMutability(mergeTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, mutability)),
+                mergeCoordRegions(sanityCheck, interner, coutputs, oldToNewRegion, elementType),
+                mergeRegionTemplataRegions(sanityCheck, interner, coutputs, oldToNewRegion, selfRegion))))))))
       }
       case other => vimpl(other)
     }
@@ -440,8 +445,10 @@ object TemplataCompiler {
           expectRegion(
             substituteTemplatasInTemplata(
               coutputs,
+              sanityCheck,
               interner,
               keywords,
+              originalCallingDenizenId,
               needleTemplateName,
               newSubstitutingTemplatas,
               boundArgumentsSource,
@@ -505,7 +512,7 @@ object TemplataCompiler {
                 interner.intern(RawArrayNameT(
                   expectMutability(substituteTemplatasInTemplata(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
                   substituteTemplatasInCoord(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType),
-                  RegionT()))))))))
+                  RegionT(expectRegionPlaceholder(expectRegion(substituteTemplatasInTemplata(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, region.region))))))))))))
       }
       case StaticSizedArrayTT(IdT(
       packageCoord,
@@ -527,7 +534,7 @@ object TemplataCompiler {
                 interner.intern(RawArrayNameT(
                   expectMutability(substituteTemplatasInTemplata(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, mutability)),
                   substituteTemplatasInCoord(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, elementType),
-                  RegionT()))))))))
+                  RegionT(expectRegionPlaceholder(expectRegion(substituteTemplatasInTemplata(coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, region.region))))))))))))
       }
       case p @ KindPlaceholderT(id @ IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune)))) => {
         if (id.initId(interner) == needleTemplateName) {
@@ -1026,13 +1033,17 @@ object TemplataCompiler {
           .templatas
           .entriesByNameT
           .collect({
-            case (RuneNameT(rune), TemplataEnvEntry(PrototypeTemplataT(PrototypeT(IdT(packageCoord, initSteps, FunctionBoundNameT(FunctionBoundTemplateNameT(humanName), templateArgs, params)), returnType)))) => {
-              val prototype = PrototypeT(IdT(packageCoord, initSteps, interner.intern(FunctionBoundNameT(interner.intern(FunctionBoundTemplateNameT(humanName)), templateArgs, params))), returnType)
-              rune -> substituter.substituteForPrototype(coutputs, prototype)
+            case (RuneNameT(rune), TemplataEnvEntry(PrototypeTemplataT(prototype))) => {
+              prototype match {
+                case PrototypeT(IdT(packageCoord, initSteps, FunctionBoundNameT(FunctionBoundTemplateNameT(humanName), templateArgs, params)), returnType) => {
+                  val prototype = PrototypeT(IdT(packageCoord, initSteps, interner.intern(FunctionBoundNameT(interner.intern(FunctionBoundTemplateNameT(humanName)), templateArgs, params))), returnType)
+                  rune -> substituter.substituteForPrototype(coutputs, prototype)
+                }
+                case _ => vcurious()
               }
-              case other => vwat(other)
-            })
-          .toMap)
+            }
+          })
+        .toMap)
   }
 
   def getFirstUnsolvedIdentifyingGenericParam(

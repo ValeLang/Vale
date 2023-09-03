@@ -306,7 +306,7 @@ class ArrayCompiler(
               // If we get any instances that are part of the newRegion, we need to interpret them
               // to the contextRegion.
               TemplataCompiler.mergeCoordRegions(
-                interner, coutputs, Map(newRegion -> region), prototype.returnType)
+                opts.globalOptions.sanityCheck, interner, coutputs, Map(newRegion -> region), prototype.returnType)
             }
           }
         val callTE =

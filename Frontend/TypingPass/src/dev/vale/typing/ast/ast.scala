@@ -31,8 +31,6 @@ case class ImplT(
 
   templata: ImplDefinitionTemplataT,
 
-  implOuterEnv: IInDenizenEnvironmentT,
-
   instantiatedId: IdT[IImplNameT],
   templateId: IdT[IImplTemplateNameT],
 

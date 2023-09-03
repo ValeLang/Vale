@@ -1,7 +1,7 @@
 package dev.vale.von
 
 import dev.vale.{Profiler, vcurious, vimpl}
-import org.apache.commons.lang.StringEscapeUtils
+import org.apache.commons.lang3.StringEscapeUtils
 
 sealed trait ISyntax
 case class VonSyntax(

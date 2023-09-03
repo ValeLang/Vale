@@ -288,7 +288,7 @@ class Instantiator(
       monouts.interfaceToImpls.map({ case (interface, impls) =>
         interface ->
           impls.map({ case (implIdT, implIdI) =>
-            val (subCitizen, parentInterface, _) = vassertSome(monouts.impls.get(implIdI))
+            val (subCitizen, parentInterface, _, _) = vassertSome(monouts.impls.get(implIdI))
             vassert(parentInterface == interface)
             val abstractFuncToVirtualIndex =
               vassertSome(monouts.interfaceToAbstractFuncToVirtualIndex.get(interface))
@@ -430,7 +430,7 @@ class Instantiator(
     vassert(
       instantiationBoundArgs.callerRuneToCalleeRuneToReachableFunc.count(_._2.nonEmpty) ==
           instantiationBoundParams.runeToCitizenRuneToReachablePrototype.count(_._2.citizenRuneToReachablePrototype.nonEmpty))
-    vassert(instantiationBoundArgs.runeToBoundImpl.size == instantiationBoundParams.runeToBoundImpl.size)
+    vassert(instantiationBoundArgs.runeToImplBoundArg.size == instantiationBoundParams.runeToBoundImpl.size)
     DenizenBoundToDenizenCallerBoundArgS(
       instantiationBoundArgs.runeToFunctionBoundArg.map({ case (calleeRune, suppliedFunctionI) =>
         vassertSome(instantiationBoundParams.runeToBoundPrototype.get(calleeRune)).id -> suppliedFunctionI
@@ -447,7 +447,7 @@ class Instantiator(
           List()
         }
       }),
-      instantiationBoundArgs.runeToBoundImpl.map({ case (calleeRune, suppliedImplT) =>
+      instantiationBoundArgs.runeToImplBoundArg.map({ case (calleeRune, suppliedImplT) =>
         vassertSome(instantiationBoundParams.runeToBoundImpl.get(calleeRune)) -> suppliedImplT
       }))
   }
@@ -673,7 +673,7 @@ class Instantiator(
           // This is a collapsed, but it needs to be subjective from this dispatcher's perspective.
 
           // TODO(regions): Figure out how to turn this into an sI.
-          dispatcherPlaceholderId -> templata
+          dispatcherPlaceholderId -> vimpl(templataC)
         })
     // In this case we'll end up with:
     //   dis/dis$I -> bool
@@ -692,7 +692,7 @@ class Instantiator(
           val IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) = implPlaceholder
           val templata = implIdC.localName.templateArgs(index)
           // TODO(regions): Figure out how to turn this into an sI.
-          casePlaceholderId -> templata
+          casePlaceholderId -> vimpl(templata.asInstanceOf[ITemplataI[sI]])
         }
       })
     val dispatcherPlaceholderIdToSuppliedTemplataMap = dispatcherPlaceholderIdToSuppliedTemplata.toMap
@@ -1296,7 +1296,7 @@ class Instantiator(
                 vassert(
                   runeToBoundArgsForCall.callerRuneToCalleeRuneToReachableFunc.count(_._2.nonEmpty) ==
                       funcT.instantiationBoundParams.runeToCitizenRuneToReachablePrototype.count(_._2.citizenRuneToReachablePrototype.nonEmpty))
-                vassert(runeToBoundArgsForCall.runeToBoundImpl.size == funcT.instantiationBoundParams.runeToBoundImpl.size)
+                vassert(runeToBoundArgsForCall.runeToImplBoundArg.size == funcT.instantiationBoundParams.runeToBoundImpl.size)
               }
               None
             }))
@@ -1579,7 +1579,7 @@ class Instantiator(
     desiredPrototypeC: PrototypeI[cI],
     functionT: FunctionDefinitionT):
   FunctionDefinitionI = {
-    val FunctionDefinitionT(headerT, _, _, bodyT) = functionT
+    val FunctionDefinitionT(headerT, _, bodyT) = functionT
 
     val FunctionHeaderT(id, attributes, params, returnType, maybeOriginFunctionTemplata) = headerT
 
@@ -3627,12 +3627,6 @@ class Instantiator(
       case FunctionBoundNameT(FunctionBoundTemplateNameT(humanName), templateArgs, params) => {
         FunctionBoundNameI(
           FunctionBoundTemplateNameI(humanName),
-          templateArgs.map(translateTemplata(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, _)),
-          params.map(translateCoord(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, _).coord))
-      }
-      case FunctionBoundNameT(FunctionBoundTemplateNameT(humanName), templateArgs, params) => {
-        ReachableFunctionNameI(
-          ReachableFunctionTemplateNameI(humanName),
           templateArgs.map(translateTemplata(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, _)),
           params.map(translateCoord(denizenName, denizenBoundToDenizenCallerSuppliedThing, substitutions, perspectiveRegionT, _).coord))
       }

@@ -1,4 +1,4 @@
-Note: For personal reasons, I'm on an extended break from the coding side of Vale, feel free to DM me on discord for details. - Evan Ovadia ([note to sponsors](https://gist.githubusercontent.com/Verdagon/569271232a94495bc3b38cd8d7469634/raw/7be2df85d125c6c1594771c4a8a87b9e763bc811/gistfile1.txt))
+Note: For personal reasons, I'm on an extended break from the coding side of Vale, feel free to DM me on discord for details. - Evan Ovadia ([note to sponsors](https://gist.githubusercontent.com/Verdagon/affd34edf1429997cc0b6dc659f5b30a/raw/71a4bfdff5b15d3d5c6be7d300d473fd909bf851/gistfile1.txt))
 
 # Vale
 

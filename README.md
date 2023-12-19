@@ -1,3 +1,5 @@
+Note: For personal reasons, I'm on an extended break from the coding side of Vale, feel free to DM me on discord for details. - Evan Ovadia ([note to sponsors](https://gist.githubusercontent.com/Verdagon/569271232a94495bc3b38cd8d7469634/raw/7be2df85d125c6c1594771c4a8a87b9e763bc811/gistfile1.txt))
+
 # Vale
 
 Vale is a programming language that's aims to be not only **fast** and **memory-safe**, but also **easy and flexible**.

@@ -1,0 +1,4 @@
+open preferences -> Build,Execution,Deployment -> CMake
+
+add this to the profile's CMake Options field:
+-G "Unix Makefiles" -DLLVM_DIR=/Users/verdagon/clang+llvm-16.0.4-arm64-apple-darwin22.0/lib/cmake/llvm

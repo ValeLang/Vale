@@ -1,0 +1,1 @@
+./build/testvalec --frontend_path ../Frontend/Frontend.jar --backend_path ../Backend/build/backend --builtins_dir ../Backend/builtins --valec_path ../Coordinator/build/valec --stdlib_dir ../stdlib --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend add64ret

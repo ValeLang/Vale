@@ -3,6 +3,7 @@ import stdlib.os.*;
 func invoke_clang(
   windows bool,
   maybe_clang_path_override &Opt<str>,
+  maybe_libc_path_override &Opt<str>,
   clang_inputs &List<Path>,
   exe_name str,
   asan bool,
@@ -13,9 +14,9 @@ func invoke_clang(
 Subprocess {
   program =
     if maybe_clang_path_override.isEmpty() {
-    if (windows) {
-      "cl.exe"
-    } else {
+      if (windows) {
+        "cl.exe"
+      } else {
         "clang"
       }
     } else {
@@ -27,6 +28,16 @@ Subprocess {
   args = List<str>();
 
   args.add("-I" + output_dir./("include").str());
+
+  if not maybe_libc_path_override.isEmpty() {
+    libc_path_str = maybe_libc_path_override.get();
+    libc_path = Path(libc_path_str);
+    if not libc_path.exists() {
+      panic("libc override dir doesn't exist: " + libc_path.str());
+    }
+    args.add("-I" + libc_path./("include").str());
+    args.add("-L" + libc_path./("lib").str());
+  }
 
   if (windows) {
     args.add("/ENTRY:\"main\"");
@@ -57,6 +68,12 @@ Subprocess {
   if (debug_symbols) {
     args.add("-g");
   }
+
+  // DO NOT SUBMIT take these out, this is a workaround for
+  // how our subprocess code doesn't handle stderr output well or something.
+  args.add("-Wno-nullability-completeness");
+  args.add("-Wno-availability");
+  args.add("-Wno-format");
 
   if (pic) {
     args.add("-fPIC");

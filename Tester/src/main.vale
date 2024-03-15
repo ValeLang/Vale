@@ -88,6 +88,18 @@ exported func main() int {
           "../Driver/build/valec",
           "Path to valec executable."),
         Flag(
+          "--clang_path",
+          FLAG_STR(),
+          "Path to clang executable.",
+          "/usr/bin/clang",
+          "Path to clang executable."),
+        Flag(
+          "--libc_path",
+          FLAG_STR(),
+          "Path to libc folder.",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr",
+          "Path to libc folder which contains lib and include."),
+        Flag(
           "--backend_tests_dir",
           FLAG_STR(),
           "Directory containing Midas tests.",
@@ -151,6 +163,18 @@ exported func main() int {
   common_build_args.add(builtins_dir.str());
 
   valec_path = Path(parsed_flags.expect_string_flag(&flags, "--valec_path"));
+
+  maybe_clang_path = parsed_flags.get_string_flag("--clang_path");
+  if not maybe_clang_path.isEmpty() {
+    common_build_args.add("--clang_override");
+    common_build_args.add(maybe_clang_path.get());
+  }
+
+  maybe_libc_path = parsed_flags.get_string_flag("--libc_path");
+  if not maybe_libc_path.isEmpty() {
+    common_build_args.add("--libc_override");
+    common_build_args.add(maybe_libc_path.get());
+  }
 
   stdlib_dir = Path(parsed_flags.expect_string_flag(&flags, "--stdlib_dir"));
 

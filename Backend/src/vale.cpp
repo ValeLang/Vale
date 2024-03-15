@@ -1248,6 +1248,12 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMInitializeX86AsmPrinter();
   LLVMInitializeX86AsmParser();
 
+  LLVMInitializeAArch64TargetInfo();
+  LLVMInitializeAArch64TargetMC();
+  LLVMInitializeAArch64Target();
+  LLVMInitializeAArch64AsmPrinter();
+  LLVMInitializeAArch64AsmParser();
+
   LLVMInitializeWebAssemblyTargetInfo();
   LLVMInitializeWebAssemblyTargetMC();
   LLVMInitializeWebAssemblyTarget();

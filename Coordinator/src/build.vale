@@ -77,9 +77,15 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
         Flag(
           "--clang_override",
           FLAG_STR(),
-          "Path to the clang binary to ue for linking.",
+          "Path to the clang binary to use for linking.",
           "clang",
           "Alternate path for the clang binary to use."),
+        Flag(
+          "--libc_override",
+          FLAG_STR(),
+          "Path to libc folder.",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr",
+          "Path to libc folder which contains lib and include."),
         Flag(
           "--benchmark",
           FLAG_BOOL(),
@@ -317,6 +323,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   }
 
   maybe_clang_path_override = parsed_flags.get_string_flag("--clang_override");
+  maybe_libc_path_override = parsed_flags.get_string_flag("--libc_override");
 
   output_dir = Path(parsed_flags.get_string_flag("--output_dir", "build"));
 
@@ -606,6 +613,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
       invoke_clang(
           windows,
           &maybe_clang_path_override,
+          &maybe_libc_path_override,
           &clang_inputs,
           &executable_name,
           asan,
@@ -617,5 +625,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   clang_return_code = (clang_process).print_and_join();
   if clang_return_code != 0 {
     panic("clang returned error code {clang_return_code}, aborting.");
+  }
+  if verbose {
+    println("Done!");
   }
 }

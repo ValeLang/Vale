@@ -5,11 +5,11 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="temurin-20" jdkType="JavaSDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="module" module-name="TypingPass" />
-    <orderEntry type="library" name="scala-sdk-2.12.17" level="application" />
+    <orderEntry type="library" name="scala-sdk-2.12.19" level="application" />
   </component>
 </module>

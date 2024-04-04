@@ -86,7 +86,7 @@ object Vivem {
             vassertSome(paackage.functions.find(_.prototype == prototype))
           }).toVector
       }).flatten.toVector match {
-        case Vector() => vfail()
+        case Vector() => vfail("No main func!")
         case Vector(m) => m
         case other => vfail(other)
       }

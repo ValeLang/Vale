@@ -1962,4 +1962,57 @@ class CompilerTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
+  test("DO NOT SUBMIT lorky lork lork bork") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.opt.*;
+        |
+        |struct _D imm { }
+        |
+        |struct _F { }
+        |func __call(self &_F, a _D, b _D) bool {
+        |  false
+        |}
+        |
+        |struct _H { }
+        |func __call(self &_H, s _D) int {
+        |  sum = 0;
+        |  // elided
+        |  return sum;
+        |}
+        |
+        |#!DeriveStructDrop // Because V might not have a default destructor
+        |struct _J<K Ref imm, V>
+        |where func drop(K)void {
+        |  key K;
+        |  value! V;
+        |}
+        |func drop<K Ref imm, V>(self _J<K, V>) void
+        |where func drop(V)void
+        |{
+        |  [k, v] = self;
+        |}
+        |
+        |#!DeriveStructDrop
+        |struct _L<K Ref imm, V, H, E>
+        |where func(&H, K)int, func(&E, K, K)bool, func drop(K)void {
+        |  hasher H;
+        |  equator E;
+        |  table! Array<mut, Opt<_J<K, V>>>;
+        |  size! int;
+        |}
+        |func drop<K Ref imm, V, H, E>(self _L<K, V, H, E>) void
+        |where func drop(V)void, func drop(H)void, func drop(E)void
+        |{
+        |  [hasher, equator, table, size] = self;
+        |}
+        |
+        |struct NotesCollector {
+        |  idByName _L<_D, int, _H, _F>;
+        |}
+  """.stripMargin)
+
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
 }

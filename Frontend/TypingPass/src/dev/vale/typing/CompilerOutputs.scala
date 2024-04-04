@@ -196,9 +196,9 @@ case class CompilerOutputs() {
         case FunctionBoundNameT(_, _, _) => {
           if (sanityCheck) {
             val callerBoundArgFuncSuperTemplateIdInitSteps =
-              TemplataCompiler.getSuperTemplate(callerBoundArgFunction.id).initSteps
+              TemplataCompiler.getSuperTemplate(callerBoundArgFunction.id).steps
             val originalCallingSuperTemplateIdInitSteps =
-              TemplataCompiler.getSuperTemplate(originalCallingTemplateId).initSteps
+              TemplataCompiler.getRootSuperTemplate(interner, originalCallingTemplateId).steps
             vassert(callerBoundArgFuncSuperTemplateIdInitSteps.startsWith(originalCallingSuperTemplateIdInitSteps))
           }
         }
@@ -237,6 +237,18 @@ case class CompilerOutputs() {
       case None =>
     }
 
+    instantiationId match {
+      case IdT(PackageCoordinate(StrI("stdlib"),Vector(StrI("ifunction"))),Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("IFunction1"))),Vector(MutabilityTemplataT(MutableT), CoordTemplataT(CoordT(BorrowT,RegionT(),StructTT(IdT(PackageCoordinate(StrI("parseiter"),Vector()),Vector(),StructNameT(StructTemplateNameT(StrI("ParseIter")),Vector()))))), CoordTemplataT(CoordT(ShareT,RegionT(),BoolT())), CoordTemplataT(CoordT(ShareT,RegionT(),StructTT(IdT(PackageCoordinate(StrI("vmdparse"),Vector()),Vector(FunctionNameT(FunctionTemplateNameT(StrI("parseSlice"),_),Vector(),Vector(CoordT(BorrowT,RegionT(),StructTT(IdT(PackageCoordinate(StrI("stdlib"),Vector(StrI("path"))),Vector(),StructNameT(StructTemplateNameT(StrI("Path")),Vector())))), CoordT(OwnT,RegionT(),StructTT(IdT(PackageCoordinate(StrI("vmdparse"),Vector()),Vector(),StructNameT(StructTemplateNameT(StrI("NotesCollector")),Vector())))), CoordT(BorrowT,RegionT(),StructTT(IdT(PackageCoordinate(StrI("parseiter"),Vector()),Vector(),StructNameT(StructTemplateNameT(StrI("ParseIter")),Vector()))))))),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))))) => {
+//        println(instantiationBoundArgs.runeToBoundPrototype.size)
+//        println(instantiationBoundArgs.runeToBoundImpl.size)
+//        println(instantiationBoundArgs.runeToCitizenRuneToReachablePrototype.size)
+//        start here // just run it. it seems to die after 83rd, and we set the pass count to 83.
+//        // it should break when we're adding the broken thing.
+
+        vpass() // InstantiationBoundArgumentsT@5134
+      }
+      case _ =>
+    }
     instantiationNameToInstantiationBounds.put(instantiationId, instantiationBoundArgs)
   }
 

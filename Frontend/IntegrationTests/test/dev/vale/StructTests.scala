@@ -222,4 +222,61 @@ class StructTests extends FunSuite with Matchers {
       case PanicException() =>
     }
   }
+
+  test("ODMFRC") {
+    // Order doesnt matter for resolving calls (ODMFRC)
+    //
+    // When it was in this order:
+    //
+    //   import v.builtins.opt.*;
+    //
+    //   struct _B { }
+    //   func __call(self &_B) int { 0 }
+    //
+    //   struct _C<H>
+    //   where func(&H)int, func drop(H)void {
+    //     hasher H;
+    //   }
+    //
+    //   struct _A {
+    //     idByName _C<_B>;
+    //   }
+    //
+    // we got an error because while compiling _A, after making its inner env, we
+    //  1. tried to resolve _C<_B>. During that, we
+    //  2. tried resolving __call(&_B), because _C's definition says that func(&H) should exist.
+    //     During that, we
+    //  3. attempted the candidate func __call(self &_B) int { 0 }. It successfully solved,
+    //     including making a call to _B<>.
+    //  4. Once we had that, we wanted to pull in all the bounds from _B, since it's a parameter
+    //     and every function wants to pull in bounds from its parameters. But to do that, it
+    //  5. looked for the inner env of _B... which didn't exist.
+    //
+    // We solved it by not doing all these steps right after making the inner env.
+    // We now do all the resolves in a phase after making the inner env.
+    //
+    // Search ODMFRC for the class that helps with this.
+
+    val code =
+      """
+        |import v.builtins.opt.*;
+        |
+        |struct _X { }
+        |func __call(self &_X) int { 0 }
+        |
+        |struct _Y<H>
+        |where func(&H)int, func drop(H)void {
+        |  hasher H;
+        |}
+        |
+        |struct _Z {
+        |  idByName _Y<_X>;
+        |}
+    """.stripMargin
+
+    for (replacements <- U.scrambles(Map("_X" -> "_A", "_Y" -> "_B", "_Z" -> "_C"))) {
+      val replacedCode = U.replaceAll(code, replacements)
+      RunCompilation.test(replacedCode).getMonouts()
+    }
+  }
 }

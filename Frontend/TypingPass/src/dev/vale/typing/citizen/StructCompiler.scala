@@ -26,6 +26,14 @@ import scala.collection.mutable
 
 case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
+// See ODMFRC.
+case class UncheckedDefiningConclusions(
+    envs: InferEnv,
+    ranges: List[RangeS],
+    callLocation: LocationInDenizen,
+    definitionRules: Vector[IRulexSR],
+    conclusions: Map[IRuneS, ITemplataT[ITemplataType]])
+
 trait IStructCompilerDelegate {
   def evaluateGenericFunctionFromNonCallForHeader(
     coutputs: CompilerOutputs,
@@ -182,7 +190,7 @@ class StructCompiler(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT):
-  Unit = {
+  UncheckedDefiningConclusions = {
     Profiler.frame(() => {
       templateArgsLayer.compileStruct(coutputs, parentRanges, callLocation, structTemplata)
     })
@@ -242,7 +250,7 @@ class StructCompiler(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceDefinitionTemplataT):
-  Unit = {
+  UncheckedDefiningConclusions = {
     templateArgsLayer.compileInterface(
       coutputs, parentRanges, callLocation, interfaceTemplata)
   }

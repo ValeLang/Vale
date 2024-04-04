@@ -285,7 +285,7 @@ class ImplCompiler(
         subCitizen,
         superInterface,
         superInterfaceTemplateId,
-        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+        InstantiationBoundArgumentsT.make[FunctionBoundNameT, ImplBoundNameT](
           runeToNeededFunctionBound,
           reachableBoundsFromSubCitizen,
           runeToNeededImplBound),
@@ -674,7 +674,7 @@ class ImplCompiler(
           opts.globalOptions.sanityCheck,
           interner,
           callingEnv.denizenTemplateId,
-          impl.implName, InstantiationBoundArgumentsT(Map(), Map(), Map()))
+          impl.implName, InstantiationBoundArgumentsT.make(Map(), Map(), Map()))
         return IsParent(impl, Map(), impl.implName)
       }
       case None =>

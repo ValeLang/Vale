@@ -593,6 +593,16 @@ sealed trait CitizenTemplateNameT extends ICitizenTemplateNameT {
 //  }
 }
 
+object CitizenTemplateNameT {
+  def unapply(x: CitizenTemplateNameT): Option[StrI] = {
+    x match {
+      case StructTemplateNameT(humanName) => Some(humanName)
+      case InterfaceTemplateNameT(humanName) => Some(humanName)
+      case _ => None
+    }
+  }
+}
+
 case class StructTemplateNameT(
   humanName: StrI,
   // We don't include a CodeLocation here because:

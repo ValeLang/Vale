@@ -160,11 +160,18 @@ object TemplataCompiler {
   def getRootSuperTemplate(interner: Interner, id: IdT[INameT]): IdT[INameT] = {
     @tailrec
     def removeTrailingLambdas(tentativeId: IdT[INameT]): IdT[INameT] = {
-      tentativeId.localName match {
-        case LambdaCitizenTemplateNameT(_) | LambdaCallFunctionTemplateNameT(_, _) => {
-          removeTrailingLambdas(tentativeId.initId(interner))
+      val containsLambda =
+        tentativeId.steps.exists {
+          case LambdaCitizenTemplateNameT(_) => true
+          case LambdaCallFunctionTemplateNameT(_, _) => true
+          case OverrideDispatcherCaseNameT(_) => true
+          case _ => false
         }
-        case _ => tentativeId
+      if (containsLambda) { // We do this logic because lambdas sometimes have FunctionNameT after them.
+        // Recurse
+        removeTrailingLambdas(tentativeId.initId(interner))
+      } else {
+        tentativeId
       }
     }
     removeTrailingLambdas(getSuperTemplate(id))
@@ -457,7 +464,7 @@ object TemplataCompiler {
           containerInstantiationBoundArgs.runeToBoundImpl.map({ case (rune, containerImplBoundArg) =>
             vassertSome(containerInstantiationBoundParams.runeToBoundImpl.get(rune)) -> containerImplBoundArg
           })
-        InstantiationBoundArgumentsT(
+        InstantiationBoundArgumentsT.make(
           instantiationBoundArgs.runeToBoundPrototype.mapValues(funcBoundArg => {
             funcBoundArg match {
               case PrototypeT(IdT(packageCoord, initSteps, fbn@FunctionBoundNameT(_, _, _)), returnType) => {
@@ -556,7 +563,7 @@ object TemplataCompiler {
     boundArgs: InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT]):
   InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT] = {
     val InstantiationBoundArgumentsT(runeToFunctionBoundArg, callerKindRuneToReachableBoundArguments, runeToImplBoundArg) = boundArgs
-    InstantiationBoundArgumentsT(
+    InstantiationBoundArgumentsT.make(
       runeToFunctionBoundArg.mapValues({ case funcBoundArg =>
         substituteTemplatasInPrototype(
           coutputs, sanityCheck, interner, keywords, originalCallingDenizenId, needleTemplateName, newSubstitutingTemplatas, boundArgumentsSource, funcBoundArg)
@@ -675,7 +682,7 @@ object TemplataCompiler {
             interner,
             originalCallingDenizenId,
             importedId,
-            InstantiationBoundArgumentsT[IFunctionNameT, IImplNameT](Map(), Map(), Map()))
+            InstantiationBoundArgumentsT.make[IFunctionNameT, IImplNameT](Map(), Map(), Map()))
           importedId
       }
       case _ => {
@@ -718,7 +725,7 @@ object TemplataCompiler {
       interner,
       originalCallingDenizenId,
       newId,
-      InstantiationBoundArgumentsT(Map(), Map(), Map()))
+      InstantiationBoundArgumentsT.make(Map(), Map(), Map()))
 
     newId
   }

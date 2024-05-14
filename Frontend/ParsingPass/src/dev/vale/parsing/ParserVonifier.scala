@@ -382,6 +382,7 @@ object ParserVonifier {
     thing match {
       case WeakableAttributeP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case SealedAttributeP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case LinearAttributeP(range) => VonObject("LinearAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ExportAttributeP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case MacroCallP(range, dontCall, name) => {
         VonObject(

@@ -92,6 +92,7 @@ class Keywords(interner: Interner) {
   // Every type, including interfaces, has a function of this name. These won't be virtual.
   val drop: StrI = interner.intern(StrI("drop"))
   val free: StrI = interner.intern(StrI("free"))
+  val linear: StrI = interner.intern(StrI("linear"))
   val not: StrI = interner.intern(StrI("not"))
   val range: StrI = interner.intern(StrI("range"))
   val begin: StrI = interner.intern(StrI("begin"))
@@ -189,4 +190,6 @@ class Keywords(interner: Interner) {
   val Err = interner.intern(StrI("Err"))
   val Functor1 = interner.intern(StrI("Functor1"))
   val my_module: StrI = interner.intern(StrI("my_module"))
+
+  val rust: StrI = interner.intern(StrI("rust"))
 }

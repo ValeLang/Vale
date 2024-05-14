@@ -788,12 +788,6 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Ok(None) =>
     }
 
-    parseDestruct(iter, stopOnCurlied) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(x)
-      case Ok(None) =>
-    }
-
     vassert(iter.hasNext)
 
     val letOrLoneExpr =
@@ -1463,6 +1457,14 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     parseIfLadder(iter) match {
       case Err(e) => return Err(e)
       case Ok(Some(e)) => return Ok(e)
+      case Ok(None) =>
+    }
+
+    // This is here so we can do things like: [name] = destruct event;
+    // DO NOT SUBMIT add test
+    parseDestruct(iter, stopOnCurlied) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(x)) => return Ok(x)
       case Ok(None) =>
     }
 

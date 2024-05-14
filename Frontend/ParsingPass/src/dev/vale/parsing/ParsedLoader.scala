@@ -717,6 +717,7 @@ class ParsedLoader(interner: Interner) {
       case "AdditiveAttribute" => AdditiveAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ExportAttribute" => ExportAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ExternAttribute" => ExternAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "LinearAttribute" => LinearAttributeP(loadRange(getObjectField(jobj, "range")))
       case "BuiltinAttribute" => {
         BuiltinAttributeP(
           loadRange(getObjectField(jobj, "range")),

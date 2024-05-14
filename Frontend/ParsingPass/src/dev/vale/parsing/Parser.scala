@@ -520,6 +520,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     attrL match {
       case AbstractAttributeL(range) => Ok(AbstractAttributeP(range))
       case ExternAttributeL(range, None) => Ok(ExternAttributeP(range))
+      case LinearAttributeL(range) => Ok(LinearAttributeP(range))
       case ExternAttributeL(range, Some(maybeName)) => {
         val name =
           maybeName.contents match {

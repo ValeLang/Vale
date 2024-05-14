@@ -12,6 +12,7 @@ import dev.vale.highertyping.{FunctionA, HigherTypingCompilation}
 import dev.vale.solver.RuleError
 import OverloadResolver._
 import dev.vale.Collector.ProgramWithExpect
+import dev.vale.parsing.ast.DontCallMacroP
 import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.{FailedSolve, RuleError, Step}
@@ -442,6 +443,7 @@ class CompilerTests extends FunSuite with Matchers {
         FinalT) =>
     }
   }
+
 
   test("Automatically drops struct") {
     val compile = CompilerTestCompilation.test(
@@ -1961,5 +1963,4 @@ class CompilerTests extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
   }
-
 }

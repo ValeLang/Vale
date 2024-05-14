@@ -695,7 +695,15 @@ class PostParser(
     val tyype = TemplateTemplataType(genericParametersS.map(_.tyype.tyype), KindTemplataType())
 
     val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(file, structName, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))
+    val attrsWithoutLinearS = translateCitizenAttributes(file, structName, attributesP.filter({ case WeakableAttributeP(_) => false case LinearAttributeP(_) => false case _ => true}))
+    val attrsS =
+      attrsWithoutLinearS ++
+          (attributesP.collectFirst({ case w@LinearAttributeP(_) => w }) match {
+            case None => None
+            case Some(LinearAttributeP(range)) => {
+              Some(MacroCallS(evalRange(file, range), DontCallMacroP, keywords.DeriveStructDrop))
+            }
+          })
 
 //    val runeSToCanonicalRune = ruleBuilder.runeSToTentativeRune.mapValues(tentativeRune => tentativeRuneToCanonicalRune(tentativeRune))
 
@@ -876,7 +884,15 @@ class PostParser(
       })
 
     val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(file, interfaceFullName, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))
+    val attrsWithoutLinearS = translateCitizenAttributes(file, interfaceFullName, attributesP.filter({ case WeakableAttributeP(_) => false case LinearAttributeP(_) => false case _ => true }))
+    val attrsS =
+      attrsWithoutLinearS ++
+          (attributesP.collectFirst({ case w@LinearAttributeP(_) => w }) match {
+            case None => None
+            case Some(LinearAttributeP(range)) => {
+              Some(MacroCallS(evalRange(file, range), DontCallMacroP, keywords.DeriveStructDrop))
+            }
+          })
 
     val interfaceS =
       InterfaceS(

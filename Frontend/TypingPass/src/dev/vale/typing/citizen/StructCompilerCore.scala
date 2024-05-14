@@ -152,7 +152,7 @@ class StructCompilerCore(
         mutability,
         members,
         false,
-        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+        InstantiationBoundArgumentsT.make[FunctionBoundNameT, ImplBoundNameT](
           runeToFunctionBound,
           Map(), // Structs don't have reachable bounds
           runeToImplBound))
@@ -230,7 +230,7 @@ class StructCompilerCore(
         translateCitizenAttributes(attributesWithoutExportOrMacros),
         interfaceA.weakable,
         mutability,
-        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+        InstantiationBoundArgumentsT.make[FunctionBoundNameT, ImplBoundNameT](
           runeToFunctionBound,
           Map(), // Interfaces don't have reachable bounds
           runeToImplBound),
@@ -326,7 +326,7 @@ class StructCompilerCore(
       interner,
       understructTemplatedId,
       understructInstantiatedId,
-      InstantiationBoundArgumentsT(
+      InstantiationBoundArgumentsT.make(
         Map(),
         Map(), // Structs don't have reachable bounds
         Map()))
@@ -388,7 +388,7 @@ class StructCompilerCore(
         members,
         true,
         // Closures have no function bounds or impl bounds
-        InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](
+        InstantiationBoundArgumentsT.make[FunctionBoundNameT, ImplBoundNameT](
           Map(),
           Map(), // Structs don't have reachable bounds
           Map()));

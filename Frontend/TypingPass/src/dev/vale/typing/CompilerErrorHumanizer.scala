@@ -596,10 +596,11 @@ object CompilerErrorHumanizer {
         humanizeId(codeMap, header.id)
       }
       case PrototypeTemplataCalleeCandidate(prototypeT) => {
-        vimpl() // Need a good test case that shows this is even possible.
-        val begin = vimpl()//lineRangeContaining(range.begin).begin
-        codeMap(begin) + ":\n" +
-          lineRangeContaining(begin).begin + "\n"
+////        vimpl() // Need a good test case that shows this is even possible.
+//        val begin = vimpl()//lineRangeContaining(range.begin).begin
+//        codeMap(begin) + ":\n" +
+//          lineRangeContaining(begin).begin + "\n"
+        prototypeT.id.localName + ":\n"
       }
       case FunctionCalleeCandidate(ft) => {
         val begin = lineRangeContaining(ft.function.range.begin).begin
@@ -820,6 +821,7 @@ object CompilerErrorHumanizer {
       }
       case StructTemplateNameT(humanName) => humanName.str
       case InterfaceTemplateNameT(humanName) => humanName.str
+      case p @ NonKindNonRegionPlaceholderNameT(index, rune) => p.toString // DO NOT SUBMIT
     }
   }
 

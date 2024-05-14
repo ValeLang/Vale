@@ -46,7 +46,7 @@ class TypingPassCompilation(
             options,
             interner,
             keywords)
-        compiler.evaluate(higherTypingCompilation.expectAstrouts()) match {
+        compiler.evaluate(getCodeMap().getOrDie(), higherTypingCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)
           case Ok(hinputs) => {
             hinputsCache = Some(hinputs)

@@ -102,6 +102,15 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
   }
 
+  test("Linear struct") {
+    val program1 = compile("linear struct Moo { x int; }")
+
+    val myStruct = program1.lookupStruct("Moo")
+    Collector.only(myStruct.attributes, {
+      case MacroCallS(_, DontCallMacroP, StrI("DeriveStructDrop")) =>
+    })
+  }
+
   test("Lambda") {
     val program1 = compile("exported func main() int { return {_ + _}(4, 6); }")
 

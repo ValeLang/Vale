@@ -375,14 +375,14 @@ class FunctionCompilerCore(
           interner,
           env.templateId,
           externPrototype.id,
-          InstantiationBoundArgumentsT(Map(), Map(), Map()))
+          InstantiationBoundArgumentsT.make(Map(), Map(), Map()))
 
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })
         val function2 =
           FunctionDefinitionT(
             header,
-            InstantiationBoundArgumentsT[FunctionBoundNameT, ImplBoundNameT](Map(), Map(), Map()),
+            InstantiationBoundArgumentsT.make[FunctionBoundNameT, ImplBoundNameT](Map(), Map(), Map()),
             ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         coutputs.declareFunctionReturnType(header.toSignature, header.returnType)

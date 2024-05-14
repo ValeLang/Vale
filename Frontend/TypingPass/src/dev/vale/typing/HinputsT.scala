@@ -16,16 +16,34 @@ case class InstantiationReachableBoundArgumentsT[R <: IFunctionNameT](
   citizenRuneToReachablePrototype: Map[IRuneS, PrototypeT[R]]
 )
 
+object InstantiationBoundArgumentsT {
+  def make[BF <: IFunctionNameT, BI <: IImplNameT](
+      runeToBoundPrototype: Map[IRuneS, PrototypeT[BF]],
+      runeToCitizenRuneToReachablePrototype: Map[IRuneS, InstantiationReachableBoundArgumentsT[BF]],
+      runeToBoundImpl: Map[IRuneS, IdT[BI]]):
+  InstantiationBoundArgumentsT[BF, BI] = {
+    InstantiationBoundArgumentsT(
+      (scala.collection.immutable.HashMap.newBuilder ++= runeToBoundPrototype).result(),
+      (scala.collection.immutable.HashMap.newBuilder ++= runeToCitizenRuneToReachablePrototype).result(),
+          (scala.collection.immutable.HashMap.newBuilder ++= runeToBoundImpl).result())
+  }
+}
+
 case class InstantiationBoundArgumentsT[BF <: IFunctionNameT, BI <: IImplNameT](
   // This is the callee's rune to the prototype that satisfies it.
   // If this is at the call site, then this might be a real function like func drop(int)void.
   // If this is the instantiation bound params in the definition, then this will be a bound like func drop(T)void.
-  runeToBoundPrototype: Map[IRuneS, PrototypeT[BF]],
+  runeToBoundPrototype: scala.collection.immutable.HashMap[IRuneS, PrototypeT[BF]],
   // This is empty for structs and interfaces.
   // For functions, this includes all the bounds that are inherited from structs and interfaces.
-  runeToCitizenRuneToReachablePrototype: Map[IRuneS, InstantiationReachableBoundArgumentsT[BF]],
+  runeToCitizenRuneToReachablePrototype: scala.collection.immutable.HashMap[IRuneS, InstantiationReachableBoundArgumentsT[BF]],
   // Same as runeToBoundPrototype but for impls.
-  runeToBoundImpl: Map[IRuneS, IdT[BI]]) {
+  runeToBoundImpl: scala.collection.immutable.HashMap[IRuneS, IdT[BI]]) {
+
+//  println("Made Inst bound args size:")
+//  println(runeToBoundPrototype.size)
+//  println(runeToCitizenRuneToReachablePrototype.size)
+//  println(runeToBoundImpl.size)
 
   vassert(!runeToCitizenRuneToReachablePrototype.exists(_._2.citizenRuneToReachablePrototype.isEmpty))
 }

@@ -30,7 +30,7 @@ cmake --build build || echo "Backend build failed, aborting." && exit /b 1
 cd ..\Frontend
 
 echo Compiling Frontend...
-call sbt assembly || echo "Frontend build failed, aborting." && exit /b 1
+call sbt 'set test in assembly := {}' clean assembly || echo "Frontend build failed, aborting." && exit /b 1
 
 
 cd ..\Coordinator

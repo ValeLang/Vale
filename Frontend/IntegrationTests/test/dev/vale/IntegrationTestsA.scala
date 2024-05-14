@@ -289,6 +289,21 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonBool(false) => }
   }
 
+  // See LCCSL
+  test("Lambda can call sibling lambda") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  continueF = (x) => { x };
+        |  barkF = (x) => { continueF(x) };
+        |  return barkF(42);
+        |}
+    """.stripMargin)
+    compile.evalForKind(Vector()) match {
+      case VonInt(42) =>
+    }
+  }
+
   test("set swapping locals") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/mutswaplocals.vale"))
     compile.evalForKind(Vector()) match { case VonInt(42) => }

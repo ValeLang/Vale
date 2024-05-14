@@ -96,6 +96,9 @@ class Lexer(interner: Interner, keywords: Keywords) {
     } else if (iter.trySkipCompleteWord("exported")) {
       val end = iter.getPos()
       Ok(Some(ExportAttributeL(RangeL(attributeBegin, end))))
+    } else if (iter.trySkipCompleteWord("linear")) {
+      val end = iter.getPos()
+      Ok(Some(LinearAttributeL(RangeL(attributeBegin, end))))
     } else if (iter.trySkipCompleteWord("weakable")) {
       val end = iter.getPos()
       Ok(Some(WeakableAttributeL(RangeL(attributeBegin, end))))

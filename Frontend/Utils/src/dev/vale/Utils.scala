@@ -264,4 +264,61 @@ object U {
     })
     result.toMap
   }
+
+  def filterOut[T, Y](
+      in: Array[T],
+      filter: PartialFunction[T, Y])
+      (implicit m1: ClassTag[T], m2: ClassTag[Y]):
+  (Array[Y], Array[T]) = {
+    val nonmatching = new Array[T](in.length)
+    var nonmatchingI = 0
+    val matching = new Array[Y](in.length)
+    var matchingI = 0
+    for (x <- in) {
+      if (filter.isDefinedAt(x)) {
+        matching(matchingI) = filter(x);
+        matchingI = matchingI + 1
+      } else {
+        nonmatching(nonmatchingI) = x;
+        nonmatchingI = nonmatchingI + 1
+      }
+    }
+    (matching.slice(0, matchingI), nonmatching.slice(0, nonmatchingI))
+  }
+
+//  def concat[T](a: Array[T], b: Array[T])(implicit m1: ClassTag[T]): Array[T] = {
+//    val arr = new Array[T](a.length + b.length)
+//    var i = 0
+//    for (x <- a) {
+//      arr(i) = x
+//      i = i + 1
+//    }
+//    for (x <- b) {
+//      arr(i) = x
+//      i = i + 1
+//    }
+//    arr
+//  }
+
+  def replaceAll(original: String, replacements: Map[String, String]): String = {
+    var str = original
+    for ((from, to) <- replacements) {
+      str = str.replace(from, to)
+    }
+    str
+  }
+
+  // Get all possible versions of originalMap where the keys are the same
+  // but the value for each is randomized.
+  def scrambles[T, Y](originalMap: Map[T, Y]): Array[Map[T, Y]] = {
+    val originalKeys = originalMap.keys
+    val originalVals = originalMap.values.toList
+
+    val valsPermuted = originalVals.permutations.toList
+    val keysRepeated = U.repeat(originalKeys, valsPermuted.size)
+
+    keysRepeated.zip(valsPermuted)
+        .map({ case (keys, vals) => keys.zip(vals).toMap })
+        .toArray // TODO: optimize
+  }
 }

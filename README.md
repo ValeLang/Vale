@@ -1,4 +1,3 @@
-Note: For personal reasons, I'm on an extended break from the coding side of Vale, feel free to DM me on discord for details. - Evan Ovadia ([note to sponsors](https://gist.githubusercontent.com/Verdagon/9d5e578d420c28af20d7ee0572457bd5/raw/1328d190e97f02c9f4e097d9848c3d87f9fffc62/gistfile1.txt))
 
 # Vale
 
@@ -9,10 +8,7 @@ Vale is a programming language that's aims to be not only **fast** and **memory-
  * **Easy:** Vale has memory-safe single ownership without garbage collection or a borrow checker, which makes it easy to write safe, fast code.
 
 
-See http://vale.dev/ for more information on the language. We're also open for [sponsorship](https://github.com/sponsors/ValeLang), thank you to all our sponsors for enabling our ambitious endeavor!
-
-
-See also our [treasure trove of working examples](https://github.com/Ivo-Balbaert/Vale_Examples), grouped by functionality.
+See http://vale.dev/ for more information on the language, and see our [treasure trove of working examples](https://github.com/Ivo-Balbaert/Vale_Examples), grouped by functionality.
 
 
 ## Building a Vale Program

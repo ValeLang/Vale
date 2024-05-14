@@ -116,12 +116,15 @@ object PostParserErrorHumanizer {
       case GlobalFunctionFamilyNameS(n) => n
 //      case DropNameS(_) => "(drop)"
       case MagicParamNameS(codeLocation) => "(magic)"
+      case ConstructorNameS(inner) => "constructor<" + humanizeName(inner) + ">"
       case CodeVarNameS(name) => name.str
       case ArbitraryNameS() => "(arbitrary)"
       case RuneNameS(rune) => humanizeRune(rune)
       case ConstructingMemberNameS(name) => "member " + name
       case FunctionNameS(name, codeLocation) => name.str
       case AnonymousSubstructTemplateNameS(tlcd) => humanizeName(tlcd) + ".anonymous"
+      case AnonymousSubstructImplDeclarationNameS(interface) => humanizeName(interface) + ".anonimpl"
+      case ForwarderFunctionDeclarationNameS(inner, index) => humanizeName(inner) + ".forwarder" + index
       case TopLevelCitizenDeclarationNameS(name, range) => name.str
       case RuntimeSizedArrayDeclarationNameS() => "__rsa"
       case ImplDeclarationNameS(_) => "(impl)"

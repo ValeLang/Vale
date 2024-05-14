@@ -56,7 +56,7 @@ shift;
 cd Frontend
 
 echo Compiling Frontend...
-sbt assembly || { echo 'Frontend build failed.' ; exit 1; }
+sbt 'set test in assembly := {}' clean assembly || { echo 'Frontend build failed.' ; exit 1; }
 
 cd ../Backend
 

@@ -75,7 +75,7 @@ source ~/.zshrc
 cd Frontend
 
 echo Compiling Frontend...
-sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
+sbt 'set test in assembly := {}' clean assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 
 cd ../Backend
 
@@ -124,7 +124,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --stdlib_dir ./BuiltValeCompiler/stdlib --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --stdlib_dir ./BuiltValeCompiler/stdlib --clang_path ~/clang+llvm-16.0.4-arm64-apple-darwin22.0/bin/clang --libc_path /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

@@ -1,6 +1,5 @@
 package dev.vale
 
-import com.sun.tools.javac.util.ArrayUtils
 import dev.vale.parsing.ast.ImmutableP
 import dev.vale.typing.NewImmRSANeedsCallable
 import dev.vale.typing.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}

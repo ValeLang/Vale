@@ -663,7 +663,12 @@ class Instantiator(
               // - ri$J -> dis$J
               implPlaceholderToDispatcherPlaceholder
                   .find(_._2 == dispatcherPlaceholderTemplata))._1
-          val IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) = implPlaceholder
+          val index =
+            implPlaceholder match {
+              case IdT(_, _, KindPlaceholderNameT(KindPlaceholderTemplateNameT(index, rune))) => index
+              case IdT(_, _, NonKindNonRegionPlaceholderNameT(index, rune)) => index
+              case other => vwat(other)
+            }
           // Here we're grabbing it from the instantiated impl that we're overriding, here ri<bool, str>.
           val templataC = implIdC.localName.templateArgs(index)
           // This is a collapsed, but it needs to be subjective from this dispatcher's perspective.
@@ -1373,29 +1378,39 @@ class Instantiator(
       case IdT(_, _, last) => {
         last match {
           case LambdaCallFunctionNameT(_, _, _) => {
-            (denizenName.steps.last, desiredPrototypeS.id.steps.init.init.last) match {
-              case (
-                  FunctionNameT(FunctionTemplateNameT(nameA,codeLocA),templateArgsA,parametersA),
-                  FunctionNameIX(FunctionTemplateNameI(nameB,codeLocB),templateArgsB,parametersB)) => {
-                // Make sure we're talking about roughly the same function
-                vassert(nameA == nameB)
-                vassert(codeLocA == codeLocB)
-                vassert(templateArgsA.length == templateArgsB.length)
-                vassert(parametersA.length == parametersB.length)
-                // Could we have a false positive here if we're doing things on different templates?
-                // I don't think so.
-              }
-              case (
-                  LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(codeLocA,paramsTTA),templateArgsA,parametersA),
-                  LambdaCallFunctionNameI(LambdaCallFunctionTemplateNameI(codeLocB,paramsTTB),templateArgsB,parametersB)) => {
-                // Make sure we're talking about roughly the same function
-                vassert(codeLocA == codeLocB)
-                vassert(paramsTTA == paramsTTB)
-                vassert(templateArgsA.length == templateArgsB.length)
-                vassert(parametersA.length == parametersB.length)
-              }
-              case other => vwat(other)
-            }
+            // Lambdas Can Call Sibling Lambdas (LCCSL)
+            // If we want to call a lambda, there are three possibilities I've seen:
+            // - We're in the root denizen and we want to call our own lambda.
+            // - We're in a lambda and we want to call an even deeper lambda.
+            // - (This is the weird one) we want to call a *sibling* lambda.
+            // In all cases, make sure the denizen roots of everyone agree.
+            val denizenRootSuperTemplate = TemplataCompiler.getRootSuperTemplate(interner, denizenName)
+            val desiredPrototypeRootSuperTemplate = TemplataCompiler.getRootSuperTemplate(interner, desiredPrototypeT.id)
+            vassert(denizenRootSuperTemplate == desiredPrototypeRootSuperTemplate)
+
+//            (denizenName.steps.last, desiredPrototypeS.id.steps.init.init.last) match {
+//              case (
+//                  FunctionNameT(FunctionTemplateNameT(nameA,codeLocA),templateArgsA,parametersA),
+//                  FunctionNameIX(FunctionTemplateNameI(nameB,codeLocB),templateArgsB,parametersB)) => {
+//                // Make sure we're talking about roughly the same function
+//                vassert(nameA == nameB)
+//                vassert(codeLocA == codeLocB)
+//                vassert(templateArgsA.length == templateArgsB.length)
+//                vassert(parametersA.length == parametersB.length)
+//                // Could we have a false positive here if we're doing things on different templates?
+//                // I don't think so.
+//              }
+//              case (
+//                  LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(codeLocA,paramsTTA),templateArgsA,parametersA),
+//                  LambdaCallFunctionNameI(LambdaCallFunctionTemplateNameI(codeLocB,paramsTTB),templateArgsB,parametersB)) => {
+//                // Make sure we're talking about roughly the same function
+//                vassert(codeLocA == codeLocB)
+//                vassert(paramsTTA == paramsTTB)
+//                vassert(templateArgsA.length == templateArgsB.length)
+//                vassert(parametersA.length == parametersB.length)
+//              }
+//              case other => vwat(other)
+//            }
           }
           case _ =>
         }

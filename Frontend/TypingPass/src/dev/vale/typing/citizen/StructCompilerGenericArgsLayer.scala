@@ -303,7 +303,7 @@ class StructCompilerGenericArgsLayer(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     structTemplata: StructDefinitionTemplataT):
-  Unit = {
+  UncheckedDefiningConclusions = {
     Profiler.frame(() => {
       val StructDefinitionTemplataT(declaringEnv, structA) = structTemplata
       val structTemplateName = nameTranslator.translateStructName(structA.name)
@@ -351,15 +351,14 @@ class StructCompilerGenericArgsLayer(
           case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, e))
           case Ok(conclusions) => conclusions
         }
-      val instantiationBoundArgsUNUSED =
-        inferCompiler.checkDefiningConclusionsAndResolve(
-          envs, coutputs, structA.range :: parentRanges, callLocation, definitionRules, Vector(), inferences) match {
-          case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(structA.range :: parentRanges, DefiningResolveConclusionError(f)))
-          case Ok(c) => c
-        }
-      // We don't care about these, we just wanted things to be added to the coutputs.
-      val _ = instantiationBoundArgsUNUSED
-
+      // Be sure to eventually check these conclusions
+      val uncheckedDefiningConclusions =
+        UncheckedDefiningConclusions(
+          envs,
+          structA.range :: parentRanges,
+          callLocation,
+          definitionRules,
+          inferences)
 
       structA.maybePredictedMutability match {
         case None => {
@@ -389,6 +388,8 @@ class StructCompilerGenericArgsLayer(
       coutputs.declareTypeInnerEnv(structTemplateId, innerEnv)
 
       core.compileStruct(outerEnv, innerEnv, coutputs, parentRanges, callLocation, structA)
+
+      uncheckedDefiningConclusions
     })
   }
 
@@ -397,7 +398,7 @@ class StructCompilerGenericArgsLayer(
     parentRanges: List[RangeS],
     callLocation: LocationInDenizen,
     interfaceTemplata: InterfaceDefinitionTemplataT):
-  Unit = {
+  UncheckedDefiningConclusions = {
     Profiler.frame(() => {
       val InterfaceDefinitionTemplataT(declaringEnv, interfaceA) = interfaceTemplata
       val interfaceTemplateName = nameTranslator.translateInterfaceName(interfaceA.name)
@@ -445,14 +446,9 @@ class StructCompilerGenericArgsLayer(
           case Err(e) => throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, e))
           case Ok(conclusions) => conclusions
         }
-      val instantiationBoundArgsUNUSED =
-        inferCompiler.checkDefiningConclusionsAndResolve(
-          envs, coutputs, interfaceA.range :: parentRanges, callLocation, definitionRules, Vector(), inferences) match {
-          case Err(f) => throw CompileErrorExceptionT(TypingPassDefiningError(interfaceA.range :: parentRanges, DefiningResolveConclusionError(f)))
-          case Ok(c) => c
-        }
-      // We don't care about these, we just wanted things to be added to the coutputs.
-      val _ = instantiationBoundArgsUNUSED
+      val uncheckedConclusions =
+        UncheckedDefiningConclusions(
+          envs, interfaceA.range :: parentRanges, callLocation, definitionRules, inferences)
 
       interfaceA.maybePredictedMutability match {
         case None => {
@@ -481,6 +477,8 @@ class StructCompilerGenericArgsLayer(
       coutputs.declareTypeInnerEnv(interfaceTemplateId, innerEnv)
 
       core.compileInterface(outerEnv, innerEnv, coutputs, parentRanges, callLocation, interfaceA)
+
+      uncheckedConclusions
     })
   }
 

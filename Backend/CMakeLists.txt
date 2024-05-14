@@ -31,6 +31,7 @@ set(LLVM_LINK_COMPONENTS
 		Support
 		IRReader
 		Passes
+		aarch64asmparser aarch64codegen aarch64desc aarch64disassembler aarch64info
 		x86asmparser x86codegen x86desc x86disassembler x86info
 		webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo
 )

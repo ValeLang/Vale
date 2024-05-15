@@ -1,5 +1,6 @@
 import stdlib.collections.list.*;
 import stdlib.resultutils.*;
+import stdlib.stringutils.*;
 
 export Array<imm, str> as StrArray;
 export Array<mut, str> as MutStrArray;

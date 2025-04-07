@@ -21,3 +21,9 @@ extern int64_t stdlib_xor(int64_t a, int64_t b) {
 extern int64_t stdlib_i64(int32_t x) {
   return x;
 }
+extern int64_t stdlib_or(int64_t x, int64_t b) {
+  return x | b;
+}
+extern int64_t stdlib_and(int64_t x, int64_t b) {
+  return x & b;
+}

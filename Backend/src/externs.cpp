@@ -60,9 +60,9 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   assert(LLVMGetIntrinsicID(longjmpIntrinsic.ptrLE));
 
   stacksaveIntrinsic = addExtern(mod, "llvm.stacksave", int8PtrLT, {});
-  assert(LLVMGetIntrinsicID(setjmpIntrinsic.ptrLE));
+  assert(LLVMGetIntrinsicID(stacksaveIntrinsic.ptrLE));
   stackrestoreIntrinsic = addExtern(mod, "llvm.stackrestore", voidLT, {int8PtrLT});
-  assert(LLVMGetIntrinsicID(longjmpIntrinsic.ptrLE));
+  assert(LLVMGetIntrinsicID(stackrestoreIntrinsic.ptrLE));
 
   strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyPtrLT, int8PtrLT});
   strEquatorCallLF = addExtern(mod, "strEquatorCall", int1LT, {emptyPtrLT, int8PtrLT, int8PtrLT});

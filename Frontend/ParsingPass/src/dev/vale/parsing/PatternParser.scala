@@ -76,7 +76,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
       maybeNameFromParameter match {
         case None => return Err(EmptyPattern(patternBegin))
         case Some(WordLE(range, str)) => {
-          Ok(
+          return Ok(
             PatternPP(
               RangeL(patternBegin, iter.getPrevEndPos()),
               Some(DestinationLocalP(LocalNameDeclarationP(NameP(range, str)), None)),

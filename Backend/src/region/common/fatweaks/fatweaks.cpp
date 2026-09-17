@@ -22,6 +22,11 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
           weakRefM->ownership == Ownership::IMMUTABLE_BORROW ||
               weakRefM->ownership == Ownership::WEAK);
       break;
+    case RegionOverride::SAFE_FASTEST:
+      assert(
+          weakRefM->ownership == Ownership::MUTABLE_BORROW ||
+              weakRefM->ownership == Ownership::WEAK);
+      break;
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
       assert(weakRefM->ownership == Ownership::WEAK);
@@ -50,6 +55,11 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
       assert(
           weakRefM->ownership == Ownership::IMMUTABLE_BORROW ||
               weakRefM->ownership == Ownership::MUTABLE_BORROW ||
+              weakRefM->ownership == Ownership::WEAK);
+      break;
+    case RegionOverride::SAFE_FASTEST:
+      assert(
+          weakRefM->ownership == Ownership::MUTABLE_BORROW ||
               weakRefM->ownership == Ownership::WEAK);
       break;
     case RegionOverride::FAST:

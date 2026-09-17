@@ -1,0 +1,29 @@
+[package]
+name = "frontend_rust"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+links = "vale_backend"
+
+[build-dependencies]
+cmake = "0.1"
+
+[dependencies]
+bumpalo = { version = "3", features = ["collections", "allocator-api2"] }
+indexmap = "2"
+hashbrown = "0.16"
+rustc-hash = "2"
+paste = "1"
+clap = { version = "4", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lib]
+name = "frontend_rust"
+path = "src/lib.rs"
+
+[[bin]]
+name = "valec"
+path = "src/bin/valec/main.rs"
+

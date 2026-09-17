@@ -1,0 +1,33 @@
+// From Frontend/IntegrationTests/test/dev/vale/
+// Most files are still wrapped Scala (one /* */ block) awaiting slice-pipeline;
+// they compile as empty modules until migrated.
+mod after_regions_integration_tests;
+mod arithmetic_tests_a;
+mod array_list_test;
+mod array_tests;
+mod block_tests;
+mod closure_tests;
+mod conjunction_tests;
+mod float_tests;
+mod hammer_tests;
+mod hash_map_tests;
+mod if_tests;
+mod import_tests;
+mod infer_template_tests;
+mod integration_tests_a;
+mod integration_tests_b;
+mod integration_tests_c;
+mod opt_tests;
+mod ownership_tests;
+mod pack_tests;
+mod pattern_tests;
+mod print_tests;
+mod pure_function_tests;
+mod result_tests;
+mod run_compilation;
+mod string_tests;
+mod struct_tests;
+mod tuple_tests;
+mod virtual_tests;
+mod weak_tests;
+mod while_tests;

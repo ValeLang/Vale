@@ -1,0 +1,6 @@
+tab_spaces = 2
+max_width = 100
+use_small_heuristics = "Max"
+fn_call_width = 100
+attr_fn_like_width = 100
+chain_width = 100

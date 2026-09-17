@@ -1,11 +1,15 @@
-Vale Compiler, version {valec_version}
+Vale Compiler
 http://vale.dev/
 
-To run a program:
-  {valec_exe} build [options] [module directory mappings]
+Check version:
+  ./valec --version
 
-Run `{valec_exe} help build` for more.
+To compile a program:
+  ./valec build [options] [module directory mappings]
 
 Example:
-  {valec_exe} build --output_dir target hello=.{sep}samples{sep}helloworld
-  target{sep}main
+  ./valec build --output-dir target hello=./samples/helloworld
+  ./target/main
+
+Run `./valec build --help` for the full list of build options.
+Run `./valec --help` for the top-level command list.

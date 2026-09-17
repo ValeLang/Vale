@@ -1,0 +1,1 @@
+../../Guardian/docs/skills/guardian-diagnose.md

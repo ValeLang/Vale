@@ -1,0 +1,1 @@
+../../../docs/skills/guardian-ordain.md

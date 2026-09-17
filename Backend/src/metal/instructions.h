@@ -175,7 +175,40 @@ public:
 class InterfaceToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceKind* targetInterfaceRef;
+  Reference* sourceInterfaceType;
+  InterfaceKind* sourceInterfaceKind;
+  Reference* targetInterfaceType;
+  InterfaceKind* targetInterfaceKind;
+
+  InterfaceToInterfaceUpcast(
+      Expression* sourceExpr_,
+      Reference* sourceInterfaceType_,
+      InterfaceKind* sourceInterfaceKind_,
+      Reference* targetInterfaceType_,
+      InterfaceKind* targetInterfaceKind_) :
+      sourceExpr(sourceExpr_),
+      sourceInterfaceType(sourceInterfaceType_),
+      sourceInterfaceKind(sourceInterfaceKind_),
+      targetInterfaceType(targetInterfaceType_),
+      targetInterfaceKind(targetInterfaceKind_) {}
+};
+
+class IsSameInstance : public Expression {
+public:
+  Expression* leftExpr;
+  Reference* leftType;
+  Expression* rightExpr;
+  Reference* rightType;
+
+  IsSameInstance(
+      Expression* leftExpr_,
+      Reference* leftType_,
+      Expression* rightExpr_,
+      Reference* rightType_) :
+    leftExpr(leftExpr_),
+    leftType(leftType_),
+    rightExpr(rightExpr_),
+    rightType(rightType_) {}
 };
 
 class LocalStore : public Expression {

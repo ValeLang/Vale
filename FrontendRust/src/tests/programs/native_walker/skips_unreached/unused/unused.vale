@@ -1,0 +1,5 @@
+// This file lives in the `vtest.unused` package. The program in test.vale
+// does not import or reference anything from here, so the Frontend never
+// reaches this package — and the Frontend-driven native walker therefore
+// must NOT compile native/broken.c. If it did, clang would error.
+extern func never_called() int;

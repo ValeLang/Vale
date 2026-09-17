@@ -1,0 +1,1 @@
+../../../docs/skills/fire-commit.md

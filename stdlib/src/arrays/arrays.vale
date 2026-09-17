@@ -96,3 +96,22 @@ func next<M Mutability, E>(iter &RuntimeSizedArrayIter<M, E>) Opt<&E> {
     None<&E>()
   }
 }
+
+struct RuntimeSizedArrayEntriesIter<M Mutability, E> where E Ref {
+  arr &[]<M>E;
+  pos! int;
+}
+func entries<M Mutability, E>(arr &[]<M>E) RuntimeSizedArrayEntriesIter<M, E> {
+  RuntimeSizedArrayEntriesIter<M, E>(arr, 0)
+}
+func begin<M Mutability, E>(iter &RuntimeSizedArrayEntriesIter<M, E>)
+RuntimeSizedArrayEntriesIter<M, E> {
+  RuntimeSizedArrayEntriesIter<M, E>(iter.arr, iter.pos)
+}
+func next<M Mutability, E>(iter &RuntimeSizedArrayEntriesIter<M, E>) Opt<(int, &E)> {
+  if iter.pos < iter.arr.len() {
+    Some<(int, &E)>((iter.pos, &iter.arr[set iter.pos = iter.pos + 1]))
+  } else {
+    None<(int, &E)>()
+  }
+}

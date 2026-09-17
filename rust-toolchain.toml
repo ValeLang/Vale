@@ -1,0 +1,23 @@
+# Pins the Rust toolchain for the Cargo projects in this repo (FrontendRust).
+# rustup picks this up automatically when running cargo/rustc from any
+# subdirectory.
+#
+# Why pin:
+# - FrontendRust uses nightly-only features (allocator-api2, etc.) that move across
+#   nightlies. Pinning gives reproducible builds across machines and CI.
+#
+# To bump: pick a nightly, verify FrontendRust still builds + tests pass, then
+# change `channel` here.
+[toolchain]
+channel = "nightly-2025-12-09"
+# Components required by the pipeline:
+#   - rust-src: needed for `-Zbuild-std`-style flags some downstream Cargo projects use.
+#   - rust-docs-json: needed if any consumer prefers pre-built rustdoc JSON over
+#     invoking `cargo rustdoc` itself.
+#   - rust-analyzer: Guardian's opencode-backed shields spawn rust-analyzer for
+#     context-defs lookups when validating Rust edits. Without it in the pinned
+#     toolchain, rustup looks for rust-analyzer in nightly-2025-12-09 (which lacks
+#     it by default), prints "Unknown binary", and the LSP client hangs until
+#     opencode's 45 s initialize timeout fires — making every Edit on a Rust
+#     migration file fail-closed.
+components = ["rust-src", "rust-docs-json", "rust-analyzer"]

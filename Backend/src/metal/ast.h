@@ -193,7 +193,7 @@ public:
         std::cerr << "Couldn't find export name for: " << getKindHumanName(kind) << std::endl;
         exit(1);
       }
-      return (includeProjectName && !packageCoordinate->projectName.empty() ? packageCoordinate->projectName + "_" : "") + iter->second;
+      return (includeProjectName ? packageCoordinate->projectName + "_" : "") + iter->second;
     }
   }
   std::string getKindHumanName(Kind* kind) const {
@@ -220,17 +220,17 @@ public:
   std::string getFunctionExportName(Prototype* kind) const {
     auto iter = functionToExportName.find(kind);
     assert(iter != functionToExportName.end());
-    return (!packageCoordinate->projectName.empty() ? packageCoordinate->projectName + "_" : "") + iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
   std::string getKindExternName(Kind* kind) const {
     auto iter = kindToExternName.find(kind);
     assert(iter != kindToExternName.end());
-    return (!packageCoordinate->projectName.empty() ? packageCoordinate->projectName + "_" : "") + iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
   std::string getFunctionExternName(Prototype* kind) const {
     auto iter = functionToExternName.find(kind);
     assert(iter != functionToExternName.end());
-    return (!packageCoordinate->projectName.empty() ? packageCoordinate->projectName + "_" : "") + iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
 //  bool isExported(Name* name) {
 //    auto exportedNameI = fullNameToExportName.find(name);

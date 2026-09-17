@@ -1,0 +1,5 @@
+build
+target
+zen/logs
+guardian-logs
+FrontendRust/guardian-logs

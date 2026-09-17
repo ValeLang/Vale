@@ -48,6 +48,14 @@ LLVMValueRef upcastThinPtr(
           sourceStructTypeM->ownership == Ownership::OWN);
       break;
     }
+    case RegionOverride::SAFE_FASTEST: {
+      assert(
+          sourceStructTypeM->ownership == Ownership::MUTABLE_SHARE ||
+          sourceStructTypeM->ownership == Ownership::IMMUTABLE_SHARE ||
+          sourceStructTypeM->ownership == Ownership::OWN ||
+          sourceStructTypeM->ownership == Ownership::IMMUTABLE_BORROW);
+      break;
+    }
     default:
       { assert(false); throw 1337; }
   }

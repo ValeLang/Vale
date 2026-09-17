@@ -67,24 +67,24 @@ exported func main() {
     });
   });
 
-  suite.sub("remove directory", (sts){
+  suite.sub("remove directory", (sts) => {
     sts.test("create and remove empty dir", {
       doomed_directory = test_directory./("/zork");
-      doomed_directory.CreateDirAll(true).expect();
-      doomed_directory.RemoveDir().expect();
+      doomed_directory.CreateDirAll(true).expect("CreateDirAll failed");
+      doomed_directory.RemoveDir().expect("RemoveDir failed");
 
       doomed_directory.exists() should_equal false;
     });
 
     sts.test("create and remove full dir", {
       doomed_directory = test_directory./("/zork");
-      doomed_directory.CreateDir(true).expect();
+      doomed_directory.CreateDir(true).expect("CreateDir failed");
       inner_directory = doomed_directory./("inner");
-      inner_directory.CreateDir(true).expect();
+      inner_directory.CreateDir(true).expect("CreateDir inner failed");
       mork = inner_directory./("mork.txt");
       mork.writeString("mork");
 
-      doomed_directory.RemoveDirAll().expect();
+      doomed_directory.RemoveDirAll().expect("RemoveDirAll failed");
 
       mork.exists() should_equal false;
       inner_directory.exists() should_equal false;
@@ -93,7 +93,7 @@ exported func main() {
 
     sts.test("move empty dir", {
       original_directory = test_directory./("/zork");
-      original_directory.CreateDirAll(true).expect();
+      original_directory.CreateDirAll(true).expect("CreateDirAll failed");
 
       new_directory = test_directory./("/blork");
       Rename(&original_directory, &new_directory);
@@ -104,9 +104,11 @@ exported func main() {
 
     sts.test("move full dir", {
       original_directory = test_directory./("/zork");
-      original_directory.CreateDir(true).expect();
-      original_directory./("inner").CreateDir(true).expect();
-      original_directory./("inner")./("mork.txt").writeString("mork");
+      original_directory.CreateDir(true).expect("CreateDir failed");
+      inner_dir = original_directory./("inner");
+      inner_dir.CreateDir(true).expect("CreateDir inner failed");
+      inner_mork = inner_dir./("mork.txt");
+      inner_mork.writeString("mork");
 
       new_directory = test_directory./("/blork");
       Rename(&original_directory, &new_directory);
@@ -120,6 +122,5 @@ exported func main() {
     });
   });
 
-  (suite).finish();
   (suite).finish();
 }

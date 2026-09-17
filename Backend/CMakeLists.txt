@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.5)
 project(backend)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -fvisibility=hidden")
@@ -38,13 +38,16 @@ set(LLVM_LINK_COMPONENTS
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
-# llvm_map_components_to_libnames(llvm_libs support core irreader)
-
-add_executable(backend
+# All Backend logic — including the historical contents of vale.cpp's main()
+# (now exposed as `backend_compile_argv` in ffi.cpp) — lives in this static
+# library. The standalone `backend` executable and Rust callers (FrontendRust)
+# both link against it.
+set(BACKEND_LIB_SRCS
 		src/vale.cpp
+		src/ffi.cpp
 		src/globalstate.cpp
 		src/metal/ast.cpp
-		src/metal/readjson.cpp
+		src/metal/metal_cache_ffi.cpp
 		src/metal/types.cpp
 		src/translatetype.cpp
 		src/valeopts.cpp
@@ -103,8 +106,7 @@ add_executable(backend
 		src/region/regions.cpp
 
 		src/fileio.cpp
-		src/options.cpp src/mainFunction.cpp
-		src/externs.cpp
+		src/options.cpp
 		src/determinism/determinism.cpp
 		src/determinism/determinism.h
 		src/utils/definefunction.cpp
@@ -123,9 +125,11 @@ add_executable(backend
 		src/region/common/migration.h
 		src/region/common/migration.cpp
 		src/region/iregion.cpp
-		src/utils/randomgeneration.cpp)
+		src/utils/randomgeneration.cpp
+)
 
-target_link_libraries(backend ${llvm_libs})
+add_library(backend_lib STATIC ${BACKEND_LIB_SRCS})
+target_link_libraries(backend_lib ${llvm_libs})
+target_compile_features(backend_lib PRIVATE cxx_std_17)
 
-target_compile_features(backend PRIVATE cxx_std_17)
 

@@ -75,7 +75,7 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
     KindStructs* structs,
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
-  auto genLT = LLVMInt64TypeInContext(globalState->context);
+  auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
   auto genPtrLE =
       getGenerationPtrFromControlBlockPtr(globalState, builder, structs, kindM, controlBlockPtr);
   auto resultLE = LLVMBuildLoad2(builder, genLT, genPtrLE, "genD");
@@ -386,12 +386,14 @@ static ControlBlock makeSafeWeakableControlBlock(GlobalState* globalState) {
 }
 
 static LLVMTypeRef makeSafeWeakRefHeaderStruct(GlobalState* globalState) {
+  auto genLT = LLVMIntTypeInContext(globalState->context, globalState->opt->generationSize);
+
   auto refStructL = LLVMStructCreateNamed(globalState->context, "__SafeWeakRef");
 
   std::vector<LLVMTypeRef> memberTypesL;
 
   assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt64TypeInContext(globalState->context));
+  memberTypesL.push_back(genLT);
 
   LLVMStructSetBody(refStructL, memberTypesL.data(), memberTypesL.size(), false);
 
@@ -984,28 +986,37 @@ std::tuple<LLVMValueRef, LLVMValueRef> SafeFastest::explodeInterfaceRef(
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef) {
-  { assert(false); throw 1337; }
-//  switch (virtualParamMT->ownership) {
-//    case Ownership::OWN:
-//    case Ownership::MUTABLE_BORROW:
-//    case Ownership::IMMUTABLE_BORROW:
-//    case Ownership::MUTABLE_SHARE:
-//    case Ownership::IMMUTABLE_SHARE: {
-//      return explodeStrongInterfaceRef(
-//          globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
-//    }
-//    case Ownership::WEAK: {
-//      return explodeWeakInterfaceRef(
-//          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
-//          virtualParamMT, virtualArgRef,
-//          [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
-//            return wrcWeaks.weakInterfaceRefToWeakStructRef(
-//                functionState, builder, virtualParamMT, weakFatPtrLE);
-//          });
-//    }
-//    default:
-//      { assert(false); throw 1337; }
-//  }
+  switch (virtualParamMT->ownership) {
+    case Ownership::OWN:
+    case Ownership::IMMUTABLE_BORROW:
+    case Ownership::MUTABLE_SHARE:
+    case Ownership::IMMUTABLE_SHARE: {
+      return explodeStrongInterfaceRef(
+          globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
+    }
+    case Ownership::MUTABLE_BORROW:
+    case Ownership::WEAK: {
+      return explodeWeakInterfaceRef(
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
+          virtualParamMT, virtualArgRef,
+          [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakInterfaceFatPtrLE) {
+            // Inline HGM-style weakInterfaceRefToWeakStructRef.
+            auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
+            auto interfaceFatPtrLE =
+                kindStructs.makeInterfaceFatPtrWithoutChecking(
+                    FL(), functionState, builder, virtualParamMT,
+                    fatWeaks.getInnerRefFromWeakRef(
+                        functionState, builder, virtualParamMT, weakInterfaceFatPtrLE));
+            auto controlBlockPtrLE =
+                kindStructs.getControlBlockPtrWithoutChecking(
+                    FL(), functionState, builder, virtualParamMT->kind, interfaceFatPtrLE);
+            return fatWeaks.assembleVoidStructWeakRef(
+                builder, virtualParamMT, controlBlockPtrLE, headerLE);
+          });
+    }
+    default:
+      { assert(false); throw 1337; }
+  }
 }
 
 Ref SafeFastest::getRuntimeSizedArrayLength(
@@ -1441,12 +1452,12 @@ Ref SafeFastest::receiveAndDecryptFamiliarReference(
 
 LLVMTypeRef SafeFastest::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
   switch (reference->ownership) {
-    case Ownership::MUTABLE_BORROW:
-    case Ownership::IMMUTABLE_BORROW:
     case Ownership::OWN:
+    case Ownership::IMMUTABLE_BORROW:
     case Ownership::IMMUTABLE_SHARE:
     case Ownership::MUTABLE_SHARE:
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
+    case Ownership::MUTABLE_BORROW:
     case Ownership::WEAK:
       return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:

@@ -1,0 +1,1 @@
+../../Luz/skills/guardian-ordain.md

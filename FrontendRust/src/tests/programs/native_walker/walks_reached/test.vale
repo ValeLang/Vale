@@ -1,0 +1,5 @@
+extern func get_seven() int;
+
+exported func main() int {
+  return get_seven();
+}

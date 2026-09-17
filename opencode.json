@@ -1,0 +1,73 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openrouter/moonshotai/kimi-k2.6",
+  "small_model": "openrouter/moonshotai/kimi-k2.6",
+
+  "provider": {
+    "openrouter": {
+      "options": {
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "moonshotai/kimi-k2.6": {
+          "name": "Kimi K2.6 (V)",
+          "limit": { "context": 262144, "output": 32768 },
+          "options": {
+            "provider": {
+              "only": ["moonshotai"],
+              "order": ["moonshotai"],
+              "allow_fallbacks": false
+            },
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "max_tokens": 16384,
+            "reasoning": { "enabled": false }
+          }
+        }
+      }
+    }
+  },
+
+  "agent": {
+    "build": {
+      "model": "openrouter/moonshotai/kimi-k2.6",
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "options": {
+        "max_tokens": 24576,
+        "reasoning": { "enabled": true, "effort": "low" }
+      }
+    },
+    "plan": {
+      "model": "openrouter/moonshotai/kimi-k2.6",
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "tools": { "write": false, "edit": false, "bash": false },
+      "options": {
+        "max_tokens": 32768,
+        "reasoning": { "enabled": true }
+      }
+    },
+    "review": {
+      "mode": "subagent",
+      "model": "openrouter/moonshotai/kimi-k2.6",
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "permission": { "edit": "deny", "bash": "ask", "webfetch": "deny" },
+      "options": {
+        "max_tokens": 32768,
+        "reasoning": { "enabled": true }
+      }
+    }
+  },
+
+  "instructions": ["AGENTS.md"],
+  "formatter": {
+    "rustfmt": {
+      "disabled": true
+    },
+    "cargo fmt": {
+      "disabled": true
+    }
+  }
+}

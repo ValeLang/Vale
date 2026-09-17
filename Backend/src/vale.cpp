@@ -18,7 +18,6 @@
 #include <filesystem>
 
 
-#include "json.hpp"
 #include "function/expressions/shared/shared.h"
 
 #include "metal/types.h"
@@ -27,7 +26,6 @@
 
 #include "function/function.h"
 #include "determinism/determinism.h"
-#include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
 #include "externs.h"
@@ -62,8 +60,6 @@
 // TODO(#598): Use a random starting value.
 constexpr int FIRST_GEN = 655360000;
 
-// for convenience
-using json = nlohmann::json;
 template <typename Out>
 void split(const std::string &s, char delim, Out result) {
   std::istringstream iss(s);
@@ -119,6 +115,7 @@ void makeExternOrExportFunction(
     bool isExport);
 
 void optimize(GlobalState *globalState);
+void compileValeCode(GlobalState* globalState, MetalCache* metalCache, Program* program);
 
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -232,8 +229,7 @@ std::string generateFunctionC(
       globalState->getRegion(prototype->returnType)->getExportName(package, prototype->returnType, true);
   auto projectName = package->packageCoordinate->projectName;
   std::string userFuncName =
-      (!package->packageCoordinate->projectName.empty() ? package->packageCoordinate->projectName + "_" : "") +
-      outsideName;
+      package->packageCoordinate->projectName + "_" + outsideName;
   std::string abiFuncName = std::string("vale_abi_") + userFuncName;
 
   bool abiUsingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
@@ -658,7 +654,11 @@ std::string makeModuleAbiDirectory(const GlobalState *globalState, PackageCoordi
   return moduleIncludeDirectory;
 }
 
-void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFilepaths) {
+void compileValeCode(GlobalState* globalState, MetalCache* metalCachePtr, Program* programPtr) {
+  auto& metalCache = *metalCachePtr;
+  auto& program = *programPtr;
+  globalState->metalCache = metalCachePtr;
+
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
@@ -718,52 +718,13 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     }
 //  }
 
-
-
-  AddressNumberer addressNumberer;
-  MetalCache metalCache(&addressNumberer);
-  globalState->metalCache = &metalCache;
-
-  Program program(
-      std::unordered_map<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
-          0,
-          addressNumberer.makeHasher<PackageCoordinate*>(),
-          std::equal_to<PackageCoordinate*>()));
-  for (auto inputFilepath : inputFilepaths) {
-    //std::cout << "Reading input file: " << inputFilepath << std::endl;
-    auto stem = std::filesystem::path(inputFilepath).stem();
-    auto package_coord_parts = split(stem.string(), '.');
-    auto project_name = package_coord_parts[0];
-    package_coord_parts.erase(package_coord_parts.begin());
-    auto package_steps = package_coord_parts;
-
-    auto package_coord = metalCache.getPackageCoordinate(project_name, package_steps);
-
-    try {
-      std::ifstream instream(inputFilepath);
-      std::string str(std::istreambuf_iterator<char>{instream}, {});
-      if (str.size() == 0) {
-        std::cerr << "Nothing found in " << inputFilepath << std::endl;
-        exit(1);
-      }
-      auto packageJ = json::parse(str.c_str());
-      auto packageM = readPackage(&metalCache, packageJ);
-
-      program.packages.emplace(package_coord, packageM);
-    }
-    catch (const nlohmann::detail::parse_error &error) {
-      std::cerr << "Error while parsing json: " << error.what() << std::endl;
-      exit(1);
-    }
-  }
-
   RawFuncPtrLE stringSetupFunctionL;
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;
 
 
-  globalState->program = &program;
+  globalState->program = programPtr;
 
   globalState->serializeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize");
   globalState->serializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize_thunk");
@@ -1214,7 +1175,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   generateExports(globalState, mainM);
 }
 
-void createModule(std::vector<std::string>& inputFilepaths, GlobalState *globalState) {
+void createModule(MetalCache* metalCache, Program* program, GlobalState *globalState) {
   globalState->mod = LLVMModuleCreateWithNameInContext("build", globalState->context);
   if (globalState->opt->debug) {
     globalState->dibuilder = LLVMCreateDIBuilder(globalState->mod);
@@ -1226,7 +1187,9 @@ void createModule(std::vector<std::string>& inputFilepaths, GlobalState *globalS
             13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0,
             "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
-  compileValeCode(globalState, inputFilepaths);
+
+  compileValeCode(globalState, metalCache, program);
+
   if (globalState->opt->debug) {
     LLVMDIBuilderFinalize(globalState->dibuilder);
   }
@@ -1354,11 +1317,10 @@ void generateOutput(
 //}
 
 // Generate IR nodes into LLVM IR using LLVM
-void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globalState) {
-  char *err;
+void generateModule(MetalCache* metalCache, Program* program, GlobalState* globalState) {
+  createModule(metalCache, program, globalState);
 
-  // Generate IR to LLVM IR
-  createModule(inputFilepaths, globalState);
+  char *err;
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
@@ -1370,7 +1332,6 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     }
   }
 
-  // Verify generated IR
   if (globalState->opt->verify) {
     char *error = NULL;
     LLVMVerifyModule(globalState->mod, LLVMReturnStatusAction, &error);
@@ -1386,30 +1347,10 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
       std::cout << "Warning: Running release optimizations with flares enabled!" << std::endl;
     }
     std::cout << "Running release optimizations..." << std::endl;
-
-
-    // TODO(#599): Perhaps take one of these out.
     optimize(globalState);
     optimize(globalState);
   }
-//
-//  // Optimize the generated LLVM IR
-//  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
-//
-////  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
-//////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
-////  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
-////  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
-////  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
-//
-////  if (globalState->opt->release) {
-////    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
-////  }
-//
-//  LLVMRunPassManager(passmgr, globalState->mod);
-//  LLVMDisposePassManager(passmgr);
 
-  // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
     auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), "build", "opt.ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
@@ -1419,7 +1360,6 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
     }
   }
 
-  // Transform IR to target's ASM and OBJ
   if (globalState->machine) {
     auto objpath =
         fileMakePath(globalState->opt->outputDir.c_str(), "build",
@@ -1434,7 +1374,6 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
   }
 
   LLVMDisposeModule(globalState->mod);
-  // LLVMContextDispose(gen.context);  // Only need if we created a new context
 }
 
 void optimize(GlobalState *globalState) {
@@ -1525,39 +1464,21 @@ void closeGlobalState(GlobalState *globalState) {
   LLVMDisposeTargetMachine(globalState->machine);
 }
 
-
-int main(int argc, char **argv) {
+// Full per-compile pipeline: parse argv into ValeOptions, set up GlobalState,
+// run codegen against the caller-populated MetalCache/Program, dispose. The
+// FFI entry in ffi.cpp is a one-line `extern "C"` wrapper around this.
+int32_t runBackendCompile(
+    MetalCache* metalCache, Program* program, int argc, char** argv) {
   ValeOptions valeOptions;
-
-  // Get compiler's options from passed arguments
   int ok = valeOptSet(&valeOptions, &argc, argv);
   if (ok <= 0) {
-    exit((int)(ok == 0 ? ExitCode::Success : ExitCode::BadOpts));
-  }
-  if (argc < 2)
-    errorExit(ExitCode::BadOpts, "Specify a Vale program to compile.");
-
-  auto inputFilepaths = std::vector<std::string>{};
-  for (int i = 1; i < argc; i++) {
-    //std::cout << "Backend found file: " << argv[i] << std::endl;
-    inputFilepaths.emplace_back(argv[i]);
+    return ok == 0 ? 0 : (int32_t)ExitCode::BadOpts;
   }
 
-//  valeOptions.srcpath = argv[1];
-//  valeOptions.srcDir = std::string(fileDirectory(valeOptions.srcpath));
-//  valeOptions.srcNameNoExt = std::string(getFileNameNoExt(valeOptions.srcpath));
-//  valeOptions.srcDirAndNameNoExt = std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
-
-  // We set up generation early because we need target info, e.g.: pointer size
   AddressNumberer addressNumberer;
   GlobalState globalState(&addressNumberer);
   setup(&globalState, &valeOptions);
-
-  // Parse source file, do semantic analysis, and generate code
-//    ModuleNode *modnode = NULL;
-//    if (!errors)
-  generateModule(inputFilepaths, &globalState);
-
+  generateModule(metalCache, program, &globalState);
   closeGlobalState(&globalState);
-//    errorSummary();
+  return 0;
 }

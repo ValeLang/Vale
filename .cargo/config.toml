@@ -1,0 +1,12 @@
+[env]
+RUST_BACKTRACE = "1"
+# 16MB stack for #[test] threads. Default is 2MB, too small for debug-mode
+# runs on real programs (e.g. typing_pass_on_roguelike): postparser's
+# scout_expression has a giant match whose per-arm let-bindings (StackFrame
+# ~200B + IScoutResult variant-sized + two VariableUses) each get their own
+# stack slot in debug, producing ~21KB frames. ~96 frames of mutual recursion
+# through scout_expression/scout_function/scout_lambda exhausts the default.
+# Release-mode mem2reg+inlining collapses the locals and the test passes
+# with 2MB. TODO: remove once scout_expression is split per-arm or
+# its locals are Boxed.
+RUST_MIN_STACK = "16777216"

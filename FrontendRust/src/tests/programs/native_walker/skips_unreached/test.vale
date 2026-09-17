@@ -1,0 +1,5 @@
+extern func used_only() int;
+
+exported func main() int {
+  return used_only();
+}

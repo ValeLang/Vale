@@ -2,86 +2,94 @@ name: CI
 
 on:
   push:
-    branches: [master, stable]
+    branches: [master, stable, repair-vale]
   pull_request:
-    branches: [master, stable]
+    branches: [master, stable, repair-vale]
   workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test_windows:
-    runs-on: windows-2022
+  build_and_test_ubuntu:
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/checkout@v4
+
+      - name: Install LLVM 16
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y llvm-16 llvm-16-dev clang-16 libpolly-16-dev cmake build-essential zlib1g-dev libzstd-dev libcurl4-openssl-dev
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-16" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo build
+        run: cargo build --manifest-path FrontendRust/Cargo.toml
+
+      - name: Cargo test
+        run: cargo test --manifest-path FrontendRust/Cargo.toml
+
+      - name: Package release artifact
+        run: |
+          mkdir -p release/Vale-Ubuntu
+          cp FrontendRust/target/debug/valec release/Vale-Ubuntu/
+          cp scripts/all/README release/Vale-Ubuntu/
+          cp -r Backend/builtins release/Vale-Ubuntu/builtins
+          cp -r stdlib release/Vale-Ubuntu/stdlib
+          (cd release && zip -r Vale-Ubuntu-0.zip Vale-Ubuntu)
+
+      - uses: actions/upload-artifact@v4
         with:
-          distribution: adopt
-          java-version: 11
-      - name: install prereqs
-        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\LLVM16 C:\BootstrappingValeCompiler'
-      - name: run vcvars and build-compiler-windows.bat
-        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\LLVM16 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
-      - uses: actions/upload-artifact@v2
+          name: Vale-Ubuntu-0
+          path: release/Vale-Ubuntu-0.zip
+
+  build_and_test_mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install LLVM 16
+        run: |
+          brew install llvm@16 cmake
+          echo "LLVM_CONFIG=$(brew --prefix llvm@16)/bin/llvm-config" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo build
+        run: cargo build --manifest-path FrontendRust/Cargo.toml
+
+      - name: Cargo test
+        run: cargo test --manifest-path FrontendRust/Cargo.toml
+
+      - name: Package release artifact
+        run: |
+          mkdir -p release/Vale-Mac
+          cp FrontendRust/target/debug/valec release/Vale-Mac/
+          cp scripts/all/README release/Vale-Mac/
+          cp -r Backend/builtins release/Vale-Mac/builtins
+          cp -r stdlib release/Vale-Mac/stdlib
+          (cd release && zip -r Vale-Mac-0.zip Vale-Mac)
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: Vale-Windows-0.zip
-          path: .\release-windows\Vale-Windows-0.zip
+          name: Vale-Mac-0
+          path: release/Vale-Mac-0.zip
 
   build_and_test_docker:
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Build docker image
-        run: docker build -t valec --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
-      - name: Create image
-        run: docker create --name bork -i valec
-      - name: Retrieve built compiler
-        run: docker cp bork:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Vale-Ubuntu-0-From-Docker.zip
-          path: Vale-Ubuntu-0.zip
+        run: docker build -t valec --file scripts/docker/Dockerfile .
 
-  build_and_test_ubuntu:
-    runs-on: ubuntu-20.04
-    steps: 
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: adopt
-          java-version: 11
-      - name: install prereqs
-        run: ./scripts/ubuntu/install-compiler-prereqs.sh -d -j -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
-      - name: build compiler 
-        run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-16.0.0-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
-      - name: gimme files 
-        run: find . -print
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Vale-Ubuntu-0.zip
-          path: ./release-ubuntu/Vale-Ubuntu-0.zip
-
-  build_and_test_mac:
-    runs-on: macOS-latest
-    steps: 
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: adopt
-          java-version: 11
-      - name: install prereqs
-        run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
-      - name: build compiler
-        run: ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Vale-Mac-0.zip
-          path: ./release-mac/Vale-Mac-0.zip
+      - name: Smoke test (valec --version)
+        run: docker run --rm valec --version

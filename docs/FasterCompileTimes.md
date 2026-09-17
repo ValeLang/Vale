@@ -402,7 +402,7 @@ fn equip(ship ISpaceship, weapon IWeapon) { ... }
 
 (Let's say this function's FunctionId is equip#42)
 
-We'd have a OverloadSet:
+We'd have a OverloadSet for the name `equip` which looks like this:
 
 ```
 struct OverloadSet {
@@ -434,7 +434,7 @@ fn equip(ship ISpaceship, weapon IArmor) { ... }
 
 (Note how SpikyShield is also a Weapon)
 
-With that, our total OverloadSet contains:
+With that, our total OverloadSet for the name `equip` contains:
 
  * 0, ISpaceship, \[equip#42, equip#73\]
  * 0, Firefly, \[equip#42, equip#73\]

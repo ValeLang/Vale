@@ -7,9 +7,9 @@ if [ "$VALEC_DIR" == "" ]; then
 fi
 shift;
 
-echo "Building path test..."
+echo "Building command2 test..."
 rm -rf build
-$VALEC_DIR/valec build stdlib=$VALEC_DIR/stdlib/src valecutils=src vtest=src/pathadditions/test || exit 1
-echo "Running path test..."
+$VALEC_DIR/valec build valecutils=src vtest=src/command2/test || exit 1
+echo "Running command2 test..."
 build/main || exit 1
 echo "Done testing!"

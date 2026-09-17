@@ -1028,28 +1028,43 @@ std::tuple<LLVMValueRef, LLVMValueRef> Safe::explodeInterfaceRef(
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     Ref virtualArgRef) {
-  { assert(false); throw 1337; }
-//  switch (virtualParamMT->ownership) {
-//    case Ownership::OWN:
-//    case Ownership::MUTABLE_BORROW:
-//    case Ownership::IMMUTABLE_BORROW:
-//    case Ownership::MUTABLE_SHARE:
-//    case Ownership::IMMUTABLE_SHARE: {
-//      return explodeStrongInterfaceRef(
-//          globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
-//    }
-//    case Ownership::WEAK: {
-//      return explodeWeakInterfaceRef(
-//          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
-//          virtualParamMT, virtualArgRef,
-//          [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
-//            return wrcWeaks.weakInterfaceRefToWeakStructRef(
-//                functionState, builder, virtualParamMT, weakFatPtrLE);
-//          });
-//    }
-//    default:
-//      { assert(false); throw 1337; }
-//  }
+  switch (virtualParamMT->ownership) {
+    case Ownership::OWN:
+    case Ownership::MUTABLE_SHARE:
+    case Ownership::IMMUTABLE_SHARE: {
+      return explodeStrongInterfaceRef(
+          globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
+    }
+    case Ownership::IMMUTABLE_BORROW: {
+      if (globalState->opt->elideChecksForRegions) {
+        return explodeStrongInterfaceRef(
+            globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
+      }
+      // fallthrough to weak path
+    }
+    case Ownership::MUTABLE_BORROW:
+    case Ownership::WEAK: {
+      return explodeWeakInterfaceRef(
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
+          virtualParamMT, virtualArgRef,
+          [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakInterfaceFatPtrLE) {
+            // Inline HGM-style weakInterfaceRefToWeakStructRef (Safe doesn't carry hgmWeaks).
+            auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
+            auto interfaceFatPtrLE =
+                kindStructs.makeInterfaceFatPtrWithoutChecking(
+                    FL(), functionState, builder, virtualParamMT,
+                    fatWeaks.getInnerRefFromWeakRef(
+                        functionState, builder, virtualParamMT, weakInterfaceFatPtrLE));
+            auto controlBlockPtrLE =
+                kindStructs.getControlBlockPtrWithoutChecking(
+                    FL(), functionState, builder, virtualParamMT->kind, interfaceFatPtrLE);
+            return fatWeaks.assembleVoidStructWeakRef(
+                builder, virtualParamMT, controlBlockPtrLE, headerLE);
+          });
+    }
+    default:
+      { assert(false); throw 1337; }
+  }
 }
 
 Ref Safe::getRuntimeSizedArrayLength(
@@ -1569,12 +1584,16 @@ Ref Safe::receiveAndDecryptFamiliarReference(
 
 LLVMTypeRef Safe::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
   switch (reference->ownership) {
-    case Ownership::MUTABLE_BORROW:
-    case Ownership::IMMUTABLE_BORROW:
     case Ownership::OWN:
     case Ownership::IMMUTABLE_SHARE:
     case Ownership::MUTABLE_SHARE:
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
+    case Ownership::IMMUTABLE_BORROW:
+      if (globalState->opt->elideChecksForRegions) {
+        return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
+      }
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
+    case Ownership::MUTABLE_BORROW:
     case Ownership::WEAK:
       return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:

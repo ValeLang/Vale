@@ -1,0 +1,1 @@
+../../../docs/skills/good-doc.md

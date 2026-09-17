@@ -204,6 +204,8 @@ Our current concept functions don't really work with default generic parameters 
 
 Here's how it should work in a post-generics world.
 
+> **Implementation handoff:** `investigations/cfwg_handoff.md` is the active handoff doc covering the failing tests (1.5 "Test overload set", 1.6 "Tests overload set and concept function") and the design space for landing CFWG. Read this section first for the design intent, then the handoff for current state, prior art, and a suggested attack plan. The architectural choice is not yet made; both alternatives below remain on the table.
+
 
 
 ## Prototype-Based Concept Functions
@@ -435,18 +437,9 @@ So, we need to recall the abstract function's inner environment when we do that 
 
 ## Must Know Runes From Above (MKRFA)
 
-When we start evaluating a function or struct or something, we don't know the values of its runes.
+We often think that runes are unknowns. That's not always true.
 
-For example:
-
-```
-fn add<T>(list &List<T>, elem T) { ... }
-```
-
-we don't know the value of T, we're figuring it out now.
-
-One would think that whenever we see a CodeRuneS("T"), it's an
-unknown.
+When a call-site inside a function body textually references a rune by name (e.g. `Some<T>(x)`), and that rune was declared by the enclosing function's template, the inner solve shouldn't treat it as a fresh unknown, it's already bound by the enclosing scope.
 
 **Case 1: Manually Specifying a Rune**
 
@@ -454,13 +447,13 @@ If we have this function:
 
 ```
 fn moo<T>(x T) Some<T> {
-  Some<T>(x)
+  Some<T>(x)   // <-- this call-site needs T's value, which came from moo's caller
 }
 ```
 
-We need to look up that T from the environment.
+At the inner `Some<T>(x)` call-site, the solver needs `T`. But `T` isn't something that inner solve infers, it's already supplied by moo's enclosing environment. Somehow the inner solve needs to inherit it. That's what MKRFA is about.
 
-For that reason, Scout's IEnvironment will track which runes are currently known.
+For MKRFA to work, Scout's IEnvironment will track which runes are currently known.
 
 **Case 2: Runes from Parent**
 
@@ -481,6 +474,10 @@ The PostParser will keep track of what runes are defined in parent environments.
 
 When compiling an expression (like case 1) we'll preprocess the RuneParentEnvLookupSR rule out, to populate its value from the environment.
 
+This preprocessing is part of the per-call-site setup contract described by @ECSIIOSZ — every site that instantiates a solver (OverloadResolver, ArrayCompiler, ImplCompiler, etc.) has to do it individually, because the solver's own RuneParentEnvLookupSR handler is a no-op.
+
+**⚠ Known architectural smell — refactor soon.** MKRFA is a **recurring-bug pattern with no enforcement.** The contract lives in prose comments cross-referencing the "MKRFA" tag, not in types, and the value solver's handler for `RuneParentEnvLookupSR` is a silent no-op that conceals violations. Three `ArrayCompiler` methods sat in violation for ~4 years before the symptom surfaced (April 2026, via the `Borrowing toArray` AfterRegions test). Any new expression-compilation site that spawns its own solver is at risk of repeating the bug. A near-term fix — extract the preprocessing fold from `OverloadResolver.scala:311-325` into an `InferCompiler` helper and replace the no-op handler with `vwat()` — is queued in `docs/refactor-thoughts/mkrfa-protocol-leak.md`. Prefer honoring the contract via that helper over writing a new inline fold at every future site.
+
 
 # Can't Get All Descendants Of Interface (CGADOI)
 
@@ -492,6 +489,8 @@ For now, we leave that question unanswered, and say that we can never know all c
 
 
 # Need Bound Information From Parameters (NBIFP née NBIFPR)
+
+> **Note on direction:** the current NBIFP implementation harvests bound prototypes from a citizen-typed parameter's inner env into the calling function's near-env (see `addRunedDataToNearEnv`). This is the currently-cataloged push exception under @BDPFWDZ ("By Default Pull From Where Declared", `docs/arcana/ByDefaultPullFromWhereDeclared-BDPFWDZ.md`) — the principle suggests refactoring toward link-walking, where the bounds stay in the citizen's inner env and `OverloadResolver` walks the calling function's parameter envs at lookup time. The mechanism described below is correct for the *what*; the principle weighs in on the *where*. The refactor is non-urgent technical debt, not blocking any test.
 
 Let's say we have this code:
 
@@ -526,7 +525,7 @@ So, we'll need to do #2.
 
 A few places we'll need to do this:
 
- * At the beginning of the current denizen, where we introduce the placeholders. We scour all of the requirements imposed by all of the parameters (like the `BorkForwarder<LamT>` that requires `__call(&LamT)int`) and create prototypes for them. (See also [Rust #2089](https://github.com/rust-lang/rfcs/pull/2089))
+ * At the beginning of the current function, when the defining solve finishes, we scout each citizen-typed parameter for their requirement prototypes (like the `BorkForwarder<LamT>` that requires `__call(&LamT)int`) (which appear as FunctionBoundNameT), re-phrase them in terms of the current defining function, and stash them in the current function's near env. (See also [Rust #2089](https://github.com/rust-lang/rfcs/pull/2089))
  * When an abstract function is "calling" an override, we'll need to incorporate the bounds for the overriding struct. (See ONBIFS)
  * In a match's case statement, when we mention a type, we need to incorporate the bounds from that type.
 
@@ -544,6 +543,8 @@ func HashMap<K Ref imm, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
 It failed because `main` wasn't passing any functions to satisfy the bounds which were expected by the `HashMap<K, V, H, E>(hasher, equator, 0)` invocation (it expected a `drop(H)`). At best, we can hoist the _requirements_ from the return type, but we can't use the return type as evidence that a type satisfies some bounds.
 
 Note from later: couldn't we leave it up to the call site to try to instantiate the return type? Then the definition could assume that everything exists and things will be fine. It seems that Rust allows a function definition to inherit bounds from its return value, so that hints that it might be fine.
+
+**Correction: this paragraph overstated the rule.** BRRZ (below) establishes that inferring from a `where func(...)R` bound's return rune is safe, regardless of whether we frame that as a "narrow exception" or as a correction to the framing above. The load-bearing safety invariant isn't "don't read return types" — it's "callers declare the bound args their callees need." That invariant is enforced by the post-solve bound-arg verification at `InferCompiler.checkResolvingConclusionsAndResolve:295`, not by the solver's stall. The HashMap regression is still caught there. See the BRRZ section below for the full safety argument.
 
 
 ### Monomorphizer
@@ -646,9 +647,9 @@ This failed while trying to assemble the itables.
 
 When we were figuring out the vtable for `BorkForwarder<Lam1>`, we were trying to find its override for `bork`.
 
-We looked for a `bork(BorkForwarder<Lam1>)`. (Aside: because of NAFEWRO we looked from the perspective of `bork(Bork)`, we used its environment.)
+We looked for a `bork(&BorkForwarder<Lam1>)`. (Aside: because of NAFEWRO we looked from the perspective of `bork(Bork)`, we used its environment.)
 
-However, `func bork(BorkForwarder<Lam1>)` has a requirement that there's a `func __call(&Lam)int`, but the call site (the abstract function `bork(Bork)`) had no knowledge of such a function, so it failed.
+However, `func bork(&BorkForwarder<Lam1>)` has a requirement that there's a `func __call(&Lam)int`, but the call site (the abstract function `bork(Bork)`) had no knowledge of such a function, so it failed.
 
 This reinforces that we need to solve NBIFPR by gathering information from elsewhere (parameters).
 
@@ -700,6 +701,8 @@ Alas, that's likely too much work for now, we'll have to fall back to having a t
 
 
 # Lambdas Are Generic Templates (LAGT)
+
+See also the cross-cutting arcana `docs/arcana/LambdasAreGenericTemplatesNotGenerics-LAGTNGZ.md` for how this design interacts with the typing pass's dispatcher (`function.isLight()`), the two `NameTranslator` entry points, and `FunctionS.genericParams` for untyped lambda params.
 
 Lambdas are instantiated every time they're called. In this:
 
@@ -866,15 +869,52 @@ Moral of the story: It shouldn't replace placeholders in generic names, such as 
 
 # Must Specify Array Element (MSAE)
 
-We no longer support grabbing a prototype's return type, so we can no longer say:
+**Status: resolved by BRRZ (see below).** This section is preserved for historical context.
 
-`Array<mut>(5, x => x)`
+Historically we could not write `Array<mut>(5, x => x)` because the compiler could not infer the array element type from the generator lambda's return. Callers had to spell it out: `Array<mut, int>(5, x => x)`.
 
-It previously would look at the incoming lambda, send it an argument type, and grab the return value. We'll need to add that back in.
+The capability was originally present in the pre-2022 templates system (which had an imperative per-call-site evaluator that could reach into a lambda's `__call` and read its return). The templates-to-generics transition replaced that evaluator with a declarative rule system whose `ResolveSR` rule required the return rune already known, so lambda-return inference stopped working.
 
-For now, we have to specify the type:
+BRRZ restores the capability. The "we'd need to add that back in" aspiration from the MSAE paragraph above is now fulfilled — safety is preserved because it never lived in the solver's stall; it lives in the post-solve bound-arg check, and that check is unchanged.
 
-`Array<mut, int>(5, x => x)`
+# Bound Return Resolution (BRRZ)
+
+When a generic function has a `where func(...)R` bound and the caller supplies concrete values for the bound's parameter runes (via `InitialSend` from actual args), the compiler now resolves the bound function at call-site inference time and takes its return type as R.
+
+The mechanism is a relaxation of `ResolveSR`'s puzzle in `CompilerSolver.scala`:
+
+- **Existing path** (both `paramsListRune` and `returnRune` known): fire `predictFunction`, fabricate a placeholder prototype, postpone real resolution (see SFWPRL).
+- **New BRRZ path** (only `paramsListRune` known, `returnRune` unknown): call `delegate.resolveFunction` — the same real overload lookup the post-solve phase uses — and commit both the prototype and the discovered return rune.
+
+## Why this doesn't re-enable the regression at "...but not return types"
+
+The HashMap-style regression that original-MSAE was guarding against — a caller writing `func f<K,V,H,E>() HashMap<K,V,H,E>` and having K,V,H,E inferred from the annotated outer return type, silently skipping caller-supplied bound args — is still caught. Safety is carried by the existing post-solve `checkResolvingConclusionsAndResolve` (`InferCompiler.scala:295`), which verifies caller's bound args against the solved prototype. The solver's stall was redundant safety; the post-solve check is the real safety net.
+
+BRRZ only changes when the stall is lifted, not whether bounds are checked. If the caller fails to supply a bound arg the callee needs, the post-solve check still fails.
+
+## Scope of safety analysis
+
+Three independent lines of evidence confirmed BRRZ is safe to ship:
+
+1. **Codebase enumeration.** Every `where func(...)R` bound in stdlib and all tests was classified. All have either concrete literal returns (`void`, `int`, `bool`) or header-pinned runes (caller specifies). No existing impl, struct, or interface has the shape BRRZ triggers on.
+2. **Solver filter audit.** Every solver construction in the TypingPass applies either `includeRuleInCallSiteSolve` (excludes `DefinitionFuncSR`) or `includeRuleInDefinitionSolve` (excludes `ResolveSR`). `ResolveSR` and `DefinitionFuncSR` never coexist in the same rule set, so the relaxation cannot expose a rule-ordering hazard.
+3. **State-dependency trace.** Every read along `OverloadResolver.findFunction` → stamping → return prototype is from caller's snapshotted env, settled `CompilerOutputs` caches, or freshly-constructed inner solvers. The outer solver's in-flight state is never read.
+
+## Relationship to SFWPRL
+
+SFWPRL is still the governing pattern for the common case. The existing "predict now, resolve later" split is preserved: `ResolveSR`'s handler still calls `predictFunction` when both params and return are known. Only the narrow params-known-return-unknown case takes the real-lookup path — and that path reads only state that's already settled.
+
+The predict/resolve distinction also keeps its meaning: `predictFunction` remains a pure constructor with no verification; `resolveFunction` does real overload lookup and may trigger stamping, but its inputs are snapshotted and its outputs feed back into the solver uniformly.
+
+## Relationship to "...but not return types"
+
+The section "...but not return types" documented the HashMap regression and argued against inferring generic params from an annotated outer return type. That argument still stands. BRRZ is narrower: it infers only the return rune of a `func(...)R` bound, using caller-supplied arg values — not generic params from outer return annotations. The safety distinction is carried by the post-solve bound-arg check, not by the solver's stall.
+
+## Canonical tests
+
+- `Frontend/TypingPass/test/dev/vale/typing/AfterRegionsTests.scala` — "Bound-driven return rune cannot be inferred from lambda (MSAE general)" (minimal repro), "BRRZ: nested bound-return inference through a lambda body", "BRRZ: two bound-return inferences in the same call".
+- `Frontend/IntegrationTests/test/dev/vale/AfterRegionsIntegrationTests.scala` — "Make array without type", "Call Array<> without element type".
+- `Frontend/TypingPass/test/dev/vale/typing/AfterRegionsErrorTests.scala` — "HashMap-style return-type inference must not skip caller bound args" (regression guard; must continue to fail-to-compile).
 
 
 # Lambdas Can Call Parents' Generic Bounds (LCCPGB)

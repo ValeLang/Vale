@@ -1,0 +1,82 @@
+shields_dirs = ["../Luz/shields", "docs/shields"]
+backend = "claude"
+port = 7878
+exclude_shields = [
+    "AvoidIfMatchesInTestsIfPossible-AIMITIPX.md",
+    "BaseDirPathDiscipline-BDPDX.md",
+    "DocumentPublicAPIs-DPAPIX.md",
+    "ExtractMagicNumbersIntoNamedConstants-EMNINCX.md",
+    "IntegrationTestsBehaveLikeUsers-ITBLUX.md",
+    "DontConvenientlyChangeRequirements-DCCRX.md", # would be good as follower
+    "ExplicitArgumentsNoOptionalOrDefaultedValues-EANODVX.md",
+    "NeverRecoverAlwaysFail-NRAFX.md", # add some filters for this... can train async in review
+    "FailFastFailLoud-FFFLX.md", # add some filters for this... can train async in review
+
+
+    # To triage
+
+    "NoStringlyTypedData-NSTDX.md",
+    "EliminateAllWarnings-EAWX.md",
+    "ErrorsMustCarryTheirLogFilePath-EMCTLFPX.md",
+    "NeverLoseErrorInformation-NLEIX.md",
+    "NeverSummarizeAwayErrorContent-NSAECX.md",
+    "NoDroppedLocalVariablesOrCaptures-NDLVOCX.md",
+    "PreferResultOverPanicForRecoverableCases-PROPRCX.md",
+
+    "OutputAndLoggingZenDiscipline-OALZDX.md",
+]
+
+[guard_mode]
+include_shields = [
+    { name = "ImmediateInterningDiscipline-IIDX.md" },
+    { name = "TodosAndUnimplementedCodeMustPanic-TUCMPX.md" },
+
+    { name = "NoGlobalStateAnywhere-NGSAX.md" },
+    { name = "NoNewDefinitions-NNDX.md" },
+    { name = "NoAddingGuardianDirectives-NAGDX.md" },
+    { name = "NoRenamedDefinitions-NRDX.md" },
+    { name = "NoMovedDefinitions-NMDX.md" },
+    { name = "TypesFitIntoTheseCategories-TFITCX.md" },
+
+    { name = "KeepInlineComparisonsInline-KICIX.md" },
+    { name = "NeverHaveConditionalsInTests-NHCITX.md" },
+    { name = "NeverDowncastTraits-NEDCX.md" },
+    { name = "NoModificationsToShieldFiles-NMSFX.md" },
+    { name = "NeverUseStaticLifetime-NUSLX.md" },
+    { name = "UseUseForShortNamesNotCrateInBodies-UUSNNCBX.md" },
+
+    { name = "PythonScriptMutation-PSMX.md" },
+    { name = "ValidateReadonlyBash-VRBX.md" },
+    { name = "BulkEditScriptWorkflow-BESWX.md" },
+    { name = "MailboxWorkflow-MBXX.md" }
+]
+
+[review_mode]
+include_shields = [
+    { name = "ArenaAllocatedStructsShouldNotContainMallocdCollections-AASSNCMCX.md" },
+    { name = "ScalaSealedTraitsToRustEnums-SSTREX.md" },
+    { name = "NoExpensiveClones-NECX.md" },
+    { name = "SuffixWhenDealingWithMultipleStages-SWDWMSX.md" },
+    { name = "EnumsShouldntContainComplexData-ESCCDX.md" },
+    { name = "TodosAndUnimplementedCodeMustPanic-TUCMPX.md" },
+    { name = "MigrateAllCommentsToo-MACTX.md" },
+    { name = "NeverRecoverAlwaysFail-NRAFX.md" },
+    { name = "NoGlobalStateAnywhere-NGSAX.md" },
+    { name = "FailFastFailLoud-FFFLX.md" },
+    { name = "NoChangesWithoutScalaReference-NCWSRX.md" },
+    { name = "ImmediateInterningDiscipline-IIDX.md" },
+    { name = "UseUseForShortNamesNotCrateInBodies-UUSNNCBX.md" },
+    { name = "NeverRepeatImplementationCodeInTests-NRICITX.md" },
+    { name = "NoConditionalsInTestsOneBranchProceedsAllOthersPanic-NCTOBPAOPX.md" },
+    { name = "TestsPreferUnwrapToExpectForConciseness-TPUTEFCX.md" },
+    { name = "PreferSingleMatchOverNestedMatches-PSMONMX.md" },
+    { name = "ArenaTypesDontClone-ATDCX.md" },
+    { name = "UseExpectFunctionsInsteadOfAssertingSizeThenIndexing-UEFIAIX.md" },
+    { name = "NoModificationsToShieldFiles-NMSFX.md" },
+    { name = "NeverUseStaticLifetime-NUSLX.md" },
+
+    { name = "PythonScriptMutation-PSMX.md" },
+    { name = "ValidateReadonlyBash-VRBX.md" },
+    { name = "BulkEditScriptWorkflow-BESWX.md" },
+    { name = "MailboxWorkflow-MBXX.md" }
+]

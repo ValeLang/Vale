@@ -1,5 +1,5 @@
 
-NOTE: Vale is archived and no longer being worked on, but its spirit lives on in the new Valen programming language, which is Vale with a new memory safety approach plus Rust interop. See [The Golden Spike, and Resurrecting the Vale(n) Programming Language](https://verdagon.dev/blog/golden-spike-reviving-vale-valen). This repo will always remain up for posterity.
+NOTE: Vale is archived and no longer being worked on, but its spirit lives on in the new [Valen programming language](https://github.com/valen-lang/valen), which is Vale with a new memory safety approach plus Rust interop. See [The Golden Spike, and Resurrecting the Vale(n) Programming Language](https://verdagon.dev/blog/golden-spike-reviving-vale-valen). This repo will always remain up for posterity.
 
 # Vale
 

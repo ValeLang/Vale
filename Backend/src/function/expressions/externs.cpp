@@ -172,7 +172,12 @@ Ref buildCallOrSideCall(
       receiveHostObjectIntoVale(
           globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostReturnMT, valeReturnRefMT, hostReturnLE);
 
-  // dont we have to free here too
+  if (valeReturnRefMT->kind == globalState->metalCache->str) {
+    // The string has been copied into Vale; release the native return buffer.
+    auto hostReturnRef = toRef(globalState->linearRegion, hostReturnMT, hostReturnLE);
+    globalState->linearRegion->dealias(
+        FL(), functionState, builder, hostReturnMT, hostReturnRef);
+  }
 
   return valeReturnRef;
 }

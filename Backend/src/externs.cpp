@@ -105,7 +105,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   int256EquatorCallLF =
       addRawFunction(mod, "int256EquatorCall", int1LT, {emptyPtrLT, int256LT, int256LT});
   defineRawFunctionBody(
-      context, int256EquatorCallLF.ptrLE, int1LT, "int256HasherCall",
+      context, int256EquatorCallLF.ptrLE, int1LT, "int256EquatorCall",
       [](FunctionState* functionState, LLVMBuilderRef builder) {
         // Ignore 'this' arg 0
         LLVMGetParam(functionState->containingFuncL, 0);

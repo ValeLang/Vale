@@ -49,6 +49,14 @@ extern func fsqrt(x float) float;
 extern func lshift(x i64, by int) i64;
 extern func rshift(x i64, by int) i64;
 extern func xor(a i64, b i64) i64;
+extern func or(x i64,  b i64) i64;
+extern func and(x i64, b i64) i64;
+extern func lrotate(x i64, by int) i64{
+  return or(shift(x, by), rshift(x, 64 - b));
+}
+extern func rrotate(x i64, by int) i64 {
+  return or(rshift(x,  by), lshift(x, 64 - b));
+}
 
 extern func i64(x int) i64;
 

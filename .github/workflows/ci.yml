@@ -67,8 +67,8 @@ jobs:
           name: Vale-Ubuntu-0.zip
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
-  build_and_test_mac:
-    runs-on: macOS-latest
+  build_and_test_mac_intel:
+    runs-on: macOS-13
     steps: 
       - name: Checkout
         uses: actions/checkout@v2
@@ -84,4 +84,23 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Mac-0.zip
-          path: ./release-mac/Vale-Mac-0.zip
+          path: ./release-mac/Vale-Mac-Intel-0.zip
+
+  build_and_test_mac_arm:
+    runs-on: macos-14
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: adopt
+          java-version: 11
+      - name: install prereqs
+        run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
+      - name: build compiler
+        run: ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Vale-Mac-0.zip
+          path: ./release-mac/Vale-Mac-Arm-0.zip

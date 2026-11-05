@@ -15,17 +15,17 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 11
       - name: install prereqs
         run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\LLVM16 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
         run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\LLVM16 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: Vale-Windows-0.zip
           path: .\release-windows\Vale-Windows-0.zip
@@ -34,35 +34,39 @@ jobs:
     runs-on: ubuntu-latest
     steps: 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
       - name: Build docker image
         run: docker build -t valec --build-arg VALE_DIR=. --file scripts/docker/Dockerfile .
       - name: Create image
         run: docker create --name bork -i valec
       - name: Retrieve built compiler
         run: docker cp bork:/Vale/release-ubuntu/Vale-Ubuntu-0.zip Vale-Ubuntu-0.zip
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: Vale-Ubuntu-0-From-Docker.zip
           path: Vale-Ubuntu-0.zip
 
   build_and_test_ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps: 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 11
+      - name: Install libtinfo5 (needed by the LLVM 16 binaries built on ubuntu 18.04)
+        run: |
+          curl -sLO https://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.2-0ubuntu2_amd64.deb
+          sudo apt-get install -y ./libtinfo5_6.2-0ubuntu2_amd64.deb
       - name: install prereqs
-        run: ./scripts/ubuntu/install-compiler-prereqs.sh -d -j -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
+        run: ./scripts/ubuntu/install-compiler-prereqs.sh -d -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
       - name: build compiler 
         run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-16.0.0-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
       - name: gimme files 
         run: find . -print
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: Vale-Ubuntu-0.zip
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
@@ -71,17 +75,17 @@ jobs:
     runs-on: macOS-latest
     steps: 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 11
       - name: install prereqs
         run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
       - name: build compiler
         run: ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: Vale-Mac-0.zip
           path: ./release-mac/Vale-Mac-0.zip
